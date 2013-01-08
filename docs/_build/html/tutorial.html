@@ -1,0 +1,298 @@
+
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Tutorial &mdash; cdb_query 0.2.5.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.2.5.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="cdb_query 0.2.5.0 documentation" href="index.html" />
+    <link rel="next" title="Driver description" href="cdb_driver.html" />
+    <link rel="prev" title="Introduction" href="intro.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="cdb_driver.html" title="Driver description"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="intro.html" title="Introduction"
+             accesskey="P">previous</a> |</li>
+        <li><a href="index.html">cdb_query 0.2.5.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="tutorial">
+<h1>Tutorial<a class="headerlink" href="#tutorial" title="Permalink to this headline">¶</a></h1>
+<p>Once installed, this package should make the command line tool <tt class="docutils literal"><span class="pre">cdb_query_archive</span></tt> visible
+to the user&#8217;s path. This is typically the case for common python installations.</p>
+<p>The command <tt class="docutils literal"><span class="pre">cdb_query_archive</span></tt> contains several commands. The first one, <tt class="docutils literal"><span class="pre">cdb_query_archive</span> <span class="pre">optimset</span></tt>,
+searches the archive and produces a file with pointers to the data. This file can be inspected for a list of
+models matching a diagnostic&#8217;s experiments and variables criteria using <tt class="docutils literal"><span class="pre">cdb_query_archive</span> <span class="pre">simulations</span></tt>.
+Then the command <tt class="docutils literal"><span class="pre">cdb_query_archive</span> <span class="pre">optimset_months</span></tt> can be used to find all the experiments that have all of
+the avialalble years. This command outputs a file that points to data for every month of the requested period.
+This is for easy compatibility with <tt class="docutils literal"><span class="pre">cdb_driver</span></tt>. The final command, <tt class="docutils literal"><span class="pre">cdb_query_archive</span> <span class="pre">retrieve</span></tt>,
+reads the output from <tt class="docutils literal"><span class="pre">cdb_query_archive</span> <span class="pre">optimset_months</span></tt>, takes (center, model, experiment, frequency,
+realm, mip, rip, year, month) as an input and returns a <strong>single</strong> path to file. This makes it
+easy to retrieve data from simple scripts.</p>
+<p>Months were chosen as the atomic time period the CDB because for some variables and/or some models years are not
+atomic. To maximize flexibility it is therefore easier to see months as the atomic time period for all diagnostics.</p>
+<div class="section" id="find-the-optimal-set-of-models-that-satisfy-a-set-of-criteria">
+<h2>Find the optimal set of models that satisfy a set of criteria<a class="headerlink" href="#find-the-optimal-set-of-models-that-satisfy-a-set-of-criteria" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="optimset">
+<h3>optimset<a class="headerlink" href="#optimset" title="Permalink to this headline">¶</a></h3>
+<p>The first step is to create a diagnostic header file in JSON format. We will call this file <tt class="docutils literal"><span class="pre">test_diags.hdr</span></tt>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span>
+<span class="s">&quot;diagnostic_name&quot;</span><span class="p">:</span><span class="s">&quot;test_diags&quot;</span><span class="p">,</span>
+<span class="s">&quot;experiment_list&quot;</span><span class="p">:</span>
+    <span class="p">{</span>
+    <span class="s">&quot;amip&quot;</span><span class="p">:</span><span class="s">&quot;1979,2004&quot;</span>
+    <span class="p">},</span>
+<span class="s">&quot;variable_list&quot;</span><span class="p">:</span>
+    <span class="p">{</span>
+    <span class="s">&quot;ta&quot;</span><span class="p">:[</span><span class="s">&quot;day&quot;</span><span class="p">,</span><span class="s">&quot;atmos&quot;</span><span class="p">,</span><span class="s">&quot;day&quot;</span><span class="p">],</span>
+    <span class="s">&quot;orog&quot;</span><span class="p">:[</span><span class="s">&quot;fx&quot;</span><span class="p">,</span><span class="s">&quot;atmos&quot;</span><span class="p">,</span><span class="s">&quot;fx&quot;</span><span class="p">]</span>
+    <span class="p">},</span>
+<span class="s">&quot;search_list&quot;</span><span class="p">:</span>
+    <span class="p">[</span>
+    <span class="s">&quot;$HOME/data&quot;</span><span class="p">,</span>
+    <span class="s">&quot;http://esgf-index1.ceda.ac.uk/esg-search/search&quot;</span>
+    <span class="p">],</span>
+<span class="s">&quot;file_type_list&quot;</span><span class="p">:</span>
+    <span class="p">[</span>
+    <span class="s">&quot;local_file&quot;</span><span class="p">,</span>
+    <span class="s">&quot;OPeNDAP&quot;</span><span class="p">,</span>
+    <span class="s">&quot;HTTPServer&quot;</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This file structure is likely to evolve over time.</p>
+</div>
+<p>The five first entries are not necessary for <tt class="docutils literal"><span class="pre">cdb_query_archive</span> <span class="pre">optimset</span></tt>. They are used for other tools being
+developed in parallel.</p>
+<ul class="simple">
+<li>The <tt class="docutils literal"><span class="pre">experiment_list</span></tt> entry lists the resquested experiments and the requested years range.
+More than one experiment can be specified.</li>
+<li>The <tt class="docutils literal"><span class="pre">variable_list</span></tt> entry lists the requested variables with their [frequency,realm,mip].</li>
+<li>The <tt class="docutils literal"><span class="pre">search_list</span></tt> entry lists the different places where the query should look for data.
+The first entry is a local archive, on the file system. The script walks through subdirectories and tries to locate data
+that match <tt class="docutils literal"><span class="pre">experiment_list</span></tt> and <tt class="docutils literal"><span class="pre">variable_list</span></tt>. This path should point to the top directory
+of the CMIP5 archive that lists the different centers. The second entry queries the ESGF BADC node for data matching
+the <tt class="docutils literal"><span class="pre">experiment_list</span></tt> and <tt class="docutils literal"><span class="pre">variable_list</span></tt>.</li>
+</ul>
+<div class="admonition important">
+<p class="first admonition-title">Important</p>
+<p class="last"><tt class="docutils literal"><span class="pre">search_list</span></tt> is ordered. Its order will affect which path is retrieved.</p>
+</div>
+<ul class="simple">
+<li>The <tt class="docutils literal"><span class="pre">file_type_list</span></tt> specifies what kind of files should be included. In this case, we consider data only if it is in a
+<tt class="docutils literal"><span class="pre">local_file</span></tt>, if it is accessible by <tt class="docutils literal"><span class="pre">OPeNDAP</span></tt>, or if it can be retrieved by wget on an <tt class="docutils literal"><span class="pre">HTTPserver</span></tt>. This list is ordered
+and the final path will be chosen depending on its <tt class="docutils literal"><span class="pre">file_type</span></tt>. In this case, when a variable has more than one paths,
+the <tt class="docutils literal"><span class="pre">local_file</span></tt> will be privileged over the <tt class="docutils literal"><span class="pre">OPeNDAP</span></tt> file.</li>
+</ul>
+<div class="admonition important">
+<p class="first admonition-title">Important</p>
+<p class="last"><tt class="docutils literal"><span class="pre">file_type_list</span></tt> is ordered. Its order will affect which path is retrieved.</p>
+</div>
+<p>The script is run using:</p>
+<div class="highlight-python"><pre>$ cdb_query_archive optimset test_diags.hdr test_diags_pointers.hdr</pre>
+</div>
+<p>and returns a self-descriptive JSON file with pointers to the data.</p>
+</div>
+<div class="section" id="simulations">
+<h3>simulations<a class="headerlink" href="#simulations" title="Permalink to this headline">¶</a></h3>
+<p>By using the <tt class="docutils literal"><span class="pre">simulations</span></tt> command on the output it possible to find how many models are available:</p>
+<div class="highlight-python"><pre>$ cdb_query_archive simulations test_diags_pointers.hdr</pre>
+</div>
+<div class="admonition important">
+<p class="first admonition-title">Important</p>
+<p class="last">Before running <tt class="docutils literal"><span class="pre">optimset_months</span></tt> and <tt class="docutils literal"><span class="pre">retrieve</span></tt> the user must be logged onto the ESGF using a
+<tt class="docutils literal"><span class="pre">myproxy</span></tt> client.</p>
+</div>
+</div>
+<div class="section" id="optimset-months">
+<h3>optimset_months<a class="headerlink" href="#optimset-months" title="Permalink to this headline">¶</a></h3>
+<p>If <tt class="docutils literal"><span class="pre">optimset</span></tt> returned enough models, it is important to ensure that all the requested years are available. To do so,
+one runs <tt class="docutils literal"><span class="pre">optimset_months</span></tt>:</p>
+<div class="highlight-python"><pre>$ cdb_query_archive optimset_months test_diags_ponters.hdr test_diags_pointers_months.hdr</pre>
+</div>
+<p>The returned file is easy to reuse but is extremely redundant and therefore results in large files.
+It is suggested that it be output in gzip format:</p>
+<div class="highlight-python"><pre>$ cdb_query_archive optimset_months -z test_diags_ponters.hdr test_diags_pointers_months.hdr</pre>
+</div>
+<p>This command will create the file <tt class="docutils literal"><span class="pre">test_diags_pointers_months.hdr.gz</span></tt>, which can be <tt class="docutils literal"><span class="pre">gunzipped</span></tt> to
+obtain the same output that would be obtained without the <tt class="docutils literal"><span class="pre">-z</span></tt> option.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last"><tt class="docutils literal"><span class="pre">optimset_months</span></tt> must be run before <tt class="docutils literal"><span class="pre">cdb_driver</span></tt> described in section <a class="reference internal" href="#cdb-driver-tutorial"><em>Run the diagnostic</em></a>.</p>
+</div>
+</div>
+<div class="section" id="retrieve">
+<h3>retrieve<a class="headerlink" href="#retrieve" title="Permalink to this headline">¶</a></h3>
+<p>The retrieval command simply reads <tt class="docutils literal"><span class="pre">test_diags_pointers_months.hdr</span></tt> and returns a path to the file:</p>
+<div class="highlight-python"><pre>$ cdb_query_archive retrieve MOHC HadGEM2-A amip r1i1p1 ta day atmos day 2000 10 test_diags_pointers.hdr
+http://cmip-dn1.badc.rl.ac.uk/thredds/dodsC/cmip5.output1.MOHC.HadGEM2-A.amip.day.atmos.day.r1i1p1.ta.20110513.aggregation.1</pre>
+</div>
+<p>In this case, it returns an <tt class="docutils literal"><span class="pre">OPeNDAP</span></tt> aggregation pointer. If <tt class="docutils literal"><span class="pre">-z</span></tt> was used in the <tt class="docutils literal"><span class="pre">optimset</span></tt> query, the
+<tt class="docutils literal"><span class="pre">retrieve</span></tt> steps works seamlessly if th <tt class="docutils literal"><span class="pre">.gz</span></tt> is kept in the filename:</p>
+<div class="highlight-python"><pre>$ cdb_query_archive retrieve MOHC HadGEM2-A amip r1i1p1 ta day atmos day 2000 10 test_diags_pointers.hdr.gz
+http://cmip-dn1.badc.rl.ac.uk/thredds/dodsC/cmip5.output1.MOHC.HadGEM2-A.amip.day.atmos.day.r1i1p1.ta.20110513.aggregation.1|9527|9557</pre>
+</div>
+<p>The string <tt class="docutils literal"><span class="pre">|9527|9557</span></tt> is not part of the <tt class="docutils literal"><span class="pre">OPeNDAP</span></tt> url but they give the indices corresponding to October 2000.
+To use this string efficiently, there flag <tt class="docutils literal"><span class="pre">-f</span></tt> passed to <tt class="docutils literal"><span class="pre">retrieve</span></tt> returns only the file type:</p>
+<div class="highlight-python"><pre>$ cdb_query_archive retrieve MOHC HadGEM2-A amip r1i1p1 ta day atmos day 2000 10 test_diags_pointers.hdr.gz -f
+OPeNDAP</pre>
+</div>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The <tt class="docutils literal"><span class="pre">OPeNDAP</span></tt> file type is only available is a myproxy session is loaded on the machine runnning <tt class="docutils literal"><span class="pre">cdb_query_archive</span></tt></p>
+</div>
+</div>
+</div>
+<div class="section" id="run-the-diagnostic">
+<span id="cdb-driver-tutorial"></span><h2>Run the diagnostic<a class="headerlink" href="#run-the-diagnostic" title="Permalink to this headline">¶</a></h2>
+<p>To run the diagnostic, one must have put informations about the run directories
+in the diagnostic header file <cite>test_diags.hdr</cite>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span>
+<span class="s">&quot;diagnostic_name&quot;</span><span class="p">:</span><span class="s">&quot;test_diags&quot;</span><span class="p">,</span>
+<span class="s">&quot;experiment_list&quot;</span><span class="p">:</span>
+    <span class="p">{</span>
+    <span class="s">&quot;amip&quot;</span><span class="p">:</span><span class="s">&quot;1979,2004&quot;</span>
+    <span class="p">},</span>
+<span class="s">&quot;variable_list&quot;</span><span class="p">:</span>
+    <span class="p">{</span>
+    <span class="s">&quot;ta&quot;</span><span class="p">:[</span><span class="s">&quot;day&quot;</span><span class="p">,</span><span class="s">&quot;atmos&quot;</span><span class="p">,</span><span class="s">&quot;day&quot;</span><span class="p">],</span>
+    <span class="s">&quot;orog&quot;</span><span class="p">:[</span><span class="s">&quot;fx&quot;</span><span class="p">,</span><span class="s">&quot;atmos&quot;</span><span class="p">,</span><span class="s">&quot;fx&quot;</span><span class="p">]</span>
+    <span class="p">},</span>
+<span class="s">&quot;search_list&quot;</span><span class="p">:</span>
+    <span class="p">[</span>
+    <span class="s">&quot;$HOME/data&quot;</span><span class="p">,</span>
+    <span class="s">&quot;http://esgf-index1.ceda.ac.uk/esg-search/search&quot;</span>
+    <span class="p">],</span>
+<span class="s">&quot;file_type_list&quot;</span><span class="p">:</span>
+    <span class="p">[</span>
+    <span class="s">&quot;local_file&quot;</span><span class="p">,</span>
+    <span class="s">&quot;OPeNDAP&quot;</span><span class="p">,</span>
+    <span class="s">&quot;HTTPServer&quot;</span>
+    <span class="p">],</span>
+<span class="s">&quot;diagnostic_dir&quot;</span><span class="p">:</span><span class="s">&quot;../scripts/&quot;</span><span class="p">,</span>
+<span class="s">&quot;runscripts_dir&quot;</span><span class="p">:</span><span class="s">&quot;./runscripts/&quot;</span><span class="p">,</span>
+<span class="s">&quot;output_dir&quot;</span><span class="p">:</span><span class="s">&quot;./outputs&quot;</span><span class="p">,</span>
+<span class="s">&quot;temp_dir&quot;</span><span class="p">:</span><span class="s">&quot;./temp&quot;</span><span class="p">,</span>
+<span class="s">&quot;months_list&quot;</span><span class="p">:[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">12</span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>One must first run <tt class="docutils literal"><span class="pre">optimset</span></tt> and <tt class="docutils literal"><span class="pre">optimset_month</span></tt> sequentially:</p>
+<div class="highlight-python"><pre>$ cdb_query_archive optimset test_diags.hdr test_diags_pointers.hdr
+$ cdb_query_archive optimset_months -z test_diags_ponters.hdr test_diags_pointers_months.hdr</pre>
+</div>
+<p>and then run <tt class="docutils literal"><span class="pre">cdb_driver</span></tt> on the result:</p>
+<div class="highlight-python"><pre>$ cdb_driver test_diags_pointers.hdr</pre>
+</div>
+<p>See section <a class="reference internal" href="cdb_driver.html#cdb-driver-description"><em>Driver description</em></a> for a complete description of the options available in the driver script.</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Tutorial</a><ul>
+<li><a class="reference internal" href="#find-the-optimal-set-of-models-that-satisfy-a-set-of-criteria">Find the optimal set of models that satisfy a set of criteria</a><ul>
+<li><a class="reference internal" href="#optimset">optimset</a></li>
+<li><a class="reference internal" href="#simulations">simulations</a></li>
+<li><a class="reference internal" href="#optimset-months">optimset_months</a></li>
+<li><a class="reference internal" href="#retrieve">retrieve</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#run-the-diagnostic">Run the diagnostic</a></li>
+</ul>
+</li>
+</ul>
+
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="intro.html"
+                        title="previous chapter">Introduction</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="cdb_driver.html"
+                        title="next chapter">Driver description</a></p>
+  <h3>This Page</h3>
+  <ul class="this-page-menu">
+    <li><a href="_sources/tutorial.txt"
+           rel="nofollow">Show Source</a></li>
+  </ul>
+<div id="searchbox" style="display: none">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="cdb_driver.html" title="Driver description"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="intro.html" title="Introduction"
+             >previous</a> |</li>
+        <li><a href="index.html">cdb_query 0.2.5.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+        &copy; Copyright 2012, Frédéric Laliberté, Paul J. Kushner.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 1.1.3.
+    </div>
+  </body>
+</html>
