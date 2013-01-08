@@ -35,7 +35,7 @@ setup(
             "Topic :: Scientific/Engineering :: Atmospheric Science",
             "Topic :: Scientific/Engineering :: Mathematics"
         ],
-        long_description=read('README'),
+        long_description=read('README.md'),
         install_requires = ['numpy','netCDF4','sqlalchemy','esgf-pyclient'],
         zip_safe=False,
         # other arguments here...
