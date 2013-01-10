@@ -102,6 +102,7 @@ def get_year_axis(path_name):
         else:
             cdftime=utime(data.variables['time'].units)
         #print ' Done!'
+        data.close()
     except:
         return None, None
 
