@@ -11,3 +11,5 @@ to the requested data. The resulting pointers are intended to be immutable and d
 the entire data space available to the user. At this stage of development, `cdb_query_archive`
 cannot guarantee that all of the available data is obtained but instead it provides
 a snapshot of all the acessible data with proper CMIP5 DRS and/or well-formed ESGF search tags.
+
+The source code for this project is available on github: https://github.com/laliberte/cdb_query
