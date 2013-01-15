@@ -157,6 +157,7 @@ def structure_out_with_cmip5_drs(self,out):
     out.writei('case $CDB_FREQ in\n')
     out.inc_indent()
     out.writei('fx) FILE_NAME="${FILE_NAME}";;\n')
+    out.writei('clim) FILE_NAME="${FILE_NAME}";;\n')
     out.writei('day) FILE_NAME="${FILE_NAME}_${CDB_YEAR_START}0101-${CDB_YEAR_END}1231";;\n')
     out.writei('mon) FILE_NAME="${FILE_NAME}_${CDB_YEAR_START}01-${CDB_YEAR_END}12";;\n')
     out.writei('yr) FILE_NAME="${FILE_NAME}_${CDB_YEAR_START}-${CDB_YEAR_END}";;\n')
