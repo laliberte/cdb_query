@@ -30,7 +30,7 @@ def intersection(paths_dict,diag_tree_desc, diag_tree_desc_final):
 
     for experiment in paths_dict['diagnostic']['experiment_list'].keys():
         for var_name in paths_dict['diagnostic']['variable_list'].keys():
-            if paths_dict['diagnostic']['variable_list'][var_name][0]!='fx':
+            if paths_dict['diagnostic']['variable_list'][var_name][2]!='fx':
                 #Do this without fx variables:
                 conditions=[
                              File_Expt.var==var_name,
@@ -49,7 +49,7 @@ def intersection(paths_dict,diag_tree_desc, diag_tree_desc_final):
         #Do it for fx variables:
         model_list_fx=[model[:-1] for model in model_list]
         for var_name in paths_dict['diagnostic']['variable_list'].keys():
-            if paths_dict['diagnostic']['variable_list'][var_name][0]=='fx':
+            if paths_dict['diagnostic']['variable_list'][var_name][2]=='fx':
                 conditions=[
                              File_Expt.var==var_name,
                              File_Expt.frequency==paths_dict['diagnostic']['variable_list'][var_name][0],

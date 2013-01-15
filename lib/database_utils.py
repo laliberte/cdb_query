@@ -57,7 +57,8 @@ def create_tree(item,diag_tree_desc,paths_dict):
         if isinstance(diag_tree_desc,list):
             diag_tree_desc=diag_tree_desc[0]
 
-        paths_dict.append(getattr(item,diag_tree_desc))
+        if getattr(item,diag_tree_desc) not in paths_dict:
+            paths_dict.append(getattr(item,diag_tree_desc))
     return paths_dict
         
 def create_database_from_tree(session,file_expt,paths_dict,top_name,propagated_values,find_function,tree_desc):
