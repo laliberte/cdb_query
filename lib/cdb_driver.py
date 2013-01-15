@@ -129,9 +129,8 @@ def structure_out_with_cmip5_drs(self,out):
     out.inc_indent()
     out.writei('FILE=$(echo $FILE_DESC | awk -F\';\' \'{print $1}\')\n')
     out.writei('REALM_FREQ_INFO=$(echo $FILE_DESC | awk -F\';\' \'{print $2}\')\n')
-    out.writei('bash $CDB_SOURCE_DIR/structure_out_as_in.sh -d ${CDB_DIAG_NAME} -m ${CDB_MODEL} -e ${CDB_EXPT} -r ${CDB_RUN_ID} -y ${CDB_YEARS} -f ${REALM_FREQ_INFO} $FILE\n')
-    out.writei('CDB_INFO="This output was created using the Climate Diagnostics Benchmark toolbox,\
-                developed by F. Laliberte and P. J. Kushner, 2012, at the University of Toronto.\
+    out.writei('CDB_INFO="This output was created using the Climate Diagnostics Benchmark toolbox,\n
+                developed by F. Laliberte and P. J. Kushner, 2012, at the University of Toronto.\n
                 This code was developed as part of the ExArch project."\n')
     out.writei('\n')
     out.writei('CDB_VAR_LIST=$(cdo showname ${FILE})\n')

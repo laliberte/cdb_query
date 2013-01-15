@@ -1,4 +1,0 @@
-.. _cdb_driver_description:
-
-``cdb_driver`` description
-==========================
