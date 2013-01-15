@@ -20,9 +20,9 @@ def find_months(session,file_expt,path_name,file_type,propagated_values):
 def find_months_file(session,file_expt,path_name):
     filename=os.path.basename(path_name)
 
-    #Check if file has fixed frequency
+    #Check if file has fixed frequency or is a climatology:
     time_stamp=filename.replace('.nc','').split('_')[-1]
-    if time_stamp == 'r0i0p0':
+    if time_stamp[0] == 'r':
         file_expt_copy = copy.deepcopy(file_expt)
         setattr(file_expt_copy,'path',path_name)
         session.add(file_expt_copy)
@@ -54,9 +54,11 @@ def find_months_file(session,file_expt,path_name):
 
 def find_months_opendap(session,file_expt,path_name,frequency):
     year_axis, month_axis = get_year_axis(path_name)
+    if year_axis is None or month_axis is None:
+        #File could not be opened and should be excluded from analysis
+        return
 
-    #Check if file has fixed frequency
-    if year_axis is None:
+    if frequency in ['fx','clim']:
         file_expt_copy = copy.deepcopy(file_expt)
         setattr(file_expt_copy,'path',path_name)
         setattr(file_expt_copy,'year',str(0))
