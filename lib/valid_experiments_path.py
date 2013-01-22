@@ -12,6 +12,8 @@ def find_path(session,file_expt,path_name,top_name,propagated_values):
     return
 
 def intersection(paths_dict,diag_tree_desc, diag_tree_desc_final):
+    #Find the intersection of all models that have at least one file in each experiment
+
     diag_tree_desc.append('file_type')
     diag_tree_desc.append('path')
 

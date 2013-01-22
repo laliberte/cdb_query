@@ -7,6 +7,7 @@ import json
 import parallel_driver
 
 class Open_With_Indent:
+    """This class creates an open file were indentation is tracked"""
 
     def __init__(self,file_name,read_method):
         self.open = open(file_name,read_method)
@@ -51,6 +52,7 @@ class Experiment_Setup:
 
         out.writei('#!/bin/bash\n')
         if self.pbs_expt:
+            #If the script is expected to be submitted to a PBS queue, output the required headers:
 	    if self.queue != None: out.writei('#PBS -q {0}\n'.format(self.queue))
             #out.writei('#PBS -l nodes=1:ppn={0},walltime={1}\n'.format(max(self.dim_async,self.m_async),self.walltime))
             out.writei('#PBS -l nodes=1:ppn={0}\n'.format(max(self.dim_async,self.m_async)))
@@ -58,6 +60,7 @@ class Experiment_Setup:
             out.writei('#PBS -o {5}/pbs_out/{0}_{1}_{2}_{3}_{4}\n'.format(self.years[0],self.years[1],self.model,self.run_id,self.experiment,self.output_dir))
             out.writei('#PBS -e {5}/pbs_err/{0}_{1}_{2}_{3}_{4}\n'.format(self.years[0],self.years[1],self.model,self.run_id,self.experiment,self.output_dir))
 
+        #Put the header to the diagnostic:
         out.writei('\n')
         out.writei('#The next variable should be empty. If your script completed and some\n')
         out.writei('#years did not process properly (usually due to a timeout on large\n')
@@ -97,9 +100,10 @@ class Experiment_Setup:
         out.writei('CDB_DIAG_HEADER="${CDB_TEMP_DIR}/${CDB_DIAG_HEADER_BASE}"\n')
 
         
-        #LOAD SCRIPT FILE AND CONVERT PARALLEL INSTANCES
+        #Load script file:
         script_file=open(self.diagnostic_dir+'/'+self.diagnostic+'.sh','r')
 
+        #Define instructions:
         parallel_dimension=None
         instructions={
                       '#!START MONTH LOOP' : start_monthly_loop,
@@ -108,6 +112,7 @@ class Experiment_Setup:
                       '#!END PARA' : parallel_driver.end_parallel_instance
                     }
 
+        #Loop through lines:
         for line in script_file:
                 out.writei(line)
                 for inst in instructions.keys():
@@ -117,11 +122,13 @@ class Experiment_Setup:
         out.writei('\n')
         out.writei('rm -rf ${CDB_TEMP_DIR}\n')
         out.writei('\n')
+
+        #Finally add BASH code at the end of the script to structure the output like the CMIP5 DRS:
         structure_out_with_cmip5_drs(self,out)
         out.open.close()
 
 def structure_out_with_cmip5_drs(self,out):
-    #Finally, introduce the code to structure the output with the CMIP5 DRS:
+    #code to structure the output with the CMIP5 DRS:
     out.writei('#THE LAST PART OF THIS SCRIPT REORGANIZES THE OUTPUT TO CONFORM WITH THE CMIP5 DRS:\n')
     out.writei('if [ ! -z "$CDB_CMIP5_COMP_LIST" ]; then\n')
     out.inc_indent()
@@ -177,6 +184,8 @@ def structure_out_with_cmip5_drs(self,out):
     out.writei('fi\n')
 
 def start_monthly_loop(self,out,line):
+    #This function creates a BASH function within the script. The function processes one month.
+    #Because of the monthly processing this can be parallelized.
     out.writei('function monthly_processing()\n')
     out.writei('{\n')
     out.writei('cat > $3 <<EndOfScriptHeader\n')
@@ -205,6 +214,8 @@ def start_monthly_loop(self,out,line):
     out.writei('\n')
     out.writei('cat >> $3 <<\'EndOfScriptMain\'\n')
     out.writei('\n')
+
+    #Next we generate BASH variables for the easy handling of variables:
     out.writei('#Retrieve path names to data:\n')
     for var_name in self.variable_list.keys():
         if self.variable_list[var_name][0]!='fx':
@@ -218,6 +229,8 @@ def start_monthly_loop(self,out,line):
         out.writei('export CDB_'+var_name+'_'+'_'.join(self.variable_list[var_name])+'=$(cdb_query_archive retrieve '+retrieval_string+')\n')
         out.writei('export CDB_'+var_name+'_'+'_'.join(self.variable_list[var_name])+'_TYPE=$(cdb_query_archive retrieve -f '+retrieval_string+')\n')
     out.writei('\n')
+
+    #Next we generate a script line that can be used in CDO:
     out.writei('#Create a cdo retrieval script:\n')
     out.writei('CDO_RETRIEVAL_SCRIPT=""\n')
     for var_name in self.variable_list.keys():
@@ -231,6 +244,7 @@ def start_monthly_loop(self,out,line):
     return self
 
 def end_monthly_loop(self,out,line):
+    #Closing the monthly loop
     out.open.write('EndOfScriptMain\n')
     out.writei('}\n')
 
@@ -240,6 +254,7 @@ def end_monthly_loop(self,out,line):
     out.writei('CDB_YEAR_START=$(echo $CDB_YEARS | awk -F\',\' \'{print $1}\')\n')
     out.writei('CDB_YEAR_END=$(echo $CDB_YEARS | awk -F\',\' \'{print $2}\')\n')
     out.writei('CDB_YEAR=${CDB_YEAR_START}\n')
+
     #Create monthly_scripts
     out.writei('if [ -z "$CDB_YEARS_FIX_LIST" ];then\n')
     out.inc_indent()

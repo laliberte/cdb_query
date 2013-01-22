@@ -6,6 +6,7 @@ def get_immediate_subdirectories(path):
                 if os.path.isdir(os.path.join(path, name))]
 
 def descend_tree(diag_desc,diag_tree_desc,top_path):
+    #Descends a directory and record it in a dict type
     paths_dict={}
 
     if isinstance(diag_tree_desc,list):

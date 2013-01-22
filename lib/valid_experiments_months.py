@@ -11,6 +11,7 @@ from netcdftime import utime
 
 
 def find_months(session,file_expt,path_name,file_type,propagated_values):
+    #Top function to define how the time axis is created:
     if file_type in ['HTTPServer','GridFTP']:
         find_months_file(session,file_expt,path_name)
     elif file_type in ['local_file','OPeNDAP']:
@@ -18,6 +19,7 @@ def find_months(session,file_expt,path_name,file_type,propagated_values):
     return
         
 def find_months_file(session,file_expt,path_name):
+    #If the path is a remote file, we must use the time stamp
     filename=os.path.basename(path_name)
 
     #Check if file has fixed frequency or is a climatology:
@@ -39,6 +41,7 @@ def find_months_file(session,file_expt,path_name):
     years_list=range(*years_range)
     years_list.append(years_range[1])
 
+    #Record in the database:
     for year in years_list:
         for month in range(1,13):
             if not ( (year==years_range[0] and month<months_range[0]) or
@@ -53,12 +56,16 @@ def find_months_file(session,file_expt,path_name):
     return
 
 def find_months_opendap(session,file_expt,path_name,frequency):
+    #If the file is local  or opendap, it is queryable and we can recover the
+    #indices corresponding to the month. It is slower but it allows for a fast implementation
+    #of scripts over a distant connection.
     year_axis, month_axis = get_year_axis(path_name)
     if year_axis is None or month_axis is None:
         #File could not be opened and should be excluded from analysis
         return
 
     if frequency in ['fx','clim']:
+        #If the time axis is fixed or it is a climatology, do nothing:
         file_expt_copy = copy.deepcopy(file_expt)
         setattr(file_expt_copy,'path',path_name)
         setattr(file_expt_copy,'year',str(0))
@@ -67,6 +74,7 @@ def find_months_opendap(session,file_expt,path_name,frequency):
         session.commit()
         return
 
+    #Record the indices per month:
     for year in set(year_axis):
         year_id = np.where(year_axis==year)[0]
 
@@ -114,6 +122,8 @@ def get_year_axis(path_name):
     return year_axis, month_axis
 
 def intersection(paths_dict,diag_tree_desc, diag_tree_desc_final):
+    #This function finds the models that satisfy all the criteria
+
     diag_tree_desc.append('file_type')
     diag_tree_desc.append('year')
     diag_tree_desc.append('month')
@@ -122,6 +132,7 @@ def intersection(paths_dict,diag_tree_desc, diag_tree_desc_final):
     session, time_db = database_utils.load_database(diag_tree_desc)
     file_expt = File_Expt(diag_tree_desc)
 
+    #Create database
     top_name='data_pointers'
     database_utils.create_database_from_tree(session,file_expt,paths_dict[top_name],top_name,{},find_months,'Processed ')
 
@@ -188,6 +199,7 @@ def intersection(paths_dict,diag_tree_desc, diag_tree_desc_final):
     #Create a simulation list
     new_paths_dict['simulations_list']=[]
 
+    #Loop through models:
     for model in model_list:
         new_paths_dict['simulations_list'].append('_'.join(model))
 

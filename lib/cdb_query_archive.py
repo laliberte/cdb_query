@@ -122,6 +122,7 @@ def retrieval(retrieval_desc):
         infile=open(retrieval_desc.in_diagnostic_pointers_file,'r')
     paths_dict=json.load(infile)
 
+    #Go down the tree and retrieve requested fields:
     path_name=tree_retrieval(retrieval_desc,paths_dict['diagnostic'],paths_dict['data_pointers'])
     if retrieval_desc.file_type_flag:
         print path_name

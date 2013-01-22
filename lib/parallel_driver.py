@@ -1,7 +1,12 @@
+#This module implements the parallelization of scripts. This is still in ALPHA phase. BEWARE!
+
+
 def start_parallel_instance(self,out,line):
+    #If not parallel, exit
     if not self.dim_async > 1:
         return self
 
+    #Keep track of the parallelized dimension. Cannot chunk it along different dimensions:
     if self.parallel_dimension != None:
         raise IOError('Attempting to parallelize a dimension without having closed the previous parallel instance')
     else:
@@ -51,6 +56,7 @@ def start_parallel_instance(self,out,line):
     return self
 
 def end_parallel_instance(self,out,line):
+    #Again, exit if not parallel
     if not self.dim_async > 1:
         return self
 

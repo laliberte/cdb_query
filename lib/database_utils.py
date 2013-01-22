@@ -11,6 +11,7 @@ class File_Expt(object):
 
 def load_database(diag_tree_desc):
     #This function creates an in-memory sqlite database, for easy subselecting.
+    #Uses sqlalchemy
 
     engine = sqlalchemy.create_engine('sqlite:///:memory:', echo=False)
     metadata = sqlalchemy.MetaData(bind=engine)
@@ -27,6 +28,7 @@ def load_database(diag_tree_desc):
     return session, time_db
 
 def create_entry(session,file_expt,keys_dict):
+    #Create an entry in the database
     for key in keys_dict.keys():
         setattr(file_expt,key,keys_dict[key])
     session.add(file_expt)
@@ -62,6 +64,7 @@ def create_tree(item,diag_tree_desc,paths_dict):
     return paths_dict
         
 def create_database_from_tree(session,file_expt,paths_dict,top_name,propagated_values,find_function,tree_desc):
+    #Recursively creates a database from tree:
     if isinstance(paths_dict,dict):
         for value in paths_dict.keys():
             if value[0] != '_':
@@ -84,6 +87,7 @@ def create_database_from_tree(session,file_expt,paths_dict,top_name,propagated_v
     return
 
 def slice_data(options,paths_dict):
+    #Removes branches of a tree
     if isinstance(paths_dict,dict):
         if '_name' not in paths_dict.keys():
             raise IOError('Dictionnary passed to slice_data must have a _name entry at each level except the last')
