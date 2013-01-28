@@ -234,13 +234,14 @@ def start_monthly_loop(self,out,line):
     out.writei('#Create a cdo retrieval script:\n')
     out.writei('CDO_RETRIEVAL_SCRIPT=""\n')
     for var_name in self.variable_list.keys():
-        var_id = '$CDB_'+var_name+'_'+'_'.join(self.variable_list[var_name])
-        out.writei('#Creating retrieval for {0}\n'.format(var_name))
-        out.writei('CDB_VAR=$(echo '+var_id+'| awk -F\'|\' \'{print $1}\')\n')
-        out.writei('CDB_VAR_START=$(echo '+var_id+' | awk -F\'|\' \'{print $2}\')\n')
-        out.writei('CDB_VAR_END=$(echo '+var_id+' | awk -F\'|\' \'{print $3}\')\n')
-        out.writei('CDB_TIME_STEPS=$(echo $(seq $((CDB_VAR_START+1)) $((CDB_VAR_END+1))) | tr \' \' \',\')\n')
-        out.writei('CDO_RETRIEVAL_SCRIPT="${CDO_RETRIEVAL_SCRIPT} -selname,'+var_name+' -seltimestep,${CDB_TIME_STEPS} $CDB_VAR"\n')
+        if not self.variable_list[var_name][0] in ['fx','clim']:
+            var_id = '$CDB_'+var_name+'_'+'_'.join(self.variable_list[var_name])
+            out.writei('#Creating retrieval for {0}\n'.format(var_name))
+            out.writei('CDB_VAR=$(echo '+var_id+'| awk -F\'|\' \'{print $1}\')\n')
+            out.writei('CDB_VAR_START=$(echo '+var_id+' | awk -F\'|\' \'{print $2}\')\n')
+            out.writei('CDB_VAR_END=$(echo '+var_id+' | awk -F\'|\' \'{print $3}\')\n')
+            out.writei('CDB_TIME_STEPS=$(echo $(seq $((CDB_VAR_START+1)) $((CDB_VAR_END+1))) | tr \' \' \',\')\n')
+            out.writei('CDO_RETRIEVAL_SCRIPT="${CDO_RETRIEVAL_SCRIPT} -selname,'+var_name+' -seltimestep,${CDB_TIME_STEPS} $CDB_VAR"\n')
     return self
 
 def end_monthly_loop(self,out,line):
@@ -291,9 +292,9 @@ def end_monthly_loop(self,out,line):
     elif self.m_async == 1:
         out.writei('for SCRIPT in $(ls ${CDB_TEMP_DIR}/script_????_??.sh); do bash $SCRIPT > ${CDB_OUT_DIR}/${CDB_OUT_FILE}.out 2>&1; rm $SCRIPT; done\n')
     else:
-        out.writei('ls ${CDB_TEMP_DIR}/script_????_??.sh | parallel --tmpdir ${CDB_OUT_DIR} -k -j'+str(self.m_async)+' "bash {}; rm {}" > ${CDB_OUT_DIR}/${CDB_OUT_FILE}.out 2>&1 &\n')
-        out.writei('pid=${!}\n')
-        out.writei('${CDB_SOURCE_DIR}/parallel_ramdisk.sh $pid ${CDB_TEMP_DIR}\n')
+        out.writei('ls ${CDB_TEMP_DIR}/script_????_??.sh | parallel --tmpdir ${CDB_OUT_DIR} -k -j'+str(self.m_async)+' "bash {}; rm {}" > ${CDB_OUT_DIR}/${CDB_OUT_FILE}.out 2>&1 \n')
+        #out.writei('pid=${!}\n')
+        #out.writei('${CDB_SOURCE_DIR}/parallel_ramdisk.sh $pid ${CDB_TEMP_DIR}\n')
         out.writei('rm ${CDB_TEMP_DIR}/script_????_??.sh\n')
     return self
 
