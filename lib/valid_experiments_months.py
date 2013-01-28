@@ -59,10 +59,6 @@ def find_months_opendap(session,file_expt,path_name,frequency):
     #If the file is local  or opendap, it is queryable and we can recover the
     #indices corresponding to the month. It is slower but it allows for a fast implementation
     #of scripts over a distant connection.
-    year_axis, month_axis = get_year_axis(path_name)
-    if year_axis is None or month_axis is None:
-        #File could not be opened and should be excluded from analysis
-        return
 
     if frequency in ['fx','clim']:
         #If the time axis is fixed or it is a climatology, do nothing:
@@ -72,6 +68,11 @@ def find_months_opendap(session,file_expt,path_name,frequency):
         setattr(file_expt_copy,'month',str(0))
         session.add(file_expt_copy)
         session.commit()
+        return
+
+    year_axis, month_axis = get_year_axis(path_name)
+    if year_axis is None or month_axis is None:
+        #File could not be opened and should be excluded from analysis
         return
 
     #Record the indices per month:
@@ -157,7 +158,7 @@ def intersection(paths_dict,diag_tree_desc, diag_tree_desc_final):
         for model in model_list_var:
             missing_vars=[]
             for var_name in paths_dict['diagnostic']['variable_list'].keys():
-                if paths_dict['diagnostic']['variable_list'][var_name][0]!='fx':
+                if not paths_dict['diagnostic']['variable_list'][var_name][0] in ['fx','clim']:
                             #Do this without fx variables:
                             conditions=[
                                          File_Expt.var==var_name,
@@ -220,7 +221,7 @@ def intersection(paths_dict,diag_tree_desc, diag_tree_desc_final):
                         years_list=range(*years_range)
                         years_list.append(years_range[1])
 
-                        if item.frequency!='fx':
+                        if not item.frequency in ['fx','clim']:
                             #Works if the variable is not fx:
                             if item.rip==model[2]:
                                 if int(item.year) in years_list:
