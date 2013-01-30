@@ -233,6 +233,7 @@ def start_monthly_loop(self,out,line):
     #Next we generate a script line that can be used in CDO:
     out.writei('#Create a cdo retrieval script:\n')
     out.writei('CDO_RETRIEVAL_SCRIPT=""\n')
+    out.writei('if [ -z "$CDB_TIME_OFFSET" ]; then CDB_TIME_OFFSET=0; fi\n')
     for var_name in self.variable_list.keys():
         if not self.variable_list[var_name][0] in ['fx','clim']:
             var_id = '$CDB_'+var_name+'_'+'_'.join(self.variable_list[var_name])
@@ -240,7 +241,7 @@ def start_monthly_loop(self,out,line):
             out.writei('CDB_VAR=$(echo '+var_id+'| awk -F\'|\' \'{print $1}\')\n')
             out.writei('CDB_VAR_START=$(echo '+var_id+' | awk -F\'|\' \'{print $2}\')\n')
             out.writei('CDB_VAR_END=$(echo '+var_id+' | awk -F\'|\' \'{print $3}\')\n')
-            out.writei('CDB_TIME_STEPS=$(echo $(seq $((CDB_VAR_START+1)) $((CDB_VAR_END+1))) | tr \' \' \',\')\n')
+            out.writei('CDB_TIME_STEPS=$(echo $(seq $((CDB_VAR_START+1-CDB_TIME_OFFSET)) $((CDB_VAR_END+1+CDB_TIME_OFFSET))) | tr \' \' \',\')\n')
             out.writei('CDO_RETRIEVAL_SCRIPT="${CDO_RETRIEVAL_SCRIPT} -selname,'+var_name+' -seltimestep,${CDB_TIME_STEPS} $CDB_VAR"\n')
     return self
 
@@ -412,9 +413,9 @@ def main():
                 experiment.prepare_scripts()
 
                 if options.run:
-                    print 'Not implemented yet'
+                    print 'Option run is not implemented yet'
                 elif options.submit:
-                    print 'Not implemented yet'
+                    print 'Option submit is Not implemented yet'
 
     if not options.run and not options.submit:
         print 'Scripts are available in '+options.runscripts_dir
