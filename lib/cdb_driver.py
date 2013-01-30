@@ -289,9 +289,7 @@ def end_monthly_loop(self,out,line):
 
     #Process the monthly_scripts
     if self.debug:
-        out.writei('for SCRIPT in $(ls ${CDB_TEMP_DIR}/script_????_??.sh); do bash $SCRIPT; rm $SCRIPT; done\n')
-    elif self.m_async == 1:
-        out.writei('for SCRIPT in $(ls ${CDB_TEMP_DIR}/script_????_??.sh); do bash $SCRIPT > ${CDB_OUT_DIR}/${CDB_OUT_FILE}.out 2>&1; rm $SCRIPT; done\n')
+        out.writei('ls ${CDB_TEMP_DIR}/script_????_??.sh | parallel --tmpdir ${CDB_OUT_DIR} --tty "bash {}; rm {}"\n')
     else:
         out.writei('ls ${CDB_TEMP_DIR}/script_????_??.sh | parallel --tmpdir ${CDB_OUT_DIR} -k -j'+str(self.m_async)+' "bash {}; rm {}" > ${CDB_OUT_DIR}/${CDB_OUT_FILE}.out 2>&1 \n')
         #out.writei('pid=${!}\n')
@@ -324,7 +322,7 @@ def main():
     setup_group=parser.add_argument_group("Setup","These options must be set when using this script")
     setup_group.add_argument("--debug",dest="debug",
                       default=False, action="store_true",
-                      help="Debug flag. Disables options --m_async and --dim_async.")
+                      help="Debug flag. Disables option --m_async.")
     setup_group.add_argument("--run",dest="run",
                       default=False, action="store_true",
                       help="Launches the scripts.")
@@ -337,6 +335,10 @@ def main():
     proc_group=parser.add_argument_group("Processing",
                             "Use these options to set parallelized options.\n\
                              BEWARE! Asynchronous options are largely untested!")
+    proc_group.add_argument("--m_async",dest="m_async",
+                      default=1,
+                      help="Uses the specified # of processors for the asynchronous processing of months.\n\
+                            be used with --dim_async. Requires NCO version 4.0.0 and above, gnu-parallel.")
     proc_group.add_argument("-P","--pbs_expt",dest="pbs_expt",
                       default=False, action="store_true",
                       help="Prepare a pbs header for each model/run_id/experiment")
@@ -349,24 +351,8 @@ def main():
     proc_group.add_argument("--submit",dest="submit",
                       default=False, action="store_true",
                       help="Submit scripts to the PBS queue")
-    proc_group.add_argument("--m_async",dest="m_async",
-                      default=1,
-                      help="Uses the specified # of processors for the asynchronous processing of months.\n\
-                            Cannot be used with --dim_async. Requires NCO version 4.0.0 and above, gnu-parallel.")
-    proc_group.add_argument("--dim_async",dest="dim_async",
-                      default=1,
-                      help="Uses the specified # of processors in dimension splitting.\n\
-                            Cannot be used with --m_async. Requires NCO version 4.0.0 and above, gnu-parallel.")
 
     options = parser.parse_args()
-
-    #Disable asynchronous computing if debugging
-    if options.debug:
-        options.m_async=1
-        options.dim_async=1
-
-    if options.m_async>1 and options.dim_async>1:
-        raise IOError('Can only specify M_ASYNC>1 or --DIM_ASYNC>1, but not both.')
 
     #Load diagnostic description file:
     if options.diag_header[-3:]=='.gz':
@@ -413,9 +399,9 @@ def main():
                 experiment.prepare_scripts()
 
                 if options.run:
-                    print 'Option run is not implemented yet'
+                    print 'Not implemented yet'
                 elif options.submit:
-                    print 'Option submit is Not implemented yet'
+                    print 'Not implemented yet'
 
     if not options.run and not options.submit:
         print 'Scripts are available in '+options.runscripts_dir
