@@ -4,7 +4,6 @@ import shutil
 import argparse 
 import textwrap
 import json
-import parallel_driver
 
 class Open_With_Indent:
     """This class creates an open file were indentation is tracked"""
