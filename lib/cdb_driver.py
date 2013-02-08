@@ -34,10 +34,6 @@ class Experiment_Setup:
         if 'years' in dir(self):
             self.years=self.years.split(',')
 
-        #For parallel option:
-        self.parallel_dimension=None
-        self.parallel_dimension_number=0
-
     def prepare_scripts(self):
         """ Prepares the scripts for bash launch """
     
@@ -103,12 +99,9 @@ class Experiment_Setup:
         script_file=open(self.diagnostic_dir+'/'+self.diagnostic+'.sh','r')
 
         #Define instructions:
-        parallel_dimension=None
         instructions={
                       '#!START MONTH LOOP' : start_monthly_loop,
-                      '#!END MONTH LOOP' : end_monthly_loop,
-                      '#!PARALLEL' : parallel_driver.start_parallel_instance,
-                      '#!END PARA' : parallel_driver.end_parallel_instance
+                      '#!END MONTH LOOP' : end_monthly_loop
                     }
 
         #Loop through lines:
