@@ -91,5 +91,6 @@ def experiment_variable_search(session,file_expt,search_path,file_type_list,expe
                         #Create database entry:
                         database_utils.create_entry(session,file_expt_copy,keys_dict)
 
+    print 'Done searching for variable '+var_name
     return
 
