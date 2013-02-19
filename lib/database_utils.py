@@ -86,8 +86,10 @@ def create_database_from_tree(session,file_expt,paths_dict,top_name,propagated_v
             find_function(session,file_expt_copy,value,top_name,propagated_values)
     return
 
-def slice_data(options,paths_dict):
+def slice_data(paths_dict,options):
     #Removes branches of a tree
+    new_paths_dict=paths_dict
+
     if isinstance(paths_dict,dict):
         if '_name' not in paths_dict.keys():
             raise IOError('Dictionnary passed to slice_data must have a _name entry at each level except the last')
@@ -95,13 +97,51 @@ def slice_data(options,paths_dict):
         level_name=paths_dict['_name']
 
         #Delete the values that were not mentioned:
-        if level_name in dir(options):
-            for value in paths_dict.keys():
-                if value[0]!='_' and (value!=getattr(options,level_name)):
-                    del paths_dict[value]
 
-        for value in paths_dict.keys():
-                if value[0]!='_':
-                    paths_dict[value]=slice_data(options,paths_dict[value])
+        if level_name in [opt for opt in dir(options) if getattr(options,opt)]:
+            for value in paths_dict.keys():
+                if value[0]!='_' and (value!=str(getattr(options,level_name))):
+                    del new_paths_dict[value]
+
+        for value in new_paths_dict.keys():
+            if value[0]!='_':
+                new_paths_dict[value]=slice_data(new_paths_dict[value],options)
+    return new_paths_dict
+
+def unique_tree(paths_dict,diag_desc):
+    #Simplifies the output tree to make it unique:
+    if isinstance(paths_dict,dict):
+        if '_name' in paths_dict.keys():
+            #Read the level name:
+            level_name=paths_dict['_name']
+            if level_name=='version':
+                #the 'version' field is peculiar. Here, we use the most recent, or largest version number:
+                version_list=[int(version[1:]) for version in paths_dict.keys() if version[0]!='_']
+
+                #Keep only the last version:
+                for version in version_list:
+                    if version != max(version_list):
+                        del paths_dict['v'+str(version)]
+
+                version='v'+str(max(version_list))
+                paths_dict[version]=unique_tree(paths_dict[version],diag_desc)
+            elif level_name+'_list' in diag_desc.keys(): 
+                #The level was not specified but an ordered list was provided in the diagnostic header.
+                #Go through the list and pick the first avilable one:
+                level_ordering=[level for level in diag_desc[level_name+'_list'] if level in paths_dict.keys()]
+
+                #Keep only the first:
+                if len(level_ordering)>1:
+                    for level in level_ordering[1:]:
+                        del paths_dict[level]
+
+                paths_dict[level_ordering[0]]=unique_tree(paths_dict[level_ordering[0]],diag_desc)
+            else:
+                for level in paths_dict.keys():
+                    if level[0]!='_':
+                        paths_dict[level]=unique_tree(paths_dict[level],diag_desc)
+        else:
+            for level in paths_dict.keys():
+                if level[0]!='_':
+                    paths_dict[level]=unique_tree(paths_dict[level],diag_desc)
     return paths_dict
-    
