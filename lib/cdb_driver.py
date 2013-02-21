@@ -211,15 +211,14 @@ def start_monthly_loop(self,out,line):
     out.writei('#Retrieve path names to data:\n')
     for var_name in self.variable_list.keys():
         if self.variable_list[var_name][0]!='fx':
-            retrieval_string='${CDB_CENTER} ${CDB_MODEL} ${CDB_EXPT} ${CDB_RUN_ID} '
+            retrieval_string='--center=${CDB_CENTER} --model=${CDB_MODEL} --experiment=${CDB_EXPT} --rip=${CDB_RUN_ID} '
         else:
-            retrieval_string='${CDB_CENTER} ${CDB_MODEL} ${CDB_EXPT} r0i0p0 '
-        retrieval_string+=var_name+' '
-        retrieval_string+=' '.join(self.variable_list[var_name])
-        retrieval_string+=' ${CDB_YEAR} ${CDB_MONTH}'
+            retrieval_string='--center=${CDB_CENTER} --model=${CDB_MODEL} --experiment=${CDB_EXPT} --rip=r0i0p0 '
+        retrieval_string+='--var='+var_name+' '
+        retrieval_string+=' '.join(['='.join(item) for item in zip(['--frequency','--realm','--mip'],self.variable_list[var_name])])
+        retrieval_string+=' --year=${CDB_YEAR} --month=${CDB_MONTH}'
         retrieval_string+=' ${CDB_DIAG_HEADER}'
-        out.writei('export CDB_'+var_name+'_'+'_'.join(self.variable_list[var_name])+'=$(cdb_query_archive retrieve '+retrieval_string+')\n')
-        out.writei('export CDB_'+var_name+'_'+'_'.join(self.variable_list[var_name])+'_TYPE=$(cdb_query_archive retrieve -f '+retrieval_string+')\n')
+        out.writei('export CDB_'+var_name+'_'+'_'.join(self.variable_list[var_name])+'=$(cdb_query_archive list_paths '+retrieval_string+')\n')
     out.writei('\n')
 
     #Next we generate a script line that can be used in CDO:

@@ -26,38 +26,37 @@ def descend_tree(search_path,file_type_list,variable_list,experiment_list,diag_t
 
 def experiment_variable_search(session,file_expt,search_path,file_type_list,experiment,var_name,frequency,realm,mip):
 
-    #conn = SearchConnection(search_path, distrib=False)
-    conn = SearchConnection(search_path, distrib=True)
+    print 'Searching path ', search_path
+    conn = SearchConnection(search_path, distrib=False)
+    #conn = SearchConnection(search_path, distrib=True)
 
     #Search the ESGF:
-    ctx = conn.new_context()
-    ctx = ctx.constrain(project='CMIP5',
+    ctx = conn.new_context(project='CMIP5',
                         experiment=experiment,
                         time_frequency=frequency,
                         realm=realm,
-                        cmor_table=mip,
-                        variable=var_name)
+                        cmor_table=mip)
 
     keys_dict={}
     keys_dict['experiment']=experiment
     keys_dict['var']=var_name
     keys_dict['realm']=realm
     keys_dict['frequency']=frequency
-    #Should put this constraint in the search but we put it explicitly...
 
     remote_file_types=['HTTPServer','GridFTP']
-    for result in ctx.search():
+    for result in ctx.search(variable=var_name):
         if len(set(file_type_list).intersection(set(remote_file_types)))>0:
             #If remote file types were requested
             fil_ctx = result.file_context()
-            fil = fil_ctx.search()
+            fil = fil_ctx.search(variable=var_name)
+            #fil = fil_ctx.search()
             for item in fil:
-                variable=item.filename.split('_')[0]
-                if variable==var_name:
-                    for key in item.urls.viewkeys():
-                        if key in file_type_list:
-                            url_name = item.urls[key][0][0]
-                            file_description=url_name.split('/')[-10:-1]
+                for key in item.urls.viewkeys():
+                    if key in file_type_list:
+                        url_name = item.urls[key][0][0]
+                        file_description=url_name.split('/')[-10:-1]
+                        known_description=[ file_description[ind] for ind in [2,3,4,5,8] ]
+                        if known_description==[experiment,frequency,realm,mip,var_name]:
                             file_expt_copy = copy.deepcopy(file_expt)
                             keys_dict['path']=url_name
                             keys_dict['file_type']=key
@@ -72,7 +71,8 @@ def experiment_variable_search(session,file_expt,search_path,file_type_list,expe
         if 'OPeNDAP' in file_type_list:
             #OPeNDAP files were requested:
             agg_ctx = result.aggregation_context()
-            agg = agg_ctx.search()
+            agg = agg_ctx.search(variable=var_name)
+            #agg = agg_ctx.search()
             for item in agg:
                 file_description=item.json['title'].split('.aggregation')[0].split('.')
                 variable=file_description[-2]

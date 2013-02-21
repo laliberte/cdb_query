@@ -66,7 +66,7 @@ def create_tree(item,diag_tree_desc,paths_dict):
 def create_database_from_tree(session,file_expt,paths_dict,top_name,propagated_values,find_function,tree_desc):
     #Recursively creates a database from tree:
     if isinstance(paths_dict,dict):
-        for value in paths_dict.keys():
+        for value in [key for key in paths_dict.keys() if key]:
             if value[0] != '_':
                 file_expt_copy = copy.deepcopy(file_expt)
                 setattr(file_expt_copy,paths_dict['_name'],value)

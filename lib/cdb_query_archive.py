@@ -123,7 +123,7 @@ def retrieval(paths_dict,options):
     
     #Go down the tree and retrieve requested fields:
     path_names=tree_retrieval(sliced_paths_dict['data_pointers'],options)
-    for path in set(path_names):
+    for path in sorted(set(path_names)):
         print path
     return
 
