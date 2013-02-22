@@ -97,16 +97,41 @@ def slice_data(paths_dict,options):
         level_name=paths_dict['_name']
 
         #Delete the values that were not mentioned:
-
         if level_name in [opt for opt in dir(options) if getattr(options,opt)]:
-            for value in paths_dict.keys():
-                if value[0]!='_' and (value!=str(getattr(options,level_name))):
+            for value in [item for item in paths_dict.keys() if item[0]!='_']:
+                if (value!=str(getattr(options,level_name))):
                     del new_paths_dict[value]
 
-        for value in new_paths_dict.keys():
-            if value[0]!='_':
-                new_paths_dict[value]=slice_data(new_paths_dict[value],options)
+        list_of_remaining_values=[item for item in new_paths_dict.keys() if item[0]!='_']
+        #Loop over the remaining values:
+        for value in list_of_remaining_values:
+            new_entries=slice_data(new_paths_dict[value],options)
+            if new_entries:
+                new_paths_dict[value]=new_entries
+            else:
+                #if the slicing returned None, delete this entry:
+                del new_paths_dict[value]
+
+        #Check the remaining values:
+        list_of_remaining_values=[item for item in new_paths_dict.keys() if item[0]!='_']
+        if len(list_of_remaining_values)==0:
+            new_paths_dict=None
     return new_paths_dict
+
+def list_level(paths_dict,options,level_to_list):
+    if isinstance(paths_dict,dict):
+        if '_name' not in paths_dict.keys():
+            raise IOError('Dictionnary passed to list_level must have a _name entry at each level except the last')
+
+        level_name=paths_dict['_name']
+        if level_to_list==level_name:
+            list_of_names=[item for item in paths_dict.keys() if item[0]!='_']
+        else:
+            for value in [item for item in paths_dict.keys() if item[0]!='_']:
+                list_of_names=list_level(paths_dict[value],options,level_to_list)
+    else:
+        raise IOError('level_to_list in list_level does not exist in the passed dictionnary')
+    return list_of_names
 
 def unique_tree(paths_dict,diag_desc):
     #Simplifies the output tree to make it unique:

@@ -135,6 +135,8 @@ def tree_retrieval(paths_dict,options):
         level_name=paths_dict['_name']
         for level in paths_dict.keys():
             if level[0]!='_':
+                if level_name in dir(options):
+                    setattr(options,level_name,level)
                 path_names.extend(tree_retrieval(paths_dict[level],options))
     else:
         path_names=[paths_dict[0]]
@@ -153,16 +155,15 @@ def slice_data(paths_dict,options):
     paths_dict['data_pointers']=database_utils.slice_data(paths_dict['data_pointers'],options)
 
     #Remove the simulations that were excluded:
-    specified_options=[opt for opt in dir(options) if getattr(options,opt)]
-    simulation_desc=['center','model','rip']
-    intersection_simulations=set(simulation_desc).intersection(specified_options)
-    simulations_list=copy.copy(paths_dict['simulations_list'])
-    if len(intersection_simulations)>0:
-        for simulation in paths_dict['simulations_list']:
-            for desc in intersection_simulations:
-                if simulation.split('_')[simulation_desc.index(desc)]!=getattr(options,desc):
-                    simulations_list.remove(simulation)
-                    break
+    simulations_list=[]
+    for center in database_utils.list_level(paths_dict['data_pointers'],options,'center'):
+        setattr(options,'center',center)
+        center_paths=database_utils.slice_data(paths_dict['data_pointers'],options)
+        for model in database_utils.list_level(center_paths,options,'model'):
+            setattr(options,'model',model)
+            model_paths=database_utils.slice_data(center_paths,options)
+            for rip in database_utils.list_level(center_paths,options,'rip'):
+                simulations_list.append('_'.join([center,model,rip]))
     paths_dict['simulations_list']=simulations_list
 
     return paths_dict
@@ -266,8 +267,7 @@ def main():
     #List data
     list_parser=subparsers.add_parser('list_paths',
                                            help='List paths (on file system or url) to files containing:\n\
-                                                 a set of variables from a single month, year, model, experiment.\n\
-                                                 It retrieves the latest version.',
+                                                 ',
                                            )
     function_command['list_paths']=retrieval
     for arg in slicing_args.keys():

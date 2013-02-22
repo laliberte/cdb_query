@@ -58,7 +58,7 @@ def experiment_variable_search(session,file_expt,search_path,file_type_list,expe
                         known_description=[ file_description[ind] for ind in [2,3,4,5,8] ]
                         if known_description==[experiment,frequency,realm,mip,var_name]:
                             file_expt_copy = copy.deepcopy(file_expt)
-                            keys_dict['path']=url_name
+                            keys_dict['path']=url_name+'|'+item.checksum
                             keys_dict['file_type']=key
                             keys_dict['center']=file_description[0]
                             keys_dict['model']=file_description[1]
