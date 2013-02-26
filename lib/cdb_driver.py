@@ -34,16 +34,17 @@ class Experiment_Setup:
         if 'years' in dir(self):
             self.years=self.years.split(',')
 
-    def prepare_scripts(self):
-        """ Prepares the scripts for bash launch """
-    
-        runscript_file=self.runscripts_dir+'/'+'_'.join([self.diagnostic,
+        self.runscript_file=self.runscripts_dir+'/'+'_'.join([self.diagnostic,
                                                             self.model,
                                                             self.center,
                                                             self.run_id,
                                                             self.experiment,
                                                             '-'.join(self.years)])
-        out=Open_With_Indent(runscript_file,'w')
+
+    def prepare_scripts(self):
+        """ Prepares the scripts for bash launch """
+    
+        out=Open_With_Indent(self.runscript_file,'w')
 
         out.writei('#!/bin/bash\n')
         if self.pbs_expt:
@@ -390,9 +391,9 @@ def main():
                 experiment.prepare_scripts()
 
                 if options.run:
-                    print 'Not implemented yet'
+                    os.system('bash '+experiment.runscript_file)
                 elif options.submit:
-                    print 'Not implemented yet'
+                    os.system('qsub '+experiment.runscript_file)
 
     if not options.run and not options.submit:
         print 'Scripts are available in '+options.runscripts_dir

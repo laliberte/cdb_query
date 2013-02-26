@@ -1,5 +1,6 @@
 import sqlalchemy
 import sqlalchemy.orm
+import numpy as np
 
 import copy
 
@@ -35,33 +36,34 @@ def create_entry(session,file_expt,keys_dict):
     session.commit()
 
 def create_tree(item,diag_tree_desc,paths_dict):
+    new_paths_dict=paths_dict
     #This function recursively creates the output dictionary from one database entry:
     if len(diag_tree_desc)>1 and isinstance(diag_tree_desc,list):
         #At each call, diag_tree_desc is reduced by one element.
         #If it is a list of more than one element, we continue the recursion.
 
-        if '_name' not in paths_dict.keys():
+        if '_name' not in new_paths_dict.keys():
             #This branch has not been created yet, so create it:
-            paths_dict['_name']=diag_tree_desc[0]
+            new_paths_dict['_name']=diag_tree_desc[0]
         dict_name=getattr(item,diag_tree_desc[0])
 
-        if dict_name not in paths_dict.keys():
-            #This branch name has not been created it, so create it:
+        if dict_name not in new_paths_dict.keys():
+            #This branch name has not been created, so create it:
             if len(diag_tree_desc)==2:
-                paths_dict[dict_name]=[]
+                new_paths_dict[dict_name]=[]
             else:
-                paths_dict[dict_name]={}
+                new_paths_dict[dict_name]={}
         #Recursively create tree:
-        paths_dict[dict_name]==create_tree(item,diag_tree_desc[1:],paths_dict[dict_name])
+        new_paths_dict[dict_name]==create_tree(item,diag_tree_desc[1:],new_paths_dict[dict_name])
     else:
         #The end of the recursion has been reached. This is 
         #to ensure a robust implementation.
         if isinstance(diag_tree_desc,list):
             diag_tree_desc=diag_tree_desc[0]
 
-        if getattr(item,diag_tree_desc) not in paths_dict:
-            paths_dict.append(getattr(item,diag_tree_desc))
-    return paths_dict
+        if getattr(item,diag_tree_desc) not in new_paths_dict:
+            new_paths_dict.append(getattr(item,diag_tree_desc))
+    return new_paths_dict
         
 def create_database_from_tree(session,file_expt,paths_dict,top_name,propagated_values,find_function,tree_desc):
     #Recursively creates a database from tree:
@@ -90,11 +92,11 @@ def slice_data(paths_dict,options):
     #Removes branches of a tree
     new_paths_dict=paths_dict
 
-    if isinstance(paths_dict,dict):
-        if '_name' not in paths_dict.keys():
+    if isinstance(new_paths_dict,dict):
+        if '_name' not in new_paths_dict.keys():
             raise IOError('Dictionnary passed to slice_data must have a _name entry at each level except the last')
 
-        level_name=paths_dict['_name']
+        level_name=new_paths_dict['_name']
 
         #Delete the values that were not mentioned:
         if level_name in [opt for opt in dir(options) if getattr(options,opt)]:
@@ -118,7 +120,53 @@ def slice_data(paths_dict,options):
             new_paths_dict=None
     return new_paths_dict
 
+def replace_path(paths_dict,options,path_equivalence):
+    import valid_experiments_months
+    import copy
+    temp_options=copy.deepcopy(options)
+    new_paths_dict=paths_dict
+
+    if isinstance(paths_dict,dict):
+        if '_name' not in paths_dict.keys():
+            raise IOError('Dictionnary passed to replace_path must have a _name entry at each level except the last')
+
+        level_name=paths_dict['_name']
+        for value in [item for item in paths_dict.keys() if item[0]!='_']:
+            setattr(temp_options,level_name,value)
+            modified_dict, temp_options=replace_path(paths_dict[value],temp_options,path_equivalence)
+            new_paths_dict[getattr(temp_options,level_name)]=modified_dict
+            if getattr(temp_options,level_name)!=value:
+                del new_paths_dict[value]
+    else:
+        if paths_dict[0] in path_equivalence.keys(): 
+            new_path_name=path_equivalence[paths_dict[0]]
+        else:
+            new_path_name=None
+
+        if new_path_name!=None:
+            #A local copy was found. One just needs to find the indices:
+
+            if temp_options.frequency in ['fx','clim']:
+                new_paths_dict=[new_path_name]
+            else:
+                year_axis, month_axis = valid_experiments_months.get_year_axis(new_path_name)
+                if year_axis is None or month_axis is None:
+                    raise IOError('replace_path netcdf file could not be opened')
+
+                year_id = np.where(year_axis==int(temp_options.year))[0]
+                if temp_options.frequency in ['yr']:
+                    month_id=year_id
+                else:
+                    month_id = year_id[np.where(int(temp_options.month)==month_axis[year_id])[0]]
+                new_paths_dict=[new_path_name+'|'+str(np.min(month_id))+'|'+str(np.max(month_id))]
+
+            #Change the file_type to "local_file"
+            setattr(temp_options,'file_type','local_file')
+    return new_paths_dict, temp_options
+    #return new_paths_dict
+
 def list_level(paths_dict,options,level_to_list):
+    list_of_names=[]
     if isinstance(paths_dict,dict):
         if '_name' not in paths_dict.keys():
             raise IOError('Dictionnary passed to list_level must have a _name entry at each level except the last')
@@ -127,11 +175,19 @@ def list_level(paths_dict,options,level_to_list):
         if level_to_list==level_name:
             list_of_names=[item for item in paths_dict.keys() if item[0]!='_']
         else:
-            for value in [item for item in paths_dict.keys() if item[0]!='_']:
-                list_of_names=list_level(paths_dict[value],options,level_to_list)
-    else:
-        raise IOError('level_to_list in list_level does not exist in the passed dictionnary')
-    return list_of_names
+            if level_name in dir(options):
+                slice_value=getattr(options,level_name)
+            else:
+                slice_value=None
+                
+            if slice_value==None:
+                for value in [item for item in paths_dict.keys() if item[0]!='_']:
+                    list_of_names.extend(list_level(paths_dict[value],options,level_to_list))
+            else:
+                if slice_value in [item for item in paths_dict.keys() if str(item)[0]!='_']:
+                    list_of_names=list_level(paths_dict[slice_value],options,level_to_list)
+
+    return list(sorted(set(list_of_names)))
 
 def unique_tree(paths_dict,diag_desc):
     #Simplifies the output tree to make it unique:
@@ -141,7 +197,7 @@ def unique_tree(paths_dict,diag_desc):
             level_name=paths_dict['_name']
             if level_name=='version':
                 #the 'version' field is peculiar. Here, we use the most recent, or largest version number:
-                version_list=[int(version[1:]) for version in paths_dict.keys() if version[0]!='_']
+                version_list=[int(version[1:]) for version in paths_dict.keys() if str(version)[0]!='_']
 
                 #Keep only the last version:
                 for version in version_list:
@@ -150,7 +206,7 @@ def unique_tree(paths_dict,diag_desc):
 
                 version='v'+str(max(version_list))
                 paths_dict[version]=unique_tree(paths_dict[version],diag_desc)
-            elif level_name+'_list' in diag_desc.keys(): 
+            elif level_name+'_list' in diag_desc.keys() and isinstance(diag_desc[level_name+'_list'],list):
                 #The level was not specified but an ordered list was provided in the diagnostic header.
                 #Go through the list and pick the first avilable one:
                 level_ordering=[level for level in diag_desc[level_name+'_list'] if level in paths_dict.keys()]
@@ -163,10 +219,10 @@ def unique_tree(paths_dict,diag_desc):
                 paths_dict[level_ordering[0]]=unique_tree(paths_dict[level_ordering[0]],diag_desc)
             else:
                 for level in paths_dict.keys():
-                    if level[0]!='_':
+                    if str(level)[0]!='_':
                         paths_dict[level]=unique_tree(paths_dict[level],diag_desc)
         else:
             for level in paths_dict.keys():
-                if level[0]!='_':
+                if str(level)[0]!='_':
                     paths_dict[level]=unique_tree(paths_dict[level],diag_desc)
     return paths_dict

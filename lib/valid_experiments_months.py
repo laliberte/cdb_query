@@ -178,14 +178,14 @@ def intersection(paths_dict,diag_tree_desc, diag_tree_desc_final):
                             if not set(months_list).issubset(months_list_var):
                                 missing_vars.append(var_name+':'+','.join(
                                                     paths_dict['diagnostic']['variable_list'][var_name])+
-                                                    ' for some months in years:'+','.join(
+                                                    ' for some months in years: '+','.join(
                                                     sorted(set(str(year) for (year,month) in set(months_list).difference(months_list_var)))
                                                     )
                                                    )
             if len(missing_vars)>0:
-               print('_'.join(model)),
-               print(', experiment '+experiment+' is missing '),
-               print(missing_vars)
+               #print('\nThe reasons why some simulations were excluded:')
+               print('_'.join(model)+' excluded because experiment '+experiment+' is missing variables:\n'),
+               for item in missing_vars: print(item)
                model_list.remove(model)
 
     #Step two: create the new paths dictionary:
