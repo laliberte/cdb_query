@@ -5,6 +5,8 @@ import argparse
 import textwrap
 import json
 
+import cdb_query_archive
+
 class Open_With_Indent:
     """This class creates an open file were indentation is tracked"""
 
@@ -37,7 +39,7 @@ class Experiment_Setup:
         self.runscript_file=self.runscripts_dir+'/'+'_'.join([self.diagnostic,
                                                             self.model,
                                                             self.center,
-                                                            self.run_id,
+                                                            self.rip,
                                                             self.experiment,
                                                             '-'.join(self.years)])
 
@@ -52,9 +54,9 @@ class Experiment_Setup:
 	    if self.queue != None: out.writei('#PBS -q {0}\n'.format(self.queue))
             #out.writei('#PBS -l nodes=1:ppn={0},walltime={1}\n'.format(max(self.dim_async,self.m_async),self.walltime))
             out.writei('#PBS -l nodes=1:ppn={0}\n'.format(max(self.dim_async,self.m_async)))
-            out.writei('#PBS -N {0}_{1}_{2}_{3}_{4}\n'.format(self.years[0],self.years[1],self.model,self.run_id,self.experiment))
-            out.writei('#PBS -o {5}/pbs_out/{0}_{1}_{2}_{3}_{4}\n'.format(self.years[0],self.years[1],self.model,self.run_id,self.experiment,self.output_dir))
-            out.writei('#PBS -e {5}/pbs_err/{0}_{1}_{2}_{3}_{4}\n'.format(self.years[0],self.years[1],self.model,self.run_id,self.experiment,self.output_dir))
+            out.writei('#PBS -N {0}_{1}_{2}_{3}_{4}\n'.format(self.years[0],self.years[1],self.model,self.rip,self.experiment))
+            out.writei('#PBS -o {5}/pbs_out/{0}_{1}_{2}_{3}_{4}\n'.format(self.years[0],self.years[1],self.model,self.rip,self.experiment,self.output_dir))
+            out.writei('#PBS -e {5}/pbs_err/{0}_{1}_{2}_{3}_{4}\n'.format(self.years[0],self.years[1],self.model,self.rip,self.experiment,self.output_dir))
 
         #Put the header to the diagnostic:
         out.writei('\n')
@@ -67,7 +69,7 @@ class Experiment_Setup:
         out.writei('CDB_YEARS="{0},{1}"\n'.format(self.years[0],self.years[1]))
         out.writei('export CDB_MODEL="{0}"\n'.format(self.model))
         out.writei('export CDB_CENTER="{0}"\n'.format(self.center))
-        out.writei('export CDB_RUN_ID="{0}"\n'.format(self.run_id))
+        out.writei('export CDB_RUN_ID="{0}"\n'.format(self.rip))
         out.writei('export CDB_EXPT="{0}"\n'.format(self.experiment))
         out.writei('export CDB_DIAG_NAME="{0}"\n'.format(self.diagnostic))
         out.writei('export CDB_DIAG_HEADER="{0}"\n'.format(os.path.abspath(self.diag_header)))
@@ -141,7 +143,7 @@ def structure_out_with_cmip5_drs(self,out):
     out.writei('\n')
     out.writei('for CDB_VAR_NAME in $CDB_VAR_LIST; do\n')
     out.inc_indent()
-    out.writei('CDB_LOCAL_RUN_ID={0}\n'.format(self.run_id))
+    out.writei('CDB_LOCAL_RUN_ID={0}\n'.format(self.rip))
     out.writei('if [ "$CDB_FREQ" == "fx" ]; then\n')
     out.inc_indent()
     out.writei('if [ "$CDB_MIP" == "fx" ]; then\n')
@@ -318,10 +320,6 @@ def main():
     setup_group.add_argument("--run",dest="run",
                       default=False, action="store_true",
                       help="Launches the scripts.")
-    #setup_group.add_argument("--time_diff",dest="time_diff",
-    #                  default=False, action="store_true",
-    #                  help="Request the month before and the month after: allows to take a time derivative.\n\
-    #                        If the months before and after are unavailable, the script terminates.")
 
     #Processing Options
     proc_group=parser.add_argument_group("Processing",
@@ -333,7 +331,7 @@ def main():
                             be used with --dim_async. Requires NCO version 4.0.0 and above, gnu-parallel.")
     proc_group.add_argument("-P","--pbs_expt",dest="pbs_expt",
                       default=False, action="store_true",
-                      help="Prepare a pbs header for each model/run_id/experiment")
+                      help="Prepare a pbs header for each model/rip/experiment")
     proc_group.add_argument("-w","--walltime",dest="walltime",
                       default="1:00:00",
                       help="pbs job walltime. Inactive for now: Determined by queue")
@@ -378,10 +376,10 @@ def main():
         options.months_list=range(1,13)
 
     for simulation in paths_dict['simulations_list']:
-        options.center, options.model, options.run_id = simulation.split('_')
-        for experiment in diag_desc['experiment_list'].keys():
-            options.experiment=experiment
-            period_list=diag_desc['experiment_list'][experiment]
+        options.center, options.model, options.rip = simulation.split('_')
+        for exp in diag_desc['experiment_list'].keys():
+            options.experiment=exp
+            period_list=diag_desc['experiment_list'][exp]
             if not isinstance(period_list,list): period_list=[period_list]
             for period in period_list:
                 options.years=period
@@ -389,6 +387,9 @@ def main():
                 #PREPARE SCRIPTS
                 experiment = Experiment_Setup(options)
                 experiment.prepare_scripts()
+
+                options.file_type='HTTPServer'
+                print cdb_query_archive.list_unique_paths(paths_dict,options)
 
                 if options.run:
                     os.system('bash '+experiment.runscript_file)

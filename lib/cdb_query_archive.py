@@ -1,6 +1,7 @@
 import os
 #import md5
 import hashlib
+import valid_experiments_path
 
 def open_json(options):
     import json
@@ -24,75 +25,79 @@ def close_json(paths_dict,options):
     outfile.close()
     return
 
-def union_headers(diag_headers):
-    #Create the diagnostic description dictionary:
-    diag_desc={}
-    #Find all the requested realms, frequencies and variables:
-    variable_list=['var_list','frequency_list','realm_list','mip_list']
-    for list_name in variable_list: diag_desc[list_name]=[]
-    for var_name in diag_headers['variable_list'].keys():
-        diag_desc['var_list'].append(var_name)
-        for list_id, list_name in enumerate(list(variable_list[1:])):
-            diag_desc[list_name].append(diag_headers['variable_list'][var_name][list_id])
+class SimpleTree:
+    def __init__(self,tree):
+        self.pointers=dict()
+        self.header=dict()
 
-    #Find all the requested experiments and years:
-    experiment_list=['experiment_list','years_list']
-    for list_name in experiment_list: diag_desc[list_name]=[]
-    for experiment_name in diag_headers['experiment_list'].keys():
-        diag_desc['experiment_list'].append(experiment_name)
-        for list_name in list(experiment_list[1:]):
-            diag_desc[list_name].append(diag_headers['experiment_list'][experiment_name])
+        if isinstance(tree,dict):
+            if 'data_pointers' in tree.keys():
+                self.pointers=tree['data_pointers']
+            elif 'diagnostic' in tree.keys():
+                self.header=tree['diagnostic']
+
+        self.cmip5_drs=['search','center','model','experiment','frequency','realm','mip','rip','version','var']
+        return
+
+    def union_header(self):
+        #Create the diagnostic description dictionary:
+        header_desc={}
+        #Find all the requested realms, frequencies and variables:
+        variable_list=['var_list','frequency_list','realm_list','mip_list']
+        for list_name in variable_list: header_desc[list_name]=[]
+        for var_name in self.header['variable_list'].keys():
+            header_desc['var_list'].append(var_name)
+            for list_id, list_name in enumerate(list(variable_list[1:])):
+                header_desc[list_name].append(self.header['variable_list'][var_name][list_id])
+
+        #Find all the requested experiments and years:
+        experiment_list=['experiment_list','years_list']
+        for list_name in experiment_list: header_desc[list_name]=[]
+        for experiment_name in self.header['experiment_list'].keys():
+            header_desc['experiment_list'].append(experiment_name)
+            for list_name in list(experiment_list[1:]):
+                header_desc[list_name].append(self.header['experiment_list'][experiment_name])
+                
+        #Find the unique members:
+        for list_name in header_desc.keys(): header_desc[list_name]=list(set(header_desc[list_name]))
+        
+        self.header=header_desc
+        return
+
+    def find_optimset(self,options):
+        self.union_headers()
+
+        self.pointers['_name']='search'
+
+        #Local filesystem archive
+        local_paths=[search_path for search_path in 
+                        [ os.path.expanduser(os.path.expandvars(path)) for path in self.header['search_list']]
+                        if os.path.exists(search_path)]
+        for path in local_paths:
+            self.pointers[search_path]=search_filesystem(
+                                                       self.header,
+                                                       diag_tree_desc[1:],
+                                                       top_path
+                                                       )
+        #ESGF search
+        remote_paths=[search_path for search_path in self.header['search_list']
+                            if not os.path.exists(os.path.expanduser(os.path.expandvars(search_path)))]
+        for path in remote_paths:
+            self.pointers[search_path]=search_esgf(search_path,
+                                                     self.header['file_type_list'],
+                                                     self.header['variable_list'],
+                                                     self.header['experiment_list'],
+                                                     self.cmip5_drs[1:]
+                                                     )
             
-    #Find the unique members:
-    for list_name in diag_desc.keys(): diag_desc[list_name]=list(set(diag_desc[list_name]))
-    return diag_desc
+        #Find the list of center / model with all experiments and variables requested:
+        diag_tree_desc_path=[
+                                'center','model','experiment','rip','frequency','realm','mip',
+                                'var','version','search','file_type'
+                             ]
+        paths_dict=valid_experiments_path.intersection(paths_dict,diag_tree_desc,diag_tree_desc_path)
 
-#def find_optimset(diagnostic_headers_file, diagnostic_paths_file):
-def find_optimset(in_paths_dict,options):
-    import valid_experiments_path
-
-    #Attribute the loaded path description:
-    paths_dict={}
-    paths_dict['diagnostic']=in_paths_dict
-
-    #Tree description following the CMIP5 DRS:
-    diag_tree_desc=['search','center','model','experiment','frequency','realm','mip','rip',
-                    'version','var']
-    
-    #Create the diagnostic description dictionary with the union of all the requirements.
-    #This will make the description easier and allow to appply the intersection of requirements
-    #offline.
-    diag_desc=union_headers(paths_dict['diagnostic'])
-
-    #Build the simple pointers to files:
-    paths_dict['data_pointers']={}
-    paths_dict['data_pointers']['_name']='search'
-    for search_path in paths_dict['diagnostic']['search_list']:
-        top_path=os.path.expanduser(os.path.expandvars(search_path))
-        if os.path.exists(top_path):
-            #Local filesystem archive
-            paths_dict['data_pointers'][search_path]=search_filesystem(
-                                                                       diag_desc,
-                                                                       diag_tree_desc[1:],
-                                                                       top_path
-                                                                       )
-        else:
-            #ESGF search
-            paths_dict['data_pointers'][search_path]=search_esgf(search_path,
-                                                                 paths_dict['diagnostic']['file_type_list'],
-                                                                 paths_dict['diagnostic']['variable_list'],
-                                                                 paths_dict['diagnostic']['experiment_list'],
-                                                                 diag_tree_desc[1:]
-                                                                 )
-
-    #Find the list of center / model with all experiments and variables requested:
-    diag_tree_desc_path=[
-                            'center','model','experiment','rip','frequency','realm','mip',
-                            'var','version','search','file_type'
-                         ]
-    paths_dict=valid_experiments_path.intersection(paths_dict,diag_tree_desc,diag_tree_desc_path)
-
-    return paths_dict
+        return paths_dict
 
 def search_filesystem(diag_desc,diag_tree_desc,top_path):
     import filesystem_query
@@ -121,18 +126,25 @@ def find_optimset_months(paths_dict,options):
     return paths_dict
 
 def list_paths(paths_dict,options):
+    for path in list_unique_paths(paths_dict,options):
+        print path
+    return
+
+def list_unique_paths(paths_dict,options):
     sliced_paths_dict=slice_data(paths_dict,options)
     
     #Go down the tree and retrieve requested fields:
     if sliced_paths_dict['data_pointers']==None: return
 
     path_names=tree_retrieval(sliced_paths_dict['data_pointers'],options)
+    unique_paths=[]
     for path in sorted(set(path_names)):
-        if not options.wget:
-            print path
+        if 'wget' in dir(options) and options.wget:
+            unique_paths.append('\''+'/'.join(path.split('|')[0].split('/')[-10:])+'\' \''+path.split('|')[0]+'\' \'MD5\' \''+path.split('|')[1]+'\'')
         else:
-            print '\''+'/'.join(path.split('|')[0].split('/')[-10:])+'\' \''+path.split('|')[0]+'\' \'MD5\' \''+path.split('|')[1]+'\''
-    return
+            unique_paths.append(path)
+    return unique_paths
+
 
 def tree_retrieval(paths_dict,options):
     path_names=[]
