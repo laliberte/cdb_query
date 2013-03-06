@@ -35,7 +35,12 @@ class Tree:
         return level_list_data(self.tree,level_to_list)
 
     def simplify(self,diag_desc):
-            simplify_dat(self.tree,diag_desc)
+            simplify_data(self.tree,diag_desc)
+        return 
+
+    def replace_last(self,level_equivalence):
+            branch_desc=dict()
+            replace_last_level(self.tree,level_equivalence,branch_desc)
         return 
 
 def add_item_data(tree,tree_desc):
@@ -130,45 +135,44 @@ def simplify_data(tree,diag_desc):
             unique_tree(tree[level],diag_desc)
     return
 
-def replace_last_level(tree,level_equivalence):
-    import valid_experiments_months
-
+def replace_last_level(tree,level_equivalence,branch_desc):
     if isinstance(tree,dict):
         if '_name' not in tree.keys():
-            raise IOError('Dictionnary passed to replace_path must have a _name entry at each level except the last')
+            raise IOError('Dictionnary passed to replace_last_level must have a _name entry at each level except the last')
 
         level_name=tree['_name']
         for value in [item for item in tree.keys() if item[0]!='_']:
-            level_mod, level_mod_value=replace_path(tree[value],level_equivalence)
-            if level_name in level_mod:
+            branch_desc[level_name]=value
+            replace_level(tree[value],level_equivalence,branch_desc)
+            if branch_desc[level_name] != value:
                 #Change the level name if specified:
-                tree[level_mod_value[level_mod.index(level_name)]]=tree.pop(value)
+                tree[branch_desc[level_name]]=tree.pop(value)
     else:
-        if tree[0] in path_equivalence.keys(): 
-            new_path_name=path_equivalence[tree[0]]
+        if tree[0] in level_equivalence.keys(): 
+            tree=[replace_path(level_equivalence[tree[0]],branch_desc)[
+    return
+
+def replace_path(path_name,branch_desc)
+    import valid_experiments_months
+    #This function assumes the new path is local_file
+    
+    #A local copy was found. One just needs to find the indices:
+    new_path_name=path_name
+    if not branch_desc['frequency'] in ['fx','clim']:
+        year_axis, month_axis = valid_experiments_months.get_year_axis(path_name)
+        if year_axis is None or month_axis is None:
+            raise IOError('replace_path netcdf file could not be opened')
+
+        year_id = np.where(year_axis==int(temp_options.year))[0]
+        if temp_options.frequency in ['yr']:
+            month_id=year_id
         else:
-            new_path_name=None
+            month_id = year_id[np.where(int(temp_options.month)==month_axis[year_id])[0]]
+        new_path_name=[path_name+'|'+str(np.min(month_id))+'|'+str(np.max(month_id))
 
-        if new_path_name!=None:
-            #A local copy was found. One just needs to find the indices:
-
-            if temp_options.frequency in ['fx','clim']:
-                new_paths_dict=[new_path_name]
-            else:
-                year_axis, month_axis = valid_experiments_months.get_year_axis(new_path_name)
-                if year_axis is None or month_axis is None:
-                    raise IOError('replace_path netcdf file could not be opened')
-
-                year_id = np.where(year_axis==int(temp_options.year))[0]
-                if temp_options.frequency in ['yr']:
-                    month_id=year_id
-                else:
-                    month_id = year_id[np.where(int(temp_options.month)==month_axis[year_id])[0]]
-                new_paths_dict=[new_path_name+'|'+str(np.min(month_id))+'|'+str(np.max(month_id))]
-
-            #Change the file_type to "local_file"
-            setattr(temp_options,'file_type','local_file')
-    return new_paths_dict, temp_options
+    #Change the file_type to "local_file"
+    branch_desc['file_type']='local_file'
+    return new_path_name
 
 #####################################################################
 #####################################################################
