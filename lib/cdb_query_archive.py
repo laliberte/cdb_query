@@ -121,18 +121,24 @@ def find_optimset_months(paths_dict,options):
     return paths_dict
 
 def list_paths(paths_dict,options):
+    for path in list_unique_paths(paths_dict,options):
+        print path
+    return
+
+def list_unique_paths(paths_dict,options):
     sliced_paths_dict=slice_data(paths_dict,options)
     
     #Go down the tree and retrieve requested fields:
     if sliced_paths_dict['data_pointers']==None: return
 
     path_names=tree_retrieval(sliced_paths_dict['data_pointers'],options)
+    unique_paths=[]
     for path in sorted(set(path_names)):
-        if not options.wget:
-            print path
+        if 'wget' in dir(options) and options.wget:
+            unique_paths.append('\''+'/'.join(path.split('|')[0].split('/')[-10:])+'\' \''+path.split('|')[0]+'\' \'MD5\' \''+path.split('|')[1]+'\'')
         else:
-            print '\''+'/'.join(path.split('|')[0].split('/')[-10:])+'\' \''+path.split('|')[0]+'\' \'MD5\' \''+path.split('|')[1]+'\''
-    return
+            unique_paths.append(path)
+    return unique_paths
 
 def tree_retrieval(paths_dict,options):
     path_names=[]

@@ -158,6 +158,8 @@ def structure_out_with_cmip5_drs(self,out):
     out.inc_indent()
     out.writei('fx) FILE_NAME="${FILE_NAME}";;\n')
     out.writei('clim) FILE_NAME="${FILE_NAME}";;\n')
+    out.writei('3hr) FILE_NAME="${FILE_NAME}_${CDB_YEAR_START}01010000-${CDB_YEAR_END}12312100";;\n')
+    out.writei('6hr) FILE_NAME="${FILE_NAME}_${CDB_YEAR_START}01010000-${CDB_YEAR_END}12311800";;\n')
     out.writei('day) FILE_NAME="${FILE_NAME}_${CDB_YEAR_START}0101-${CDB_YEAR_END}1231";;\n')
     out.writei('mon) FILE_NAME="${FILE_NAME}_${CDB_YEAR_START}01-${CDB_YEAR_END}12";;\n')
     out.writei('yr) FILE_NAME="${FILE_NAME}_${CDB_YEAR_START}-${CDB_YEAR_END}";;\n')
@@ -224,7 +226,7 @@ def start_monthly_loop(self,out,line):
 
     #Next we generate a script line that can be used in CDO:
     out.writei('#Create a cdo retrieval script:\n')
-    out.writei('CDO_RETRIEVAL_SCRIPT=""\n')
+    out.writei('export CDO_RETRIEVAL_SCRIPT=""\n')
     out.writei('if [ -z "$CDB_TIME_OFFSET" ]; then CDB_TIME_OFFSET=0; fi\n')
     for var_name in self.variable_list.keys():
         if not self.variable_list[var_name][0] in ['fx','clim']:

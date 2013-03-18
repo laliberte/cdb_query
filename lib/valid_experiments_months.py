@@ -142,6 +142,11 @@ def intersection(paths_dict,diag_tree_desc, diag_tree_desc_final):
     #          for all months of all years for all experiments.
     model_list=[tuple(simulation.split('_')) for simulation in paths_dict['simulations_list']]
 
+    if 'months_list' in paths_dict['diagnostic'].keys():
+        diag_months_list=paths_dict['diagnostic']['months_list']
+    else:
+        diag_months_list=range(1,13)
+
     for experiment in paths_dict['diagnostic']['experiment_list'].keys():
         period_list = paths_dict['diagnostic']['experiment_list'][experiment]
         if not isinstance(period_list,list): period_list=[period_list]
@@ -152,7 +157,7 @@ def intersection(paths_dict,diag_tree_desc, diag_tree_desc_final):
             years_list.append(years_range[1])
         months_list=[]
         for year in years_list:
-            for month in range(1,13):
+            for month in diag_months_list:
                 months_list.append((year,month))
 
         model_list_var=copy.copy(model_list)
@@ -226,12 +231,12 @@ def intersection(paths_dict,diag_tree_desc, diag_tree_desc_final):
                             #Works if the variable is not fx:
                             if item.rip==model[2]:
                                 if int(item.year) in years_list:
-                                    if int(item.month) in range(1,13):
+                                    if int(item.month) in diag_months_list:
                                         new_paths_dict['data_pointers']=database_utils.create_tree(item,diag_tree_desc_final,new_paths_dict['data_pointers'])
                         else:
                             #If fx, we create the time axis for easy retrieval:
                             for year in years_list:
-                                for month in range(1,13):
+                                for month in diag_months_list:
                                     item.year=year
                                     item.month=month
                                     new_paths_dict['data_pointers']=database_utils.create_tree(item,diag_tree_desc_final,new_paths_dict['data_pointers'])
