@@ -121,8 +121,10 @@ def find_optimset_months(paths_dict,options):
     return paths_dict
 
 def list_paths(paths_dict,options):
-    for path in list_unique_paths(paths_dict,options):
-        print path
+    list_of_paths=list_unique_paths(paths_dict,options)
+    if not list_of_paths is None:
+        for path in list_of_paths:
+            print path
     return
 
 def list_unique_paths(paths_dict,options):
@@ -156,8 +158,6 @@ def tree_retrieval(paths_dict,options):
 
 def find_local(paths_dict,options):
     import database_utils
-    #Apply the user-requested slicing:
-    restricted_paths_dict=slice_data(paths_dict,options)
 
     #In the search paths, find which one are local:
     local_search_path=[ top_path for top_path in 
@@ -165,31 +165,23 @@ def find_local(paths_dict,options):
                             if os.path.exists(top_path)]
     local_search_path=[ os.path.abspath(top_path) for top_path in local_search_path]
 
-    #Find the file types in the paths_dict:
-    file_types=database_utils.list_level(restricted_paths_dict['data_pointers'],options,'file_type')
-
-    #For each remote file type, find the paths and see if a local copy exists:
+    path_names=list_unique_paths(paths_dict,options)
     path_equivalence=dict()
-    for file_type in set(file_types).intersection(['HTTPServer','GridFTP']):
-        options.file_type=file_type
-        sliced_paths_dict=slice_data(restricted_paths_dict,options)
-        path_names=sorted(set(tree_retrieval(sliced_paths_dict['data_pointers'],options)))
-    
-        for path in path_names:
-            path_equivalence[path]=None
-            for search_path in local_search_path:
-                md5checksum=path.split('|')[1]
-                path_to_file=search_path+'/'+'/'.join(path.split('|')[0].split('/')[-10:])
-                try:
-                    f=open(path_to_file)
-                    if md5_for_file(f)==md5checksum:
-                        path_equivalence[path]=path_to_file
-                        break
-                except:
-                    pass
-    options.file_type=None
-    converted_paths_dict, options=database_utils.replace_path(restricted_paths_dict['data_pointers'],options,path_equivalence)
-    restricted_paths_dict['data_pointers']=converted_paths_dict
+    for path in path_names:
+        path_equivalence[path]=None
+        for search_path in local_search_path:
+            md5checksum=path.split('|')[1]
+            path_to_file=search_path+'/'+'/'.join(path.split('|')[0].split('/')[-10:])
+            try:
+                f=open(path_to_file)
+                if md5_for_file(f)==md5checksum:
+                    path_equivalence[path]=path_to_file
+                    break
+            except:
+                pass
+
+    restricted_paths_dict=paths_dict
+    restricted_paths_dict['data_pointers'], options=database_utils.replace_path(paths_dict['data_pointers'],options,path_equivalence)
     return restricted_paths_dict
                 
 def md5_for_file(f, block_size=2**20):
@@ -310,23 +302,6 @@ def main():
                   'month': [int,'Month as an integer ranging from 1 to 12'],
                   'file_type': [str,'File type: OPEnDAP, local_file, HTTPServer, GridFTP']
                   }
-
-    #Retrieve data
-    #retrieve_parser=subparsers.add_parser('retrieve',
-    #                                       help='Retrieve a path (on file system or url) to files containing:\n\
-    #                                             a set of variables from a single month, year, model, experiment.\n\
-    #                                             It retrieves the latest version.',
-    #                                       )
-    #function_command['retrieve']=retrieval
-    #for arg in slicing_args.keys():
-    #    retrieve_parser.add_argument(arg,type=slicing_args[arg][0],help=slicing_args[arg][1])
-    #retrieve_parser.add_argument('in_diagnostic_headers_file',
-    #                             help='Diagnostic headers file with data pointers (input)')
-    #
-    #retrieve_parser.add_argument('-f','--file_type_flag',
-    #                             default=False,
-    #                             action='store_true',
-    #                             help='Prints only the file_type if selected')
 
     #List_paths
     list_parser=subparsers.add_parser('list_paths',

@@ -4,6 +4,7 @@ import shutil
 import argparse 
 import textwrap
 import json
+import cdb_query_archive
 
 class Open_With_Indent:
     """This class creates an open file were indentation is tracked"""
@@ -346,6 +347,26 @@ def main():
                       default=False, action="store_true",
                       help="Submit scripts to the PBS queue")
 
+    slicing_args={
+                  'center': [str,'Modelling center name'],
+                  'model': [str,'Model name'],
+                  'experiment': [str,'Experiment name'],
+                  'rip': [str,'RIP identifier, e.g. r1i1p1'],
+                  'var': [str,'Variable name, e.g. tas'],
+                  'frequency': [str,'Frequency, e.g. day'],
+                  'realm': [str,'Realm, e.g. atmos'],
+                  'mip': [str,'MIP table name, e.g. day'],
+                  'year': [int,'Year'],
+                  'month': [int,'Month as an integer ranging from 1 to 12'],
+                  'file_type': [str,'File type: OPEnDAP, local_file, HTTPServer, GridFTP']
+                  }
+
+    #Slicing options
+    slicing_group=parser.add_argument_group("Slicing",
+                            "Use these options to restrict the processing to a subset of models")
+    for arg in slicing_args.keys():
+        slicing_group.add_argument('--'+arg,type=slicing_args[arg][0],help=slicing_args[arg][1])
+
     options = parser.parse_args()
 
     #Load diagnostic description file:
@@ -385,6 +406,7 @@ def main():
             options.experiment=exp
             period_list=diag_desc['experiment_list'][exp]
             if not isinstance(period_list,list): period_list=[period_list]
+
             for period in period_list:
                 options.years=period
 
