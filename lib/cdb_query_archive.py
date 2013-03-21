@@ -1,7 +1,5 @@
 import os
-#import md5
 import hashlib
-import valid_experiments_path
 
 def open_json(options):
     import json
@@ -65,8 +63,9 @@ class SimpleTree:
         return
 
     def find_optimset(self,options):
-        self.union_headers()
+        import valid_experiments_path
 
+        self.union_headers()
         self.pointers['_name']='search'
 
         #Local filesystem archive
@@ -82,7 +81,7 @@ class SimpleTree:
         #ESGF search
         remote_paths=[search_path for search_path in self.header['search_list']
                             if not os.path.exists(os.path.expanduser(os.path.expandvars(search_path)))]
-        for path in remote_paths:
+        for search_path in remote_paths:
             self.pointers[search_path]=search_esgf(search_path,
                                                      self.header['file_type_list'],
                                                      self.header['variable_list'],
@@ -95,9 +94,45 @@ class SimpleTree:
                                 'center','model','experiment','rip','frequency','realm','mip',
                                 'var','version','search','file_type'
                              ]
-        paths_dict=valid_experiments_path.intersection(paths_dict,diag_tree_desc,diag_tree_desc_path)
+        self.pointers=valid_experiments_path.intersection(self.pointers,
+                                                          diag_tree_desc,
+                                                          diag_tree_desc_path
+                                                          )
+        return
 
-        return paths_dict
+    def find_optimset_months(self,options):
+        import valid_experiments_months
+        import database_utils
+        diag_tree_desc_path=[
+                                'center','model','experiment','rip','frequency','realm','mip',
+                                'var','version','search','file_type'
+                             ]
+        #Find the list of center / model with all the months for all the years / experiments and variables requested:
+        diag_tree_desc_months=[
+                                'experiment','center','model','rip','frequency','realm','mip',
+                                'var','year','month','version','file_type','search'
+                             ]
+        self.pointers=valid_experiments_months.intersection(self.pointers,
+                                                         diag_tree_desc_path,
+                                                         diag_tree_desc_months)
+
+        #Find the unique tree:
+        self.pointers=database_utils.unique_tree(self.pointers,self.headers)
+        return
+
+    def simulations_list(self,options):
+        import database_utils
+        import copy
+
+        simulations_list=[]
+        for center in self.pointers.list_level('center'):
+            setattr(temp_options,'center',center)
+            for model in database_utils.list_level(paths_dict['data_pointers'],temp_options,'model'):
+                setattr(temp_options,'model',model)
+                for rip in database_utils.list_level(paths_dict['data_pointers'],temp_options,'rip'):
+                    if rip!='r0i0p0':
+                        simulations_list.append('_'.join([center,model,rip]))
+        return simulations_list
 
 def search_filesystem(diag_desc,diag_tree_desc,top_path):
     import filesystem_query
@@ -106,24 +141,6 @@ def search_filesystem(diag_desc,diag_tree_desc,top_path):
 def search_esgf(search_path,file_type_list,variable_list,experiment_list,diag_tree_desc):
     import esgf_query
     return esgf_query.descend_tree(search_path,file_type_list,variable_list,experiment_list,diag_tree_desc)
-
-def find_optimset_months(paths_dict,options):
-    import valid_experiments_months
-    import database_utils
-    diag_tree_desc_path=[
-                            'center','model','experiment','rip','frequency','realm','mip',
-                            'var','version','search','file_type'
-                         ]
-    #Find the list of center / model with all the months for all the years / experiments and variables requested:
-    diag_tree_desc_months=[
-                            'experiment','center','model','rip','frequency','realm','mip',
-                            'var','year','month','version','file_type','search'
-                         ]
-    paths_dict=valid_experiments_months.intersection(paths_dict,diag_tree_desc_path,diag_tree_desc_months)
-
-    #Find the unique tree:
-    paths_dict=database_utils.unique_tree(paths_dict,paths_dict['diagnostic'])
-    return paths_dict
 
 def list_paths(paths_dict,options):
     for path in list_unique_paths(paths_dict,options):
@@ -207,10 +224,6 @@ def md5_for_file(f, block_size=2**20):
         md5.update(data)
     return md5.hexdigest()
 
-def simulations(paths_dict,options):
-    for item in paths_dict['simulations_list']:
-        print item
-    return
 
 def slice_data(paths_dict,options):
     import database_utils
@@ -224,19 +237,6 @@ def slice_data(paths_dict,options):
     new_paths_dict['simulations_list']=simulations_list(new_paths_dict,options)
     return new_paths_dict
 
-def simulations_list(paths_dict,options):
-    import database_utils
-    import copy
-    temp_options=copy.deepcopy(options)
-    simulations_list=[]
-    for center in database_utils.list_level(paths_dict['data_pointers'],temp_options,'center'):
-        setattr(temp_options,'center',center)
-        for model in database_utils.list_level(paths_dict['data_pointers'],temp_options,'model'):
-            setattr(temp_options,'model',model)
-            for rip in database_utils.list_level(paths_dict['data_pointers'],temp_options,'rip'):
-                if rip!='r0i0p0':
-                    simulations_list.append('_'.join([center,model,rip]))
-    return simulations_list
 
 def main():
     import argparse 
