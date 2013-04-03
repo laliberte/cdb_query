@@ -197,15 +197,15 @@ def unique_tree(paths_dict,diag_desc):
             level_name=paths_dict['_name']
             if level_name=='version':
                 #the 'version' field is peculiar. Here, we use the most recent, or largest version number:
-                version_list=[int(version[1:]) for version in paths_dict.keys() if str(version)[0]!='_']
+                version_list=[version[1:] for version in paths_dict.keys() if str(version)[0]!='_' ]
 
+                max_version=max([int(version) for version in version_list if version.isdigit()])
                 #Keep only the last version:
                 for version in version_list:
-                    if version != max(version_list):
-                        del paths_dict['v'+str(version)]
+                    if version != str(max_version):
+                        del paths_dict['v'+version]
 
-                version='v'+str(max(version_list))
-                paths_dict[version]=unique_tree(paths_dict[version],diag_desc)
+                paths_dict[version]=unique_tree(paths_dict['v'+str(max_version)],diag_desc)
             elif level_name+'_list' in diag_desc.keys() and isinstance(diag_desc[level_name+'_list'],list):
                 #The level was not specified but an ordered list was provided in the diagnostic header.
                 #Go through the list and pick the first avilable one:

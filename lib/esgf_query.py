@@ -48,7 +48,10 @@ def experiment_variable_search(session,file_expt,search_path,file_type_list,expe
         if len(set(file_type_list).intersection(set(remote_file_types)))>0:
             #If remote file types were requested
             fil_ctx = result.file_context()
+            #try:
             fil = fil_ctx.search(variable=var_name)
+            #except:
+            #    continue
             #fil = fil_ctx.search()
             for item in fil:
                 for key in item.urls.viewkeys():
