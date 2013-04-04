@@ -68,7 +68,7 @@ def find_optimset(in_paths_dict,options):
     paths_dict['data_pointers']={}
     paths_dict['data_pointers']['_name']='search'
     for search_path in paths_dict['diagnostic']['search_list']:
-        top_path=os.path.expanduser(os.path.expandvars(search_path))
+        top_path=os.path.abspath(os.path.expanduser(os.path.expandvars(search_path)))
         if os.path.exists(top_path):
             #Local filesystem archive
             paths_dict['data_pointers'][search_path]=search_filesystem(
