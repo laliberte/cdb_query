@@ -5,7 +5,10 @@ def get_immediate_subdirectories(path):
     return [name for name in os.listdir(path)
                 if os.path.isdir(os.path.join(path, name))]
 
-def descend_tree(diag_desc,diag_tree_desc,top_path):
+def descend_tree(pointers,search_path):
+    
+
+def descend_tree_recursive():
     #Descends a directory and record it in a dict type
     paths_dict={}
 
