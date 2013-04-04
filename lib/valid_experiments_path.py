@@ -5,26 +5,18 @@ from database_utils import File_Expt
 import sqlalchemy
 
 ##### PATH #####
-def find_path(session,file_expt,path_name,top_name,propagated_values):
-    setattr(file_expt,'path',path_name)
-    session.add(file_expt)
-    session.commit()
+def find_path(pointers):
+    pointers.session.add(pointers.file_expt)
+    pointers.session.commit()
     return
 
-def intersection(paths_dict,diag_tree_desc, diag_tree_desc_final):
+def intersection(pointers):
     #Find the intersection of all models that have at least one file in each experiment
-
-    diag_tree_desc.append('file_type')
-    diag_tree_desc.append('path')
-
-    session, time_db = database_utils.load_database(diag_tree_desc)
-    file_expt = File_Expt(diag_tree_desc)
-
-    top_name='data_pointers'
-    database_utils.create_database_from_tree(session,file_expt,paths_dict[top_name],top_name,{},find_path,'')
+    pointers.create_database(find_path)
+    print dir(File_Expt)
 
     #Step one: find all the center / model tuples with all the requested variables
-    model_list=session.query(
+    model_list=pointers.session.query(
                              File_Expt.center,
                              File_Expt.model,
                              File_Expt.rip
@@ -41,7 +33,7 @@ def intersection(paths_dict,diag_tree_desc, diag_tree_desc_final):
                              File_Expt.mip==paths_dict['diagnostic']['variable_list'][var_name][2],
                              File_Expt.experiment==experiment,
                            ]
-                model_list_var=session.query(
+                model_list_var=pointers.session.query(
                                          File_Expt.center,
                                          File_Expt.model,
                                          File_Expt.rip
@@ -59,7 +51,7 @@ def intersection(paths_dict,diag_tree_desc, diag_tree_desc_final):
                              File_Expt.mip==paths_dict['diagnostic']['variable_list'][var_name][2],
                              File_Expt.experiment==experiment
                            ]
-                model_list_var=session.query(
+                model_list_var=pointers.session.query(
                                          File_Expt.center,
                                          File_Expt.model,
                                            ).filter(sqlalchemy.and_(*conditions)).distinct().all()
@@ -83,7 +75,7 @@ def intersection(paths_dict,diag_tree_desc, diag_tree_desc_final):
         if model[:-1] in model_list_fx:
             new_paths_dict['simulations_list'].append('_'.join(model))
 
-            runs_list=session.query(
+            runs_list=pointers.session.query(
                                       File_Expt
                                      ).filter(sqlalchemy.and_(
                                                                 File_Expt.center==model[0],

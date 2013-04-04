@@ -3,32 +3,22 @@ import copy
 from pyesgf.search import SearchConnection
 
 import database_utils
-from database_utils import File_Expt
+from tree_utils import File_Expt
 
-def descend_tree(search_path,file_type_list,variable_list,experiment_list,diag_tree_desc):
-    #This function generates the database
-    diag_tree_desc.append('file_type')
-    diag_tree_desc.append('path')
-
-    session, time_db = database_utils.load_database(diag_tree_desc)
-    file_expt = File_Expt(diag_tree_desc)
-
+def descend_tree(pointers,header,search_path):
     #Create the database:
-    for experiment in experiment_list.keys():
-        for var_name in variable_list.keys():
-            experiment_variable_search(session,file_expt,search_path,file_type_list,experiment,var_name,*variable_list[var_name])
+    for experiment in header['experiment_list'].keys():
+        for var_name in header['variable_list'].keys():
+            experiment_variable_search(pointers,search_path,header['file_type_list'],
+                                        experiment,var_name,*header['variable_list'][var_name])
 
-    paths_dict={}
-    for item in session.query(File_Expt).all():
-        paths_dict=database_utils.create_tree(item,diag_tree_desc,paths_dict)
+    return
 
-    return paths_dict
-
-def experiment_variable_search(session,file_expt,search_path,file_type_list,experiment,var_name,frequency,realm,mip):
+def experiment_variable_search(pointers,search_path,file_type_list,
+                                experiment,var_name,frequency,realm,mip):
 
     print 'Searching path ', search_path
     conn = SearchConnection(search_path, distrib=False)
-    #conn = SearchConnection(search_path, distrib=True)
 
     #Search the ESGF:
     ctx = conn.new_context(project='CMIP5',
@@ -37,11 +27,11 @@ def experiment_variable_search(session,file_expt,search_path,file_type_list,expe
                         realm=realm,
                         cmor_table=mip)
 
-    keys_dict={}
-    keys_dict['experiment']=experiment
-    keys_dict['var']=var_name
-    keys_dict['realm']=realm
-    keys_dict['frequency']=frequency
+    pointers.file_expt.experiment=experiment
+    pointers.file_expt.var=var_name
+    pointers.file_expt.realm=realm
+    pointers.file_expt.frequency=frequency
+    pointers.file_expt.search=search_path
 
     remote_file_types=['HTTPServer','GridFTP']
     for result in ctx.search(variable=var_name):
@@ -57,16 +47,17 @@ def experiment_variable_search(session,file_expt,search_path,file_type_list,expe
                         file_description=url_name.split('/')[-10:-1]
                         known_description=[ file_description[ind] for ind in [2,3,4,5,8] ]
                         if known_description==[experiment,frequency,realm,mip,var_name]:
-                            file_expt_copy = copy.deepcopy(file_expt)
-                            keys_dict['path']=url_name+'|'+item.checksum
-                            keys_dict['file_type']=key
-                            keys_dict['center']=file_description[0]
-                            keys_dict['model']=file_description[1]
-                            keys_dict['rip']=file_description[6]
-                            keys_dict['mip']=file_description[5]
-                            keys_dict['version']=file_description[7]
-                            #Create database entry:
-                            database_utils.create_entry(session,file_expt_copy,keys_dict)
+                            pointers.file_expt.path=url_name+'|'+item.checksum
+                            pointers.file_expt.file_type=key
+                            pointers.file_expt.center=file_description[0]
+                            pointers.file_expt.model=file_description[1]
+                            pointers.file_expt.rip=file_description[6]
+                            pointers.file_expt.mip=file_description[5]
+                            pointers.file_expt.version=file_description[7]
+                            #for item in dir(pointers.file_expt):
+                            #    if not item[0]=='_':
+                            #        print item, getattr(pointers.file_expt,item)
+                            pointers.add_item()
 
         if 'OPeNDAP' in file_type_list:
             #OPeNDAP files were requested:
@@ -80,16 +71,14 @@ def experiment_variable_search(session,file_expt,search_path,file_type_list,expe
                     #print file_description
                     url_name=item.opendap_url
                     if url_name!=None:
-                        file_expt_copy = copy.deepcopy(file_expt)
-                        keys_dict['path']=url_name
-                        keys_dict['file_type']='OPeNDAP'
-                        keys_dict['center']=file_description[-9]
-                        keys_dict['model']=file_description[-8]
-                        keys_dict['rip']=file_description[-3]
-                        keys_dict['mip']=file_description[-4]
-                        keys_dict['version']='v'+file_description[-1].replace('v','')
-                        #Create database entry:
-                        database_utils.create_entry(session,file_expt_copy,keys_dict)
+                        pointers.file_expt.path=url_name
+                        pointers.file_expt.file_type='OPeNDAP'
+                        pointers.file_expt.center=file_description[-9]
+                        pointers.file_expt.model=file_description[-8]
+                        pointers.file_expt.rip=file_description[-3]
+                        pointers.file_expt.mip=file_description[-4]
+                        pointers.file_expt.version='v'+file_description[-1].replace('v','')
+                        pointers.add_item()
 
     print 'Done searching for variable '+var_name
     return

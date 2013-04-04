@@ -3,11 +3,14 @@ import hashlib
 import filesystem_query
 import esgf_query
 import tree_utils
+import valid_experiments_path
+import valid_experiments_months
+import database_utils
+import json
+import gzip
 
 def open_json(options):
-    import json
     if options.in_diagnostic_headers_file[-3:]=='.gz':
-        import gzip
         infile=gzip.open(options.in_diagnostic_headers_file,'r')
     else:
         infile=open(options.in_diagnostic_headers_file,'r')
@@ -15,9 +18,7 @@ def open_json(options):
     return paths_dict
 
 def close_json(paths_dict,options):
-    import json
     if options.gzip:
-        import gzip
         outfile = gzip.open(options.out_paths_file+'.gz','w')
     else:
         outfile = open(options.out_paths_file,'w')
@@ -28,7 +29,19 @@ def close_json(paths_dict,options):
 
 class SimpleTree:
     def __init__(self,tree):
-        self.cmip5_drs=['search','center','model','experiment','frequency','realm','mip','rip','version','var']
+        self.cmip5_drs=[
+                        'search',
+                        'file_type',
+                        'center',
+                        'model',
+                        'experiment',
+                        'frequency',
+                        'realm',
+                        'mip',
+                        'rip',
+                        'version',
+                        'var',
+                        'path']
 
         #Create tree
         self.pointers=tree_utils.Tree(self.cmip5_drs)
@@ -42,69 +55,67 @@ class SimpleTree:
         return
 
     def union_header(self):
+        #This method creates a simplified header
+
         #Create the diagnostic description dictionary:
-        header_desc={}
+        self.header_simple={}
         #Find all the requested realms, frequencies and variables:
         variable_list=['var_list','frequency_list','realm_list','mip_list']
-        for list_name in variable_list: header_desc[list_name]=[]
+        for list_name in variable_list: self.header_simple[list_name]=[]
         for var_name in self.header['variable_list'].keys():
-            header_desc['var_list'].append(var_name)
+            self.header_simple['var_list'].append(var_name)
             for list_id, list_name in enumerate(list(variable_list[1:])):
-                header_desc[list_name].append(self.header['variable_list'][var_name][list_id])
+                self.header_simple[list_name].append(self.header['variable_list'][var_name][list_id])
 
         #Find all the requested experiments and years:
         experiment_list=['experiment_list','years_list']
-        for list_name in experiment_list: header_desc[list_name]=[]
+        for list_name in experiment_list: self.header_simple[list_name]=[]
         for experiment_name in self.header['experiment_list'].keys():
-            header_desc['experiment_list'].append(experiment_name)
+            self.header_simple['experiment_list'].append(experiment_name)
             for list_name in list(experiment_list[1:]):
-                header_desc[list_name].append(self.header['experiment_list'][experiment_name])
+                self.header_simple[list_name].append(self.header['experiment_list'][experiment_name])
                 
         #Find the unique members:
-        for list_name in header_desc.keys(): header_desc[list_name]=list(set(header_desc[list_name]))
-        
-        self.header_simple=header_desc
+        for list_name in self.header_simple.keys(): self.header_simple[list_name]=list(set(self.header_simple[list_name]))
         return
 
     def optimset(self,options):
-        import valid_experiments_path
-
+        #First simplify the header
         self.union_header()
-        self.pointers.tree['_name']='search'
+
 
         #Local filesystem archive
         local_paths=[search_path for search_path in 
                         [ os.path.abspath(os.path.expanduser(os.path.expandvars(path))) for path in self.header['search_list']]
                         if os.path.exists(search_path)]
-        for path in local_paths:
-            filesystem_query.descend_tree(self.pointers,path)
+        for search_path in local_paths:
+            filesystem_query.descend_tree(self.pointers,self.header_simple,os.path.abspath(search_path))
+
         #ESGF search
         remote_paths=[search_path for search_path in 
-                        [ os.path.abspath(os.path.expanduser(os.path.expandvars(path))) for path in self.header['search_list']]
+                        [ os.path.expanduser(os.path.expandvars(path)) for path in self.header['search_list']]
                             if not os.path.exists(search_path) ]
         for search_path in remote_paths:
-            self.pointers.tree[search_path]=esgf_query.descend_tree(
-                                                     search_path,
-                                                     self.header['file_type_list'],
-                                                     self.header['variable_list'],
-                                                     self.header['experiment_list'],
-                                                     self.cmip5_drs[1:]
-                                                     )
+            esgf_query.descend_tree(self.pointers,self.header,search_path)
+            #self.pointers.tree[search_path]=esgf_query.descend_tree(
+            #                                         search_path,
+            #                                         self.header['file_type_list'],
+            #                                         self.header['variable_list'],
+            #                                         self.header['experiment_list'],
+            #                                         self.cmip5_drs[1:]
+            #                                         )
+
             
         #Find the list of center / model with all experiments and variables requested:
         diag_tree_desc_path=[
                                 'center','model','experiment','rip','frequency','realm','mip',
                                 'var','version','search','file_type'
                              ]
-        self.pointers.tree=valid_experiments_path.intersection(self.pointers.tree,
-                                                          self.cmip5_drs,
-                                                          diag_tree_desc_path
-                                                          )
+        valid_experiments_path.intersection(self.pointers)
+        print json.dumps(self.pointers.tree,indent=4, separators=(',', ': '))
         return
 
     def optimset_months(self,options):
-        import valid_experiments_months
-        import database_utils
         diag_tree_desc_path=[
                                 'center','model','experiment','rip','frequency','realm','mip',
                                 'var','version','search','file_type'
@@ -329,10 +340,10 @@ def main():
     paths_dict=SimpleTree(open_json(options))
     #Run the command:
     getattr(paths_dict,options.command)(options)
-    print paths_dict.pointers.tree
+    #print paths_dict.pointers.tree
     #Close the file:
-    if not paths_dict==None:
-        close_json(paths_dict.pointers,options)
+    #if not paths_dict==None:
+    #    close_json(paths_dict.pointers,options)
 
 if __name__ == "__main__":
     main()

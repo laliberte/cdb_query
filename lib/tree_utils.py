@@ -15,7 +15,6 @@ class Tree:
         self.tree_desc=tree_desc
         self.tree=tree_type()
 
-
         #Create an in-memory sqlite database, for easy subselecting.
         #Uses sqlalchemy
 
@@ -34,37 +33,25 @@ class Tree:
         self.file_expt = File_Expt(self.tree_desc)
         return
 
-    #def create_entry(self,file_expt,keys_dict):
-    #    #Create an entry in the database
-    #    for key in keys_dict.keys():
-    #        setattr(file_expt,key,keys_dict[key])
-    #    self.session.add(file_expt)
-    #    self.session.commit()
-
     def create_database(self,find_function):
-        create_database_from_tree(self.session,
-                                  self.file_expt,
+        create_database_from_tree(self,
                                   self.tree,
-                                  'pointers',
-                                  {},
-                                  find_function,
-                                  '')
+                                  find_function)
         return
 
     def put_tree(self,tree):
         self.tree=tree
         return
 
-    def add_item(self,item):
-        #Add a Namespace item
-        item_ordering=[getattr(item,level) for level in self.tree_desc]
+    def add_item(self):
+        item_desc=[getattr(self.file_expt,level) for level in self.tree_desc]
 
-        add_item_data(self.tree,zip(self.tree_desc,item_ordering))
+        add_item_recursive(self.tree,self.tree_desc,item_desc)
         return
 
     def slice(self,options):
         #Removes branches of a tree
-        num_remaining_values=slice_data(self,options)
+        num_remaining_values=slice_recursive(self,options)
         if num_remaining_values==0:
             del self.tree
             self.tree=tree_type()
@@ -85,30 +72,30 @@ class Tree:
         replace_last_level(self.tree,level_equivalence,branch_desc)
         return 
 
-def add_item_data(tree,tree_desc):
+def add_item_recursive(tree,tree_desc,item_desc):
     #This function recursively creates the output dictionary from one database entry:
     if len(tree_desc)>1 and isinstance(tree_desc,list):
         #At each call, tree_desc is reduced by one element.
         #If it is a list of more than one element, we continue the recursion.
         if '_name' not in tree.keys():
             #This branch has not been created yet, so create it:
-            tree['_name']=tree_desc[0][0]
+            tree['_name']=tree_desc[0]
         
-        level_name=tree_desc[0][1]
+        level_name=item_desc[0]
         if level_name not in tree.keys() and len(tree_desc)==2:
             #This branch name has not been created, so create it:
             tree[level_name]=[]
 
         #Recursively create tree:
-        add_item_data(tree[level_name],tree_desc)
+        add_item_recursive(tree[level_name],tree_desc[1:],item_desc[1:])
     else:
         #The end of the recursion has been reached. This is 
         #to ensure a robust implementation.
-        if tree_desc[1] not in tree:
-            tree.append(tree[1])
+        if item_desc[0] not in tree:
+            tree.append(item_desc[0])
     return
 
-def slice_data(tree,options):
+def slice_recursive(tree,options):
     if isinstance(tree,dict):
         if '_name' not in tree.keys():
             raise IOError('The tree in slice must have _name entry at each level except the last')
@@ -123,7 +110,7 @@ def slice_data(tree,options):
         list_of_remaining_values=[item for item in tree.keys() if item[0]!='_']
         #Loop over the remaining values:
         for value in list_of_remaining_values:
-            remaining_entries=slice_data(tree[value],options)
+            remaining_entries=slice_recursive(tree[value],options)
             if len(remaining_entries)==0: del tree[value]
 
     #Return the number of remaining values:
@@ -222,7 +209,7 @@ def replace_path(path_name,branch_desc):
 
 #####################################################################
 #####################################################################
-#########################  DATABASE
+#########################  DATABASE CONVERSION
 #####################################################################
 #####################################################################
 
@@ -232,25 +219,15 @@ class File_Expt(object):
         for tree_desc in diag_tree_desc:
             setattr(self,tree_desc,'')
 
-def create_database_from_tree(session,file_type,tree,top_name,propagated_values,find_function,tree_desc):
+def create_database_from_tree(pointers,tree,find_function):
     #Recursively creates a database from tree:
     if isinstance(tree,dict):
         for value in [key for key in tree.keys() if key]:
             if value[0] != '_':
-                file_expt_copy = copy.deepcopy(file_expt)
-                setattr(file_expt_copy,tree['_name'],value)
-                tree_desc_copy = copy.deepcopy(tree_desc)
-                if len(tree_desc)>0:
-                    tree_desc_copy+=tree['_name']+': '+value+', '
-                propagated_values_copy= copy.deepcopy(propagated_values)
-                propagated_values_copy[tree['_name']]=value
-                create_database_from_tree(session,file_expt_copy,tree[value],value,propagated_values_copy,find_function,tree_desc_copy)
-
-                #Controls the verbosity:
-                if len(tree_desc)>0 and tree['_name']=='frequency': print(tree_desc[:-2]+'.')
+                setattr(pointers.file_expt,tree['_name'],value)
+                create_database_from_tree(pointers,tree[value],find_function)
     else:
         for value in tree:
-            #if len(tree_desc)>0: print(tree_desc[:-2]+'.')
-            file_expt_copy = copy.deepcopy(file_expt)
-            find_function(session,file_expt_copy,value,top_name,propagated_values)
+            pointers.file_expt.path=value
+            find_function(pointers)
     return
