@@ -122,16 +122,19 @@ class SimpleTree:
         return
 
     def simulations(self,options):
+        self.pointers.slice(options)
         self.pointers.create_database(find_simulations)
+
         simulations_list=self.simulations_list()
         for simulation in simulations_list:
             if simulation[2]!='r0i0p0':
                 print '_'.join(simulation)
         return
 
-
     def list_paths(self,options):
-        for path in self.pointers.simplify(options).level_list_last():
+        #slice with options:
+        self.pointers.slice(options)
+        for path in self.pointers.level_list_last():
             if 'wget' in dir(options) and options.wget:
                 print('\''+
                       '/'.join(path.split('|')[0].split('/')[-10:])+
@@ -143,7 +146,7 @@ class SimpleTree:
 
     def find_local(self,options):
         import database_utils
-        self.pointers.simplify(options)
+        self.pointers.slice(options)
 
         #In the search paths, find which one are local:
         local_search_path=[ top_path for top_path in 
@@ -323,6 +326,8 @@ def main():
     simulations_parser=subparsers.add_parser('simulations',
                                            help='Prints the (center_model_rip) triples available in the pointers file.'
                                            )
+    for arg in slicing_args.keys():
+        simulations_parser.add_argument('--'+arg,type=slicing_args[arg][0],help=slicing_args[arg][1])
     simulations_parser.add_argument('in_diagnostic_headers_file',
                                  help='Diagnostic headers file with data pointers (input)')
     simulations_parser.set_defaults(drs=None)
