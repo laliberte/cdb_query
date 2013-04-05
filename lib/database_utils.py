@@ -197,7 +197,7 @@ def unique_tree(paths_dict,diag_desc):
             level_name=paths_dict['_name']
             if level_name=='version':
                 #the 'version' field is peculiar. Here, we use the most recent, or largest version number:
-                version_list=[version[1:] for version in paths_dict.keys() if str(version)[0]!='_' ]
+                version_list=[version[1:] for version in paths_dict.keys() if str(version)[0]!='_' and version!='latest' ]
 
                 max_version=max([int(version) for version in version_list if version.isdigit()])
                 #Keep only the last version:
