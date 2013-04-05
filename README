@@ -16,6 +16,8 @@ in future releases.
 
 This code was developed as part of the ExArch project: http://proj.badc.rl.ac.uk/exarch
 
+This code is a major rewrite from versions 0.3 and earlier.
+
 Frederic Laliberte, Paul J. Kushner
 Univerity of Toronto, 2013
 

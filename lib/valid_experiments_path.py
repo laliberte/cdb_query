@@ -1,47 +1,36 @@
 import copy
-import database_utils
-from database_utils import File_Expt
+from tree_utils import File_Expt
 
 import sqlalchemy
 
+
 ##### PATH #####
-def find_path(session,file_expt,path_name,top_name,propagated_values):
-    setattr(file_expt,'path',path_name)
-    session.add(file_expt)
-    session.commit()
+def find_path(pointers,file_expt):
+    pointers.session.add(file_expt)
+    pointers.session.commit()
     return
 
-def intersection(paths_dict,diag_tree_desc, diag_tree_desc_final):
-    #Find the intersection of all models that have at least one file in each experiment
-
-    diag_tree_desc.append('file_type')
-    diag_tree_desc.append('path')
-
-    session, time_db = database_utils.load_database(diag_tree_desc)
-    file_expt = File_Expt(diag_tree_desc)
-
-    top_name='data_pointers'
-    database_utils.create_database_from_tree(session,file_expt,paths_dict[top_name],top_name,{},find_path,'')
+def intersection(diagnostic):
+    #Find the dintersection of all models that have at least one file in each experiment
+    diagnostic.pointers.create_database(find_path)
 
     #Step one: find all the center / model tuples with all the requested variables
-    model_list=session.query(
-                             File_Expt.center,
-                             File_Expt.model,
-                             File_Expt.rip
-                            ).distinct().all()
+    simulations_list=diagnostic.simulations_list()
+    model_list=copy.copy(simulations_list)
 
-    for experiment in paths_dict['diagnostic']['experiment_list'].keys():
-        for var_name in paths_dict['diagnostic']['variable_list'].keys():
-            if not paths_dict['diagnostic']['variable_list'][var_name][2][:2] in ['fx','en']:
+
+    for experiment in diagnostic.header['experiment_list'].keys():
+        for var_name in diagnostic.header['variable_list'].keys():
+            if not diagnostic.header['variable_list'][var_name][2][:2] in ['fx','en']:
                 #Do this without fx variables:
                 conditions=[
                              File_Expt.var==var_name,
-                             File_Expt.frequency==paths_dict['diagnostic']['variable_list'][var_name][0],
-                             File_Expt.realm==paths_dict['diagnostic']['variable_list'][var_name][1],
-                             File_Expt.mip==paths_dict['diagnostic']['variable_list'][var_name][2],
+                             File_Expt.frequency==diagnostic.header['variable_list'][var_name][0],
+                             File_Expt.realm==diagnostic.header['variable_list'][var_name][1],
+                             File_Expt.mip==diagnostic.header['variable_list'][var_name][2],
                              File_Expt.experiment==experiment,
                            ]
-                model_list_var=session.query(
+                model_list_var=diagnostic.pointers.session.query(
                                          File_Expt.center,
                                          File_Expt.model,
                                          File_Expt.rip
@@ -50,16 +39,16 @@ def intersection(paths_dict,diag_tree_desc, diag_tree_desc_final):
 
         #Do it for fx variables:
         model_list_fx=[model[:-1] for model in model_list]
-        for var_name in paths_dict['diagnostic']['variable_list'].keys():
-            if paths_dict['diagnostic']['variable_list'][var_name][2][:2] in ['fx','en']:
+        for var_name in diagnostic.header['variable_list'].keys():
+            if diagnostic.header['variable_list'][var_name][2][:2] in ['fx','en']:
                 conditions=[
                              File_Expt.var==var_name,
-                             File_Expt.frequency==paths_dict['diagnostic']['variable_list'][var_name][0],
-                             File_Expt.realm==paths_dict['diagnostic']['variable_list'][var_name][1],
-                             File_Expt.mip==paths_dict['diagnostic']['variable_list'][var_name][2],
+                             File_Expt.frequency==diagnostic.header['variable_list'][var_name][0],
+                             File_Expt.realm==diagnostic.header['variable_list'][var_name][1],
+                             File_Expt.mip==diagnostic.header['variable_list'][var_name][2],
                              File_Expt.experiment==experiment
                            ]
-                model_list_var=session.query(
+                model_list_var=diagnostic.pointers.session.query(
                                          File_Expt.center,
                                          File_Expt.model,
                                            ).filter(sqlalchemy.and_(*conditions)).distinct().all()
@@ -67,39 +56,29 @@ def intersection(paths_dict,diag_tree_desc, diag_tree_desc_final):
 
 
     #Step two: create the new paths dictionary:
-    diag_tree_desc_final.append('path')
-    new_paths_dict={}
-    new_paths_dict['diagnostic']=paths_dict['diagnostic']
-    new_paths_dict['data_pointers']={}
 
     variable_list_requested=[]
-    for var_name in paths_dict['diagnostic']['variable_list'].keys():
-        variable_list_requested.append((var_name,)+tuple(paths_dict['diagnostic']['variable_list'][var_name]))
+    for var_name in diagnostic.header['variable_list'].keys():
+        variable_list_requested.append((var_name,)+tuple(diagnostic.header['variable_list'][var_name]))
 
-    #Create a simulation list
-    new_paths_dict['simulations_list']=[]
+    model_list_combined=[model for model in model_list if model[:-1] in model_list_fx]
+    model_list_combined.extend([model + ('r0i0p0',) for model in model_list_fx])
 
-    for model in model_list:
-        if model[:-1] in model_list_fx:
-            new_paths_dict['simulations_list'].append('_'.join(model))
-
-            runs_list=session.query(
+    #Delete the original tree to rebuild it with only the elements we want:
+    diagnostic.pointers.clear_tree(diagnostic.header['drs'])
+    for model in model_list_combined:
+            runs_list=diagnostic.pointers.session.query(
                                       File_Expt
                                      ).filter(sqlalchemy.and_(
                                                                 File_Expt.center==model[0],
                                                                 File_Expt.model==model[1],
+                                                                File_Expt.rip==model[2],
                                                              )).all()
             for item in runs_list:
-                if item.var in paths_dict['diagnostic']['variable_list'].keys():
-                    if [item.frequency,item.realm,item.mip]==paths_dict['diagnostic']['variable_list'][item.var]:
-                        if item.frequency!='fx':
-                            #Works if the variable is not fx:
-                            if item.rip==model[2]:
-                                new_paths_dict['data_pointers']=database_utils.create_tree(item,diag_tree_desc_final,new_paths_dict['data_pointers'])
-                        else:
-                            #If fx, we create the time axis for easy retrieval:
-                            new_paths_dict['data_pointers']=database_utils.create_tree(item,diag_tree_desc_final,new_paths_dict['data_pointers'])
-
-    new_paths_dict['simulations_list'].sort()
-    return new_paths_dict
+                for val in dir(item):
+                    if val[0]!='_':
+                        setattr(diagnostic.pointers.file_expt,val,getattr(item,val))
+                diagnostic.pointers.add_item()
+                
+    return
 

@@ -6,6 +6,8 @@ import textwrap
 import json
 import cdb_query_archive
 
+import cdb_query_archive
+
 class Open_With_Indent:
     """This class creates an open file were indentation is tracked"""
 
@@ -321,10 +323,6 @@ def main():
     setup_group.add_argument("--run",dest="run",
                       default=False, action="store_true",
                       help="Launches the scripts.")
-    #setup_group.add_argument("--time_diff",dest="time_diff",
-    #                  default=False, action="store_true",
-    #                  help="Request the month before and the month after: allows to take a time derivative.\n\
-    #                        If the months before and after are unavailable, the script terminates.")
 
     #Processing Options
     proc_group=parser.add_argument_group("Processing",
@@ -413,6 +411,9 @@ def main():
                 #PREPARE SCRIPTS
                 experiment = Experiment_Setup(options)
                 experiment.prepare_scripts()
+
+                options.file_type='HTTPServer'
+                print cdb_query_archive.list_unique_paths(paths_dict,options)
 
                 if options.run:
                     os.system('bash '+experiment.runscript_file)
