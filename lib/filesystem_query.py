@@ -9,6 +9,7 @@ def get_immediate_subdirectories(path):
 def descend_tree(pointers,header_simple,search_path):
     pointers.file_expt.search=search_path
     pointers.file_expt.file_type='local_file'
+    pointers.file_expt.time='all'
     descend_tree_recursive(header_simple,pointers,pointers.tree_desc[2:],search_path)
     return
 

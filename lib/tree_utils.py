@@ -9,11 +9,9 @@ from collections import defaultdict
 def tree_type(): return defaultdict(tree_type)
 
 class Tree:
-
     def __init__(self,tree_desc):
         #Defines the tree structure:
-        self.tree_desc=tree_desc
-        self.tree=tree_type()
+        self.clear_tree(tree_desc)
 
         #Create an in-memory sqlite database, for easy subselecting.
         #Uses sqlalchemy
@@ -31,21 +29,25 @@ class Tree:
 
         self.session = sqlalchemy.orm.create_session(bind=engine, autocommit=False, autoflush=True)
         self.file_expt = File_Expt(self.tree_desc)
+        self._database_created=False
         return
 
     def create_database(self,find_function):
-        create_database_from_tree(self,
-                                  self.tree,
-                                  find_function)
+        if not self._database_created:
+            create_database_from_tree(self,
+                                      self.file_expt,
+                                      self.tree,
+                                      find_function)
+            self._database_created=True
         return
 
-    def put_tree(self,tree):
-        self.tree=tree
+    def clear_tree(self,tree_desc):
+        self.tree_desc=tree_desc
+        self.tree=tree_type()
         return
 
     def add_item(self):
         item_desc=[getattr(self.file_expt,level) for level in self.tree_desc]
-
         add_item_recursive(self.tree,self.tree_desc,item_desc)
         return
 
@@ -63,8 +65,8 @@ class Tree:
     def level_list_last(self):
         return level_list_data(self.tree,'last')
 
-    def simplify(self,diag_desc):
-        simplify_data(self.tree,diag_desc)
+    def simplify(self,header):
+        simplify_recursive(self.tree,header)
         return 
 
     def replace_last(self,level_equivalence):
@@ -82,7 +84,7 @@ def add_item_recursive(tree,tree_desc,item_desc):
             tree['_name']=tree_desc[0]
         
         level_name=item_desc[0]
-        if level_name not in tree.keys() and len(tree_desc)==2:
+        if level_name not in tree.keys() and tree_desc[1]=='path':
             #This branch name has not been created, so create it:
             tree[level_name]=[]
 
@@ -133,13 +135,13 @@ def level_list_data(tree,level_to_list):
         list_of_names=tree
     return list_of_names
 
-def simplify_data(tree,diag_desc):
+def simplify_recursive(tree,header):
     #Simplifies the output tree to make it unique:
     if not isinstance(tree,dict):
         return
 
     if '_name' not in tree.keys():
-        raise IOError('Dictionnary passed to unique_tree must have a _name entry at each level except the last')
+        raise IOError('Dictionnary passed to simplify must have a _name entry at each level except the last')
 
     level_name=tree['_name']
     if level_name=='version':
@@ -151,21 +153,21 @@ def simplify_data(tree,diag_desc):
             del tree['v'+str(version)]
 
         #Find unique tree by recurrence:
-        unique_tree(tree['v'+str(max(version_list))],diag_desc)
+        simplify_recursive(tree['v'+str(max(version_list))],header)
 
-    elif level_name+'_list' in diag_desc.keys() and isinstance(diag_desc[level_name+'_list'],list):
+    elif level_name+'_list' in header.keys() and isinstance(header[level_name+'_list'],list):
         #The level was not specified but an ordered list was provided in the diagnostic header.
         #Go through the list and pick the first avilable one:
-        level_ordering=[level for level in diag_desc[level_name+'_list'] if level in tree.keys()]
+        level_ordering=[level for level in header[level_name+'_list'] if level in tree.keys()]
 
         #Keep only the first:
         if len(level_ordering)>1:
             for level in level_ordering[1:]: del tree[level]
 
-        unique_tree(tree[level_ordering[0]],diag_desc)
+        simplify_recursive(tree[level_ordering[0]],header)
     else:
         for level in [ name for name in tree.keys() if str(name)[0]!='_' ]:
-            unique_tree(tree[level],diag_desc)
+            simplify_recursive(tree[level],header)
     return
 
 def replace_last_level(tree,level_equivalence,branch_desc):
@@ -213,21 +215,23 @@ def replace_path(path_name,branch_desc):
 #####################################################################
 #####################################################################
 
+def create_database_from_tree(pointers,file_expt,tree,find_function):
+    #Recursively creates a database from tree:
+    if isinstance(tree,dict):
+        for value in [key for key in tree.keys() if key]:
+            if value[0] != '_':
+                file_expt_copy=copy.deepcopy(file_expt)
+                setattr(file_expt_copy,tree['_name'],value)
+                create_database_from_tree(pointers,file_expt_copy,tree[value],find_function)
+    else:
+        for value in tree:
+            file_expt_copy=copy.deepcopy(file_expt)
+            file_expt_copy.path=value
+            find_function(pointers,file_expt_copy)
+    return
+
 class File_Expt(object):
     #Create a class that can be used with sqlachemy:
     def __init__(self,diag_tree_desc):
         for tree_desc in diag_tree_desc:
             setattr(self,tree_desc,'')
-
-def create_database_from_tree(pointers,tree,find_function):
-    #Recursively creates a database from tree:
-    if isinstance(tree,dict):
-        for value in [key for key in tree.keys() if key]:
-            if value[0] != '_':
-                setattr(pointers.file_expt,tree['_name'],value)
-                create_database_from_tree(pointers,tree[value],find_function)
-    else:
-        for value in tree:
-            pointers.file_expt.path=value
-            find_function(pointers)
-    return

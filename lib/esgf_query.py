@@ -32,6 +32,7 @@ def experiment_variable_search(pointers,search_path,file_type_list,
     pointers.file_expt.realm=realm
     pointers.file_expt.frequency=frequency
     pointers.file_expt.search=search_path
+    pointers.file_expt.time='all'
 
     remote_file_types=['HTTPServer','GridFTP']
     for result in ctx.search(variable=var_name):

@@ -1,13 +1,18 @@
 import os
 import hashlib
+
 import filesystem_query
 import esgf_query
-import tree_utils
+
 import valid_experiments_path
-import valid_experiments_months
-import database_utils
+import valid_experiments_time
+
+#import database_utils
 import json
 import gzip
+
+import tree_utils
+from tree_utils import File_Expt
 
 def open_json(options):
     if options.in_diagnostic_headers_file[-3:]=='.gz':
@@ -15,43 +20,31 @@ def open_json(options):
     else:
         infile=open(options.in_diagnostic_headers_file,'r')
     paths_dict=json.load(infile)
+    if options.drs!=None:
+        paths_dict['header']['drs']=options.drs
     return paths_dict
 
 def close_json(paths_dict,options):
     if options.gzip:
-        outfile = gzip.open(options.out_paths_file+'.gz','w')
+        outfile = gzip.open(options.out_diagnostic_headers_file+'.gz','w')
     else:
-        outfile = open(options.out_paths_file,'w')
+        outfile = open(options.out_diagnostic_headers_file,'w')
 
-    json.dump(paths_dict,outfile)
+    json.dump({'pointers':paths_dict.pointers.tree,'header':paths_dict.header},outfile)
     outfile.close()
     return
 
 class SimpleTree:
     def __init__(self,tree):
-        self.cmip5_drs=[
-                        'search',
-                        'file_type',
-                        'center',
-                        'model',
-                        'experiment',
-                        'frequency',
-                        'realm',
-                        'mip',
-                        'rip',
-                        'version',
-                        'var',
-                        'path']
+
+        if 'header' in tree.keys():
+            self.header =  tree['header']
 
         #Create tree
-        self.pointers=tree_utils.Tree(self.cmip5_drs)
+        self.pointers=tree_utils.Tree(self.header['drs'])
 
-        conversion_table={'data_pointers':'pointers','diagnostic':'header'}
-        if isinstance(tree,dict):
-            if 'data_pointers' in tree.keys():
-                self.pointers.put_tree(tree['data_pointers'])
-            if 'diagnostic' in tree.keys():
-                self.header =  tree['diagnostic']
+        if 'pointers' in tree.keys():
+            self.pointers.tree=tree['pointers']
         return
 
     def union_header(self):
@@ -79,6 +72,14 @@ class SimpleTree:
         for list_name in self.header_simple.keys(): self.header_simple[list_name]=list(set(self.header_simple[list_name]))
         return
 
+    def simulations_list(self):
+        simulations_list=self. pointers.session.query(
+                                                         File_Expt.center,
+                                                         File_Expt.model,
+                                                         File_Expt.rip
+                                                        ).distinct().all()
+        return simulations_list
+
     def optimset(self,options):
         #First simplify the header
         self.union_header()
@@ -97,55 +98,36 @@ class SimpleTree:
                             if not os.path.exists(search_path) ]
         for search_path in remote_paths:
             esgf_query.descend_tree(self.pointers,self.header,search_path)
-            #self.pointers.tree[search_path]=esgf_query.descend_tree(
-            #                                         search_path,
-            #                                         self.header['file_type_list'],
-            #                                         self.header['variable_list'],
-            #                                         self.header['experiment_list'],
-            #                                         self.cmip5_drs[1:]
-            #                                         )
 
             
-        #Find the list of center / model with all experiments and variables requested:
-        diag_tree_desc_path=[
-                                'center','model','experiment','rip','frequency','realm','mip',
-                                'var','version','search','file_type'
-                             ]
-        valid_experiments_path.intersection(self.pointers)
-        print json.dumps(self.pointers.tree,indent=4, separators=(',', ': '))
+        #Redefine the DRS:
+        self.header['drs']=[
+                'center','model','experiment','rip','frequency','realm','mip',
+                'var','time','version','search','file_type','path'
+                 ]
+
+        valid_experiments_path.intersection(self)
         return
 
-    def optimset_months(self,options):
-        diag_tree_desc_path=[
-                                'center','model','experiment','rip','frequency','realm','mip',
-                                'var','version','search','file_type'
-                             ]
+    def optimset_time(self,options):
         #Find the list of center / model with all the months for all the years / experiments and variables requested:
-        diag_tree_desc_months=[
+        self.header['drs']=[
                                 'experiment','center','model','rip','frequency','realm','mip',
-                                'var','year','month','version','file_type','search'
+                                'var','time','version','file_type','search','path'
                              ]
-        self.pointers=valid_experiments_months.intersection(self.pointers,
-                                                         diag_tree_desc_path,
-                                                         diag_tree_desc_months)
+        valid_experiments_time.intersection(self)
 
         #Find the unique tree:
-        self.pointers=database_utils.unique_tree(self.pointers,self.headers)
+        self.pointers.simplify(self.header)
         return
 
-    def simulations_list(self,options):
-        import database_utils
-        import copy
-
-        simulations_list=[]
-        for center in self.pointers.list_level('center'):
-            setattr(temp_options,'center',center)
-            for model in database_utils.list_level(paths_dict['data_pointers'],temp_options,'model'):
-                setattr(temp_options,'model',model)
-                for rip in database_utils.list_level(paths_dict['data_pointers'],temp_options,'rip'):
-                    if rip!='r0i0p0':
-                        simulations_list.append('_'.join([center,model,rip]))
-        return simulations_list
+    def simulations(self,options):
+        self.pointers.create_database(find_simulations)
+        simulations_list=self.simulations_list()
+        for simulation in simulations_list:
+            if simulation[2]!='r0i0p0':
+                print '_'.join(simulation)
+        return
 
 
     def list_paths(self,options):
@@ -205,6 +187,11 @@ def md5_for_file(f, block_size=2**20):
         md5.update(data)
     return md5.hexdigest()
 
+def find_simulations(pointers,file_expt):
+    pointers.session.add(file_expt)
+    pointers.session.commit()
+    return
+
 def main():
     import argparse 
     import textwrap
@@ -230,41 +217,44 @@ def main():
 
     #Find Optimset
     epilog_optimset=textwrap.dedent(epilog+'\n\nThe output can be pretty printed by using:\n\
-                          cat out_paths_file | python -mjson.tool')
+                          cat out_diagnostic_headers_file | python -mjson.tool')
     optimset_parser=subparsers.add_parser('optimset',
                                            help='Returns pointers to models that have all the requested experiments and variables.\n\
                                                  It is good practice to check the results with \'simulations\' before\n\
-                                                 proceeding with \'optimset_months\'.',
+                                                 proceeding with \'optimset_time\'.',
                                            epilog=epilog_optimset,
                                            formatter_class=argparse.RawTextHelpFormatter
                                          )
     optimset_parser.add_argument('in_diagnostic_headers_file',
                                  help='Diagnostic headers file (input)')
-    optimset_parser.add_argument('out_paths_file',
+    optimset_parser.add_argument('out_diagnostic_headers_file',
                                  help='Diagnostic paths file (output)')
     optimset_parser.add_argument('-z','--gzip',
                                  default=False, action='store_true',
                                  help='Compress the output using gzip. Because the output is mostly repeated text, this leads to large compression.')
+    optimset_parser.set_defaults(drs=['time','search','file_type','center','model','experiment','frequency','realm','mip','rip','version','var','path'])
+
     #Find Optimset Months
-    epilog_optimset_months=textwrap.dedent(epilog+'\n\nThe output can be pretty printed by using:\n\
-                          cat out_paths_file | python -mjson.tool')
-    optimset_months_parser=subparsers.add_parser('optimset_months',
+    epilog_optimset_time=textwrap.dedent(epilog+'\n\nThe output can be pretty printed by using:\n\
+                          cat out_diagnostic_headers_file | python -mjson.tool')
+    optimset_time_parser=subparsers.add_parser('optimset_time',
                                            help='Take as an input the results from \'optimset\'.\n\
                                                  Returns pointers to models that have all the\n\
                                                  requested experiments and variables for all requested years.\n\
                                                  It is required to use the \'retrieve\' command.\n\
                                                  It can be slow, particularly if \'OPeNDAP\' files are\n\
                                                  requested.',
-                                           epilog=epilog_optimset_months,
+                                           epilog=epilog_optimset_time,
                                            formatter_class=argparse.RawTextHelpFormatter
                                          )
-    optimset_months_parser.add_argument('in_diagnostic_headers_file',
+    optimset_time_parser.add_argument('in_diagnostic_headers_file',
                                  help='Diagnostic headers file (input)')
-    optimset_months_parser.add_argument('out_paths_file',
+    optimset_time_parser.add_argument('out_diagnostic_headers_file',
                                  help='Diagnostic paths file (output)')
-    optimset_months_parser.add_argument('-z','--gzip',
+    optimset_time_parser.add_argument('-z','--gzip',
                                  default=False, action='store_true',
                                  help='Compress the output using gzip. Because the output is mostly repeated text, this leads to large compression.')
+    optimset_time_parser.set_defaults(drs=None)
 
     #Define the data slicing arguments in a dictionnary:
     slicing_args={
@@ -295,6 +285,7 @@ def main():
                                  default=False,
                                  action='store_true',
                                  help='Prints the paths with a structure that can be passed to a wget script, with MD5 checksum.')
+    list_parser.set_defaults(drs=None)
 
     #Slice data
     slice_parser=subparsers.add_parser('slice',
@@ -305,11 +296,12 @@ def main():
         slice_parser.add_argument('--'+arg,type=slicing_args[arg][0],help=slicing_args[arg][1])
     slice_parser.add_argument('in_diagnostic_headers_file',
                                  help='Diagnostic headers file with data pointers (input)')
-    slice_parser.add_argument('out_paths_file',
+    slice_parser.add_argument('out_diagnostic_headers_file',
                                  help='Diagnostic paths file (output)')
     slice_parser.add_argument('-z','--gzip',
                                  default=False, action='store_true',
                                  help='Compress the output using gzip. Because the output is mostly repeated text, this leads to large compression.')
+    slice_parser.set_defaults(drs=None)
 
     #find_local
     find_local_parser=subparsers.add_parser('find_local',
@@ -319,11 +311,12 @@ def main():
         find_local_parser.add_argument('--'+arg,type=slicing_args[arg][0],help=slicing_args[arg][1])
     find_local_parser.add_argument('in_diagnostic_headers_file',
                                  help='Diagnostic headers file with data pointers (input)')
-    find_local_parser.add_argument('out_paths_file',
+    find_local_parser.add_argument('out_diagnostic_headers_file',
                                  help='Diagnostic paths file (output)')
     find_local_parser.add_argument('-z','--gzip',
                                  default=False, action='store_true',
                                  help='Compress the output using gzip. Because the output is mostly repeated text, this leads to large compression.')
+    find_local_parser.set_defaults(drs=None)
 
 
     #Simulations
@@ -332,7 +325,7 @@ def main():
                                            )
     simulations_parser.add_argument('in_diagnostic_headers_file',
                                  help='Diagnostic headers file with data pointers (input)')
-
+    simulations_parser.set_defaults(drs=None)
 
     options=parser.parse_args()
 
@@ -342,8 +335,8 @@ def main():
     getattr(paths_dict,options.command)(options)
     #print paths_dict.pointers.tree
     #Close the file:
-    #if not paths_dict==None:
-    #    close_json(paths_dict.pointers,options)
+    if 'out_diagnostic_headers_file' in dir(options):
+        close_json(paths_dict,options)
 
 if __name__ == "__main__":
     main()
