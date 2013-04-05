@@ -26,6 +26,7 @@ optimset
 The first step is to create a diagnostic header file in JSON format. We will call this file ``test_diags.hdr``::
 
     {
+    "header":{
     "diagnostic_name":"test_diags",
     "experiment_list":
         {
@@ -48,12 +49,13 @@ The first step is to create a diagnostic header file in JSON format. We will cal
         "HTTPServer"
         ]
     }
+    }
 
 .. note::
     This file structure is likely to evolve over time.
 
 The five first entries are not necessary for ``cdb_query_archive optimset``. They are used for other tools being
-developed in parallel.
+developed as part of this project.
 
 * The ``experiment_list`` entry lists the resquested experiments and the requested years range. 
   More than one experiment can be specified.
@@ -89,46 +91,48 @@ By using the ``simulations`` command on the output it possible to find how many 
     $ cdb_query_archive simulations test_diags_pointers.hdr
 
 .. important::
-    Before running ``optimset_months`` and ``retrieve`` the user must be logged onto the ESGF using a
+    Before running ``optimset_time`` and ``list_paths`` the user must be logged onto the ESGF using a
     ``myproxy`` client.
 
-optimset_months
+optimset_time
 ^^^^^^^^^^^^^^^
 
-If ``optimset`` returned enough models, it is important to ensure that all the requested years are available. To do so,
-one runs ``optimset_months``::
+If ``optimset`` returned enough models, it is important to ensure that all the requested years and months are available. To do so,
+one runs ``optimset_time``::
 
-    $ cdb_query_archive optimset_months test_diags_ponters.hdr test_diags_pointers_months.hdr
+    $ cdb_query_archive optimset_time test_diags_ponters.hdr test_diags_pointers_time.hdr
 
 The returned file is easy to reuse but is extremely redundant and therefore results in large files.
 It is suggested that it be output in gzip format::
 
-    $ cdb_query_archive optimset_months -z test_diags_ponters.hdr test_diags_pointers_months.hdr
+    $ cdb_query_archive optimset_time -z test_diags_ponters.hdr test_diags_pointers_time.hdr
 
-This command will create the file ``test_diags_pointers_months.hdr.gz``, which can be ``gunzipped`` to  
+This command will create the file ``test_diags_pointers_time.hdr.gz``, which can be ``gunzipped`` to  
 obtain the same output that would be obtained without the ``-z`` option.
 
 .. note::
-    ``optimset_months`` must be run before ``cdb_driver`` described in section :ref:`cdb_driver_tutorial`.
+    ``optimset_time`` must be run before ``cdb_driver`` described in section :ref:`cdb_driver_tutorial`.
 
-retrieve
-^^^^^^^^
+list_paths
+^^^^^^^^^^
 
-The retrieval command simply reads ``test_diags_pointers_months.hdr`` and returns a path to the file::
+The ``list_paths`` command simply reads ``test_diags_pointers_time.hdr`` and returns a path to the file::
 
-    $ cdb_query_archive retrieve MOHC HadGEM2-A amip r1i1p1 ta day atmos day 2000 10 test_diags_pointers.hdr
+    $ cdb_query_archive list_paths --center=MOHC --model=HadGEM2-A --experiment=amip --rip=r1i1p1
+        --var=ta --frequency=day --realm=atmos --mip=day --year=2000 --month=10 test_diags_pointers.hdr
     http://cmip-dn1.badc.rl.ac.uk/thredds/dodsC/cmip5.output1.MOHC.HadGEM2-A.amip.day.atmos.day.r1i1p1.ta.20110513.aggregation.1
 
 In this case, it returns an ``OPeNDAP`` aggregation pointer. If ``-z`` was used in the ``optimset`` query, the
-``retrieve`` steps works seamlessly if th ``.gz`` is kept in the filename::
+``list_paths`` steps works seamlessly if th ``.gz`` is kept in the filename::
 
-    $ cdb_query_archive retrieve MOHC HadGEM2-A amip r1i1p1 ta day atmos day 2000 10 test_diags_pointers.hdr.gz
+    $ cdb_query_archive list_paths --center=MOHC --model=HadGEM2-A --experiment=amip --rip=r1i1p1
+        --var=ta --frequency=day --realm=atmos --mip=day --year=2000 --month=10 test_diags_pointers.hdr
     http://cmip-dn1.badc.rl.ac.uk/thredds/dodsC/cmip5.output1.MOHC.HadGEM2-A.amip.day.atmos.day.r1i1p1.ta.20110513.aggregation.1|9527|9557
 
-The string ``|9527|9557`` is not part of the ``OPeNDAP`` url but they give the indices corresponding to October 2000.
-To use this string efficiently, there flag ``-f`` passed to ``retrieve`` returns only the file type::
+The string ``|9527|9557`` is not part of the ``OPeNDAP`` url but it gives the indices corresponding to October 2000.
+To use this string efficiently, there flag ``-f`` passed to ``list_paths`` returns only the file type::
 
-    $ cdb_query_archive retrieve MOHC HadGEM2-A amip r1i1p1 ta day atmos day 2000 10 test_diags_pointers.hdr.gz -f
+    $ cdb_query_archive list_paths MOHC HadGEM2-A amip r1i1p1 ta day atmos day 2000 10 test_diags_pointers.hdr.gz -f
     OPeNDAP
 
 .. note::
@@ -143,6 +147,7 @@ To run the diagnostic, one must have put informations about the run directories
 in the diagnostic header file `test_diags.hdr`::
 
     {
+    "header":{
     "diagnostic_name":"test_diags",
     "experiment_list":
         {
@@ -170,11 +175,12 @@ in the diagnostic header file `test_diags.hdr`::
     "temp_dir":"./temp",
     "months_list":[1,2,12]
     }
+    }
 
-One must first run ``optimset`` and ``optimset_month`` sequentially::
+One must first run ``optimset`` and ``optimset_time`` sequentially::
 
     $ cdb_query_archive optimset test_diags.hdr test_diags_pointers.hdr
-    $ cdb_query_archive optimset_months -z test_diags_ponters.hdr test_diags_pointers_months.hdr
+    $ cdb_query_archive optimset_time -z test_diags_ponters.hdr test_diags_pointers_time.hdr
 
 and then run ``cdb_driver`` on the result::
 

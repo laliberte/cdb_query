@@ -7,7 +7,7 @@ The ``cdb_driver`` command includes many options. Its help command lists:
 
 .. command-output:: cdb_driver --help
 
-The ``cdb_driver`` takes as an argument a header file that was pre-processed by ``cdb_query_archive optimset_months`` and returns 
+The ``cdb_driver`` takes as an argument a header file that was pre-processed by ``cdb_query_archive optimset_time`` and returns 
 ``bash`` scripts for each model, rip, experiment combination.
 
 There are two groups of optional arguments: Setup and Processing. 
