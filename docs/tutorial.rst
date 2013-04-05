@@ -188,3 +188,57 @@ and then run ``cdb_driver`` on the result::
 
 See section :ref:`cdb-driver-description` for a complete description of the options available in the driver script.
 
+Advanced Options
+----------------
+
+slice
+^^^^^
+
+Let say that the result is too large or that it includes undesired features. For example, you like to subset your results
+to a single year in order to debug your scripts. This would be accomplished with the ``slice`` command::
+
+    $ cdb_query_archive slice --year=1979 test_diags_pointers_time.hdr.gz test_diags_pointers_time.hdr.1979
+
+The result will the same file as ``test_diags_pointers_time.hdr.gz`` but with only the year 1979 left.
+Other options (they can be combined) are::
+
+    $ cdb_query_archive slice --help
+      --file_type FILE_TYPE
+                            File type: OPEnDAP, local_file, HTTPServer, GridFTP
+      --rip RIP             RIP identifier, e.g. r1i1p1
+      --month MONTH         Month as an integer ranging from 1 to 12
+      --frequency FREQUENCY
+                            Frequency, e.g. day
+      --year YEAR           Year
+      --realm REALM         Realm, e.g. atmos
+      --center CENTER       Modelling center name
+      --experiment EXPERIMENT
+                            Experiment name
+      --var VAR             Variable name, e.g. tas
+      --mip MIP             MIP table name, e.g. day
+      --model MODEL         Model name
+
+find_local
+^^^^^^^^^^
+
+Let say that in the file ``test_diags_pointers_time.hdr.gz`` some of the remote links have ``file_type``=``HTTPServer``.
+Then these links will have to be retrieved before an analysis can be carried.
+By performing the command::
+
+    $ cdb_query_archive list_paths --wget --file_type=HTTPServer test_diags_pointers_time.hdr.gz
+
+A list of ``wget`` filenames with checksums is printed and these can be used to retrieve the files.
+The files will be put in the ``output_dir/in`` and will preserve the CMIP5 DRS.
+
+The command ``find_local`` can then be used to convert the pointers 
+file that contain only local links::
+
+    $ cdb_query_archive find_local test_diags_pointers_time.hdr.gz test_diags_pointers_time.hdr.local
+
+.. warning::
+    DO NOT DELETE the file ``test_diags_pointers_time.hdr.gz``. This file contains a snapshot of the archive 
+    that you could need to reuse in the future. Moreover, this file could be passed to collaborators or submitted
+    as supplementary material when publishing results based on CMIP5 data. That will ensure exact reproducibility
+    or your results (unless the remote files are changed without having their version number changed. In an ideal
+    world this should not happen).
+
