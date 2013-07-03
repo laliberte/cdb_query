@@ -3,7 +3,6 @@ import copy
 import warnings
 from pyesgf.search import SearchConnection
 
-import database_utils
 from tree_utils import File_Expt
 
 import multiprocessing as mproc
