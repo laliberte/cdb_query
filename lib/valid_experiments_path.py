@@ -1,6 +1,7 @@
 import copy
 from tree_utils import File_Expt
 
+
 import sqlalchemy
 
 
@@ -17,7 +18,6 @@ def intersection(diagnostic):
     #Step one: find all the center / model tuples with all the requested variables
     simulations_list=diagnostic.simulations_list()
     model_list=copy.copy(simulations_list)
-
 
     for experiment in diagnostic.header['experiment_list'].keys():
         for var_name in diagnostic.header['variable_list'].keys():

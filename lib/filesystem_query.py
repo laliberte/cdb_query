@@ -6,11 +6,14 @@ def get_immediate_subdirectories(path):
     return [name for name in os.listdir(path)
                 if os.path.isdir(os.path.join(path, name))]
 
-def descend_tree(pointers,header_simple,search_path):
-    pointers.file_expt.search=search_path
-    pointers.file_expt.file_type='local_file'
-    pointers.file_expt.time='all'
-    descend_tree_recursive(header_simple,pointers,pointers.tree_desc[2:],search_path)
+def descend_tree(pointers,header,header_simple,search_path):
+    filesystem_file_type='local_file'
+    if filesystem_file_type in header['file_type_list']:
+        pointers.file_expt.search=search_path
+        pointers.file_expt.file_type='local_file'
+        pointers.file_expt.time='all'
+        descend_tree_recursive(header_simple,pointers,pointers.tree_desc[3:],
+                                os.path.abspath(os.path.expanduser(os.path.expandvars(search_path))))
     return
 
 def descend_tree_recursive(header_simple,pointers,tree_desc,top_path):
@@ -22,9 +25,6 @@ def descend_tree_recursive(header_simple,pointers,tree_desc,top_path):
         if len(file_list)>0:
             for file in file_list:
                 pointers.file_expt.path=file
-                #for item in dir(pointers.file_expt):
-                #    if not item[0]=='_':
-                #        print item, getattr(pointers.file_expt,item)
                 pointers.add_item()
         return
     else:

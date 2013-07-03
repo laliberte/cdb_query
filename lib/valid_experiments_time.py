@@ -1,31 +1,33 @@
 import copy
 import os
-import tree_utils
+
 from tree_utils import File_Expt
+import tree_utils
+
+import retrieval_utils
+
+import netcdf_utils
 
 import sqlalchemy
 
 import numpy as np
 
-from netCDF4 import Dataset
-from netcdftime import utime
-
-
 def find_time(pointers,file_expt):
     #session,file_expt,path_name,file_type,propagated_values):
     #Top function to define how the time axis is created:
-    if file_expt.file_type in ['HTTPServer','GridFTP']:
+    if file_expt.file_type in ['HTTPServer']:
+        if retrieval_utils.check_file_availability(file_expt.path.split('|')[0]):
+            find_time_file(pointers,file_expt)
+    elif file_expt.file_type in ['GridFTP']:
         find_time_file(pointers,file_expt)
-        #session,file_expt,path_name)
     elif file_expt.file_type in ['local_file','OPeNDAP']:
         find_time_opendap(pointers,file_expt)
-        #session,file_expt,path_name,propagated_values['frequency'])
     return
         
 def find_time_file(pointers,file_expt):#session,file_expt,path_name):
     #If the path is a remote file, we must use the time stamp
     filename=os.path.basename(file_expt.path)
-
+    
     #Check if file has fixed frequency or is a climatology:
     time_stamp=filename.replace('.nc','').split('_')[-1]
     if time_stamp[0] == 'r':
@@ -67,7 +69,7 @@ def find_time_opendap(pointers,file_expt):
         pointers.session.commit()
         return
 
-    year_axis, month_axis = get_year_axis(file_expt.path)
+    year_axis, month_axis = netcdf_utils.get_year_axis(file_expt.path)
     if year_axis is None or month_axis is None:
         #File could not be opened and should be excluded from analysis
         return
@@ -76,7 +78,7 @@ def find_time_opendap(pointers,file_expt):
     for year in set(year_axis):
         year_id = np.where(year_axis==year)[0]
 
-        if frequency in ['yr']:
+        if file_expt.frequency in ['yr']:
             month_id=year_id
             for month in range(1,13):
                 file_expt_copy = copy.deepcopy(file_expt)
@@ -94,28 +96,6 @@ def find_time_opendap(pointers,file_expt):
         pointers.session.commit()
     return
 
-def get_year_axis(path_name):
-    try:
-        #print 'Loading file... ',
-        #print path_name
-        data=Dataset(path_name)
-        dimensions_list=data.dimensions.keys()
-        if 'time' not in dimensions_list:
-            raise Error('time is missing from variable')
-        time_axis = data.variables['time'][:]
-        if 'calendar' in dir(data.variables['time']):
-            cdftime=utime(data.variables['time'].units,calendar=data.variables['time'].calendar)
-        else:
-            cdftime=utime(data.variables['time'].units)
-        #print ' Done!'
-        data.close()
-    except:
-        return None, None
-
-    date_axis=cdftime.num2date(time_axis)
-    year_axis=np.array([date.year for date in date_axis])
-    month_axis=np.array([date.month for date in date_axis])
-    return year_axis, month_axis
 
 #def intersection(self,diag_tree_desc, diag_tree_desc_final):
 def intersection(diagnostic):
@@ -170,7 +150,7 @@ def intersection(diagnostic):
                                 missing_vars.append(var_name+':'+','.join(
                                                     diagnostic.header['variable_list'][var_name])+
                                                     ' for some months: '+','.join(
-                                                    sorted(set(time for time in set(time_list).difference(time_list_var)))
+                                                    sorted(set(time[:4] for time in set(time_list).difference(time_list_var)))
                                                     )
                                                    )
             if len(missing_vars)>0:
@@ -186,44 +166,56 @@ def intersection(diagnostic):
 
     #Delete the original tree to rebuild it with only the elements we want:
     diagnostic.pointers.clear_tree(diagnostic.header['drs'])
+    
+    #time-less variables:
+    time_less_frequencies=['fx','clim']
     #Loop through models:
     for model in model_list:
-        print model
+        print '_'.join(model)
         item_list=diagnostic.pointers.session.query(
                                   File_Expt
                                  ).filter(sqlalchemy.and_(
                                                             File_Expt.center==model[0],
                                                             File_Expt.model==model[1],
                                                          )).all()
-        for item in item_list:
-            if item.var in diagnostic.header['variable_list'].keys():
-                if [item.frequency,item.realm,item.mip]==diagnostic.header['variable_list'][item.var]:
-                    #Retrieve the demanded years list for this experiment
-                    period_list = diagnostic.header['experiment_list'][item.experiment]
-                    if not isinstance(period_list,list): period_list=[period_list]
-                    for period in period_list:
-                        years_range=[int(year) for year in period.split(',')]
-                        years_list=range(*years_range)
-                        years_list.append(years_range[1])
+        item_list_final=[item for item in item_list if 
+                                    item.var in diagnostic.header['variable_list'].keys() and
+                                    not item.frequency in time_less_frequencies and
+                                    [item.frequency,item.realm,item.mip]==diagnostic.header['variable_list'][item.var] and
+                                    item.rip==model[2]
+                         ]
+        item_list_final.extend(
+                        [item for item in item_list if 
+                            item.var in diagnostic.header['variable_list'].keys() and
+                            item.frequency in time_less_frequencies and
+                            [item.frequency,item.realm,item.mip]==diagnostic.header['variable_list'][item.var]
+                        ]
+                        )
+        
+        for item in item_list_final:
+            #Retrieve the demanded years list for this experiment
+            period_list = diagnostic.header['experiment_list'][item.experiment]
+            if not isinstance(period_list,list): period_list=[period_list]
+            for period in period_list:
+                years_range=[int(year) for year in period.split(',')]
+                years_list=range(*years_range)
+                years_list.append(years_range[1])
 
-                        for year in years_list:
-                            for month in range(1,13):
-                                time_list.append(str(year)+str(month).zfill(2))
+                time_list=[ str(year)+str(month).zfill(2) for year in years_list for month in diag_months_list]
 
-                        if not item.frequency in ['fx','clim']:
-                            #Works if the variable is not fx:
-                            if item.rip==model[2]:
-                                if item.time in time_list:
-                                    for val in dir(item):
-                                        if val[0]!='_':
-                                            setattr(diagnostic.pointers.file_expt,val,getattr(item,val))
-                                    diagnostic.pointers.add_item()
-                        else:
-                            #If fx, we create the time axis for easy retrieval:
-                            for time in time_list:
-                                item.time=time
-                                for val in dir(item):
-                                    if val[0]!='_':
-                                        setattr(diagnostic.pointers.file_expt,val,getattr(item,val))
-                                diagnostic.pointers.add_item()
+                if not item.frequency in time_less_frequencies:
+                    #Works if the variable is not fx:
+                    if item.time in time_list:
+                        diagnostic.pointers.attribute_item(item)
+                        #print('Adding item')
+                        diagnostic.pointers.add_item()
+                        #print('Done adding item')
+                else:
+                    #If fx, we create the time axis for easy retrieval:
+                    for time in time_list:
+                        item.time=time
+                        diagnostic.pointers.attribute_item(item)
+                        diagnostic.pointers.add_item()
+            #print [ getattr(item,val) for val in dir(item) if val[0]!='_']
+            #print('Done item list')
     return 

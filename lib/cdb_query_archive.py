@@ -7,6 +7,8 @@ import esgf_query
 import valid_experiments_path
 import valid_experiments_time
 
+import copy
+
 #import database_utils
 import json
 import gzip
@@ -73,7 +75,7 @@ class SimpleTree:
         return
 
     def simulations_list(self):
-        simulations_list=self. pointers.session.query(
+        simulations_list=self.pointers.session.query(
                                                          File_Expt.center,
                                                          File_Expt.model,
                                                          File_Expt.rip
@@ -84,20 +86,22 @@ class SimpleTree:
         #First simplify the header
         self.union_header()
 
-
         #Local filesystem archive
         local_paths=[search_path for search_path in 
-                        [ os.path.abspath(os.path.expanduser(os.path.expandvars(path))) for path in self.header['search_list']]
-                        if os.path.exists(search_path)]
+                        self.header['search_list']
+                        if os.path.exists(os.path.abspath(os.path.expanduser(os.path.expandvars(search_path))))]
+                        #[ os.path.abspath(os.path.expanduser(os.path.expandvars(path))) for path in self.header['search_list']]
         for search_path in local_paths:
-            filesystem_query.descend_tree(self.pointers,self.header_simple,os.path.abspath(search_path))
+            filesystem_query.descend_tree(self.pointers,self.header,self.header_simple,search_path)
+
 
         #ESGF search
         remote_paths=[search_path for search_path in 
-                        [ os.path.expanduser(os.path.expandvars(path)) for path in self.header['search_list']]
-                            if not os.path.exists(search_path) ]
+                        self.header['search_list']
+                        if not os.path.exists(os.path.abspath(os.path.expanduser(os.path.expandvars(search_path))))]
+                        #[ os.path.expanduser(os.path.expandvars(path)) for path in self.header['search_list']]
         for search_path in remote_paths:
-            esgf_query.descend_tree(self.pointers,self.header,search_path)
+            esgf_query.descend_tree(self.pointers,self.header,search_path,options)
 
             
         #Redefine the DRS:
@@ -110,6 +114,9 @@ class SimpleTree:
         return
 
     def optimset_time(self,options):
+        #First slice the input:
+        self.pointers.slice(options)
+
         #Find the list of center / model with all the months for all the years / experiments and variables requested:
         self.header['drs']=[
                                 'experiment','center','model','rip','frequency','realm','mip',
@@ -119,6 +126,10 @@ class SimpleTree:
 
         #Find the unique tree:
         self.pointers.simplify(self.header)
+        return
+
+    def slice(self,options):
+        self.pointers.slice(options)
         return
 
     def simulations(self,options):
@@ -134,7 +145,7 @@ class SimpleTree:
     def list_paths(self,options):
         #slice with options:
         self.pointers.slice(options)
-        for path in self.pointers.level_list_last():
+        for path in sorted(list(set(self.pointers.level_list_last()))):
             if 'wget' in dir(options) and options.wget:
                 print('\''+
                       '/'.join(path.split('|')[0].split('/')[-10:])+
@@ -154,32 +165,30 @@ class SimpleTree:
                                 if os.path.exists(top_path)]
         local_search_path=[ os.path.abspath(top_path) for top_path in local_search_path]
 
-        #Find the file types in the paths_dict:
-        file_types=self.list_level('file_type')
-
         #For each remote file type, find the paths and see if a local copy exists:
         path_equivalence=dict()
-        for file_type in set(file_types).intersection(['HTTPServer','GridFTP']):
-            options.file_type=file_type
-            sliced_paths_dict=slice_data(restricted_paths_dict,options)
-            path_names=sorted(set(tree_retrieval(sliced_paths_dict['data_pointers'],options)))
-        
-            for path in path_names:
-                path_equivalence[path]=None
-                for search_path in local_search_path:
-                    md5checksum=path.split('|')[1]
-                    path_to_file=search_path+'/'+'/'.join(path.split('|')[0].split('/')[-10:])
-                    try:
-                        f=open(path_to_file)
-                        if md5_for_file(f)==md5checksum:
-                            path_equivalence[path]=path_to_file
-                            break
-                    except:
-                        pass
+        options.file_type=['HTTPServer','GridFTP']
+        pointers_copy=copy.deepcopy(self.pointers.tree)
+        self.pointers.slice(options)
+
+        for path in sorted(list(set(self.pointers.level_list_last()))):
+            for search_path in local_search_path:
+                md5checksum=path.split('|')[1]
+                path_to_file=search_path+'/'+'/'.join(path.split('|')[0].split('/')[-10:])
+                try:
+                    f=open(path_to_file)
+                    if md5_for_file(f)==md5checksum:
+                        path_equivalence[path]=path_to_file
+                        break
+                except:
+                    pass
+
+        #Replace original tree:
         options.file_type=None
-        converted_paths_dict, options=database_utils.replace_path(restricted_paths_dict['data_pointers'],options,path_equivalence)
-        restricted_paths_dict['data_pointers']=converted_paths_dict
-        return restricted_paths_dict
+        self.pointers.tree=pointers_copy
+
+        self.pointers.replace_last(path_equivalence)
+        return
                 
 def md5_for_file(f, block_size=2**20):
     md5 = hashlib.md5()
@@ -191,8 +200,49 @@ def md5_for_file(f, block_size=2**20):
     return md5.hexdigest()
 
 def find_simulations(pointers,file_expt):
+    #for item in dir(file_expt):
+    #    if item[0]!='_':
+    #        print getattr(file_expt,item)
     pointers.session.add(file_expt)
     pointers.session.commit()
+    return
+
+def input_arguments(parser):
+    parser.add_argument('in_diagnostic_headers_file',
+                                 help='Diagnostic headers file (input)')
+    parser.add_argument('out_diagnostic_headers_file',
+                                 help='Diagnostic paths file (output)')
+    parser.add_argument('-z','--gzip',
+                                 default=False, action='store_true',
+                                 help='Compress the output using gzip. Because the output is mostly repeated text, this leads to large compression.')
+    return
+
+def optimset_slicing_arguments(parser):
+    #Define the data slicing arguments in a dictionnary:
+    slicing_args={
+                  'center': [str,'Modelling center name'],
+                  'model': [str,'Model name'],
+                  'rip': [str,'RIP identifier, e.g. r1i1p1']
+                  }
+    for arg in slicing_args.keys():
+        parser.add_argument('--'+arg,type=slicing_args[arg][0],help=slicing_args[arg][1])
+    return
+
+def slicing_arguments(parser):
+    optimset_slicing_arguments(parser)
+    #Define the data slicing arguments in a dictionnary:
+    slicing_args={
+                  'experiment': [str,'Experiment name'],
+                  'var': [str,'Variable name, e.g. tas'],
+                  'frequency': [str,'Frequency, e.g. day'],
+                  'realm': [str,'Realm, e.g. atmos'],
+                  'mip': [str,'MIP table name, e.g. day'],
+                  'year': [int,'Year'],
+                  'month': [int,'Month as an integer ranging from 1 to 12'],
+                  'file_type': [str,'File type: OPEnDAP, local_file, HTTPServer, GridFTP']
+                  }
+    for arg in slicing_args.keys():
+        parser.add_argument('--'+arg,type=slicing_args[arg][0],help=slicing_args[arg][1])
     return
 
 def main():
@@ -228,13 +278,14 @@ def main():
                                            epilog=epilog_optimset,
                                            formatter_class=argparse.RawTextHelpFormatter
                                          )
-    optimset_parser.add_argument('in_diagnostic_headers_file',
-                                 help='Diagnostic headers file (input)')
-    optimset_parser.add_argument('out_diagnostic_headers_file',
-                                 help='Diagnostic paths file (output)')
-    optimset_parser.add_argument('-z','--gzip',
+    input_arguments(optimset_parser)
+    optimset_slicing_arguments(optimset_parser)
+    optimset_parser.add_argument('--num_procs',
+                                 default=1, type=int,
+                                 help='Use num_procs processors to query the archive. NOT WORKING YET.')
+    optimset_parser.add_argument('--distrib',
                                  default=False, action='store_true',
-                                 help='Compress the output using gzip. Because the output is mostly repeated text, this leads to large compression.')
+                                 help='Distribute the search. Will likely result in a pointers originating from one node.')
     optimset_parser.set_defaults(drs=['time','search','file_type','center','model','experiment','frequency','realm','mip','rip','version','var','path'])
 
     #Find Optimset Months
@@ -250,37 +301,17 @@ def main():
                                            epilog=epilog_optimset_time,
                                            formatter_class=argparse.RawTextHelpFormatter
                                          )
-    optimset_time_parser.add_argument('in_diagnostic_headers_file',
-                                 help='Diagnostic headers file (input)')
-    optimset_time_parser.add_argument('out_diagnostic_headers_file',
-                                 help='Diagnostic paths file (output)')
-    optimset_time_parser.add_argument('-z','--gzip',
-                                 default=False, action='store_true',
-                                 help='Compress the output using gzip. Because the output is mostly repeated text, this leads to large compression.')
+    input_arguments(optimset_time_parser)
+    slicing_arguments(optimset_time_parser)
     optimset_time_parser.set_defaults(drs=None)
 
-    #Define the data slicing arguments in a dictionnary:
-    slicing_args={
-                  'center': [str,'Modelling center name'],
-                  'model': [str,'Model name'],
-                  'experiment': [str,'Experiment name'],
-                  'rip': [str,'RIP identifier, e.g. r1i1p1'],
-                  'var': [str,'Variable name, e.g. tas'],
-                  'frequency': [str,'Frequency, e.g. day'],
-                  'realm': [str,'Realm, e.g. atmos'],
-                  'mip': [str,'MIP table name, e.g. day'],
-                  'year': [int,'Year'],
-                  'month': [int,'Month as an integer ranging from 1 to 12'],
-                  'file_type': [str,'File type: OPEnDAP, local_file, HTTPServer, GridFTP']
-                  }
 
     #List_paths
     list_parser=subparsers.add_parser('list_paths',
                                            help='List paths (on file system or url) to files containing:\n\
                                                  ',
                                            )
-    for arg in slicing_args.keys():
-        list_parser.add_argument('--'+arg,type=slicing_args[arg][0],help=slicing_args[arg][1])
+    slicing_arguments(list_parser)
     list_parser.add_argument('in_diagnostic_headers_file',
                                  help='Diagnostic headers file with data pointers (input)')
 
@@ -295,44 +326,33 @@ def main():
                                            help='Slice the data according the passed keywords.',
                                            argument_default=argparse.SUPPRESS
                                            )
-    for arg in slicing_args.keys():
-        slice_parser.add_argument('--'+arg,type=slicing_args[arg][0],help=slicing_args[arg][1])
-    slice_parser.add_argument('in_diagnostic_headers_file',
-                                 help='Diagnostic headers file with data pointers (input)')
-    slice_parser.add_argument('out_diagnostic_headers_file',
-                                 help='Diagnostic paths file (output)')
-    slice_parser.add_argument('-z','--gzip',
-                                 default=False, action='store_true',
-                                 help='Compress the output using gzip. Because the output is mostly repeated text, this leads to large compression.')
     slice_parser.set_defaults(drs=None)
+    input_arguments(slice_parser)
+    slicing_arguments(slice_parser)
 
     #find_local
     find_local_parser=subparsers.add_parser('find_local',
                                            help='Find the local files that were downloaded'
                                            )
-    for arg in slicing_args.keys():
-        find_local_parser.add_argument('--'+arg,type=slicing_args[arg][0],help=slicing_args[arg][1])
-    find_local_parser.add_argument('in_diagnostic_headers_file',
-                                 help='Diagnostic headers file with data pointers (input)')
-    find_local_parser.add_argument('out_diagnostic_headers_file',
-                                 help='Diagnostic paths file (output)')
-    find_local_parser.add_argument('-z','--gzip',
-                                 default=False, action='store_true',
-                                 help='Compress the output using gzip. Because the output is mostly repeated text, this leads to large compression.')
     find_local_parser.set_defaults(drs=None)
-
+    input_arguments(find_local_parser)
+    slicing_arguments(find_local_parser)
 
     #Simulations
     simulations_parser=subparsers.add_parser('simulations',
                                            help='Prints the (center_model_rip) triples available in the pointers file.'
                                            )
-    for arg in slicing_args.keys():
-        simulations_parser.add_argument('--'+arg,type=slicing_args[arg][0],help=slicing_args[arg][1])
+    slicing_arguments(simulations_parser)
     simulations_parser.add_argument('in_diagnostic_headers_file',
                                  help='Diagnostic headers file with data pointers (input)')
     simulations_parser.set_defaults(drs=None)
 
     options=parser.parse_args()
+
+    #Slicing time is perculiar
+    for time_opt in ['year','month']:
+        if time_opt in dir(options) and getattr(options,time_opt):
+            options.time=True
 
     #Load pointer file:
     paths_dict=SimpleTree(open_json(options))

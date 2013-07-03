@@ -6,8 +6,6 @@ import textwrap
 import json
 import cdb_query_archive
 
-import cdb_query_archive
-
 class Open_With_Indent:
     """This class creates an open file were indentation is tracked"""
 
@@ -73,7 +71,7 @@ class Experiment_Setup:
         out.writei('export CDB_RUN_ID="{0}"\n'.format(self.rip))
         out.writei('export CDB_EXPT="{0}"\n'.format(self.experiment))
         out.writei('export CDB_DIAG_NAME="{0}"\n'.format(self.diagnostic))
-        out.writei('export CDB_DIAG_HEADER="{0}"\n'.format(os.path.abspath(self.diag_header)))
+        out.writei('export CDB_DIAG_HEADER="{0}"\n'.format(os.path.abspath(self.in_diagnostic_headers_file)))
         out.writei('export CDB_OUT_FILE=${CDB_DIAG_NAME}_${CDB_MODEL}_${CDB_EXPT}_$(echo $CDB_YEARS | tr \',\' \'_\')_${CDB_RUN_ID}\n')
         out.writei('\n')
         out.writei('#SET THE OUTPUT DIRECTORY\n')
@@ -313,7 +311,8 @@ def main():
                             usage=usage,
                             version='%(prog)s '+version_num,
                             epilog=epilog)
-    parser.add_argument("diag_header")
+    parser.add_argument("in_diagnostic_headers_file")
+    parser.set_defaults(drs=None)
 
     #Setup options
     setup_group=parser.add_argument_group("Setup","These options must be set when using this script")
@@ -368,14 +367,13 @@ def main():
     options = parser.parse_args()
 
     #Load diagnostic description file:
-    if options.diag_header[-3:]=='.gz':
-        import gzip
-        infile=gzip.open(options.diag_header,'r')
-    else:
-        infile=open(options.diag_header,'r')
-    paths_dict=json.load(infile)
+    paths_dict=cdb_query_archive.SimpleTree(cdb_query_archive.open_json(options))
+    paths_dict.pointers.slice(options)
+    paths_dict.pointers.create_database(cdb_query_archive.find_simulations)
 
-    diag_desc=paths_dict['diagnostic']
+    simulations_list=paths_dict.simulations_list()
+
+    diag_desc=paths_dict.header
 
     if options.submit: print('Submitting jobs using qsub -q '+options.queue)
 
@@ -398,8 +396,8 @@ def main():
     else:
         options.months_list=range(1,13)
 
-    for simulation in paths_dict['simulations_list']:
-        options.center, options.model, options.rip = simulation.split('_')
+    for simulation in paths_dict.simulations_list():
+        options.center, options.model, options.rip = simulation
         for exp in diag_desc['experiment_list'].keys():
             options.experiment=exp
             period_list=diag_desc['experiment_list'][exp]
@@ -412,8 +410,8 @@ def main():
                 experiment = Experiment_Setup(options)
                 experiment.prepare_scripts()
 
-                options.file_type='HTTPServer'
-                print cdb_query_archive.list_unique_paths(paths_dict,options)
+                #options.file_type='HTTPServer'
+                #print cdb_query_archive.list_unique_paths(paths_dict,options)
 
                 if options.run:
                     os.system('bash '+experiment.runscript_file)

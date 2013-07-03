@@ -1,6 +1,10 @@
 import sqlalchemy
 import sqlalchemy.orm
 import numpy as np
+import datetime
+import os
+
+import netcdf_utils
 
 import copy
 
@@ -51,19 +55,25 @@ class Tree:
         add_item_recursive(self.tree,self.tree_desc,item_desc)
         return
 
+    def attribute_item(self,item):
+        for val in dir(item):
+            if val[0]!='_':
+                setattr(self.file_expt,val,getattr(item,val))
+        return
+
     def slice(self,options):
         #Removes branches of a tree
-        num_remaining_values=slice_recursive(self,options)
+        num_remaining_values=slice_recursive(self.tree,options)
         if num_remaining_values==0:
             del self.tree
             self.tree=tree_type()
         return
 
     def level_list(self,level_to_list):
-        return level_list_data(self.tree,level_to_list)
+        return level_list_recursive(self.tree,level_to_list)
 
     def level_list_last(self):
-        return level_list_data(self.tree,'last')
+        return level_list_recursive(self.tree,'last')
 
     def simplify(self,header):
         simplify_recursive(self.tree,header)
@@ -98,7 +108,7 @@ def add_item_recursive(tree,tree_desc,item_desc):
     return
 
 def slice_recursive(tree,options):
-    if isinstance(tree,dict):
+    if isinstance(tree,dict) and tree:
         if '_name' not in tree.keys():
             raise IOError('The tree in slice must have _name entry at each level except the last')
 
@@ -107,67 +117,84 @@ def slice_recursive(tree,options):
         #Delete the values that were not mentioned:
         if level_name in [opt for opt in dir(options) if getattr(options,opt)]:
             for value in [item for item in tree.keys() if item[0]!='_']:
-                if (value!=str(getattr(options,level_name))):del tree[value]
+                if level_name!='time':
+                    value_list=getattr(options,level_name)
+                    if not isinstance(value_list,list): value_list=[value_list]
+                    if (not value in [str(item) for item in value_list]):del tree[value]
+                else:
+                    #special treatment for time:
+                    date_obj=datetime.datetime(int(value[:-2]),int(value[-2:]),1)
+                    for unit in ['year','month','day','hour','minute','second']:
+                        if unit in dir(options) and getattr(options,unit) and getattr(options,unit)!=getattr(date_obj,unit):
+                            if value in tree.keys(): del tree[value]
 
         list_of_remaining_values=[item for item in tree.keys() if item[0]!='_']
         #Loop over the remaining values:
         for value in list_of_remaining_values:
             remaining_entries=slice_recursive(tree[value],options)
-            if len(remaining_entries)==0: del tree[value]
+            if remaining_entries==0: del tree[value]
 
-    #Return the number of remaining values:
-    return len([item for item in tree.keys() if item[0]!='_'])
+        #Return the number of remaining values:
+        return len([item for item in tree.keys() if item[0]!='_'])
+    else:
+        return 1
 
-def level_list_data(tree,level_to_list):
-    if isinstance(tree,dict):
+def level_list_recursive(tree,level_to_list):
+    if isinstance(tree,dict) and tree:
         if '_name' not in tree.keys():
-            raise IOError('Dictionnary passed to list_level_data must have a _name entry at each level except the last')
+            raise IOError('Dictionnary passed to list_level_recursive must have a _name entry at each level except the last')
 
         level_name=tree['_name']
         if level_to_list==level_name:
             list_of_names=[item for item in tree.keys() if item[0]!='_']
         else:
             list_of_names=list(sorted(set(
-                               [ name for sublist in [level_list_data(tree[value],level_to_list) for value 
+                               [ name for sublist in [level_list_recursive(tree[value],level_to_list) for value 
                                 in [item for item in tree.keys() if item[0]!='_'] ] for name in sublist ]
                                 )))
-    elif level_to_list=='last':
-        list_of_names=tree
+    elif level_to_list=='last' and tree:
+        list_of_names=[tree[0]]
+    else:
+        list_of_names=[]
     return list_of_names
 
 def simplify_recursive(tree,header):
     #Simplifies the output tree to make it unique:
-    if not isinstance(tree,dict):
-        return
 
-    if '_name' not in tree.keys():
-        raise IOError('Dictionnary passed to simplify must have a _name entry at each level except the last')
+    if isinstance(tree,dict) and tree:
+        if '_name' not in tree.keys():
+            raise IOError('Dictionnary passed to simplify must have a _name entry at each level except the last')
 
-    level_name=tree['_name']
-    if level_name=='version':
-        #the 'version' field is peculiar. Here, we use the most recent, or largest version number:
-        version_list=[int(version[1:]) for version in tree.keys() if str(version)[0]!='_']
+        level_name=tree['_name']
+        if level_name=='version':
+            #the 'version' field is peculiar. Here, we use the most recent, or largest version number:
+            version_list=[int(version[1:]) for version in tree.keys() if str(version)[0]!='_']
 
-        #Keep only the last version:
-        for version in [ ver for ver in version_list if ver!=max(version_list) ]:
-            del tree['v'+str(version)]
+            #Keep only the last version:
+            for version in [ ver for ver in version_list if ver!=max(version_list) ]:
+                del tree['v'+str(version)]
 
-        #Find unique tree by recurrence:
-        simplify_recursive(tree['v'+str(max(version_list))],header)
+            #Find unique tree by recurrence:
+            simplify_recursive(tree['v'+str(max(version_list))],header)
 
-    elif level_name+'_list' in header.keys() and isinstance(header[level_name+'_list'],list):
-        #The level was not specified but an ordered list was provided in the diagnostic header.
-        #Go through the list and pick the first avilable one:
-        level_ordering=[level for level in header[level_name+'_list'] if level in tree.keys()]
+        elif level_name+'_list' in header.keys() and isinstance(header[level_name+'_list'],list):
+            #The level was not specified but an ordered list was provided in the diagnostic header.
+            #Go through the list and pick the first avilable one:
+            level_ordering=[level for level in header[level_name+'_list'] if level in tree.keys()]
 
-        #Keep only the first:
-        if len(level_ordering)>1:
-            for level in level_ordering[1:]: del tree[level]
-
-        simplify_recursive(tree[level_ordering[0]],header)
-    else:
-        for level in [ name for name in tree.keys() if str(name)[0]!='_' ]:
-            simplify_recursive(tree[level],header)
+            #Keep only the first:
+            if len(level_ordering)==0:
+                for level in tree.keys(): del tree[level]
+            else:
+                for level in level_ordering[1:]: del tree[level]
+                simplify_recursive(tree[level_ordering[0]],header)
+                if not tree[level_ordering[0]]:
+                    for level in tree.keys(): del tree[level]
+        else:
+            for level in [ name for name in tree.keys() if str(name)[0]!='_' ]:
+                simplify_recursive(tree[level],header)
+    elif isinstance(tree,list) and tree:
+        tree=[tree[0]]
     return
 
 def replace_last_level(tree,level_equivalence,branch_desc):
@@ -178,32 +205,32 @@ def replace_last_level(tree,level_equivalence,branch_desc):
         level_name=tree['_name']
         for value in [item for item in tree.keys() if item[0]!='_']:
             branch_desc[level_name]=value
-            replace_level(tree[value],level_equivalence,branch_desc)
+            replace_last_level(tree[value],level_equivalence,branch_desc)
             if branch_desc[level_name] != value:
                 #Change the level name if specified:
                 tree[branch_desc[level_name]]=tree.pop(value)
     else:
         if tree[0] in level_equivalence.keys(): 
-            tree=[replace_path(level_equivalence[tree[0]],branch_desc)]
+            tree[0]=replace_path(level_equivalence[tree[0]],branch_desc)
     return
 
 def replace_path(path_name,branch_desc):
-    import valid_experiments_months
     #This function assumes the new path is local_file
     
     #A local copy was found. One just needs to find the indices:
     new_path_name=path_name
     if not branch_desc['frequency'] in ['fx','clim']:
-        year_axis, month_axis = valid_experiments_months.get_year_axis(path_name)
+        year_axis, month_axis = netcdf_utils.get_year_axis(path_name)
         if year_axis is None or month_axis is None:
             raise IOError('replace_path netcdf file could not be opened')
 
-        year_id = np.where(year_axis==int(temp_options.year))[0]
-        if temp_options.frequency in ['yr']:
+        year_id = np.where(year_axis==int(branch_desc['time'][:4]))[0]
+        if branch_desc['frequency'] in ['yr']:
             month_id=year_id
         else:
-            month_id = year_id[np.where(int(temp_options.month)==month_axis[year_id])[0]]
-        new_path_name=[path_name+'|'+str(np.min(month_id))+'|'+str(np.max(month_id))]
+            month_id = year_id[np.where(int(branch_desc['time'][-2:])==month_axis[year_id])[0]]
+
+        new_path_name=path_name+'|'+str(np.min(month_id))+'|'+str(np.max(month_id))
 
     #Change the file_type to "local_file"
     branch_desc['file_type']='local_file'
