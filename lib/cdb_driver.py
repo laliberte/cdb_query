@@ -51,8 +51,8 @@ class Experiment_Setup:
         if self.pbs_expt:
             #If the script is expected to be submitted to a PBS queue, output the required headers:
 	    if self.queue != None: out.writei('#PBS -q {0}\n'.format(self.queue))
-            #out.writei('#PBS -l nodes=1:ppn={0},walltime={1}\n'.format(max(self.dim_async,self.m_async),self.walltime))
-            out.writei('#PBS -l nodes=1:ppn={0}\n'.format(max(self.dim_async,self.m_async)))
+            out.writei('#PBS -l nodes=1:ppn={0},walltime={1}\n'.format(self.m_async,self.walltime))
+            #out.writei('#PBS -l nodes=1:ppn={0}\n'.format(self.m_async))
             out.writei('#PBS -N {0}_{1}_{2}_{3}_{4}\n'.format(self.years[0],self.years[1],self.model,self.rip,self.experiment))
             out.writei('#PBS -o {5}/pbs_out/{0}_{1}_{2}_{3}_{4}\n'.format(self.years[0],self.years[1],self.model,self.rip,self.experiment,self.output_dir))
             out.writei('#PBS -e {5}/pbs_err/{0}_{1}_{2}_{3}_{4}\n'.format(self.years[0],self.years[1],self.model,self.rip,self.experiment,self.output_dir))
@@ -329,14 +329,13 @@ def main():
                              BEWARE! Asynchronous options are largely untested!")
     proc_group.add_argument("--m_async",dest="m_async",
                       default=1,
-                      help="Uses the specified # of processors for the asynchronous processing of months.\n\
-                            be used with --dim_async. Requires NCO version 4.0.0 and above, gnu-parallel.")
+                      help="Uses the specified # of processors for the asynchronous processing of months.")
     proc_group.add_argument("-P","--pbs_expt",dest="pbs_expt",
                       default=False, action="store_true",
                       help="Prepare a pbs header for each model/rip/experiment")
     proc_group.add_argument("-w","--walltime",dest="walltime",
                       default="1:00:00",
-                      help="pbs job walltime. Inactive for now: Determined by queue")
+                      help="pbs job walltime.")
     proc_group.add_argument("-q","--queue",dest="queue",
                       default=None,
                       help="PBS queue type")
