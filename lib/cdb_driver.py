@@ -141,7 +141,7 @@ def ramdisk_protection(self,out):
     out.dec_indent()
     out.writei('}')
 
-    out.writei('#trap the termination signal, and call the function 'trap_term' when')
+    out.writei('#trap the termination signal, and call the function trap_term when')
     out.writei('# that happens, so results may be saved.')
     out.writei('trap "trap_term" TERM')
     return self
