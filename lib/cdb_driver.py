@@ -122,28 +122,28 @@ class Experiment_Setup:
         out.open.close()
 
 def ramdisk_protection(self,out):
-    out.writei('function cleanup_ramdisk {')
+    out.writei('function cleanup_ramdisk {\n')
     out.inc_indent()
-    out.writei('echo -n "Cleaning up ramdisk directory {0} on "'.format(self.temp_dir))
-    out.writei('date')
-    out.writei('rm -rf {0}'.format(self.temp_dir))
-    out.writei('echo -n "done at "')
-    out.writei('date')
+    out.writei('echo -n "Cleaning up ramdisk directory {0} on "\n'.format(self.temp_dir))
+    out.writei('date\n')
+    out.writei('rm -rf {0}\n'.format(self.temp_dir))
+    out.writei('echo -n "done at "\n')
+    out.writei('date\n')
     out.dec_indent()
     out.writei('}')
 
-    out.writei('function trap_term {')
+    out.writei('function trap_term {\n')
     out.inc_indent()
-    out.writei('echo -n "Trapped term (soft kill) signal on "')
-    out.writei('date')
-    out.writei('cleanup_ramdisk')
-    out.writei('exit')
+    out.writei('echo -n "Trapped term (soft kill) signal on "\n')
+    out.writei('date\n')
+    out.writei('cleanup_ramdisk\n')
+    out.writei('exit\n')
     out.dec_indent()
-    out.writei('}')
+    out.writei('}\n')
 
-    out.writei('#trap the termination signal, and call the function trap_term when')
-    out.writei('# that happens, so results may be saved.')
-    out.writei('trap "trap_term" TERM')
+    out.writei('#trap the termination signal, and call the function trap_term when\n')
+    out.writei('# that happens, so results may be saved.\n')
+    out.writei('trap "trap_term" TERM\n')
     return self
 
 def structure_out_with_cmip5_drs(self,out):
