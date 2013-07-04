@@ -124,7 +124,7 @@ class Experiment_Setup:
 def ramdisk_protection(self,out):
     out.writei('function cleanup_ramdisk {')
     out.inc_indent()
-    out.writei('echo -n "Cleaning up ramdisk directory {0} on "'.format(self.temp_dir)
+    out.writei('echo -n "Cleaning up ramdisk directory {0} on "'.format(self.temp_dir))
     out.writei('date')
     out.writei('rm -rf {0}'.format(self.temp_dir))
     out.writei('echo -n "done at "')
