@@ -121,6 +121,31 @@ class Experiment_Setup:
         structure_out_with_cmip5_drs(self,out)
         out.open.close()
 
+def ramdisk_protection(self,out):
+    out.writei('function cleanup_ramdisk {')
+    out.inc_indent()
+    out.writei('echo -n "Cleaning up ramdisk directory {0} on "'.format(self.temp_dir)
+    out.writei('date')
+    out.writei('rm -rf {0}'.format(self.temp_dir))
+    out.writei('echo -n "done at "')
+    out.writei('date')
+    out.dec_indent()
+    out.writei('}')
+
+    out.writei('function trap_term {')
+    out.inc_indent()
+    out.writei('echo -n "Trapped term (soft kill) signal on "')
+    out.writei('date')
+    out.writei('cleanup_ramdisk')
+    out.writei('exit')
+    out.dec_indent()
+    out.writei('}')
+
+    out.writei('#trap the termination signal, and call the function 'trap_term' when')
+    out.writei('# that happens, so results may be saved.')
+    out.writei('trap "trap_term" TERM')
+    return self
+
 def structure_out_with_cmip5_drs(self,out):
     #code to structure the output with the CMIP5 DRS:
     out.writei('#THE LAST PART OF THIS SCRIPT REORGANIZES THE OUTPUT TO CONFORM WITH THE CMIP5 DRS:\n')
@@ -282,6 +307,7 @@ def end_monthly_loop(self,out,line):
     out.dec_indent()
     out.writei('fi\n')
 
+    ramdisk_protection(self,out)
     #Process the monthly_scripts
     if self.debug:
         out.writei('ls ${CDB_TEMP_DIR}/script_????_??.sh | parallel --tmpdir ${CDB_OUT_DIR} --tty "bash {}; rm {}"\n')
