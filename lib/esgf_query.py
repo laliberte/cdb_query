@@ -57,37 +57,23 @@ def experiment_variable_search(pointers,search_path,file_type_list,options,
     file_list_remote=map(lambda x: get_urls(x,file_type_list,var_name),ctx.search(variable=var_name))
     file_list_remote=[item for sublist in file_list_remote for item in sublist]
    
-    for url in file_list_remote:
-        pointers.file_expt.file_type=url[0]
-        url_name=url[1]
-        if pointers.file_expt.file_type==url[0] in remote_file_types:
-            file_description=url_name.split('/')[-10:-1]
-            known_description=[ file_description[ind] for ind in [2,3,4,5,8] ]
-            if known_description==[experiment,frequency,realm,mip,var_name]:
-                if url[2]:
-                    pointers.file_expt.path=url_name+'|'+url[2]
-                else:
-                    pointers.file_expt.path=url_name
-                pointers.file_expt.center=file_description[0]
-                pointers.file_expt.model=file_description[1]
-                pointers.file_expt.rip=file_description[6]
-                pointers.file_expt.mip=file_description[5]
-                pointers.file_expt.version=file_description[7]
-                if url_name and pointers.file_expt.version[1:]!='atest':
-                    pointers.add_item()
-        elif pointers.file_expt.file_type==url[0] in ['OPeNDAP']:
-            file_description=url[2]
-            variable=file_description[-2]
-            if variable==var_name:
-                pointers.file_expt.path=url_name
-                pointers.file_expt.center=file_description[-9]
-                pointers.file_expt.model=file_description[-8]
-                pointers.file_expt.rip=file_description[-3]
-                pointers.file_expt.mip=file_description[-4]
-                pointers.file_expt.version='v'+file_description[-1].replace('v','')
-                if url_name and pointers.file_expt.version[1:]!='atest':
-                    pointers.add_item()
+    map(lambda x: record_url(x,pointers),file_list_remote)
     print 'Done searching for variable '+var_name
+    return
+
+def record_url(remote_file_desc,pointers):
+    pointers.file_expt.path=remote_file_desc['url']
+    if remote_file_desc['file_type'] in remote_file_types and remote_file_desc['checksum']:
+        pointers.file_expt.path+='|'+remote_file_desc['checksum']
+
+    for val in ['file_type','center','model','rip','version']:
+        setattr(pointers.file_expt,val,remote_file_desc[val])
+
+    known_fields=['experiment','var','realm','frequency']
+    list_of_knowns=[ getattr(pointers.file_expt,field) for field in known_fields] 
+    list_of_retrieved=[ remote_file_desc[field] for field in known_fields] 
+    if remote_file_desc['version'][1:]!='atest' and list_of_knowns==list_of_retrieved:
+        pointers.add_item()
     return
 
 def get_urls(result,file_type_list,var_name):
@@ -110,30 +96,52 @@ def get_urls(result,file_type_list,var_name):
             file_list_remote.append(get_url_opendap(item))
     return file_list_remote
 
+correspondence_dict={'experiment':'experiment',
+                     'mip':'cmor_table', 
+                     'realm':'realm', 
+                     'version':'version', 
+                     'rip':'ensemble',
+                     'frequency':'time_frequency', 
+                     'var':'variable', 
+                     'checksum':'checksum',
+                     'model':'model',
+                     'center':'institute'
+                     }
+
 def get_url_remote(item,file_type_list):
-    url_name=(None,None,None)
+    url_name=[]
     try:
         keys_list=item.urls.viewkeys()
     except:
         keys_list=[]
 
     for key in set(keys_list).intersection(file_type_list):
+        file_info=dict()
+        file_info['file_type']=key
         try:
-            checksum=item.checksum
+            file_info['url']=item.urls[key][0][0]
         except:
-            checksum=None
-        try:
-            url_name=(key,item.urls[key][0][0],checksum)
-        except:
-            url_name=(None,None,None)
-    if not isinstance(url_name,list): url_name=[url_name]
+            file_info['url']=None
+
+        for val in correspondence_dict.keys():
+            try:
+                file_info[val]=item.json[correspondence_dict[val]]
+                if isinstance(file_info[val],list): file_info[val]=file_info[val][0]
+            except:
+                file_info[val]=None
+        url_name.append(file_info)
     return url_name
 
 def get_url_opendap(item):
+    url_name['file_type']='OPeNDAP'
     try:
-        url_name=('OPeNDAP',item.opendap_url,item.json['title'].split('.aggregation')[0].split('.'))
+        url_name['url']=item.opendap_url
     except:
-        url_name=(None,None,None)
-    #if not isinstance(url_name,list): url_name=[url_name]
+        url_name['url']=None
+    for val in correspondence_dict.keys():
+        try:
+            url_name[val]=item.json[correspondence_dict[val]]
+        except:
+            url_name[val]=None
     return url_name
 
