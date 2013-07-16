@@ -427,24 +427,34 @@ def main():
             options.experiment=exp
             period_list=diag_desc['experiment_list'][exp]
             if not isinstance(period_list,list): period_list=[period_list]
-
-            for period in period_list:
-                options.years=period
-
-                #PREPARE SCRIPTS
-                experiment = Experiment_Setup(options)
-                experiment.prepare_scripts()
-
-                #options.file_type='HTTPServer'
-                #print cdb_query_archive.list_unique_paths(paths_dict,options)
-
-                if options.run:
-                    os.system('bash '+experiment.runscript_file)
-                elif options.submit:
-                    os.system('qsub '+experiment.runscript_file)
+            map(lambda x:period_script(x,options),period_list)
 
     if not options.run and not options.submit:
         print 'Scripts are available in '+options.runscripts_dir
+
+def period_script(period,options):
+    options.years=set_period(period,options)
+
+    #PREPARE SCRIPTS
+    experiment = Experiment_Setup(options)
+    experiment.prepare_scripts()
+
+    #options.file_type='HTTPServer'
+    #print cdb_query_archive.list_unique_paths(paths_dict,options)
+
+    if options.run:
+        os.system('bash '+experiment.runscript_file)
+    elif options.submit:
+        os.system('qsub '+experiment.runscript_file)
+
+def set_period(period,options):
+    if not options.year:
+        return period
+    else:
+        if options.year not in range(*[int(item) for item in period.split(',')]):
+            return period
+        else:
+            return ','.join([str(options.year),str(options.year)])
 
 if __name__ == "__main__":
     main()
