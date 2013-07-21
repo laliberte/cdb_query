@@ -420,6 +420,8 @@ def main():
         options.months_list=diag_desc['months_list']
     else:
         options.months_list=range(1,13)
+    if options.month:
+        options.months_list=[options.month]
 
     for simulation in paths_dict.simulations_list():
         options.center, options.model, options.rip = simulation
