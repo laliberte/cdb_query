@@ -403,7 +403,7 @@ def main():
 
     diag_desc=paths_dict.header
 
-    if options.submit: print('Submitting jobs using qsub -q '+options.queue)
+    if options.submit: print('Submitting jobs using qsub ')
 
     for dir_to_set in ['output_dir','diagnostic_dir','runscripts_dir','temp_dir']:
         dir_path=os.path.expanduser(
