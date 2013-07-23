@@ -35,12 +35,10 @@ class Experiment_Setup:
         if 'years' in dir(self):
             self.years=self.years.split(',')
 
-        self.runscript_file=self.runscripts_dir+'/'+'_'.join([self.diagnostic,
-                                                            self.model,
-                                                            self.center,
-                                                            self.rip,
-                                                            self.experiment,
-                                                            '-'.join(self.years)])
+        desc_list=[self.diagnostic,self.model,self.center,self.rip,self.experiment,'-'.join(self.years)]
+        if self.month: desc_list.append(str(self.month))
+        self.description='_'.join(desc_list)
+        self.runscript_file=self.runscripts_dir+'/'+self.description
 
     def prepare_scripts(self):
         """ Prepares the scripts for bash launch """
@@ -53,9 +51,9 @@ class Experiment_Setup:
 	    if self.queue != None: out.writei('#PBS -q {0}\n'.format(self.queue))
             out.writei('#PBS -l nodes=1:ppn={0},walltime={1}\n'.format(max(self.m_async,self.ppn),self.walltime))
             #out.writei('#PBS -l nodes=1:ppn={0}\n'.format(self.m_async))
-            out.writei('#PBS -N {0}_{1}_{2}_{3}_{4}\n'.format(self.years[0],self.years[1],self.model,self.rip,self.experiment))
-            out.writei('#PBS -o {5}/pbs_out/{0}_{1}_{2}_{3}_{4}\n'.format(self.years[0],self.years[1],self.model,self.rip,self.experiment,self.output_dir))
-            out.writei('#PBS -e {5}/pbs_err/{0}_{1}_{2}_{3}_{4}\n'.format(self.years[0],self.years[1],self.model,self.rip,self.experiment,self.output_dir))
+            out.writei('#PBS -N {0}\n'.format(self.description))
+            out.writei('#PBS -o {1}/pbs_out/{0}\n'.format(self.description,self.output_dir))
+            out.writei('#PBS -e {1}/pbs_err/{0}\n'.format(self.description,self.output_dir))
 
         #Put the header to the diagnostic:
         out.writei('\n')
@@ -423,6 +421,7 @@ def main():
         options.months_list=diag_desc['months_list']
     else:
         options.months_list=range(1,13)
+
     if options.month:
         options.months_list=[options.month]
 
@@ -456,7 +455,9 @@ def set_period(period,options):
     if not options.year:
         return period
     else:
-        if options.year not in range(*[int(item) for item in period.split(',')]):
+        years_range=[int(item) for item in period.split(',')]
+        years_range[1]+=1
+        if options.year not in range(*years_range):
             return period
         else:
             return ','.join([str(options.year),str(options.year)])
