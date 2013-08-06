@@ -39,6 +39,7 @@ def experiment_variable_search(pointers,search_path,file_type_list,options,
 
     pointers.file_expt.experiment=experiment
     pointers.file_expt.var=var_name
+    pointers.file_expt.mip=mip
     pointers.file_expt.realm=realm
     pointers.file_expt.frequency=frequency
     pointers.file_expt.search=search_path
@@ -54,9 +55,15 @@ def experiment_variable_search(pointers,search_path,file_type_list,options,
     #    pool.close()
     #else:
 
-    file_list_remote=map(lambda x: get_urls(x,file_type_list,var_name),ctx.search(variable=var_name))
+    try:
+        file_list_found=ctx.search(variable=var_name)
+    except:
+        warnings.warn('Search path {0} is unresponsive at the moment'.format(search_path))
+        file_list_found=[]
+    file_list_remote=map(lambda x: get_urls(x,file_type_list,var_name),file_list_found)
     file_list_remote=[item for sublist in file_list_remote for item in sublist]
    
+    #for file in file_list_remote: pointers=record_url(file,pointers)
     map(lambda x: record_url(x,pointers),file_list_remote)
     print 'Done searching for variable '+var_name
     return
@@ -69,12 +76,18 @@ def record_url(remote_file_desc,pointers):
     for val in ['file_type','center','model','rip','version']:
         setattr(pointers.file_expt,val,remote_file_desc[val])
 
-    known_fields=['experiment','var','realm','frequency']
+    #Convert unicode to string:
+    for val in dir(pointers.file_expt):
+        if val[0]!='_' and val!='case_id':
+            setattr(pointers.file_expt,val,str(getattr(pointers.file_expt,val)))
+
+    known_fields=['experiment','var','frequency','realm','mip']
     list_of_knowns=[ getattr(pointers.file_expt,field) for field in known_fields] 
     list_of_retrieved=[ remote_file_desc[field] for field in known_fields] 
-    if remote_file_desc['version'][1:]!='atest' and list_of_knowns==list_of_retrieved:
+    if (remote_file_desc['version'][1:]!='atest' and 
+        len([i for i,j in zip(list_of_knowns,list_of_retrieved) if i==j])==len(list_of_knowns)):
         pointers.add_item()
-    return
+    return pointers
 
 def get_urls(result,file_type_list,var_name):
     file_list_remote=[]
@@ -122,11 +135,10 @@ def get_url_remote(item,file_type_list):
             file_info['url']=item.urls[key][0][0]
         except:
             file_info['url']=None
-
         for val in correspondence_dict.keys():
             try:
                 file_info[val]=item.json[correspondence_dict[val]]
-                if isinstance(file_info[val],list): file_info[val]=file_info[val][0]
+                if isinstance(file_info[val],list): file_info[val]=str(file_info[val][0])
             except:
                 file_info[val]=None
         url_name.append(file_info)

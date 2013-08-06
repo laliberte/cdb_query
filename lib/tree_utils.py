@@ -8,6 +8,8 @@ import netcdf_utils
 
 import copy
 
+from cdb_query_archive_parsers import base_drs
+
 #Taken from https://gist.github.com/hrldcpr/2012250
 from collections import defaultdict
 def tree_type(): return defaultdict(tree_type)
@@ -43,6 +45,10 @@ class Tree:
                                       self.tree,
                                       find_function)
             self._database_created=True
+        return
+
+    def recreate_structure(self,output_dir,conversion_function):
+        recreate_structure_recursive(output_dir,conversion_function)
         return
 
     def clear_tree(self,tree_desc):

@@ -1,12 +1,13 @@
 import copy
 from tree_utils import File_Expt
 
-
 import sqlalchemy
-
 
 ##### PATH #####
 def find_path(pointers,file_expt):
+    for val in dir(file_expt):
+        if val[0]!='_' and val!='case_id':
+            getattr(file_expt,val)
     pointers.session.add(file_expt)
     pointers.session.commit()
     return
@@ -28,7 +29,7 @@ def intersection(diagnostic):
                              File_Expt.frequency==diagnostic.header['variable_list'][var_name][0],
                              File_Expt.realm==diagnostic.header['variable_list'][var_name][1],
                              File_Expt.mip==diagnostic.header['variable_list'][var_name][2],
-                             File_Expt.experiment==experiment,
+                             File_Expt.experiment==experiment
                            ]
                 model_list_var=diagnostic.pointers.session.query(
                                          File_Expt.center,
