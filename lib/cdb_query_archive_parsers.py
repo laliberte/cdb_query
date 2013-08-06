@@ -71,7 +71,7 @@ def optimset(subparsers,epilog):
     parser.add_argument('--distrib',
                                  default=False, action='store_true',
                                  help='Distribute the search. Will likely result in a pointers originating from one node.')
-    parser.set_defaults(drs=base_drs)
+    parser.set_defaults(drs=base_drs())
     return
 
 def optimset_time(subparsers,epilog):

@@ -91,9 +91,13 @@ def recover_time(file):
     end_id=int(file.split('|')[2])
 
     data=Dataset(file_name)
+    if 'calendar' in dir(data.variables['time']):
+        calendar=data.variables['time'].calendar
+    else:
+        calendar='standard'
     time_axis=(num2date(data.variables['time'],
                                  units=data.variables['time'].units,
-                                 calendar=data.variables['time'].calendar)
+                                 calendar=calendar)
                     )[start_id:end_id+1]
     name_axis=np.array([file_name for item in time_axis])
     data.close()
@@ -107,8 +111,8 @@ def concatenate_pointers(output_file,source_files,frequency_time,var):
     data=Dataset(name_axis[sort_id][0])
 
     output_file_name=(output_file+'_'+time_axis[sort_id[0]].strftime(''.join(frequency_time)) +'_'+
-                                     time_axis[sort_id[-1]].strftime(''.join(frequency_time)) )
-    output=Dataset(output_file,'w',format='NETCDF4')
+                                     time_axis[sort_id[-1]].strftime(''.join(frequency_time)) +'.nc' )
+    output=Dataset(output_file_name,'w',format='NETCDF4')
     replicate_netcdf_file(output,data)
 
     output.createDimension('time',len(time_axis))
