@@ -139,7 +139,7 @@ class SimpleTree:
                 print path
         return
 
-    def netcdf_pointers(self,options):
+    def netcdf_paths(self,options):
         self.pointers.slice(options)
         self.pointers.create_database(find_simulations)
 
@@ -165,7 +165,7 @@ class SimpleTree:
                 paths_list=[path[0] for path in self.pointers.session.query(File_Expt.path
                                         ).filter(sqlalchemy.and_(*conditions)).distinct().all()]
                 file_name=[ value for fn_levels in file_name_drs for level,value in zip(drs_list,tree) if level==fn_levels] 
-                netcdf_utils.concatenate_pointers(path_dir+'/'+'_'.join(file_name),paths_list,time_dict[frequency],var)
+                netcdf_utils.concatenate_paths(path_dir+'/'+'_'.join(file_name),paths_list,time_dict[frequency],var,checksum=options.checksum)
 
         return
 

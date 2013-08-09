@@ -48,7 +48,7 @@ def generate_subparsers(subparsers,epilog):
     list_paths(subparsers,epilog)
     slice(subparsers,epilog)
     find_local(subparsers,epilog)
-    netcdf_pointers(subparsers,epilog)
+    netcdf_paths(subparsers,epilog)
     simulations(subparsers,epilog)
     return
 
@@ -131,12 +131,16 @@ def find_local(subparsers,epilog):
     slicing_arguments(parser)
     return
 
-def netcdf_pointers(subparsers,epilog):
-    #netcdf_pointers
-    parser=subparsers.add_parser('netcdf_pointers',
-                                           help='Organize pointers in netcdf files. Files should be local or OPeNDAP.'
+def netcdf_paths(subparsers,epilog):
+    #netcdf_paths
+    parser=subparsers.add_parser('netcdf_paths',
+                                           help='Organize paths in netcdf files. Files should be local or OPeNDAP.'
                                            )
     parser.set_defaults(drs=None)
+    parser.add_argument('--checksum',
+                                 default=False,
+                                 action='store_true',
+                                 help='Record the MD5 checksum for each time slice.')
     parser.add_argument('in_diagnostic_headers_file',
                                  help='Diagnostic headers file with data pointers (input)')
     slicing_arguments(parser)

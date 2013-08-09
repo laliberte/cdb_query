@@ -138,6 +138,11 @@ def get_url_remote(item,file_type_list):
         for val in correspondence_dict.keys():
             try:
                 file_info[val]=item.json[correspondence_dict[val]]
+                if val=='version':
+                    #Version is poorly implemented... Try a fix:
+                    version=item.json['id'].split('.')[9]
+                    if version[0]=='v':
+                        file_info[val]=version
                 if isinstance(file_info[val],list): file_info[val]=str(file_info[val][0])
             except:
                 file_info[val]=None
