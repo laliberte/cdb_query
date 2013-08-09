@@ -116,7 +116,7 @@ class SimpleTree:
 
     def simulations(self,options):
         self.pointers.slice(options)
-        self.pointers.create_database(find_simulations)
+        self.pointers.create_database(find_simple)
 
         simulations_list=self.simulations_list()
         for simulation in simulations_list:
@@ -127,7 +127,7 @@ class SimpleTree:
     def list_paths(self,options):
         #slice with options:
         self.pointers.slice(options)
-        self.pointers.create_database(find_simulations)
+        self.pointers.create_database(find_simple)
         paths_list=sorted(list(set([path[0] for path in self.list_subset((File_Expt.path,))])))
         for path in paths_list:
             if 'wget' in dir(options) and options.wget:
@@ -141,7 +141,7 @@ class SimpleTree:
 
     def netcdf_paths(self,options):
         self.pointers.slice(options)
-        self.pointers.create_database(find_simulations)
+        self.pointers.create_database(find_simple)
 
         #List all the trees:
         drs_list=cdb_query_archive_parsers.base_drs()[3:-1]
@@ -213,7 +213,7 @@ def md5_for_file(f, block_size=2**20):
         md5.update(data)
     return md5.hexdigest()
 
-def find_simulations(pointers,file_expt):
+def find_simple(pointers,file_expt):
     #for item in dir(file_expt):
     #    if item[0]!='_':
     #        print getattr(file_expt,item)

@@ -164,13 +164,13 @@ def concatenate_paths(output_file,source_files,frequency_time,var,checksum=False
 #    print md5sum
 #    return md5sum
 
-def modify_init(func):
-    return (lambda cls: setattr(cls,'__init__',func(m)))
-
-class cdb_Dataset(netCDF4.Dataset):
-    pass
-
-class cdb_Variable(netCDF4.Variable):
-    def __getitem__(self,elem):
+#def modify_init(func):
+#    return (lambda cls: setattr(cls,'__init__',func(m)))
+#
+#class cdb_Dataset(netCDF4.Dataset):
+#    pass
+#
+#class cdb_Variable(netCDF4.Variable):
+#    def __getitem__(self,elem):
 #        return netCDF4.Variable.__getitem__(self,elem)
 
