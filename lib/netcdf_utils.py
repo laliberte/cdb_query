@@ -125,8 +125,8 @@ def concatenate_paths(output_file,source_files,frequency_time,var,checksum=False
 
     output_file_name=(output_file+'_'+time_axis[0].strftime(''.join(frequency_time)) +'_'+
                                      time_axis[-1].strftime(''.join(frequency_time)) +'.nc' )
-    output_root=netCDF4.Dataset(output_file_name,'w',format='NETCDF4')
-    output=output_root.createGroup('model_id')
+    output=netCDF4.Dataset(output_file_name,'w',format='NETCDF4')
+    #output=output_root.createGroup('model_id')
     replicate_netcdf_file(output,data)
 
     output.createDimension('time',len(time_axis))
@@ -150,7 +150,7 @@ def concatenate_paths(output_file,source_files,frequency_time,var,checksum=False
     #    checksums[:]=np.vectorize(lambda x: md5_for_netcdf(x['paths'],var,x['indices']))(table)
 
     output.sync()
-    output_root.close()
+    output.close()
     data.close()
     return
 
