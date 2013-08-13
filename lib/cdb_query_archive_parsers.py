@@ -11,7 +11,7 @@ def input_arguments(parser):
                                  help='Compress the output using gzip. Because the output is mostly repeated text, this leads to large compression.')
     return
 
-def optimset_slicing_arguments(parser):
+def discover_slicing_arguments(parser):
     #Define the data slicing arguments in a dictionnary:
     slicing_args={
                   'center': [str,'Modelling center name'],
@@ -23,7 +23,7 @@ def optimset_slicing_arguments(parser):
     return
 
 def slicing_arguments(parser):
-    optimset_slicing_arguments(parser)
+    discover_slicing_arguments(parser)
     #Define the data slicing arguments in a dictionnary:
     slicing_args={
                   'experiment': [str,'Experiment name'],
@@ -40,9 +40,11 @@ def slicing_arguments(parser):
     return
 
 def base_drs():
-    return ['time','search','file_type','center','model','experiment','frequency','realm','mip','rip','version','var','path']
+    return ['center','model','experiment','frequency','realm','mip','rip','version','var','search','file_type','time','path']
+    #return ['time','search','file_type','center','model','experiment','frequency','realm','mip','rip','version','var','path']
 
 def generate_subparsers(subparsers,epilog):
+    discover(subparsers,epilog)
     optimset(subparsers,epilog)
     optimset_time(subparsers,epilog)
     list_paths(subparsers,epilog)
@@ -52,19 +54,19 @@ def generate_subparsers(subparsers,epilog):
     simulations(subparsers,epilog)
     return
 
-def optimset(subparsers,epilog):
-    #Find Optimset
-    epilog_optimset=textwrap.dedent(epilog+'\n\nThe output can be pretty printed by using:\n\
+def discover(subparsers,epilog):
+    #Find data
+    epilog_discover=textwrap.dedent(epilog+'\n\nThe output can be pretty printed by using:\n\
                           cat out_diagnostic_headers_file | python -mjson.tool')
-    parser=subparsers.add_parser('optimset',
-                                           help='Returns pointers to models that have all the requested experiments and variables.\n\
+    parser=subparsers.add_parser('discover',
+                                           help='Returns pointers to models that have as a subset the requested experiments and variables.\n\
                                                  It is good practice to check the results with \'simulations\' before\n\
-                                                 proceeding with \'optimset_time\'.',
-                                           epilog=epilog_optimset,
+                                                 proceeding with \'optimset\'.',
+                                           epilog=epilog_discover,
                                            formatter_class=argparse.RawTextHelpFormatter
                                          )
     input_arguments(parser)
-    optimset_slicing_arguments(parser)
+    discover_slicing_arguments(parser)
     parser.add_argument('--num_procs',
                                  default=1, type=int,
                                  help='Use num_procs processors to query the archive. NOT WORKING YET.')
@@ -72,6 +74,21 @@ def optimset(subparsers,epilog):
                                  default=False, action='store_true',
                                  help='Distribute the search. Will likely result in a pointers originating from one node.')
     parser.set_defaults(drs=base_drs())
+    return
+def optimset(subparsers,epilog):
+    #Find Optimset Months
+    epilog_optimset=textwrap.dedent(epilog+'\n\nThe output can be pretty printed by using:\n\
+                          cat out_diagnostic_headers_file | python -mjson.tool')
+    parser=subparsers.add_parser('optimset',
+                                           help='Take as an input the results from \'discover\'.\n\
+                                                 Returns pointers to models that have all the\n\
+                                                 requested experiments and variables for all requested years.',
+                                           epilog=epilog_optimset,
+                                           formatter_class=argparse.RawTextHelpFormatter
+                                         )
+    input_arguments(parser)
+    slicing_arguments(parser)
+    parser.set_defaults(drs=None)
     return
 
 def optimset_time(subparsers,epilog):
@@ -82,7 +99,6 @@ def optimset_time(subparsers,epilog):
                                            help='Take as an input the results from \'optimset\'.\n\
                                                  Returns pointers to models that have all the\n\
                                                  requested experiments and variables for all requested years.\n\
-                                                 It is required to use the \'retrieve\' command.\n\
                                                  It can be slow, particularly if \'OPeNDAP\' files are\n\
                                                  requested.',
                                            epilog=epilog_optimset_time,

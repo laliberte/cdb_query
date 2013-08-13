@@ -5,6 +5,7 @@ import datetime
 import os
 
 import netcdf_utils
+import netCDF4
 
 import copy
 
@@ -15,7 +16,7 @@ from collections import defaultdict
 def tree_type(): return defaultdict(tree_type)
 
 class Tree:
-    def __init__(self,tree_desc):
+    def __init__(self,tree_desc,options):
         #Defines the tree structure:
         self.clear_tree(tree_desc)
 
@@ -36,6 +37,13 @@ class Tree:
         self.session = sqlalchemy.orm.create_session(bind=engine, autocommit=False, autoflush=True)
         self.file_expt = File_Expt(self.tree_desc)
         self._database_created=False
+
+        #Create an alternative netcdf file:
+        if 'out_diagnostic_headers_file' in dir(options):
+            self.dataset=netCDF4.Dataset(options.out_diagnostic_headers_file+'.nc','w',format='NETCDF4')
+        else:
+            self.dataset=None
+        #self.dataset=None
         return
 
     def create_database(self,find_function):
@@ -59,6 +67,13 @@ class Tree:
     def add_item(self):
         item_desc=[getattr(self.file_expt,level) for level in self.tree_desc]
         add_item_recursive(self.tree,self.tree_desc,item_desc)
+        self.add_item_dataset()
+        return
+
+    def add_item_dataset(self):
+        item_desc=[getattr(self.file_expt,level) for level in self.tree_desc]
+        add_item_dataset_recursive(self.dataset,self.tree_desc,item_desc)
+        self.dataset.sync()
         return
 
     def attribute_item(self,item):
@@ -74,12 +89,6 @@ class Tree:
             del self.tree
             self.tree=tree_type()
         return
-
-    def level_list(self,level_to_list):
-        return level_list_recursive(self.tree,level_to_list)
-
-    def level_list_last(self):
-        return level_list_recursive(self.tree,'last')
 
     def simplify(self,header):
         simplify_recursive(self.tree,header)
@@ -113,6 +122,45 @@ def add_item_recursive(tree,tree_desc,item_desc):
             tree.append(item_desc[0])
     return
 
+def add_item_dataset_recursive(dataset,tree_desc,item_desc):
+    #This function recursively creates the output dictionary from one database entry:
+    if isinstance(tree_desc,list) and len(tree_desc)>1 and tree_desc[0]!='var':
+        try:
+            level_name=item_desc[0]
+            if tree_desc[0]=='search': level_name='test_name'
+            if level_name not in dataset.groups.keys():
+                dataset_group=dataset.createGroup(level_name)
+                dataset_group.setncattr('level_name',tree_desc[0])
+            else:
+                dataset_group=dataset.groups[level_name]
+        except:
+            dataset_group=None
+        #Recursively create tree:
+        add_item_dataset_recursive(dataset_group,tree_desc[1:],item_desc[1:])
+    elif isinstance(tree_desc,list) and tree_desc[0]=='var':
+        level_name=item_desc[0]
+        if 'time' not in dataset.dimensions.keys():
+            dataset.createDimension('time',size=None)
+            #dataset.createVariable('time','i8',dimensions=('time',))
+
+        if level_name not in dataset.variables.keys():
+            dataset.createVariable(level_name,str,dimensions=('time',))
+            #dataset.variables[level_name].setncattr('level_name','var')
+        dataset.variables[level_name][len(dataset.dimensions['time'])+1]=str(item_desc[-1])
+        for name, value in zip(tree_desc[1:-1],item_desc[1:-1]):
+            if name!='time':
+                if not name in dataset.groups.keys():
+                    grp=dataset.createGroup(name)
+                else:
+                    grp=dataset.groups[name]
+                if not level_name in grp.variables.keys():
+                    grp.createVariable(level_name,str,dimensions=('time',))
+                grp.variables[level_name][len(dataset.dimensions['time'])+1]=str(value)
+                #grp.variables[level_name][0]=str(value)
+            
+
+    return
+
 def slice_recursive(tree,options):
     if isinstance(tree,dict) and tree:
         if '_name' not in tree.keys():
@@ -144,25 +192,6 @@ def slice_recursive(tree,options):
         return len([item for item in tree.keys() if item[0]!='_'])
     else:
         return 1
-
-def level_list_recursive(tree,level_to_list):
-    if isinstance(tree,dict) and tree:
-        if '_name' not in tree.keys():
-            raise IOError('Dictionnary passed to list_level_recursive must have a _name entry at each level except the last')
-
-        level_name=tree['_name']
-        if level_to_list==level_name:
-            list_of_names=[item for item in tree.keys() if item[0]!='_']
-        else:
-            list_of_names=list(sorted(set(
-                               [ name for sublist in [level_list_recursive(tree[value],level_to_list) for value 
-                                in [item for item in tree.keys() if item[0]!='_'] ] for name in sublist ]
-                                )))
-    elif level_to_list=='last' and tree:
-        list_of_names=[tree[0]]
-    else:
-        list_of_names=[]
-    return list_of_names
 
 def simplify_recursive(tree,header):
     #Simplifies the output tree to make it unique:

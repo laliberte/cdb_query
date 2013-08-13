@@ -52,7 +52,7 @@ def main():
             options.time=True
 
     #Load pointer file:
-    paths_dict=cdb_query_archive_class.SimpleTree(json_tools.open_json(options))
+    paths_dict=cdb_query_archive_class.SimpleTree(json_tools.open_json(options),options)
     #Run the command:
     getattr(paths_dict,options.command)(options)
     #print paths_dict.pointers.tree

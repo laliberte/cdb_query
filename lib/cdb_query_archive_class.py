@@ -19,13 +19,13 @@ import datetime
 import sqlalchemy
 
 class SimpleTree:
-    def __init__(self,tree):
+    def __init__(self,tree,options):
 
         if 'header' in tree.keys():
             self.header =  tree['header']
 
         #Create tree
-        self.pointers=tree_utils.Tree(self.header['drs'])
+        self.pointers=tree_utils.Tree(self.header['drs'],options)
 
         if 'pointers' in tree.keys():
             self.pointers.tree=tree['pointers']
@@ -61,7 +61,7 @@ class SimpleTree:
                                                         ).distinct().all()
         return subset_list
 
-    def optimset(self,options):
+    def discover(self,options):
         #First simplify the header
         self.union_header()
 
@@ -81,8 +81,12 @@ class SimpleTree:
                         #[ os.path.expanduser(os.path.expandvars(path)) for path in self.header['search_list']]
         for search_path in remote_paths:
             esgf_query.descend_tree(self.pointers,self.header,search_path,options)
+        return
 
-            
+    def optimset(self,options):
+        #First slice the input:
+        self.pointers.slice(options)
+
         #Redefine the DRS:
         self.header['drs']=[
                 'center','model','experiment','rip','frequency','realm','mip',
@@ -116,7 +120,7 @@ class SimpleTree:
 
     def simulations(self,options):
         self.pointers.slice(options)
-        self.pointers.create_database(find_simulations)
+        self.pointers.create_database(find_simple)
 
         simulations_list=self.simulations_list()
         for simulation in simulations_list:
@@ -127,25 +131,29 @@ class SimpleTree:
     def list_paths(self,options):
         #slice with options:
         self.pointers.slice(options)
-        self.pointers.create_database(find_simulations)
+        self.pointers.create_database(find_simple)
         paths_list=sorted(list(set([path[0] for path in self.list_subset((File_Expt.path,))])))
         for path in paths_list:
             if 'wget' in dir(options) and options.wget:
-                print('\''+
-                      '/'.join(path.split('|')[0].split('/')[-10:])+
-                      '\' \''+path.split('|')[0]+
-                      '\' \'MD5\' \''+path.split('|')[1]+'\'')
+                decomposition=path.split('|')
+                if isinstance(decomposition,list) and len(decomposition)>1:
+                    root_path=decomposition[0]
+                    print('\''+
+                          '/'.join(root_path.split('/')[-10:])+
+                          '\' \''+root_path+
+                          '\' \'MD5\' \''+decomposition[1]+'\'')
             else:
                 print path
         return
 
     def netcdf_paths(self,options):
         self.pointers.slice(options)
-        self.pointers.create_database(find_simulations)
+        self.pointers.create_database(find_simple)
 
         #List all the trees:
-        drs_list=cdb_query_archive_parsers.base_drs()[3:-1]
-        drs_list.remove('version')
+        drs_list=cdb_query_archive_parsers.base_drs()
+        drs_to_remove=['search','path','file_type','version','time']
+        for drs in drs_to_remove: drs_list.remove(drs)
         trees_list=self.list_subset([getattr(File_Expt,level) for level in drs_list])
         version_name='v'+str(datetime.date.today()).replace('-','')
         file_name_drs=['var','mip','model','experiment','rip']
@@ -185,7 +193,11 @@ class SimpleTree:
         pointers_copy=copy.deepcopy(self.pointers.tree)
         self.pointers.slice(options)
 
-        for path in sorted(list(set(self.pointers.level_list_last()))):
+        #for path in sorted(list(set(self.pointers.level_list_last()))):
+        self.pointers.create_database(find_simple)
+        paths_list=sorted(list(set([path[0] for path in self.list_subset((File_Expt.path,))])))
+
+        for path in paths_list:
             for search_path in local_search_path:
                 md5checksum=path.split('|')[1]
                 path_to_file=search_path+'/'+'/'.join(path.split('|')[0].split('/')[-10:])
@@ -213,7 +225,7 @@ def md5_for_file(f, block_size=2**20):
         md5.update(data)
     return md5.hexdigest()
 
-def find_simulations(pointers,file_expt):
+def find_simple(pointers,file_expt):
     #for item in dir(file_expt):
     #    if item[0]!='_':
     #        print getattr(file_expt,item)

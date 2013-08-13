@@ -43,7 +43,7 @@ def experiment_variable_search(pointers,search_path,file_type_list,options,
     pointers.file_expt.realm=realm
     pointers.file_expt.frequency=frequency
     pointers.file_expt.search=search_path
-    pointers.file_expt.time='all'
+    pointers.file_expt.time=0
 
     #file_list_remote=[]
     #for result in ctx.search(variable=var_name):
