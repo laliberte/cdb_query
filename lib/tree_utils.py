@@ -20,22 +20,7 @@ class Tree:
         #Defines the tree structure:
         self.clear_tree(tree_desc)
 
-        #Create an in-memory sqlite database, for easy subselecting.
-        #Uses sqlalchemy
-
-        engine = sqlalchemy.create_engine('sqlite:///:memory:', echo=False)
-        metadata = sqlalchemy.MetaData(bind=engine)
-
-        self.time_db = sqlalchemy.Table('time_db',metadata,
-                sqlalchemy.Column('case_id',sqlalchemy.Integer,primary_key=True),
-                *(sqlalchemy.Column(level_name, sqlalchemy.String(255)) for level_name in self.tree_desc)
-                )
-        metadata.create_all()
-        sqlalchemy.orm.clear_mappers()
-        sqlalchemy.orm.mapper(File_Expt,self.time_db)
-
-        self.session = sqlalchemy.orm.create_session(bind=engine, autocommit=False, autoflush=True)
-        self.file_expt = File_Expt(self.tree_desc)
+        self._setup_database()
         self._database_created=False
 
         #Create an alternative netcdf file:
@@ -44,6 +29,24 @@ class Tree:
         else:
             self.dataset=None
         #self.dataset=None
+        return
+
+    def _setup_database(self):
+        #Create an in-memory sqlite database, for easy subselecting.
+        #Uses sqlalchemy
+        self.engine = sqlalchemy.create_engine('sqlite:///:memory:', echo=False)
+        self.metadata = sqlalchemy.MetaData(bind=self.engine)
+
+        self.time_db = sqlalchemy.Table('time_db',self.metadata,
+                sqlalchemy.Column('case_id',sqlalchemy.Integer,primary_key=True),
+                *(sqlalchemy.Column(level_name, sqlalchemy.String(255)) for level_name in self.tree_desc)
+                )
+        self.metadata.create_all()
+        sqlalchemy.orm.clear_mappers()
+        sqlalchemy.orm.mapper(File_Expt,self.time_db)
+
+        self.session = sqlalchemy.orm.create_session(bind=self.engine, autocommit=False, autoflush=True)
+        self.file_expt = File_Expt(self.tree_desc)
         return
 
     def create_database(self,find_function):
@@ -67,7 +70,7 @@ class Tree:
     def add_item(self):
         item_desc=[getattr(self.file_expt,level) for level in self.tree_desc]
         add_item_recursive(self.tree,self.tree_desc,item_desc)
-        self.add_item_dataset()
+        #self.add_item_dataset()
         return
 
     def add_item_dataset(self):
@@ -158,7 +161,6 @@ def add_item_dataset_recursive(dataset,tree_desc,item_desc):
                 grp.variables[level_name][len(dataset.dimensions['time'])+1]=str(value)
                 #grp.variables[level_name][0]=str(value)
             
-
     return
 
 def slice_recursive(tree,options):

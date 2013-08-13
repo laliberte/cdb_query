@@ -46,7 +46,7 @@ def base_drs():
 def generate_subparsers(subparsers,epilog):
     discover(subparsers,epilog)
     optimset(subparsers,epilog)
-    optimset_time(subparsers,epilog)
+    #optimset_time(subparsers,epilog)
     list_paths(subparsers,epilog)
     slice(subparsers,epilog)
     find_local(subparsers,epilog)
@@ -82,7 +82,9 @@ def optimset(subparsers,epilog):
     parser=subparsers.add_parser('optimset',
                                            help='Take as an input the results from \'discover\'.\n\
                                                  Returns pointers to models that have all the\n\
-                                                 requested experiments and variables for all requested years.',
+                                                 requested experiments and variables for all requested years.\n\
+                                                 It can be slow, particularly if \'OPeNDAP\' files are\n\
+                                                 requested.',
                                            epilog=epilog_optimset,
                                            formatter_class=argparse.RawTextHelpFormatter
                                          )

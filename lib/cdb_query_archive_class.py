@@ -86,25 +86,14 @@ class SimpleTree:
     def optimset(self,options):
         #First slice the input:
         self.pointers.slice(options)
-
-        #Redefine the DRS:
-        self.header['drs']=[
-                'center','model','experiment','rip','frequency','realm','mip',
-                'var','time','version','search','file_type','path'
-                 ]
-
-        valid_experiments_path.intersection(self)
-        return
-
-    def optimset_time(self,options):
-        #First slice the input:
-        self.pointers.slice(options)
-
-        #Find the list of center / model with all the months for all the years / experiments and variables requested:
         self.header['drs']=[
                                 'experiment','center','model','rip','frequency','realm','mip',
                                 'var','time','version','file_type','search','path'
                              ]
+
+        #valid_experiments_path.intersection(self)
+
+        #Find the list of center / model with all the months for all the years / experiments and variables requested:
         valid_experiments_time.intersection(self)
 
         #Find the unique tree:
