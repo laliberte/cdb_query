@@ -152,15 +152,16 @@ def get_url_remote(item,file_type_list):
     return url_name
 
 def get_url_opendap(item):
-    url_name['file_type']='OPeNDAP'
+    file_info=dict()
+    file_info['file_type']='OPeNDAP'
     try:
-        url_name['url']=item.opendap_url
+        file_info['url']=item.opendap_url
     except:
-        url_name['url']=None
+        file_info['url']=None
     for val in correspondence_dict.keys():
         try:
-            url_name[val]=item.json[correspondence_dict[val]]
+            file_info[val]=item.json[correspondence_dict[val]]
         except:
-            url_name[val]=None
-    return url_name
+            file_info[val]=None
+    return file_info
 
