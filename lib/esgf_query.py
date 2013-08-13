@@ -85,7 +85,9 @@ def record_url(remote_file_desc,pointers):
     list_of_knowns=[ getattr(pointers.file_expt,field) for field in known_fields] 
     list_of_retrieved=[ remote_file_desc[field] for field in known_fields] 
     if (remote_file_desc['version'][1:]!='atest' and 
-        len([i for i,j in zip(list_of_knowns,list_of_retrieved) if i==j])==len(list_of_knowns)):
+        remote_file_desc['checksum']!='' and
+        len([i for i,j in zip(list_of_knowns,list_of_retrieved) if i==j])==len(list_of_knowns)
+        ):
         pointers.add_item()
     return pointers
 
