@@ -69,7 +69,7 @@ def find_time_opendap(pointers,file_expt):
         pointers.session.commit()
         return
 
-    year_axis, month_axis = netcdf_utils.get_year_axis(file_expt.path)
+    year_axis, month_axis = netcdf_utils.get_year_axis(file_expt.path.split('|')[0])
     if year_axis is None or month_axis is None:
         #File could not be opened and should be excluded from analysis
         return
@@ -83,7 +83,7 @@ def find_time_opendap(pointers,file_expt):
             for month in range(1,13):
                 file_expt_copy = copy.deepcopy(file_expt)
                 setattr(file_expt_copy,'time',str(year)+str(month).zfill(2))
-                setattr(file_expt_copy,'path',file_expt.path+'|'+str(np.min(month_id))+'|'+str(np.max(month_id)))
+                setattr(file_expt_copy,'path',file_expt.path.split('|')[0]+'|'+str(np.min(month_id))+'|'+str(np.max(month_id)))
                 pointers.session.add(file_expt_copy)
         else:
             months_year=np.unique(month_axis[year_id])
@@ -91,7 +91,7 @@ def find_time_opendap(pointers,file_expt):
                 month_id = year_id[np.where(month==month_axis[year_id])[0]]
                 file_expt_copy = copy.deepcopy(file_expt)
                 setattr(file_expt_copy,'time',str(year)+str(month).zfill(2))
-                setattr(file_expt_copy,'path',file_expt.path+'|'+str(np.min(month_id))+'|'+str(np.max(month_id)))
+                setattr(file_expt_copy,'path',file_expt.path.split('|')[0]+'|'+str(np.min(month_id))+'|'+str(np.max(month_id)))
                 pointers.session.add(file_expt_copy)
         pointers.session.commit()
     return

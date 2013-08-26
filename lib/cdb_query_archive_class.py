@@ -89,6 +89,8 @@ class SimpleTree:
                 'var','time','version','search','file_type','path'
                  ]
 
+
+        
         valid_experiments_path.intersection(self)
         return
 

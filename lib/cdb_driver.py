@@ -4,7 +4,8 @@ import shutil
 import argparse 
 import textwrap
 import json
-import cdb_query_archive
+import cdb_query_archive_class
+import json_tools
 
 class Open_With_Indent:
     """This class creates an open file were indentation is tracked"""
@@ -393,9 +394,9 @@ def main():
     options = parser.parse_args()
 
     #Load diagnostic description file:
-    paths_dict=cdb_query_archive.SimpleTree(cdb_query_archive.open_json(options))
+    paths_dict=cdb_query_archive_class.SimpleTree(json_tools.open_json(options))
     paths_dict.pointers.slice(options)
-    paths_dict.pointers.create_database(cdb_query_archive.find_simulations)
+    paths_dict.pointers.create_database(cdb_query_archive_class.find_simple)
 
     simulations_list=paths_dict.simulations_list()
 

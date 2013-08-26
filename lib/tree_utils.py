@@ -82,7 +82,7 @@ class Tree:
         return level_list_recursive(self.tree,'last')
 
     def simplify(self,header):
-        simplify_recursive(self.tree,header)
+        self.tree=simplify_recursive(self.tree,header)
         return 
 
     def replace_last(self,level_equivalence):
@@ -181,7 +181,7 @@ def simplify_recursive(tree,header):
                 del tree['v'+str(version)]
 
             #Find unique tree by recurrence:
-            simplify_recursive(tree['v'+str(max(version_list))],header)
+            tree['v'+str(max(version_list))]=simplify_recursive(tree['v'+str(max(version_list))],header)
 
         elif level_name+'_list' in header.keys() and isinstance(header[level_name+'_list'],list):
             #The level was not specified but an ordered list was provided in the diagnostic header.
@@ -198,10 +198,22 @@ def simplify_recursive(tree,header):
                     for level in tree.keys(): del tree[level]
         else:
             for level in [ name for name in tree.keys() if str(name)[0]!='_' ]:
-                simplify_recursive(tree[level],header)
+                tree[level]=simplify_recursive(tree[level],header)
     elif isinstance(tree,list) and tree:
-        tree=[tree[0]]
-    return
+        remote_paths=copy.deepcopy([path for path in tree if len(path.split('|'))<=2])
+        for path in remote_paths[1:]:
+            tree.remove(path)
+        if len(remote_paths)<len(tree):
+            if remote_paths:
+                tree.remove(remote_paths[0])
+            if len(tree)>1:
+                lengths=[int(path.split('|')[2])-int(path.split('|')[1]) for path in tree]
+                sorted_lengths=np.argsort(lengths)
+                paths_list=copy.deepcopy(tree)
+                for path in paths_list:
+                    if path != paths_list[sorted_lengths[-1]]:
+                        tree.remove(path)
+    return tree
 
 def replace_last_level(tree,level_equivalence,branch_desc):
     if isinstance(tree,dict):

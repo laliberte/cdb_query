@@ -7,7 +7,7 @@ from tree_utils import File_Expt
 
 import multiprocessing as mproc
 
-remote_file_types=['HTTPServer','GridFTP']
+remote_file_types=['HTTPServer','GridFTP','OPeNDAP']
 
 def descend_tree(pointers,header,search_path,options):
     #Create the database:
@@ -101,7 +101,10 @@ def get_urls(result,file_type_list,var_name):
             for item in fil:
                 file_list_remote.extend(get_url_remote(item,file_type_list))
         except:
-            warnings.warn('Shard {0} is unresponsive at the moment'.format(fil_ctx.shards[0]))
+            try:
+                warnings.warn('Shard {0} is unresponsive at the moment'.format(fil_ctx.shards[0]))
+            except:
+                pass
         
     if 'OPeNDAP' in file_type_list:
         #OPeNDAP files were requested:
@@ -130,7 +133,11 @@ def get_url_remote(item,file_type_list):
     except:
         keys_list=[]
 
-    for key in set(keys_list).intersection(file_type_list):
+    available_keys=list(set(keys_list).intersection(file_type_list))
+    if 'HTTPServer' in keys_list and 'OPeNDAP' in file_type_list and not 'HTTPServer' in available_keys:
+        available_keys.append('HTTPServer') 
+
+    for key in available_keys:
         file_info=dict()
         file_info['file_type']=key
         try:
@@ -148,20 +155,57 @@ def get_url_remote(item,file_type_list):
                 if isinstance(file_info[val],list): file_info[val]=str(file_info[val][0])
             except:
                 file_info[val]=None
-        url_name.append(file_info)
+        if key=='HTTPServer':
+            if 'HTTPServer' in file_type_list:
+                url_name.append(file_info)
+            if 'OPeNDAP' in file_type_list:
+                file_info_copy=copy.deepcopy(file_info)
+                file_info_copy['file_type']='OPeNDAP'
+                file_info_copy['url']=file_info_copy['url'].replace('fileServer','dodsC')
+                url_name.append(file_info_copy)
+        else:
+            url_name.append(file_info)
     return url_name
 
 def get_url_opendap(item):
+    #This is a hack
     file_info=dict()
     file_info['file_type']='OPeNDAP'
     try:
         file_info['url']=item.opendap_url
     except:
         file_info['url']=None
-    for val in correspondence_dict.keys():
-        try:
-            file_info[val]=item.json[correspondence_dict[val]]
-        except:
+
+    aggregation_drs=['center','model','experiment','frequency','realm','mip','rip','var','version']
+    if file_info['url']: 
+        file_desc=file_info['url'].split('.')[-10:-1]
+        for val in zip(aggregation_drs,file_desc):
+            file_info[val[0]]=val[1]
+        file_info['checksum']='remote'
+        file_info['version']='v'+file_info['version']
+    else:
+        for val in correspondence_dict.keys():
             file_info[val]=None
+            if val=='version':
+                file_info[val]='latest'
+
+    return file_info
+
+def get_url_opendap_old(item):
+    file_info=dict()
+    file_info['file_type']='OPeNDAP'
+    try:
+        file_info['url']=item.opendap_url
+    except:
+        file_info['url']=None
+
+    if file_info['url']:
+        for val in correspondence_dict.keys():
+            try:
+                file_info[val]=item.json[correspondence_dict[val]]
+            except:
+                file_info[val]=None
+                if val=='version':
+                    file_info[val]='latest'
     return file_info
 
