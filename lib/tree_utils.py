@@ -200,6 +200,7 @@ def simplify_recursive(tree,header):
             for level in [ name for name in tree.keys() if str(name)[0]!='_' ]:
                 tree[level]=simplify_recursive(tree[level],header)
     elif isinstance(tree,list) and tree:
+        #print tree
         remote_paths=copy.deepcopy([path for path in tree if len(path.split('|'))<=2])
         for path in remote_paths[1:]:
             tree.remove(path)

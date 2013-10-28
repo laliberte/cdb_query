@@ -133,10 +133,11 @@ class SimpleTree:
         paths_list=sorted(list(set([path[0] for path in self.list_subset((File_Expt.path,))])))
         for path in paths_list:
             if 'wget' in dir(options) and options.wget:
-                print('\''+
-                      '/'.join(path.split('|')[0].split('/')[-10:])+
-                      '\' \''+path.split('|')[0]+
-                      '\' \'MD5\' \''+path.split('|')[1]+'\'')
+                if len(path.split('|'))>1:
+                    print('\''+
+                          '/'.join(path.split('|')[0].split('/')[-10:])+
+                          '\' \''+path.split('|')[0]+
+                          '\' \'MD5\' \''+path.split('|')[1]+'\'')
             else:
                 print path
         return
