@@ -89,7 +89,7 @@ def replicate_netcdf_var(output,data,var,datatype=None):
     output.sync()
     return output
 
-def recover_time(file):
+def recover_time_old(file):
     file_name=file.split('|')[0]
     start_id=int(file.split('|')[1])
     end_id=int(file.split('|')[2])
@@ -110,6 +110,29 @@ def recover_time(file):
     table=np.empty(time_axis.shape, dtype=table_desc)
     table['paths']=np.array([str(file_name) for item in time_axis])
     table['indices']=range(start_id,end_id+1)
+    data.close()
+    return time_axis,table
+
+def recover_time(file):
+    file_name=file.split('|')[0]
+
+    print file_name
+    data=netCDF4.Dataset(file_name)
+    if 'calendar' in dir(data.variables['time']):
+        calendar=data.variables['time'].calendar
+    else:
+        calendar='standard'
+    time_axis=(netCDF4.num2date(data.variables['time'][:],
+                                 units=data.variables['time'].units,
+                                 calendar=calendar)
+                    )
+    table_desc=[
+               ('paths','a255'),
+               ('indices','uint32')
+               ]
+    table=np.empty(time_axis.shape, dtype=table_desc)
+    table['paths']=np.array([str(file_name) for item in time_axis])
+    table['indices']=range(0,len(time_axis))
     data.close()
     return time_axis,table
 
