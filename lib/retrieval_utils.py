@@ -36,11 +36,14 @@ class HTTPSClientAuthHandler(urllib2.HTTPSHandler):
 #    else:
 #        return False
 
-def check_file_availability(url_name):
+def create_ESGF_authentication():
     cj = CookieJar()
-    try: 
-        opener = urllib2.build_opener(HTTPSClientAuthHandler(os.environ['X509_USER_PROXY'], os.environ['X509_USER_PROXY']),urllib2.HTTPCookieProcessor(cj))
+    opener = urllib2.build_opener(HTTPSClientAuthHandler(os.environ['X509_USER_PROXY'], os.environ['X509_USER_PROXY']),urllib2.HTTPCookieProcessor(cj))
+    return opener
 
+def check_file_availability(url_name):
+    try: 
+        opener = create_ESGF_authentication()
         response = opener.open(url_name)
 
         if response.msg=='OK' and response.headers.getheaders('Content-Length')[0]:

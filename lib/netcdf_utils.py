@@ -15,6 +15,7 @@ def get_year_axis(path_name):
         #print path_name
         data=netCDF4.Dataset(path_name)
         dimensions_list=data.dimensions.keys()
+        #print dimensions_list
         if 'time' not in dimensions_list:
             raise Error('time is missing from variable')
         date_axis = get_date_axis(data.variables['time'])
