@@ -81,6 +81,5 @@ def intersection(diagnostic):
                         setattr(diagnostic.pointers.file_expt,val,getattr(item,val))
                 diagnostic.pointers.add_item()
                 
-    diagnostic.pointers.clear_database()
     return
 

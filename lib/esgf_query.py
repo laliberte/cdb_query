@@ -99,7 +99,8 @@ def get_urls(result,file_type_list,var_name):
             for item in fil:
                 file_list_remote.extend(get_url_remote(item,file_type_list))
         except:
-            warnings.warn('Shard {0} is unresponsive at the moment'.format(fil_ctx.shards[0]))
+            pass
+            #warnings.warn('Shard {0} is unresponsive at the moment'.format(fil_ctx.shards[0]))
         
     if 'OPeNDAP' in file_type_list:
         #OPeNDAP files were requested:

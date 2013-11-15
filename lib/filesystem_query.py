@@ -27,7 +27,7 @@ def descend_tree_recursive(header_simple,pointers,tree_desc,top_path):
         file_list=glob.glob(top_path+'/*.nc') 
         if len(file_list)>0:
             for file in file_list:
-                pointers.file_expt.path=file
+                pointers.file_expt.path='|'.join(file,netcdf_utils.md5_for_file(file))
                 pointers.add_item()
         return
     else:

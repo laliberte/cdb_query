@@ -81,23 +81,25 @@ class SimpleTree:
                         #[ os.path.expanduser(os.path.expandvars(path)) for path in self.header['search_list']]
         for search_path in remote_paths:
             esgf_query.descend_tree(self.pointers,self.header,search_path,options)
+
+        valid_experiments_path.intersection(self)
         return
 
     def optimset(self,options):
         #First slice the input:
         self.pointers.slice(options)
+
         self.header['drs']=[
                                 'experiment','center','model','rip','frequency','realm','mip',
                                 'var','time','version','file_type','search','path'
                              ]
 
-        #valid_experiments_path.intersection(self)
 
         #Find the list of center / model with all the months for all the years / experiments and variables requested:
         valid_experiments_time.intersection(self)
 
         #Find the unique tree:
-        self.pointers.simplify(self.header)
+        #self.pointers.simplify(self.header)
         return
 
     def slice(self,options):
@@ -143,6 +145,8 @@ class SimpleTree:
         drs_list=cdb_query_archive_parsers.base_drs()
         drs_to_remove=['search','path','file_type','version','time']
         for drs in drs_to_remove: drs_list.remove(drs)
+        #Remove the time:
+        drs_to_remove.remove('time')
         trees_list=self.list_subset([getattr(File_Expt,level) for level in drs_list])
         version_name='v'+str(datetime.date.today()).replace('-','')
         file_name_drs=['var','mip','model','experiment','rip']
@@ -159,7 +163,8 @@ class SimpleTree:
                 if not os.path.exists(path_dir):
                     os.makedirs(path_dir)
                 conditions=[ getattr(File_Expt,level)==value for level,value in zip(drs_list,tree)]
-                paths_list=[path[0] for path in self.pointers.session.query(File_Expt.path
+                out_tuples=[ getattr(File_Expt,level) for level in drs_to_remove]
+                paths_list=[{drs_name:path[drs_id] for drs_id, drs_name in enumerate(drs_to_remove)} for path in self.pointers.session.query(*out_tuples
                                         ).filter(sqlalchemy.and_(*conditions)).distinct().all()]
                 file_name=[ value for fn_levels in file_name_drs for level,value in zip(drs_list,tree) if level==fn_levels] 
                 netcdf_utils.concatenate_paths(path_dir+'/'+'_'.join(file_name),paths_list,time_dict[frequency],var,checksum=options.checksum)
@@ -192,7 +197,7 @@ class SimpleTree:
                 path_to_file=search_path+'/'+'/'.join(path.split('|')[0].split('/')[-10:])
                 try:
                     f=open(path_to_file)
-                    if md5_for_file(f)==md5checksum:
+                    if netcdf_utils.md5_for_file(f)==md5checksum:
                         path_equivalence[path]=path_to_file
                         break
                 except:
@@ -205,14 +210,6 @@ class SimpleTree:
         self.pointers.replace_last(path_equivalence)
         return
                 
-def md5_for_file(f, block_size=2**20):
-    md5 = hashlib.md5()
-    while True:
-        data = f.read(block_size)
-        if not data:
-            break
-        md5.update(data)
-    return md5.hexdigest()
 
 def find_simple(pointers,file_expt):
     #for item in dir(file_expt):

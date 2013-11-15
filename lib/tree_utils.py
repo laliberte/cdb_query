@@ -24,11 +24,11 @@ class Tree:
         self._database_created=False
 
         #Create an alternative netcdf file:
-        if 'out_diagnostic_headers_file' in dir(options):
-            self.dataset=netCDF4.Dataset(options.out_diagnostic_headers_file+'.nc','w',format='NETCDF4')
-        else:
-            self.dataset=None
-        #self.dataset=None
+        #if 'out_diagnostic_headers_file' in dir(options):
+        #    self.dataset=netCDF4.Dataset(options.out_diagnostic_headers_file+'.nc','w',format='NETCDF4')
+        #else:
+        #    self.dataset=None
+        self.dataset=None
         return
 
     def _setup_database(self):

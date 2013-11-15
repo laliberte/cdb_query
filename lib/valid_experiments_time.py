@@ -15,13 +15,12 @@ import numpy as np
 def find_time(pointers,file_expt):
     #session,file_expt,path_name,file_type,propagated_values):
     #Top function to define how the time axis is created:
-    if file_expt.file_type in ['HTTPServer']:
-        if retrieval_utils.check_file_availability(file_expt.path.split('|')[0]):
-            find_time_file(pointers,file_expt)
+    if file_expt.file_type in ['HTTPServer','local_file']:
+        find_time_file(pointers,file_expt)
     elif file_expt.file_type in ['GridFTP']:
         find_time_file(pointers,file_expt)
-    elif file_expt.file_type in ['local_file','OPeNDAP']:
-        find_time_opendap(pointers,file_expt)
+    #elif file_expt.file_type in ['local_file','OPeNDAP']:
+    #    find_time_opendap(pointers,file_expt)
     return
         
 def find_time_file(pointers,file_expt):#session,file_expt,path_name):
@@ -29,7 +28,7 @@ def find_time_file(pointers,file_expt):#session,file_expt,path_name):
     filename=os.path.basename(file_expt.path)
     
     #Check if file has fixed frequency or is a climatology:
-    time_stamp=filename.replace('.nc','').split('_')[-1]
+    time_stamp=filename.replace('.nc','').split('_')[-1].split('|')[0]
     if time_stamp[0] == 'r':
         pointers.session.add(file_expt)
         pointers.session.commit()
@@ -46,14 +45,19 @@ def find_time_file(pointers,file_expt):#session,file_expt,path_name):
     years_list.append(years_range[1])
 
     #Record in the database:
+    file_checked=False
     for year in years_list:
         for month in range(1,13):
             if not ( (year==years_range[0] and month<months_range[0]) or
                      (year==years_range[1] and month>months_range[1])   ):
-                file_expt_copy = copy.deepcopy(file_expt)
-                setattr(file_expt_copy,'time',str(year)+str(month).zfill(2))
-                pointers.session.add(file_expt_copy)
-                pointers.session.commit()
+                if not file_checked:
+                    file_available = retrieval_utils.check_file_availability(file_expt.path.split('|')[0])
+                    file_checked=True
+                if file_available:
+                    file_expt_copy = copy.deepcopy(file_expt)
+                    setattr(file_expt_copy,'time',str(year)+str(month).zfill(2))
+                    pointers.session.add(file_expt_copy)
+                    pointers.session.commit()
     return
 
 def find_time_opendap(pointers,file_expt):

@@ -8,6 +8,16 @@ import datetime
 import hashlib
 
 import os
+
+def md5_for_file(f, block_size=2**20):
+    md5 = hashlib.md5()
+    while True:
+        data = f.read(block_size)
+        if not data:
+            break
+        md5.update(data)
+    return md5.hexdigest()
+
 def get_year_axis(path_name):
     try:
         #print 'Loading file... ',
@@ -80,13 +90,17 @@ def replicate_netcdf_var(output,data,var,datatype=None):
 
     if var not in output.variables.keys():
         output.createVariable(var,datatype,data.variables[var].dimensions,zlib=True)
+    output = replicate_netcdf_var_att(output,data,var)
+    output.sync()
+    return output
+
+def replicate_netcdf_var_att(output,data,var):
     for att in data.variables[var].ncattrs():
         att_val=getattr(data.variables[var],att)
         if att[0]!='_':
             if 'encode' in dir(att_val):
                 att_val=att_val.encode('ascii','replace')
             setattr(output.variables[var],att,att_val)
-    output.sync()
     return output
 
 def recover_time_old(file):
@@ -114,7 +128,7 @@ def recover_time_old(file):
     return time_axis,table
 
 def recover_time(file):
-    file_name=file.split('|')[0]
+    file_name=file['path'].replace('fileServer','dodsC').split('|')[0]
 
     print file_name
     data=netCDF4.Dataset(file_name)
@@ -140,64 +154,51 @@ def concatenate_paths(output_file,source_files,frequency_time,var,checksum=False
     time_axis, table=map(np.concatenate,
                              zip(*map(recover_time,source_files))
                              )
-    sort_id=np.argsort(time_axis)
-    table=table[sort_id]
-    time_axis=time_axis[sort_id]
 
     data=netCDF4.Dataset(table['paths'][0])
+    time_axis = netCDF4.date2num(time_axis,units=data.variables['time'].units,calendar=data.variables['time'].calendar)
+    time_axis_unique = np.unique(time_axis)
 
-    output_file_name=(output_file+'_'+time_axis[0].strftime(''.join(frequency_time)) +'_'+
-                                     time_axis[-1].strftime(''.join(frequency_time)) +'.nc' )
+    time_axis_datetime= netCDF4.num2date(time_axis_unique,units=data.variables['time'].units,calendar=data.variables['time'].calendar)
+    output_file_name=(output_file+'_'+time_axis_datetime[0].strftime(''.join(frequency_time)) +'_'+
+                                     time_axis_datetime[-1].strftime(''.join(frequency_time)) +'.nc' )
     output_root=netCDF4.Dataset(output_file_name,'w',format='NETCDF4')
     output=output_root.createGroup('model_id')
     replicate_netcdf_file(output,data)
 
-    output.createDimension('time',len(time_axis))
+    output.createDimension('time',len(time_axis_unique))
     time = output.createVariable('time','d',('time',))
     time.calendar=str(data.variables['time'].calendar)
     time.units=str(data.variables['time'].units)
-    time[:]=netCDF4.date2num(time_axis,units=time.units,calendar=time.calendar)
+    time[:]=time_axis_unique
 
-    datatype=[('data',data.variables[var].dtype)]
-    for dim in data.variables[var].dimensions: datatype.append((str(dim),np.uint32))
-    for path in np.unique(table['paths']): datatype.append((str(path).replace('/','0x2f'),np.uint8))
-    cdb_type=output.createCompoundType(np.dtype(datatype),var+'_type')
-    replicate_netcdf_var(output,data,var,datatype=cdb_type)
-    record_array=np.ma.empty(output.variables[var].shape[1:],np.dtype(datatype))
-    print var
-    for time_id, time in enumerate(time_axis):
-        print time_id
-        path_name=str(table['paths'][time_id]).replace('/','0x2f')
-        record_array[path_name][:]=1
-        record_array['time'][:]=table['indices'][time_id]
-        output.variables[var][time_id,...]=record_array
-        output.sync()
-    #ptr_group=output.createGroup('paths')
-    #paths=ptr_group.createVariable(var,str,('time',),zlib=True)
-    #ind_group=output.createGroup('indices')
-    #indices=ind_group.createVariable(var,'u4',('time',),zlib=True)
-    #if checksum:
-    #    chk_group=output.createGroup('checksums')
-    #    checksums=chk_group.createVariable(var,'u4',('time',),zlib=True)
+    output.createDimension('path',len(source_files))
+    paths = output.createVariable('path',str,('path',))
+    checksum = output.createVariable('checksum',str,('path',))
+    version = output.createVariable('version',np.uint32,('path',))
+    search = output.createVariable('search',str,('path',))
+    file_type = output.createVariable('file_type',str,('path',))
+    for file_id, file in enumerate(source_files):
+        paths[file_id]=file['path'].split('|')[0]
+        checksum[file_id]=file['path'].split('|')[1]
+        version[file_id]=np.uint32(file['version'][1:])
+        search[file_id]=file['search']
+        file_type[file_id]=file['file_type']
 
-    #for id, path in enumerate(table['paths']): paths[id]=str(path)
-    #indices[:]=table['indices']
-    #if checksum:
-    #    checksums[:]=np.vectorize(lambda x: md5_for_netcdf(x['paths'],var,x['indices']))(table)
+    #paths_list=[path.replace('fileServer','dodsC') for path in paths[:] ]
+    paths_list=[path for path in paths[:] ]
 
+    var_out = output.createVariable(var,np.uint32,('time','path'),zlib=True)
+    replicate_netcdf_var_att(output,data,var)
+    for time_id, time in enumerate(time_axis_unique):
+        table_lim=table[time==time_axis]
+        for table_entry in table_lim:
+            file_id=paths_list.index(table_entry['paths'].replace('dodsC','fileServer')) 
+            var_out[time_id,file_id]=table_entry['indices']
     output_root.close()
     data.close()
-    return
 
-#def md5_for_netcdf(netcdf_file,variable,time_index):
-#    data=Dataset(netcdf_file,'r')
-#    print dir(data.variables[variable].filters)
-#    array=data.variables[variable][time_index,...]
-#    data.close()
-#    print array.shape
-#    md5sum=hashlib.md5(array).digest()
-#    print md5sum
-#    return md5sum
+    return
 
 #def modify_init(func):
 #    return (lambda cls: setattr(cls,'__init__',func(m)))
