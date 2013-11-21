@@ -130,24 +130,29 @@ def recover_time_old(file):
 def recover_time(file):
     file_name=file['path'].replace('fileServer','dodsC').split('|')[0]
 
-    print file_name
-    data=netCDF4.Dataset(file_name)
-    if 'calendar' in dir(data.variables['time']):
-        calendar=data.variables['time'].calendar
-    else:
-        calendar='standard'
-    time_axis=(netCDF4.num2date(data.variables['time'][:],
-                                 units=data.variables['time'].units,
-                                 calendar=calendar)
-                    )
+    try:
+        data=netCDF4.Dataset(file_name)
+            
+        if 'calendar' in dir(data.variables['time']):
+            calendar=data.variables['time'].calendar
+        else:
+            calendar='standard'
+        time_axis=(netCDF4.num2date(data.variables['time'][:],
+                                     units=data.variables['time'].units,
+                                     calendar=calendar)
+                        )
+        data.close()
+    except:
+        time_axis=np.empty((0,))
+
     table_desc=[
                ('paths','a255'),
                ('indices','uint32')
                ]
     table=np.empty(time_axis.shape, dtype=table_desc)
-    table['paths']=np.array([str(file_name) for item in time_axis])
-    table['indices']=range(0,len(time_axis))
-    data.close()
+    if len(time_axis)>0:
+        table['paths']=np.array([str(file_name) for item in time_axis])
+        table['indices']=range(0,len(time_axis))
     return time_axis,table
 
 def concatenate_paths(output_file,source_files,frequency_time,var,checksum=False):
@@ -177,24 +182,32 @@ def concatenate_paths(output_file,source_files,frequency_time,var,checksum=False
     checksum = output.createVariable('checksum',str,('path',))
     version = output.createVariable('version',np.uint32,('path',))
     search = output.createVariable('search',str,('path',))
+    domain = output.createVariable('domain',str,('path',))
     file_type = output.createVariable('file_type',str,('path',))
     for file_id, file in enumerate(source_files):
         paths[file_id]=file['path'].split('|')[0]
         checksum[file_id]=file['path'].split('|')[1]
         version[file_id]=np.uint32(file['version'][1:])
         search[file_id]=file['search']
+        domain[file_id]='/'.join(file['path'].split('/')[:3])
         file_type[file_id]=file['file_type']
 
     #paths_list=[path.replace('fileServer','dodsC') for path in paths[:] ]
     paths_list=[path for path in paths[:] ]
 
+    paths_indices=np.empty(time_axis.shape,dtype=np.uint32)
+    for path_id, path in enumerate(paths_list):
+        paths_indices[path.replace('fileServer','dodsC')==table['paths']]=path_id
+    time_indices=np.empty(time_axis.shape,dtype=np.uint32)
+    for time_id, time in enumerate(time_axis_unique):
+        time_indices[time==time_axis]=time_id
+
     var_out = output.createVariable(var,np.uint32,('time','path'),zlib=True)
     replicate_netcdf_var_att(output,data,var)
-    for time_id, time in enumerate(time_axis_unique):
-        table_lim=table[time==time_axis]
-        for table_entry in table_lim:
-            file_id=paths_list.index(table_entry['paths'].replace('dodsC','fileServer')) 
-            var_out[time_id,file_id]=table_entry['indices']
+    temp=np.empty_like(var_out)
+    temp[time_indices,paths_indices]=table['indices']
+    var_out=temp
+        
     output_root.close()
     data.close()
 

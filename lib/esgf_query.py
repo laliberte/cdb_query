@@ -6,6 +6,7 @@ from pyesgf.search import SearchConnection
 from tree_utils import File_Expt
 
 import multiprocessing as mproc
+import retrieval_utils
 
 remote_file_types=['HTTPServer','GridFTP']
 
@@ -72,6 +73,9 @@ def record_url(remote_file_desc,pointers):
     pointers.file_expt.path=remote_file_desc['url']
     if remote_file_desc['file_type'] in remote_file_types and remote_file_desc['checksum']:
         pointers.file_expt.path+='|'+remote_file_desc['checksum']
+        file_available = retrieval_utils.check_file_availability(pointers.file_expt.path.split('|')[0])
+        if not file_available:
+            return
 
     for val in ['file_type','center','model','rip','version']:
         setattr(pointers.file_expt,val,remote_file_desc[val])
