@@ -14,9 +14,13 @@ from tree_utils import File_Expt
 
 import cdb_query_archive_parsers
 import netcdf_utils
+import netCDF4
 
 import datetime
 import sqlalchemy
+
+import numpy as np
+from itertools import groupby, count
 
 class SimpleTree:
     def __init__(self,tree,options):
@@ -61,9 +65,18 @@ class SimpleTree:
                                                         ).distinct().all()
         return subset_list
 
+    def discover_centers(self,options):
+        self.discover_both(options,True)
+        return
+
     def discover(self,options):
+        self.discover_both(options,False)
+        return
+
+    def discover_both(self,options,discover_centers):
         #First simplify the header
         self.union_header()
+        centers_list=[]
 
         #Local filesystem archive
         local_paths=[search_path for search_path in 
@@ -71,7 +84,10 @@ class SimpleTree:
                         if os.path.exists(os.path.abspath(os.path.expanduser(os.path.expandvars(search_path))))]
                         #[ os.path.abspath(os.path.expanduser(os.path.expandvars(path))) for path in self.header['search_list']]
         for search_path in local_paths:
-            filesystem_query.descend_tree(self.pointers,self.header,self.header_simple,search_path)
+            if discover_centers:
+                centers_list.append(filesystem_query.descend_tree(self.pointers,self.header,self.header_simple,search_path,list_level='center'))
+            else:
+                filesystem_query.descend_tree(self.pointers,self.header,self.header_simple,search_path)
 
 
         #ESGF search
@@ -80,34 +96,23 @@ class SimpleTree:
                         if not os.path.exists(os.path.abspath(os.path.expanduser(os.path.expandvars(search_path))))]
                         #[ os.path.expanduser(os.path.expandvars(path)) for path in self.header['search_list']]
         for search_path in remote_paths:
-            esgf_query.descend_tree(self.pointers,self.header,search_path,options)
+            if discover_centers:
+                centers_list.append(esgf_query.descend_tree(self.pointers,self.header,search_path,options,list_level='center'))
+            else:
+                esgf_query.descend_tree(self.pointers,self.header,search_path,options)
 
-        valid_experiments_path.intersection(self)
-        return
-
-    def optimset(self,options):
-        #First slice the input:
-        self.pointers.slice(options)
-
-        self.header['drs']=[
-                                'experiment','center','model','rip','frequency','realm','mip',
-                                'var','time','version','file_type','search','path'
-                             ]
-
-
-        #Find the list of center / model with all the months for all the years / experiments and variables requested:
-        valid_experiments_time.intersection(self)
-
-        #Find the unique tree:
-        #self.pointers.simplify(self.header)
-        return
-
-    def slice(self,options):
-        self.pointers.slice(options)
+        if discover_centers:
+            for center in set([item for sublist in centers_list for item in sublist]):
+                print center
+        else:
+            valid_experiments_path.intersection(self)
+            #List domains:
+            self.header['domain_list']=sorted(list(set([netcdf_utils.get_domain(*path) for path in self.list_subset((File_Expt.path,File_Expt.file_type))])))
         return
 
     def simulations_list(self):
-        return self.list_subset((File_Expt.center,File_Expt.model,File_Expt.rip))
+        simulations_list=self.list_subset((File_Expt.center,File_Expt.model,File_Expt.rip))
+        return [simulation for simulation in simulations_list if simulation[2]!='r0i0p0']
 
     def simulations(self,options):
         self.pointers.slice(options)
@@ -115,8 +120,18 @@ class SimpleTree:
 
         simulations_list=self.simulations_list()
         for simulation in simulations_list:
-            if simulation[2]!='r0i0p0':
-                print '_'.join(simulation)
+            #if simulation[2]!='r0i0p0':
+            print '_'.join(simulation)
+        return
+
+    def list_domains(self,options):
+        #slice with options:
+        self.pointers.slice(options)
+        self.pointers.create_database(find_simple)
+        domains_list=sorted(list(set([netcdf_utils.get_domain(*path) for path in self.list_subset((File_Expt.path,File_Expt.file_type))])))
+        for path in domains_list:
+            #print '\''+path+'\','
+            print path
         return
 
     def list_paths(self,options):
@@ -137,7 +152,24 @@ class SimpleTree:
                 print path
         return
 
+    def optimset(self,options):
+        #First slice the input:
+        self.pointers.slice(options)
+
+        self.header['drs']=[
+                                'experiment','center','model','rip','frequency','realm','mip',
+                                'var','time','version','file_type','search','path'
+                             ]
+
+        #Find the list of center / model with all the months for all the years / experiments and variables requested:
+        valid_experiments_time.intersection(self)
+
+        return
+
+
     def netcdf_paths(self,options):
+        import netCDF4
+        #First slice the input:
         self.pointers.slice(options)
         self.pointers.create_database(find_simple)
 
@@ -147,28 +179,46 @@ class SimpleTree:
         for drs in drs_to_remove: drs_list.remove(drs)
         #Remove the time:
         drs_to_remove.remove('time')
+
+        #Find the unique tuples:
         trees_list=self.list_subset([getattr(File_Expt,level) for level in drs_list])
-        version_name='v'+str(datetime.date.today()).replace('-','')
+        #version_name='v'+str(datetime.date.today()).replace('-','')
         file_name_drs=['var','mip','model','experiment','rip']
 
         time_dict={'mon':('%Y','%m')}
         time_dict['day']=time_dict['mon']+('%d',)
         time_dict['6hr']=time_dict['day']+('%H','%M',)
         time_dict['3hr']=time_dict['6hr']
+
+        #Create output:
+        output_file_name=options.out_diagnostic_netcdf_file
+        output_root=netCDF4.Dataset(output_file_name,'w',format='NETCDF4')
+        soft_link_desc={'numpy':np.dtype([('path','uint32'),('time','uint32')])}
+        #soft_link_desc['netcdf4']=output_root.createCompoundType(soft_link_desc['numpy'],'soft_link')
+        
         for tree in trees_list:
             frequency=tree[3]
             var=tree[-1]
+            output=netcdf_utils.create_tree(output_root,zip(drs_list,tree))
+            output_root.sync()
+            conditions=[ getattr(File_Expt,level)==value for level,value in zip(drs_list,tree)]
+            out_tuples=[ getattr(File_Expt,level) for level in drs_to_remove]
+            paths_list=[{drs_name:path[drs_id] for drs_id, drs_name in enumerate(drs_to_remove)} for path in self.pointers.session.query(*out_tuples
+                                    ).filter(sqlalchemy.and_(*conditions)).distinct().all()]
             if not frequency in ['fx','clim']:
-                path_dir=os.path.abspath(self.header['pointers_dir'])+'/'+'/'.join(tree[:-1])+'/'+version_name+'/'+tree[-1]
-                if not os.path.exists(path_dir):
-                    os.makedirs(path_dir)
-                conditions=[ getattr(File_Expt,level)==value for level,value in zip(drs_list,tree)]
-                out_tuples=[ getattr(File_Expt,level) for level in drs_to_remove]
-                paths_list=[{drs_name:path[drs_id] for drs_id, drs_name in enumerate(drs_to_remove)} for path in self.pointers.session.query(*out_tuples
-                                        ).filter(sqlalchemy.and_(*conditions)).distinct().all()]
-                file_name=[ value for fn_levels in file_name_drs for level,value in zip(drs_list,tree) if level==fn_levels] 
-                netcdf_utils.concatenate_paths(path_dir+'/'+'_'.join(file_name),paths_list,time_dict[frequency],var,checksum=options.checksum)
+                netcdf_utils.concatenate_paths(self.header,output_root,output,soft_link_desc,paths_list,var)
+            else:
+                #Retrieve fixed and clim variables:
+                netcdf_utils.retrieve_fx(output,paths_list,var)
+        return
 
+    def slice(self,options):
+        self.pointers.slice(options)
+        return
+
+    def simplify(self,options):
+        self.pointers.slice(options)
+        self.pointers.simplify(self.header)
         return
 
     def find_local(self,options):
@@ -209,7 +259,49 @@ class SimpleTree:
 
         self.pointers.replace_last(path_equivalence)
         return
-                
+
+def remote_retrieve(options):
+    data=netCDF4.Dataset(options.in_diagnostic_netcdf_file,'r')
+    paths_list=[]
+    for timestamp in options.timestamp:
+        paths_list.append(netcdf_utils.descend_tree(options,data,timestamp))
+    data.close()
+    identical_paths=organize_identical_paths(paths_list)
+    for path in identical_paths.keys():
+        if options.cdo:
+            sel_string=' -seltimestep,'+','.join([str(item+1) for item in identical_paths[path]['indices']])
+            print sel_string+' '+path.replace('fileServer','dodsC')
+        elif options.nco:
+            for slice_indices in convert_indices_to_slices(identical_paths[path]['indices']):
+                if len(slice_indices)==2:
+                    sel_string='-d time,'+','.join([str(item) for item in slice_indices])
+                else:
+                    sel_string='-d time,'+str(slice_indices[0])+','+str(slice_indices[0])
+                print ' '.join([sel_string,path.replace('fileServer','dodsC')])
+        elif options.list_domains:
+            print ' '.join(identical_paths[path]['domains'])
+        #else:
+        #    netcdf_utils.create_local_netcdf(options,options.out_netcdf_file,tuple_list)
+
+    return
+
+def convert_indices_to_slices(indices):
+    return [[next(v)] + list(v)[-1:] for k,v in groupby(indices, lambda x,c=count(): x-next(c))]
+
+def organize_identical_paths(paths_list):
+    unique_paths=np.unique([item['path'] for item in paths_list])
+    paths_organized={}
+    for path in unique_paths:
+        indices=[item['index'] for item in paths_list if item['path']==path]
+        indices_sort=np.argsort(indices)
+        if len(indices)>1: indices=np.array(indices)[indices_sort]
+        paths_organized[path]={
+                                'indices': indices,
+                                'timestamps':np.array([item['timestamp'] for item in paths_list if item['path']==path])[indices_sort],
+                                'domains':[item['domains'] for item in paths_list if item['path']==path][0]
+                              }
+    return paths_organized
+                             
 
 def find_simple(pointers,file_expt):
     #for item in dir(file_expt):

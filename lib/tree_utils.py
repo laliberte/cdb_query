@@ -23,11 +23,6 @@ class Tree:
         self._setup_database()
         self._database_created=False
 
-        #Create an alternative netcdf file:
-        #if 'out_diagnostic_headers_file' in dir(options):
-        #    self.dataset=netCDF4.Dataset(options.out_diagnostic_headers_file+'.nc','w',format='NETCDF4')
-        #else:
-        #    self.dataset=None
         self.dataset=None
         return
 
@@ -73,11 +68,11 @@ class Tree:
         #self.add_item_dataset()
         return
 
-    def add_item_dataset(self):
-        item_desc=[getattr(self.file_expt,level) for level in self.tree_desc]
-        add_item_dataset_recursive(self.dataset,self.tree_desc,item_desc)
-        self.dataset.sync()
-        return
+    #def add_item_dataset(self):
+    #    item_desc=[getattr(self.file_expt,level) for level in self.tree_desc]
+    #    add_item_dataset_recursive(self.dataset,self.tree_desc,item_desc)
+    #    self.dataset.sync()
+    #    return
 
     def attribute_item(self,item):
         for val in dir(item):
@@ -195,44 +190,29 @@ def slice_recursive(tree,options):
     else:
         return 1
 
-def simplify_recursive(tree,header):
-    #Simplifies the output tree to make it unique:
+def simplify_recursive(tree,header,file_type=None):
+    #Simplifies the output tree to remove domain name 
 
     if isinstance(tree,dict) and tree:
         if '_name' not in tree.keys():
             raise IOError('Dictionnary passed to simplify must have a _name entry at each level except the last')
 
         level_name=tree['_name']
-        if level_name=='version':
-            #the 'version' field is peculiar. Here, we use the most recent, or largest version number:
-            version_list=[int(version[1:]) for version in tree.keys() if str(version)[0]!='_']
-
-            #Keep only the last version:
-            for version in [ ver for ver in version_list if ver!=max(version_list) ]:
-                del tree['v'+str(version)]
-
-            #Find unique tree by recurrence:
-            simplify_recursive(tree['v'+str(max(version_list))],header)
-
-        elif level_name+'_list' in header.keys() and isinstance(header[level_name+'_list'],list):
-            #The level was not specified but an ordered list was provided in the diagnostic header.
-            #Go through the list and pick the first avilable one:
-            level_ordering=[level for level in header[level_name+'_list'] if level in tree.keys()]
-
-            #Keep only the first:
-            if len(level_ordering)==0:
-                for level in tree.keys(): del tree[level]
+        for level in [ name for name in tree.keys() if str(name)[0]!='_' ]:
+            if level_name=='file_type':
+                tree[level]=simplify_recursive(tree[level],header,file_type=level)
             else:
-                for level in level_ordering[1:]: del tree[level]
-                simplify_recursive(tree[level_ordering[0]],header)
-                if not tree[level_ordering[0]]:
-                    for level in tree.keys(): del tree[level]
-        else:
-            for level in [ name for name in tree.keys() if str(name)[0]!='_' ]:
-                simplify_recursive(tree[level],header)
+                tree[level]=simplify_recursive(tree[level],header,file_type=file_type)
+            if tree[level]==None:
+                del tree[level]
+        if len([ name for name in tree.keys() if str(name)[0]!='_' ])==0:
+            for name in tree.keys(): tree=None
     elif isinstance(tree,list) and tree:
-        tree=[tree[0]]
-    return
+        #for item in tree:
+        #    print item, netcdf_utils.get_domain(item,file_type)
+        tree=[item for item in tree if netcdf_utils.get_domain(item,file_type) in header['domain_list']]
+        if len(tree)==0: tree=None
+    return tree
 
 def replace_last_level(tree,level_equivalence,branch_desc):
     if isinstance(tree,dict):

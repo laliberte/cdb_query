@@ -6,20 +6,27 @@ def get_immediate_subdirectories(path):
     return [name for name in os.listdir(path)
                 if os.path.isdir(os.path.join(path, name))]
 
-def descend_tree(pointers,header,header_simple,search_path):
+def descend_tree(pointers,header,header_simple,search_path,list_level=''):
     filesystem_file_type='local_file'
+    centers_list=[]
     if filesystem_file_type in header['file_type_list']:
         description={'search':search_path,
                    'file_type':filesystem_file_type,
                    'time':0}
         for att in description.keys():
             setattr(pointers.file_expt,att,description[att])
+        if list_level:
+            centers_list.append(descend_tree_recursive(header_simple,pointers,[item for item in pointers.tree_desc if not item in description.keys()],
+                                    os.path.abspath(os.path.expanduser(os.path.expandvars(search_path))),list_level=list_level))
+        else:
+            descend_tree_recursive(header_simple,pointers,[item for item in pointers.tree_desc if not item in description.keys()],
+                                    os.path.abspath(os.path.expanduser(os.path.expandvars(search_path))))
+    if list_level:
+        return centers_list
+    else:
+        return
 
-        descend_tree_recursive(header_simple,pointers,[item for item in pointers.tree_desc if not item in description.keys()],
-                                os.path.abspath(os.path.expanduser(os.path.expandvars(search_path))))
-    return
-
-def descend_tree_recursive(header_simple,pointers,tree_desc,top_path):
+def descend_tree_recursive(header_simple,pointers,tree_desc,top_pathi,list_level=None):
     if not isinstance(tree_desc,list):
         return
 
@@ -43,11 +50,11 @@ def descend_tree_recursive(header_simple,pointers,tree_desc,top_path):
             if not (local_tree_desc=='version' and subdir=='latest'):
                 subdir_list.append(subdir)
 
-    for subdir in subdir_list:
-        setattr(pointers.file_expt,local_tree_desc,subdir)
-        descend_tree_recursive(
-                              header_simple,
-                              pointers,
-                              next_tree_desc,
-                              top_path+'/'+subdir)
-    return
+    if list_level and local_tree_desc==list_level:
+        return subdir_list
+    else:
+        centers_list=[]
+        for subdir in subdir_list:
+            setattr(pointers.file_expt,local_tree_desc,subdir)
+            centers_list=descend_tree_recursive(header_simple,pointers,next_tree_desc,top_path+'/'+subdir)
+        return [item for sublist in centers_list for item in sublist]

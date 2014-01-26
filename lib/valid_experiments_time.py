@@ -45,20 +45,20 @@ def find_time_file(pointers,file_expt):#session,file_expt,path_name):
     years_list.append(years_range[1])
 
     #Record in the database:
-    #file_checked=False
+    file_checked=False
     for year in years_list:
         for month in range(1,13):
             if not ( (year==years_range[0] and month<months_range[0]) or
                      (year==years_range[1] and month>months_range[1])   ):
-                #if not file_checked:
-                #    #file_available = retrieval_utils.check_file_availability(file_expt.path.split('|')[0])
-                #    file_available=True
-                #    file_checked=True
-                #if file_available:
-                file_expt_copy = copy.deepcopy(file_expt)
-                setattr(file_expt_copy,'time',str(year)+str(month).zfill(2))
-                pointers.session.add(file_expt_copy)
-                pointers.session.commit()
+                if not file_checked:
+                    file_available = retrieval_utils.check_file_availability(file_expt.path.split('|')[0])
+                    #file_available=True
+                    file_checked=True
+                if file_available:
+                    file_expt_copy = copy.deepcopy(file_expt)
+                    setattr(file_expt_copy,'time',str(year)+str(month).zfill(2))
+                    pointers.session.add(file_expt_copy)
+                    pointers.session.commit()
     return
 
 def find_time_opendap(pointers,file_expt):
@@ -101,6 +101,76 @@ def find_time_opendap(pointers,file_expt):
         pointers.session.commit()
     return
 
+def obtain_time_list(diagnostic,var_name,experiment,model):
+    #Do this without fx variables:
+    conditions=[
+                 File_Expt.var==var_name,
+                 File_Expt.frequency==diagnostic.header['variable_list'][var_name][0],
+                 File_Expt.realm==diagnostic.header['variable_list'][var_name][1],
+                 File_Expt.mip==diagnostic.header['variable_list'][var_name][2],
+                 File_Expt.experiment==experiment,
+                 File_Expt.center==model[0],
+                 File_Expt.model==model[1],
+                 File_Expt.rip==model[2]
+               ]
+    time_list_var=[x[0] for x in diagnostic.pointers.session.query(
+                             File_Expt.time
+                            ).filter(sqlalchemy.and_(*conditions)).distinct().all()]
+    return time_list_var
+
+def find_model_list(diagnostic,model_list,experiment,min_time):
+    period_list = diagnostic.header['experiment_list'][experiment]
+    if not isinstance(period_list,list): period_list=[period_list]
+    years_list=[]
+    for period in period_list:
+        years_range=[int(year) for year in period.split(',')]
+        years_list.extend(range(*years_range))
+        years_list.append(years_range[1])
+    time_list=[]
+    for year in years_list:
+        for month in get_diag_months_list(diagnostic):
+            time_list.append(str(year).zfill(4)+str(month).zfill(2))
+
+    #Remove the fixed variables manually:
+    model_list_var=copy.copy(model_list)
+
+    for model in model_list_var:
+        missing_vars=[]
+        if years_list[0]<=10:
+            #Fix for experiments without a standard time range:
+            min_time_list=[]
+            for var_name in diagnostic.header['variable_list'].keys():
+                if not diagnostic.header['variable_list'][var_name][0] in ['fx','clim']:
+                    time_list_var=obtain_time_list(diagnostic,var_name,experiment,model)
+                    min_time_list.append(int(np.floor(np.min([int(time) for time in time_list_var])/100.0)*100))
+            min_time['_'.join(model)+'_'+experiment]=np.min(min_time_list)
+        else:
+            min_time['_'.join(model)+'_'+experiment]=0
+
+        for var_name in diagnostic.header['variable_list'].keys():
+            if not diagnostic.header['variable_list'][var_name][0] in ['fx','clim']:
+                time_list_var=obtain_time_list(diagnostic,var_name,experiment,model)
+                time_list_var=[str(int(time)-int(min_time['_'.join(model)+'_'+experiment])).zfill(6) for time in time_list_var]
+                if not set(time_list).issubset(time_list_var):
+                    missing_vars.append(var_name+':'+','.join(
+                                        diagnostic.header['variable_list'][var_name])+
+                                        ' for some months: '+','.join(
+                                        sorted(set(time[:4] for time in set(time_list).difference(time_list_var)))
+                                        )
+                                       )
+        if len(missing_vars)>0:
+           #print('\nThe reasons why some simulations were excluded:')
+           print('_'.join(model)+' excluded because experiment '+experiment+' is missing variables:\n'),
+           for item in missing_vars: print(item)
+           model_list.remove(model)
+    return model_list, min_time
+
+def get_diag_months_list(diagnostic):
+    if 'months_list' in diagnostic.header.keys():
+        diag_months_list=diagnostic.header['months_list']
+    else:
+        diag_months_list=range(1,13)
+    return diag_months_list
 
 #def intersection(self,diag_tree_desc, diag_tree_desc_final):
 def intersection(diagnostic):
@@ -110,59 +180,13 @@ def intersection(diagnostic):
     #Step one: find all the center / model tuples with all the requested variables
     #          for all months of all years for all experiments.
     simulations_list=diagnostic.simulations_list()
+    #model_list=[model for model in copy.copy(simulations_list) if model[2]!='r0i0p0']
     model_list=copy.copy(simulations_list)
 
-    if 'months_list' in diagnostic.header.keys():
-        diag_months_list=diagnostic.header['months_list']
-    else:
-        diag_months_list=range(1,13)
-
+    min_time=dict()
+        #print experiment,model_list
     for experiment in diagnostic.header['experiment_list'].keys():
-        period_list = diagnostic.header['experiment_list'][experiment]
-        if not isinstance(period_list,list): period_list=[period_list]
-        years_list=[]
-        for period in period_list:
-            years_range=[int(year) for year in period.split(',')]
-            years_list.extend(range(*years_range))
-            years_list.append(years_range[1])
-        time_list=[]
-        for year in years_list:
-            for month in diag_months_list:
-                time_list.append(str(year)+str(month).zfill(2))
-
-        #Remove the fixed variables manually:
-        model_list=[model for model in model_list if model[2]!='r0i0p0']
-        model_list_var=copy.copy(model_list)
-        for model in model_list_var:
-            missing_vars=[]
-            for var_name in diagnostic.header['variable_list'].keys():
-                if not diagnostic.header['variable_list'][var_name][0] in ['fx','clim']:
-                            #Do this without fx variables:
-                            conditions=[
-                                         File_Expt.var==var_name,
-                                         File_Expt.frequency==diagnostic.header['variable_list'][var_name][0],
-                                         File_Expt.realm==diagnostic.header['variable_list'][var_name][1],
-                                         File_Expt.mip==diagnostic.header['variable_list'][var_name][2],
-                                         File_Expt.experiment==experiment,
-                                         File_Expt.center==model[0],
-                                         File_Expt.model==model[1],
-                                         File_Expt.rip==model[2]
-                                       ]
-                            time_list_var=[x[0] for x in diagnostic.pointers.session.query(
-                                                     File_Expt.time
-                                                    ).filter(sqlalchemy.and_(*conditions)).distinct().all()]
-                            if not set(time_list).issubset(time_list_var):
-                                missing_vars.append(var_name+':'+','.join(
-                                                    diagnostic.header['variable_list'][var_name])+
-                                                    ' for some months: '+','.join(
-                                                    sorted(set(time[:4] for time in set(time_list).difference(time_list_var)))
-                                                    )
-                                                   )
-            if len(missing_vars)>0:
-               #print('\nThe reasons why some simulations were excluded:')
-               print('_'.join(model)+' excluded because experiment '+experiment+' is missing variables:\n'),
-               for item in missing_vars: print(item)
-               model_list.remove(model)
+        model_list, min_time = find_model_list(diagnostic,model_list,experiment,min_time)
 
     #Step two: create the new paths dictionary:
     variable_list_requested=[]
@@ -206,11 +230,11 @@ def intersection(diagnostic):
                 years_list=range(*years_range)
                 years_list.append(years_range[1])
 
-                time_list=[ str(year)+str(month).zfill(2) for year in years_list for month in diag_months_list]
-
+                time_list=[ str(year).zfill(4)+str(month).zfill(2) for year in years_list for month in get_diag_months_list(diagnostic)]
                 if not item.frequency in time_less_frequencies:
+                    min_time_id=[item.center,item.model,item.rip,item.experiment]
                     #Works if the variable is not fx:
-                    if item.time in time_list:
+                    if str(int(item.time)-int(min_time['_'.join(min_time_id)])).zfill(6) in time_list:
                         diagnostic.pointers.attribute_item(item)
                         #print('Adding item')
                         diagnostic.pointers.add_item()

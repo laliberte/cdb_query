@@ -17,6 +17,7 @@ def close_json(paths_dict,options):
     else:
         outfile = open(options.out_diagnostic_headers_file,'w')
 
-    json.dump({'pointers':paths_dict.pointers.tree,'header':paths_dict.header},outfile)
+    json.dump({'pointers':paths_dict.pointers.tree,'header':paths_dict.header},outfile,
+              sort_keys=True,indent=4, separators=(',', ': '))
     outfile.close()
     return

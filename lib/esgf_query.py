@@ -10,19 +10,25 @@ import retrieval_utils
 
 remote_file_types=['HTTPServer','GridFTP']
 
-def descend_tree(pointers,header,search_path,options):
+def descend_tree(pointers,header,search_path,options,list_level=None):
     #Create the database:
+    centers_list=[]
     for experiment in header['experiment_list'].keys():
         for var_name in header['variable_list'].keys():
-            experiment_variable_search(pointers,search_path,header['file_type_list'],options,
-                                        experiment,var_name,*header['variable_list'][var_name])
-
-    return
+            if list_level:
+                centers_list.append(experiment_variable_search(pointers,search_path,header['file_type_list'],options,
+                                            experiment,var_name,*header['variable_list'][var_name],list_level=list_level))
+            else:
+                experiment_variable_search(pointers,search_path,header['file_type_list'],options,
+                                            experiment,var_name,*header['variable_list'][var_name],list_level=list_level)
+    if list_level:
+        return [item for sublist in centers_list for item in sublist]
+    else:
+        return
 
 def experiment_variable_search(pointers,search_path,file_type_list,options,
-                                experiment,var_name,frequency,realm,mip):
+                                experiment,var_name,frequency,realm,mip,list_level=None):
 
-    print 'Searching path ', search_path
     conn = SearchConnection(search_path, distrib=options.distrib)
 
     #Search the ESGF:
@@ -56,26 +62,28 @@ def experiment_variable_search(pointers,search_path,file_type_list,options,
     #    pool.close()
     #else:
 
-    try:
-        file_list_found=ctx.search(variable=var_name)
-    except:
-        warnings.warn('Search path {0} is unresponsive at the moment'.format(search_path))
-        file_list_found=[]
-    file_list_remote=map(lambda x: get_urls(x,file_type_list,var_name),file_list_found)
-    file_list_remote=[item for sublist in file_list_remote for item in sublist]
-   
-    #for file in file_list_remote: pointers=record_url(file,pointers)
-    map(lambda x: record_url(x,pointers),file_list_remote)
-    print 'Done searching for variable '+var_name
-    return
+    if list_level:
+        return ctx.facet_counts['institute'].keys()
+    else:
+        try:
+            file_list_found=ctx.search(variable=var_name)
+        except:
+            warnings.warn('Search path {0} is unresponsive at the moment'.format(search_path))
+            file_list_found=[]
+        file_list_remote=map(lambda x: get_urls(x,file_type_list,var_name),file_list_found)
+        file_list_remote=[item for sublist in file_list_remote for item in sublist]
+       
+        #for file in file_list_remote: pointers=record_url(file,pointers)
+        map(lambda x: record_url(x,pointers),file_list_remote)
+        return
 
 def record_url(remote_file_desc,pointers):
     pointers.file_expt.path=remote_file_desc['url']
     if remote_file_desc['file_type'] in remote_file_types and remote_file_desc['checksum']:
         pointers.file_expt.path+='|'+remote_file_desc['checksum']
-        file_available = retrieval_utils.check_file_availability(pointers.file_expt.path.split('|')[0])
-        if not file_available:
-            return
+        #file_available = retrieval_utils.check_file_availability(pointers.file_expt.path.split('|')[0])
+        #if not file_available:
+        #    return
 
     for val in ['file_type','center','model','rip','version']:
         setattr(pointers.file_expt,val,remote_file_desc[val])
@@ -88,9 +96,10 @@ def record_url(remote_file_desc,pointers):
     known_fields=['experiment','var','frequency','realm','mip']
     list_of_knowns=[ getattr(pointers.file_expt,field) for field in known_fields] 
     list_of_retrieved=[ remote_file_desc[field] for field in known_fields] 
-    if (remote_file_desc['version'][1:]!='atest' and 
-        len([i for i,j in zip(list_of_knowns,list_of_retrieved) if i==j])==len(list_of_knowns)):
-        pointers.add_item()
+    if remote_file_desc['version']:
+        if (remote_file_desc['version'][1:]!='atest' and
+            len([i for i,j in zip(list_of_knowns,list_of_retrieved) if i==j])==len(list_of_knowns)):
+            pointers.add_item()
     return pointers
 
 def get_urls(result,file_type_list,var_name):
@@ -151,7 +160,8 @@ def get_url_remote(item,file_type_list):
                 if isinstance(file_info[val],list): file_info[val]=str(file_info[val][0])
             except:
                 file_info[val]=None
-        url_name.append(file_info)
+        if file_info['checksum']:
+            url_name.append(file_info)
     return url_name
 
 def get_url_opendap(item):

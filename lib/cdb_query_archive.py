@@ -18,6 +18,7 @@ from tree_utils import File_Expt
 import cdb_query_archive_parsers
 import cdb_query_archive_class
 
+
 def main():
     import argparse 
     import textwrap
@@ -39,10 +40,9 @@ def main():
                             version='%(prog)s '+version_num,
                             epilog=epilog)
 
-    subparsers = parser.add_subparsers(help='commands',dest='command')
 
     #Generate subparsers
-    cdb_query_archive_parsers.generate_subparsers(subparsers,epilog)
+    cdb_query_archive_parsers.generate_subparsers(parser,epilog)
 
     options=parser.parse_args()
 
@@ -52,9 +52,13 @@ def main():
             options.time=True
 
     #Load pointer file:
-    paths_dict=cdb_query_archive_class.SimpleTree(json_tools.open_json(options),options)
-    #Run the command:
-    getattr(paths_dict,options.command)(options)
+    if 'in_diagnostic_headers_file' in dir(options):
+        paths_dict=cdb_query_archive_class.SimpleTree(json_tools.open_json(options),options)
+        #Run the command:
+        getattr(paths_dict,options.command)(options)
+    else:
+        getattr(cdb_query_archive_class,options.command)(options)
+        
     #print paths_dict.pointers.tree
     #Close the file:
     if 'out_diagnostic_headers_file' in dir(options):
