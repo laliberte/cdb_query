@@ -14,14 +14,14 @@ from setuptools import setup, find_packages
 package_name='cdb_query'
 setup(
        name = package_name,
-       version = "0.5.5.0",
+       version = "0.9.1.0",
        packages=[package_name],
        package_dir = {package_name: 'lib'},
 #
 #        # metadata for upload to PyPI
         author = "F. B. Laliberté, P. J. Kushner",
         author_email = "frederic.laliberte@utoronto.ca",
-        description = "Simple tools to query the available data from a local CMIP5 archive and the ESGF.",
+        description = "Simple tools to query and retrieve data from the ESGF's CMIP5 and CORDEX projects.",
         license = "BSD",
         keywords = "atmosphere climate",
         url = "http://proj.badc.rl.ac.uk/exarch",   # project home page, if any
@@ -41,8 +41,10 @@ setup(
         # other arguments here...
         entry_points = {
                   'console_scripts': [
-                           'cdb_query_archive = '+package_name+'.cdb_query_archive:main',
-                           'cdb_driver = '+package_name+'.cdb_driver:main'
+                           'cdb_query_CMIP5 = '+package_name+'.cdb_query_archive:main_CMIP5',
+                           'cdb_query_CORDEX = '+package_name+'.cdb_query_archive:main_CORDEX',
+                           'cdb_driver = '+package_name+'.cdb_driver:main',
+                           'find_vert_coord = '+package_name+'.find_vert_coord:main'
                                      ],
                        }
     )

@@ -9,7 +9,6 @@ import netCDF4
 
 import copy
 
-from cdb_query_archive_parsers import base_drs
 
 #Taken from https://gist.github.com/hrldcpr/2012250
 from collections import defaultdict
@@ -53,6 +52,12 @@ class Tree:
             self._database_created=True
         return
 
+    def populate_pointers_from_netcdf(self,options):
+        infile=netCDF4.Dataset(options.in_diagnostic_netcdf_file,'r')
+        self.file_expt.time='0'
+        populate_pointers_from_netcdf_recursive(self,infile)
+        return
+
     def recreate_structure(self,output_dir,conversion_function):
         recreate_structure_recursive(output_dir,conversion_function)
         return
@@ -64,15 +69,9 @@ class Tree:
 
     def add_item(self):
         item_desc=[getattr(self.file_expt,level) for level in self.tree_desc]
+        #print zip(self.tree_desc,item_desc)
         add_item_recursive(self.tree,self.tree_desc,item_desc)
-        #self.add_item_dataset()
         return
-
-    #def add_item_dataset(self):
-    #    item_desc=[getattr(self.file_expt,level) for level in self.tree_desc]
-    #    add_item_dataset_recursive(self.dataset,self.tree_desc,item_desc)
-    #    self.dataset.sync()
-    #    return
 
     def attribute_item(self,item):
         for val in dir(item):
@@ -97,6 +96,34 @@ class Tree:
         replace_last_level(self.tree,level_equivalence,branch_desc)
         return 
 
+def populate_pointers_from_netcdf_recursive(tree,infile):
+    if len(infile.groups.keys())>0:
+        for group in infile.groups.keys():
+            setattr(tree.file_expt,infile.groups[group].getncattr('level_name'),group)
+            populate_pointers_from_netcdf_recursive(tree,infile.groups[group])
+    else:
+        if 'path' in infile.variables.keys():
+            paths=infile.variables['path'][:]
+            for path_id, path in enumerate(paths):
+                id_list=['file_type','search']
+                for id in id_list:
+                    setattr(tree.file_expt,id,infile.variables[id][path_id])
+                setattr(tree.file_expt,'path','|'.join([infile.variables['path'][path_id],
+                                                       infile.variables['checksum'][path_id]]))
+                setattr(tree.file_expt,'version','v'+str(infile.variables['version'][path_id]))
+                #print {att:getattr(tree.file_expt,att) for att in dir(tree.file_expt) if att[0]!='_'}
+                tree.add_item()
+        elif 'path' in infile.ncattrs():
+            #for fx variables:
+            id_list=['file_type','search']
+            for id in id_list:
+                setattr(tree.file_expt,id,infile.getncattr(id))
+            setattr(tree.file_expt,'path','|'.join([infile.getncattr('path'),
+                                                   infile.getncattr('checksum')]))
+            setattr(tree.file_expt,'version',str(infile.getncattr('version')))
+            tree.add_item()
+    return
+
 def add_item_recursive(tree,tree_desc,item_desc):
     #This function recursively creates the output dictionary from one database entry:
     if len(tree_desc)>1 and isinstance(tree_desc,list):
@@ -116,6 +143,8 @@ def add_item_recursive(tree,tree_desc,item_desc):
     else:
         #The end of the recursion has been reached. This is 
         #to ensure a robust implementation.
+        #if not isinstance(tree,list):
+        #    tree=[]
         if item_desc[0] not in tree:
             tree.append(item_desc[0])
     return
@@ -236,13 +265,13 @@ def replace_path(path_name,branch_desc):
     
     #A local copy was found. One just needs to find the indices:
     new_path_name=path_name
-    if not branch_desc['frequency'] in ['fx','clim']:
+    if not branch_desc['time_frequency'] in ['fx','clim']:
         year_axis, month_axis = netcdf_utils.get_year_axis(path_name)
         if year_axis is None or month_axis is None:
             raise IOError('replace_path netcdf file could not be opened')
 
         year_id = np.where(year_axis==int(branch_desc['time'][:4]))[0]
-        if branch_desc['frequency'] in ['yr']:
+        if branch_desc['time_frequency'] in ['yr']:
             month_id=year_id
         else:
             month_id = year_id[np.where(int(branch_desc['time'][-2:])==month_axis[year_id])[0]]
@@ -262,7 +291,8 @@ def replace_path(path_name,branch_desc):
 def create_database_from_tree(pointers,file_expt,tree,find_function):
     #Recursively creates a database from tree:
     if isinstance(tree,dict):
-        for value in [key for key in tree.keys() if key]:
+        #for value in [key for key in tree.keys() if key]:
+        for value in [key for key in tree.keys() if isinstance(key,basestring)]:
             if value[0] != '_':
                 file_expt_copy=copy.deepcopy(file_expt)
                 setattr(file_expt_copy,tree['_name'],value)

@@ -40,7 +40,6 @@ def check_file_availability(url_name):
     cj = CookieJar()
     try: 
         opener = urllib2.build_opener(HTTPSClientAuthHandler(os.environ['X509_USER_PROXY'], os.environ['X509_USER_PROXY']),urllib2.HTTPCookieProcessor(cj))
-
         response = opener.open(url_name)
 
         if response.msg=='OK' and response.headers.getheaders('Content-Length')[0]:
@@ -49,3 +48,34 @@ def check_file_availability(url_name):
             return False
     except:
         return False
+
+def download_secure(url_name,dest_name):
+    if check_file_availability(url_name):
+        cj = CookieJar()
+        opener = urllib2.build_opener(HTTPSClientAuthHandler(os.environ['X509_USER_PROXY'], os.environ['X509_USER_PROXY']),urllib2.HTTPCookieProcessor(cj))
+        data = opener.open(url_name)
+
+        meta = data.info()
+        file_size = int(meta.getheaders("Content-Length")[0])
+        print "Downloading: %s MB: %s" % (dest_name, file_size/2.0**20)
+        
+        directory=os.path.dirname(dest_name)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+        dest_file = open(dest_name, 'wb')
+        file_size_dl = 0
+        block_sz = 8192
+        while True:
+            buffer = data.read(block_sz)
+            if not buffer:
+                break
+        
+            file_size_dl += len(buffer)
+            dest_file.write(buffer)
+            status = r"%10d  [%3.2f%%]" % (file_size_dl, file_size_dl * 100. / file_size)
+            status = status + chr(8)*(len(status)+1)
+            print status,
+
+        dest_file.close()
+    return
+            

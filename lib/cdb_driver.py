@@ -74,7 +74,7 @@ class Experiment_Setup:
         out.writei('export CDB_EXPT="{0}"\n'.format(self.experiment))
         out.writei('export CDB_DIAG_NAME="{0}"\n'.format(self.diagnostic))
         out.writei('export CDB_DIAG_HEADER="{0}"\n'.format(os.path.abspath(self.in_diagnostic_headers_file)))
-        out.writei('export CDB_OUT_FILE=${CDB_DIAG_NAME}_${CDB_MODEL}_${CDB_EXPT}_$(printf "%04d\n" $CDB_YEAR_START)_$(printf "%04d\n" $CDB_YEAR_END)_${CDB_RUN_ID}\n')
+        out.writei('export CDB_OUT_FILE=${CDB_DIAG_NAME}_${CDB_MODEL}_${CDB_EXPT}_$(printf "%04d" $CDB_YEAR_START)_$(printf "%04d" $CDB_YEAR_END)_${CDB_RUN_ID}\n')
         out.writei('\n')
         out.writei('#SET THE OUTPUT DIRECTORY\n')
         out.writei('export CDB_OUT_DIR="{0}"\n'.format(self.output_dir))
@@ -99,6 +99,9 @@ class Experiment_Setup:
         out.writei('cdb_query_archive slice --experiment=${CDB_EXPT} --model=${CDB_MODEL} --center=${CDB_CENTER} ${CDB_DIAG_HEADER} ${CDB_TEMP_DIR}/${CDB_DIAG_HEADER_BASE}\n')
         out.writei('CDB_DIAG_HEADER="${CDB_TEMP_DIR}/${CDB_DIAG_HEADER_BASE}"\n')
         out.writei('\n')
+        out.writei('#This variable sets the number of timesteps to add after and before a month:\n')
+        out.writei('export CDB_OFFSET=0\n')
+        out.writei('\n')
         out.writei('#Get the time axis for all the variables:\n')
         for var_name in self.variable_list.keys():
             description_list=['${CDB_CENTER}','${CDB_MODEL}','${CDB_EXPT}']
@@ -109,10 +112,23 @@ class Experiment_Setup:
                 out_time_file='${CDB_DIAG_HEADER}.'+var_name+'_'+'_'.join(self.variable_list[var_name])+'.time.nc'
                 out.writei('ncks -3 -G : -g '+'/'.join(description_list)+' -v time ${CDB_DIAG_HEADER}.nc '+out_time_file+'\n')
                 out.writei('ncap2 -O -s \'empty[$time]=0.0;\' '+' '.join([out_time_file,out_time_file])+'\n')
-        out.writei('\n')
-        out.writei('#This variable sets the number of timesteps to add after and before a month:\n')
-        out.writei('export CDB_OFFSET=0\n')
-        
+        out.writei('if [ "$CDB_YEAR_START" -lt "10" ]; then\n')
+        out.inc_indent()
+        out_time_file_list=[ '${CDB_DIAG_HEADER}.'+var_name+'_'+'_'.join(self.variable_list[var_name])+'.time.nc' for 
+                                var_name in self.variable_list.keys() if self.variable_list[var_name][0]!='fx' ]
+        out.writei('CDB_FILE_TIME_LIST="'+' '.join(out_time_file_list)+'"\n')
+        out.writei('NTIME_MIN=$(echo $(for FILE in ${CDB_FILE_TIME_LIST}; do cdo -s showyear $FILE; done| sort)| awk -F\' \' \'{print $1}\')\n') 
+        out.writei('CDB_YEAR_START=$((CDB_YEAR_START+NTIME_MIN))\n')
+        out.writei('CDB_YEAR_END=$((CDB_YEAR_END+NTIME_MIN))\n')
+        out.dec_indent()
+        out.writei('fi\n')
+        out.writei('#Select the requested years:\n')
+        for var_name in self.variable_list.keys():
+            if self.variable_list[var_name][0]!='fx':
+                out_time_file='${CDB_DIAG_HEADER}.'+var_name+'_'+'_'.join(self.variable_list[var_name])+'.time.nc'
+                out.writei('cdo -selyear,$(seq -s \',\' ${CDB_YEAR_START} ${CDB_YEAR_END}) '+' '.join([out_time_file,out_time_file+'.tmp'])+'\n')
+                out.writei('mv '+' '.join([out_time_file+'.tmp',out_time_file])+'\n')
+
         #Load script file:
         script_file=open(self.diagnostic_dir+'/'+self.diagnostic+'.sh','r')
 
@@ -254,14 +270,6 @@ def start_monthly_loop(self,out,line):
 
     out.writei('#GENERATE A TIME AXIS FOR THE MONTH FOR EACH VARIABLE:\n')
     out.writei('\n')
-    out.writei('if [ "$CDB_YEAR_START" -lt "10" ]; then\n')
-    out_time_file_list=[ '${CDB_DIAG_HEADER}.'+var_name+'_'+'_'.join(self.variable_list[var_name])+'.time.nc' for 
-                            var_name in self.variable_list.keys() if self.variable_list[var_name][0]!='fx' ]
-    out.writei('CDB_FILE_TIME_LIST="'+' '.join(out_time_file_list)+'"\n')
-    out.writei('NTIME_MIN=$(echo $(for FILE in ${CDB_FILE_TIME_LIST}; do cdo -s showyear $FILE; done| sort)| awk -F\' \' \'{print $1}\')\n') 
-    out.writei('CDB_YEAR=$((CDB_YEAR+NTIME_MIN))\n')
-    out.writei('echo $CDB_YEAR_START, $NTIME_MIN\n')
-    out.writei('fi\n')
     for var_name in self.variable_list.keys():
         if self.variable_list[var_name][0]!='fx':
             in_time_file='${CDB_DIAG_HEADER}.'+var_name+'_'+'_'.join(self.variable_list[var_name])+'.time.nc'
@@ -391,7 +399,7 @@ def main():
                   'var': [str,'Variable name, e.g. tas'],
                   'frequency': [str,'Frequency, e.g. day'],
                   'realm': [str,'Realm, e.g. atmos'],
-                  'mip': [str,'MIP table name, e.g. day'],
+                  'cmor_table': [str,'CMOR table name, e.g. day'],
                   'year': [int,'Year'],
                   'month': [int,'Month as an integer ranging from 1 to 12'],
                   'file_type': [str,'File type: OPEnDAP, local_file, HTTPServer, GridFTP']
