@@ -56,7 +56,7 @@ def discover(subparsers,epilog,project_drs):
                                                  It is good practice to check the results with \'simulations\' before
                                                  proceeding with \'optimset\'.
                                                  The output of \'optimset\' might depend on the order of the header attribute
-                                                 \'domain_list\' in the output file of \'discover\'. It is good practice to
+                                                 \'data_node_list\' in the output file of \'discover\'. It is good practice to
                                                  reorder this attribute before proceeding with \'optimset\'.
                                                  
                                                  Unlike \'optimset\' this function should NOT require appropriate certificates
@@ -111,7 +111,7 @@ def slice(subparsers,epilog,project_drs):
 def simplify(subparsers,epilog,project_drs):
     #Slice data
     parser=subparsers.add_parser('simplify',
-                                   description=textwrap.dedent('Simplify the data by removing domain names that are not requested'),
+                                   description=textwrap.dedent('Simplify the data by removing data_node names that are not requested'),
                                    argument_default=argparse.SUPPRESS
                                    )
     input_arguments(parser)
@@ -193,8 +193,8 @@ def remote_retrieve(subparsers,epilog):
 #
 #    parser.add_argument('--cdo',default=False,action='store_true',help='Output cdo command for retrieval')
 #    parser.add_argument('--nco',default=False,action='store_true',help='Output nco command for retrieval')
-#    parser.add_argument('--list_domains',default=False,action='store_true',help='List all the domains that house the remote source')
-#    parser.add_argument('--domain',type=str,help='The requested domain')
+#    parser.add_argument('--list_data_nodes',default=False,action='store_true',help='List all the data_nodes that house the remote source')
+#    parser.add_argument('--data_node',type=str,help='The requested data_node')
 #
 #    parser.add_argument('timestamp', type=timestamps,
 #                                 help='Comma-separated lis of time stamps in ISO format YYYYmmDDTHH:MM:SS')

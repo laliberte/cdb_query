@@ -112,8 +112,8 @@ class SimpleTree:
         else:
             valid_experiments_path.intersection(self,self.drs)
             #print json.dumps(self.pointers.tree,sort_keys=True, indent=4)
-            #List domains:
-            self.header['domain_list']=self.list_domains()
+            #List data_nodes:
+            self.header['data_node_list']=self.list_data_nodes()
             self.create_netcdf_container(options,'record_paths')
         return
 
@@ -133,11 +133,11 @@ class SimpleTree:
             print '_'.join(simulation)
         return
 
-    def list_domains(self):
+    def list_data_nodes(self):
         return sorted(
                     list(
                         set(
-                            [netcdf_utils.get_domain(*path) for 
+                            [netcdf_utils.get_data_node(*path) for 
                                 path in self.list_subset((File_Expt.path,File_Expt.file_type))
                               ]
                             )
@@ -232,7 +232,7 @@ class SimpleTree:
 #    data.close()
 #    identical_paths,unique_paths=organize_identical_paths(paths_list)
 #    if options.nco: print 'unset NCO_RETRIEVE;'
-#    if options.list_domains: print 'unset DOMAINS;'
+#    if options.list_data_nodes: print 'unset DOMAINS;'
 #    for path_num, path in enumerate(unique_paths):
 #        if options.cdo:
 #            sel_string=' -seltimestep,'+','.join([str(item+1) for item in identical_paths[path]['indices']])
@@ -245,8 +245,8 @@ class SimpleTree:
 #                else:
 #                    sel_string='-d time,'+str(slice_indices[0])+','+str(slice_indices[0])
 #                print 'NCO_RETRIEVE['+str(path_num+1)+']="'+' '.join([sel_string,path.replace('fileServer','dodsC')])+'";'
-#        elif options.list_domains:
-#            print 'DOMAINS['+str(path_num+1)+']="'+' '.join(identical_paths[path]['domains'])+'";'
+#        elif options.list_data_nodes:
+#            print 'DOMAINS['+str(path_num+1)+']="'+' '.join(identical_paths[path]['data_nodes'])+'";'
 #        #else:
 #        #    netcdf_utils.create_local_netcdf(options,options.out_netcdf_file,tuple_list)
 #
@@ -265,7 +265,7 @@ class SimpleTree:
 #        paths_organized[path]={
 #                                'indices': indices,
 #                                'timestamps':np.array([item['timestamp'] for item in paths_list if item['path']==path])[indices_sort],
-#                                'domains':[item['domains'] for item in paths_list if item['path']==path][0]
+#                                'data_nodes':[item['data_nodes'] for item in paths_list if item['path']==path][0]
 #                              }
 #    return paths_organized, unique_paths
                              

@@ -9,7 +9,7 @@ def get_immediate_subdirectories(path):
 
 def descend_tree(pointers,header,header_simple,search_path,list_level=''):
     filesystem_file_type='local_file'
-    institutes_list=[]
+    only_list=[]
     if filesystem_file_type in header['file_type_list']:
         description={'search':search_path,
                    'file_type':filesystem_file_type,
@@ -17,13 +17,13 @@ def descend_tree(pointers,header,header_simple,search_path,list_level=''):
         for att in description.keys():
             setattr(pointers.file_expt,att,description[att])
         if list_level:
-            institutes_list.append(descend_tree_recursive(header_simple,pointers,[item for item in pointers.tree_desc if not item in description.keys()],
+            only_list.append(descend_tree_recursive(header_simple,pointers,[item for item in pointers.tree_desc if not item in description.keys()],
                                     os.path.abspath(os.path.expanduser(os.path.expandvars(search_path))),list_level=list_level))
         else:
             descend_tree_recursive(header_simple,pointers,[item for item in pointers.tree_desc if not item in description.keys()],
                                     os.path.abspath(os.path.expanduser(os.path.expandvars(search_path))))
     if list_level:
-        return institutes_list
+        return [item for sublist in only_list for item in sublist]
     else:
         return
 

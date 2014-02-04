@@ -32,11 +32,13 @@ def find_time_file(pointers,file_expt):#session,file_expt,path_name):
     filename=os.path.basename(file_expt.path)
     
     #Check if file has fixed time_frequency or is a climatology:
-    time_stamp=filename.replace('.nc','').split('_')[-1].split('|')[0]
-    if time_stamp[0] == 'r':
+    if file_expt.time_frequency in ['fx']:
         pointers.session.add(file_expt)
         pointers.session.commit()
         return
+    else:
+        time_stamp=filename.replace('.nc','').split('_')[-1].split('|')[0]
+    #time_stamp[0] == 'r':
 
     #Recover date range from filename:
     years_range = [int(date[:4]) for date in time_stamp.split('-')]

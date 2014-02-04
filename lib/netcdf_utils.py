@@ -190,15 +190,15 @@ def record_meta_data(header,output,paths_list,var,time_frequency,experiment):
 
 def record_paths(header,output,paths_list,var,time_frequency,experiment):
     #First order source files by preference:
-    sorts_list=['version','file_type_id','domain_id']
-    id_list=['domain','file_type','path','checksum','search']
+    sorts_list=['version','file_type_id','data_node_id']
+    id_list=['data_node','file_type','path','checksum','search']
     paths_ordering = order_paths_by_preference(paths_list,header,sorts_list,id_list)
     create_netcdf_pointers_file(header,output,paths_list,paths_ordering,id_list)
     return
 
 def retrieve_time_and_meta_data(header,output,source_files,var,experiment):
-    sorts_list=['version','file_type_id','domain_id']
-    id_list=['domain','file_type','path','checksum','search']
+    sorts_list=['version','file_type_id','data_node_id']
+    id_list=['data_node','file_type','path','checksum','search']
     paths_ordering = order_paths_by_preference(source_files,header,sorts_list,id_list)
 
     #Recover time axis for all files:
@@ -261,6 +261,7 @@ def retrieve_time_and_meta_data(header,output,source_files,var,experiment):
 
     #USE VERSION 4 OF SOFT LINKS BECAUSE NCO AND OTHER TOOLS ARE NOT READY FOR COMPOUND TYPES.
     create_variable_soft_links(data,output,var,time_axis,time_axis_unique,paths_indices,table)
+    output.variables[var].setncattr('cdb_query_dimensions',','.join(data.variables[var].dimensions))
     data.close()
 
     create_netcdf_pointers_file(header,output,source_files,paths_ordering,id_list)
@@ -400,21 +401,21 @@ def order_paths_by_preference(source_files,header,sorts_list,id_list):
         paths_ordering['search'][file_id]=file['search']
         paths_ordering['version'][file_id]=np.uint32(file['version'][1:])
         paths_ordering['file_type'][file_id]=file['file_type']
-        paths_ordering['domain'][file_id]=get_domain(file['path'],paths_ordering['file_type'][file_id])
+        paths_ordering['data_node'][file_id]=get_data_node(file['path'],paths_ordering['file_type'][file_id])
 
     #Sort paths from most desired to least desired:
     #First order desiredness for least to most:
-    domain_order=copy.copy(header['domain_list'])[::-1]#list(np.unique(paths_ordering['domain']))
+    data_node_order=copy.copy(header['data_node_list'])[::-1]#list(np.unique(paths_ordering['data_node']))
     file_type_order=copy.copy(header['file_type_list'])[::-1]#list(np.unique(paths_ordering['file_type']))
     for file_id, file in enumerate(source_files):
-        paths_ordering['domain_id'][file_id]=domain_order.index(paths_ordering['domain'][file_id])
+        paths_ordering['data_node_id'][file_id]=data_node_order.index(paths_ordering['data_node'][file_id])
         paths_ordering['file_type_id'][file_id]=file_type_order.index(paths_ordering['file_type'][file_id])
     #'version' is implicitly from least to most
 
     #sort and reverse order to get from most to least:
     return np.sort(paths_ordering,order=sorts_list)[::-1]
 
-def get_domain(path,file_type):
+def get_data_node(path,file_type):
     if file_type=='HTTPServer':
         return '/'.join(path.split('/')[:3])
     elif file_type=='local_file':
@@ -492,6 +493,12 @@ def retrieve_remote_vars(options,data,output):
         create_time_axis(output,data,data.variables['time'][:])
     vars_to_retrieve=[var for var in data.variables.keys() if 'indices' in data.variables[var].dimensions and var!='indices']
 
+    #Replicate all the other variables:
+    for var in set(data.variables.keys()).difference(vars_to_retrieve):
+        if not var in ['checksum','data_node','file_type','search','version']:
+            output=replicate_netcdf_var(output,data,var)
+            output.variables[var][:]=data.variables[var][:]
+
     for var_to_retrieve in vars_to_retrieve:
         soft_link=np.ma.array(data.variables[var_to_retrieve][:]).data
 
@@ -500,25 +507,29 @@ def retrieve_remote_vars(options,data,output):
         unique_paths_list_id=np.unique(soft_link[sorting_paths,0])
         sorted_soft_link=soft_link[sorting_paths,:]
 
+
         #Get list of paths:
         paths_list=data.variables['path'][:]
         
         #Get attributes from variable to retrieve:
         remote_data=netCDF4.Dataset(paths_list[unique_paths_list_id[0]].replace('fileServer','dodsC'))
         output=replicate_netcdf_var(output,remote_data,var_to_retrieve,chunksize=-1)
+        source_dimensions=dict()
+        for dim in data.variables[var_to_retrieve].getncattr('cdb_query_dimensions').split(','):
+            if dim != 'time':
+                source_dimensions[dim]=remote_data.variables[dim][:]
+                source_dimensions[dim]=np.arange(max(source_dimensions[dim].shape))[np.in1d(output.variables[dim][:],
+                                                                                       source_dimensions[dim])]
+                if len(convert_indices_to_slices(source_dimensions[dim]))==1:
+                    source_dimensions[dim]=slice(*convert_indices_to_slices(source_dimensions[dim])[0])
         remote_data.close()
-
-        #Replicate all the other variables:
-        for var in data.variables.keys():
-            if not 'time' in data.variables[var].dimensions:
-                output=replicate_netcdf_var(output,data,var)
-                output.variables[var][:]=data.variables[var][:]
 
         #Retrieve the data path by path. This is the most efficient method since paths only have to be queried once
         retrieved_data=map(retrieve_path_data,
                             zip(paths_list[unique_paths_list_id],
                                 [sorted_soft_link[sorted_soft_link[:,0]==path_id,1] for path_id in unique_paths_list_id],
-                                [var_to_retrieve for path_id in unique_paths_list_id]
+                                [var_to_retrieve for path_id in unique_paths_list_id],
+                                [source_dimensions for path_id in unique_paths_list_id]
                                 )
                             )
 
@@ -533,16 +544,23 @@ def retrieve_path_data(in_tuple):
     path=in_tuple[0].replace('fileServer','dodsC')
     indices=in_tuple[1]
     var=in_tuple[2]
+    other_indices=in_tuple[3]
 
     remote_data=netCDF4.Dataset(path)
     if len(indices)==1:
-        return np.reshape(grab_remote_indices(remote_data.variables[var],indices),(1,)+remote_data.variables[var].shape[1:])
+        return add_axis(grab_remote_indices(remote_data.variables[var],indices,other_indices))
     else:
-        return grab_remote_indices(remote_data.variables[var],indices)
+        return grab_remote_indices(remote_data.variables[var],indices,other_indices)
 
-def grab_remote_indices(variable,indices):
+def add_axis(array):
+    return np.reshape(array,(1,)+array.shape)
+
+def grab_remote_indices(variable,indices,other_indices):
+    
     indices_sort=np.argsort(indices)
-    return np.concatenate(map(lambda x: variable[slice(*x),...],
+    other_slices=tuple([other_indices[dim] for dim in variable.dimensions if dim!='time'])
+    #return np.concatenate(map(lambda x: variable[slice(*x),...],
+    return np.concatenate(map(lambda x: variable.__getitem__((slice(*x),)+other_slices),
                                 convert_indices_to_slices(indices[indices_sort])
                              ),axis=0
                              )[np.argsort(indices_sort),...]

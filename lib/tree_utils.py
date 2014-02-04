@@ -220,7 +220,7 @@ def slice_recursive(tree,options):
         return 1
 
 def simplify_recursive(tree,header,file_type=None):
-    #Simplifies the output tree to remove domain name 
+    #Simplifies the output tree to remove data_node name 
 
     if isinstance(tree,dict) and tree:
         if '_name' not in tree.keys():
@@ -238,8 +238,8 @@ def simplify_recursive(tree,header,file_type=None):
             for name in tree.keys(): tree=None
     elif isinstance(tree,list) and tree:
         #for item in tree:
-        #    print item, netcdf_utils.get_domain(item,file_type)
-        tree=[item for item in tree if netcdf_utils.get_domain(item,file_type) in header['domain_list']]
+        #    print item, netcdf_utils.get_data_node(item,file_type)
+        tree=[item for item in tree if netcdf_utils.get_data_node(item,file_type) in header['data_node_list']]
         if len(tree)==0: tree=None
     return tree
 
