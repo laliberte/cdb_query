@@ -12,6 +12,8 @@ Contents:
    :maxdepth: 2
 
    intro
-   commands
+   install
    recipes 
+   commands
+   install_nco
 

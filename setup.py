@@ -14,7 +14,7 @@ from setuptools import setup, find_packages
 package_name='cdb_query'
 setup(
        name = package_name,
-       version = "0.9.2.0",
+       version = "0.9.3.0",
        packages=[package_name],
        package_dir = {package_name: 'lib'},
 #
@@ -42,9 +42,7 @@ setup(
         entry_points = {
                   'console_scripts': [
                            'cdb_query_CMIP5 = '+package_name+'.cdb_query_archive:main_CMIP5',
-                           'cdb_query_CORDEX = '+package_name+'.cdb_query_archive:main_CORDEX',
-                           'cdb_driver = '+package_name+'.cdb_driver:main',
-                           'find_vert_coord = '+package_name+'.find_vert_coord:main'
+                           'cdb_query_CORDEX = '+package_name+'.cdb_query_archive:main_CORDEX'
                                      ],
                        }
     )

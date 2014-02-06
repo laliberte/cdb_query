@@ -57,7 +57,7 @@ def download_secure(url_name,dest_name):
 
         meta = data.info()
         file_size = int(meta.getheaders("Content-Length")[0])
-        print "Downloading: %s MB: %s" % (dest_name, file_size/2.0**20)
+        size_string="Downloading: %s MB: %s" % (dest_name, file_size/2.0**20)
         
         directory=os.path.dirname(dest_name)
         if not os.path.exists(directory):
@@ -74,8 +74,8 @@ def download_secure(url_name,dest_name):
             dest_file.write(buffer)
             status = r"%10d  [%3.2f%%]" % (file_size_dl, file_size_dl * 100. / file_size)
             status = status + chr(8)*(len(status)+1)
-            print status,
+            #print status,
 
         dest_file.close()
-    return
+    return size_string
             

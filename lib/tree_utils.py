@@ -56,6 +56,7 @@ class Tree:
         infile=netCDF4.Dataset(options.in_diagnostic_netcdf_file,'r')
         self.file_expt.time='0'
         populate_pointers_from_netcdf_recursive(self,infile)
+        infile.close()
         return
 
     def recreate_structure(self,output_dir,conversion_function):

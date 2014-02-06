@@ -144,9 +144,13 @@ class SimpleTree:
                          )
                       )
 
+    def get_data_nodes_list(self,options):
+        self.pointers.create_database(find_simple)
+        return self.list_data_nodes()
+
     def get_paths_list(self,options):
         self.pointers.create_database(find_simple)
-        subset=tuple([File_Expt.path]+[getattr(File_Expt,item) for item in self.drs.official_drs])
+        subset=tuple([File_Expt.path,File_Expt.file_type]+[getattr(File_Expt,item) for item in self.drs.official_drs])
         return sorted(list(set(self.list_subset(subset))))
 
     def list_fields(self,options):
@@ -184,7 +188,6 @@ class SimpleTree:
         #Create output:
         output_file_name=options.out_diagnostic_netcdf_file
         output_root=netCDF4.Dataset(output_file_name,'w',format='NETCDF4')
-        self.record_header(output_root)
         
         for tree in trees_list:
             time_frequency=tree[drs_list.index('time_frequency')]
@@ -198,6 +201,9 @@ class SimpleTree:
                                     ).filter(sqlalchemy.and_(*conditions)).distinct().all()]
             getattr(netcdf_utils,record_function_handle)(self.header,output,paths_list,var,time_frequency,experiment)
 
+        #if record_function_handle=='record_meta_data':
+        #    del self.header['data_node_list']
+        self.record_header(output_root)
         output_root.close()
         return
 
