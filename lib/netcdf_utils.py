@@ -584,8 +584,7 @@ def retrieve_remote_vars(options,data,output,tree,queues):
         for dim in data.variables[var_to_retrieve].getncattr('cdb_query_dimensions').split(','):
             if dim != 'time':
                 source_dimensions[dim]=remote_data.variables[dim][:]
-                source_dimensions[dim]=np.arange(max(source_dimensions[dim].shape))[np.in1d(output.variables[dim][:],
-                                                                                       source_dimensions[dim])]
+                source_dimensions[dim]=get_indices_from_dim( source_dimensions[dim],output.variables[dim][:])
                 if len(convert_indices_to_slices(source_dimensions[dim]))==1:
                     source_dimensions[dim]=convert_indices_to_slices(source_dimensions[dim])[0]
         remote_data.close()
@@ -617,6 +616,11 @@ def retrieve_remote_vars(options,data,output,tree,queues):
                                                                      copy.copy(tree)+[var_to_retrieve]))
             #print path, sorted_soft_link[sorted_soft_link[:,0]==path_id,1], copy.copy(tree)+[var_to_retrieve]
     return 
+
+def get_indices_from_dim(source,output):
+    #This function finds which indices from source should be used and in which order:
+    indices=np.arange(max(source.shape))[np.in1d(source,output)]
+    return np.array([ indices[source[indices]==val][0] for val in output ])
 
 def retrieve_path_data(in_tuple,pointer_var):
     path=in_tuple[0].replace('fileServer','dodsC')
