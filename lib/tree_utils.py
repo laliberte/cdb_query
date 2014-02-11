@@ -5,37 +5,42 @@ import datetime
 import os
 
 import netcdf_utils
+import netCDF4
 
 import copy
 
-from cdb_query_archive_parsers import base_drs
 
 #Taken from https://gist.github.com/hrldcpr/2012250
 from collections import defaultdict
 def tree_type(): return defaultdict(tree_type)
 
 class Tree:
-    def __init__(self,tree_desc):
+    def __init__(self,tree_desc,options):
         #Defines the tree structure:
         self.clear_tree(tree_desc)
 
+        self._setup_database()
+        self._database_created=False
+
+        self.dataset=None
+        return
+
+    def _setup_database(self):
         #Create an in-memory sqlite database, for easy subselecting.
         #Uses sqlalchemy
+        self.engine = sqlalchemy.create_engine('sqlite:///:memory:', echo=False)
+        self.metadata = sqlalchemy.MetaData(bind=self.engine)
 
-        engine = sqlalchemy.create_engine('sqlite:///:memory:', echo=False)
-        metadata = sqlalchemy.MetaData(bind=engine)
-
-        self.time_db = sqlalchemy.Table('time_db',metadata,
+        self.time_db = sqlalchemy.Table('time_db',self.metadata,
                 sqlalchemy.Column('case_id',sqlalchemy.Integer,primary_key=True),
                 *(sqlalchemy.Column(level_name, sqlalchemy.String(255)) for level_name in self.tree_desc)
                 )
-        metadata.create_all()
+        self.metadata.create_all()
         sqlalchemy.orm.clear_mappers()
         sqlalchemy.orm.mapper(File_Expt,self.time_db)
 
-        self.session = sqlalchemy.orm.create_session(bind=engine, autocommit=False, autoflush=True)
+        self.session = sqlalchemy.orm.create_session(bind=self.engine, autocommit=False, autoflush=True)
         self.file_expt = File_Expt(self.tree_desc)
-        self._database_created=False
         return
 
     def create_database(self,find_function):
@@ -45,6 +50,13 @@ class Tree:
                                       self.tree,
                                       find_function)
             self._database_created=True
+        return
+
+    def populate_pointers_from_netcdf(self,options):
+        infile=netCDF4.Dataset(options.in_diagnostic_netcdf_file,'r')
+        self.file_expt.time='0'
+        populate_pointers_from_netcdf_recursive(self,infile)
+        infile.close()
         return
 
     def recreate_structure(self,output_dir,conversion_function):
@@ -58,6 +70,7 @@ class Tree:
 
     def add_item(self):
         item_desc=[getattr(self.file_expt,level) for level in self.tree_desc]
+        #print zip(self.tree_desc,item_desc)
         add_item_recursive(self.tree,self.tree_desc,item_desc)
         return
 
@@ -75,12 +88,6 @@ class Tree:
             self.tree=tree_type()
         return
 
-    def level_list(self,level_to_list):
-        return level_list_recursive(self.tree,level_to_list)
-
-    def level_list_last(self):
-        return level_list_recursive(self.tree,'last')
-
     def simplify(self,header):
         self.tree=simplify_recursive(self.tree,header)
         return 
@@ -89,6 +96,34 @@ class Tree:
         branch_desc=dict()
         replace_last_level(self.tree,level_equivalence,branch_desc)
         return 
+
+def populate_pointers_from_netcdf_recursive(tree,infile):
+    if len(infile.groups.keys())>0:
+        for group in infile.groups.keys():
+            setattr(tree.file_expt,infile.groups[group].getncattr('level_name'),group)
+            populate_pointers_from_netcdf_recursive(tree,infile.groups[group])
+    else:
+        if 'path' in infile.variables.keys():
+            paths=infile.variables['path'][:]
+            for path_id, path in enumerate(paths):
+                id_list=['file_type','search']
+                for id in id_list:
+                    setattr(tree.file_expt,id,infile.variables[id][path_id])
+                setattr(tree.file_expt,'path','|'.join([infile.variables['path'][path_id],
+                                                       infile.variables['checksum'][path_id]]))
+                setattr(tree.file_expt,'version','v'+str(infile.variables['version'][path_id]))
+                #print {att:getattr(tree.file_expt,att) for att in dir(tree.file_expt) if att[0]!='_'}
+                tree.add_item()
+        elif 'path' in infile.ncattrs():
+            #for fx variables:
+            id_list=['file_type','search']
+            for id in id_list:
+                setattr(tree.file_expt,id,infile.getncattr(id))
+            setattr(tree.file_expt,'path','|'.join([infile.getncattr('path'),
+                                                   infile.getncattr('checksum')]))
+            setattr(tree.file_expt,'version',str(infile.getncattr('version')))
+            tree.add_item()
+    return
 
 def add_item_recursive(tree,tree_desc,item_desc):
     #This function recursively creates the output dictionary from one database entry:
@@ -109,8 +144,48 @@ def add_item_recursive(tree,tree_desc,item_desc):
     else:
         #The end of the recursion has been reached. This is 
         #to ensure a robust implementation.
+        #if not isinstance(tree,list):
+        #    tree=[]
         if item_desc[0] not in tree:
             tree.append(item_desc[0])
+    return
+
+def add_item_dataset_recursive(dataset,tree_desc,item_desc):
+    #This function recursively creates the output dictionary from one database entry:
+    if isinstance(tree_desc,list) and len(tree_desc)>1 and tree_desc[0]!='var':
+        try:
+            level_name=item_desc[0]
+            if tree_desc[0]=='search': level_name='test_name'
+            if level_name not in dataset.groups.keys():
+                dataset_group=dataset.createGroup(level_name)
+                dataset_group.setncattr('level_name',tree_desc[0])
+            else:
+                dataset_group=dataset.groups[level_name]
+        except:
+            dataset_group=None
+        #Recursively create tree:
+        add_item_dataset_recursive(dataset_group,tree_desc[1:],item_desc[1:])
+    elif isinstance(tree_desc,list) and tree_desc[0]=='var':
+        level_name=item_desc[0]
+        if 'time' not in dataset.dimensions.keys():
+            dataset.createDimension('time',size=None)
+            #dataset.createVariable('time','i8',dimensions=('time',))
+
+        if level_name not in dataset.variables.keys():
+            dataset.createVariable(level_name,str,dimensions=('time',))
+            #dataset.variables[level_name].setncattr('level_name','var')
+        dataset.variables[level_name][len(dataset.dimensions['time'])+1]=str(item_desc[-1])
+        for name, value in zip(tree_desc[1:-1],item_desc[1:-1]):
+            if name!='time':
+                if not name in dataset.groups.keys():
+                    grp=dataset.createGroup(name)
+                else:
+                    grp=dataset.groups[name]
+                if not level_name in grp.variables.keys():
+                    grp.createVariable(level_name,str,dimensions=('time',))
+                grp.variables[level_name][len(dataset.dimensions['time'])+1]=str(value)
+                #grp.variables[level_name][0]=str(value)
+            
     return
 
 def slice_recursive(tree,options):
@@ -145,75 +220,28 @@ def slice_recursive(tree,options):
     else:
         return 1
 
-def level_list_recursive(tree,level_to_list):
-    if isinstance(tree,dict) and tree:
-        if '_name' not in tree.keys():
-            raise IOError('Dictionnary passed to list_level_recursive must have a _name entry at each level except the last')
-
-        level_name=tree['_name']
-        if level_to_list==level_name:
-            list_of_names=[item for item in tree.keys() if item[0]!='_']
-        else:
-            list_of_names=list(sorted(set(
-                               [ name for sublist in [level_list_recursive(tree[value],level_to_list) for value 
-                                in [item for item in tree.keys() if item[0]!='_'] ] for name in sublist ]
-                                )))
-    elif level_to_list=='last' and tree:
-        list_of_names=[tree[0]]
-    else:
-        list_of_names=[]
-    return list_of_names
-
-def simplify_recursive(tree,header):
-    #Simplifies the output tree to make it unique:
+def simplify_recursive(tree,header,file_type=None):
+    #Simplifies the output tree to remove data_node name 
 
     if isinstance(tree,dict) and tree:
         if '_name' not in tree.keys():
             raise IOError('Dictionnary passed to simplify must have a _name entry at each level except the last')
 
         level_name=tree['_name']
-        if level_name=='version':
-            #the 'version' field is peculiar. Here, we use the most recent, or largest version number:
-            version_list=[int(version[1:]) for version in tree.keys() if str(version)[0]!='_']
-
-            #Keep only the last version:
-            for version in [ ver for ver in version_list if ver!=max(version_list) ]:
-                del tree['v'+str(version)]
-
-            #Find unique tree by recurrence:
-            tree['v'+str(max(version_list))]=simplify_recursive(tree['v'+str(max(version_list))],header)
-
-        elif level_name+'_list' in header.keys() and isinstance(header[level_name+'_list'],list):
-            #The level was not specified but an ordered list was provided in the diagnostic header.
-            #Go through the list and pick the first avilable one:
-            level_ordering=[level for level in header[level_name+'_list'] if level in tree.keys()]
-
-            #Keep only the first:
-            if len(level_ordering)==0:
-                for level in tree.keys(): del tree[level]
+        for level in [ name for name in tree.keys() if str(name)[0]!='_' ]:
+            if level_name=='file_type':
+                tree[level]=simplify_recursive(tree[level],header,file_type=level)
             else:
-                for level in level_ordering[1:]: del tree[level]
-                simplify_recursive(tree[level_ordering[0]],header)
-                if not tree[level_ordering[0]]:
-                    for level in tree.keys(): del tree[level]
-        else:
-            for level in [ name for name in tree.keys() if str(name)[0]!='_' ]:
-                tree[level]=simplify_recursive(tree[level],header)
+                tree[level]=simplify_recursive(tree[level],header,file_type=file_type)
+            if tree[level]==None:
+                del tree[level]
+        if len([ name for name in tree.keys() if str(name)[0]!='_' ])==0:
+            for name in tree.keys(): tree=None
     elif isinstance(tree,list) and tree:
-        #print tree
-        remote_paths=copy.deepcopy([path for path in tree if len(path.split('|'))<=2])
-        for path in remote_paths[1:]:
-            tree.remove(path)
-        if len(remote_paths)<len(tree):
-            if remote_paths:
-                tree.remove(remote_paths[0])
-            if len(tree)>1:
-                lengths=[int(path.split('|')[2])-int(path.split('|')[1]) for path in tree]
-                sorted_lengths=np.argsort(lengths)
-                paths_list=copy.deepcopy(tree)
-                for path in paths_list:
-                    if path != paths_list[sorted_lengths[-1]]:
-                        tree.remove(path)
+        #for item in tree:
+        #    print item, netcdf_utils.get_data_node(item,file_type)
+        tree=[item for item in tree if netcdf_utils.get_data_node(item,file_type) in header['data_node_list']]
+        if len(tree)==0: tree=None
     return tree
 
 def replace_last_level(tree,level_equivalence,branch_desc):
@@ -238,13 +266,13 @@ def replace_path(path_name,branch_desc):
     
     #A local copy was found. One just needs to find the indices:
     new_path_name=path_name
-    if not branch_desc['frequency'] in ['fx','clim']:
+    if not branch_desc['time_frequency'] in ['fx','clim']:
         year_axis, month_axis = netcdf_utils.get_year_axis(path_name)
         if year_axis is None or month_axis is None:
             raise IOError('replace_path netcdf file could not be opened')
 
         year_id = np.where(year_axis==int(branch_desc['time'][:4]))[0]
-        if branch_desc['frequency'] in ['yr']:
+        if branch_desc['time_frequency'] in ['yr']:
             month_id=year_id
         else:
             month_id = year_id[np.where(int(branch_desc['time'][-2:])==month_axis[year_id])[0]]
@@ -264,7 +292,8 @@ def replace_path(path_name,branch_desc):
 def create_database_from_tree(pointers,file_expt,tree,find_function):
     #Recursively creates a database from tree:
     if isinstance(tree,dict):
-        for value in [key for key in tree.keys() if key]:
+        #for value in [key for key in tree.keys() if key]:
+        for value in [key for key in tree.keys() if isinstance(key,basestring)]:
             if value[0] != '_':
                 file_expt_copy=copy.deepcopy(file_expt)
                 setattr(file_expt_copy,tree['_name'],value)

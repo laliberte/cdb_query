@@ -1,25 +1,18 @@
 cdb_query
 =========
 
-Python code to manage the analysis of climate model outputs published in the CMIP5 archive
+Python code to manage the analysis of climate model outputs published in the CMIP5 and CORDEX archives
 
-This package provides simple tools to process data from the CMIP5 archive distributed 
+This package provides simple tools to process data from the CMIP5 and CORDEX archives distributed 
 by the Earth System Grid Federation.
 
-This package was developed by F. B. Laliberte and P. J. Kushner in the Atmospheric
+This package was developed by F. B. Laliberte and P. J. Kushner as part of the "ExArch: Climate analytics
+on distributed exascale data archives" G8 Research Initiative grant. http://proj.badc.rl.ac.uk/exarch
 
-package is to provide simple tools to climate scientists and to help the 
-"ExArch: Climate analytics on distributed exascale data archives" G8 Research Initiative grant.
-
-Note that the included tool "cdb_driver" is still in alpha testing phase and might even disappear
-in future releases.
-
-This code was developed as part of the ExArch project: http://proj.badc.rl.ac.uk/exarch
-
-This code is a major rewrite from versions 0.3 and earlier.
+This version is a major rewrite from earlier versions.
 
 Frederic Laliberte, Paul J. Kushner
-Univerity of Toronto, 2013
+Univerity of Toronto, 2014
 
 The Natural Sciences and Engineering Research Council of Canada (NSERC/CRSNG) funded 
 FBL and PJK during this project.
