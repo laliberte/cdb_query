@@ -17,6 +17,8 @@ import netcdf_utils
 import netCDF4
 import retrieval_utils
 
+import nc_Database
+
 
 import json
 
@@ -28,22 +30,20 @@ import numpy as np
 import warnings
 
 class SimpleTree:
-    def __init__(self,tree,options,project_drs):
-
-        if 'header' in tree.keys():
-            self.header =  tree['header']
-        #print { val:getattr(project_drs,val) for val in dir(project_drs) if val[0]!='_'}
+    def __init__(self,options,project_drs):
 
         self.drs=project_drs
+        self.nc_Database=nc_Database.nc_Database(self.drs)
 
-        #Create tree
-        self.pointers=tree_utils.Tree(self.drs.discovered_drs,options)
-
-        if 'pointers' in tree.keys():
-            self.pointers.tree=tree['pointers']
-        elif 'in_diagnostic_netcdf_file' in dir(options):
-            self.pointers.populate_pointers_from_netcdf(options)
-            #print json.dumps(self.pointers.tree,sort_keys=True, indent=4)
+        if 'in_diagnostic_netcdf_file' in dir(options):
+            self.Dataset=netCDF4.Dataset(netcdf4_file,'r')
+            #Load header:
+            self.header=dict()
+            for att in set(self.drs.header_desc).intersection(infile.ncattrs()):
+                self.header[att]=json.loads(self.Dataset.getncattr(att))
+        elif 'in_diagnostic_headers_file' in dir(options):
+            #Load header:
+            self.header=json.load(open(options.in_diagnostic_headers_file,'r'))['header']
         return
 
     def union_header(self):
@@ -73,45 +73,34 @@ class SimpleTree:
         return
 
     def list_subset(self,subset):
-        subset_list=self.pointers.session.query(*subset
-                                                        ).distinct().all()
+        subset_list=self.nc_Database.session.query(*subset).distinct().all()
         return subset_list
 
     def discover(self,options):
         #First simplify the header
         self.union_header()
 
-        if options.list_only_field!=None:
-            only_list=[]
+        only_list=[]
 
         #Local filesystem archive
         local_paths=[search_path for search_path in 
                         self.header['search_list']
                         if os.path.exists(os.path.abspath(os.path.expanduser(os.path.expandvars(search_path))))]
         for search_path in local_paths:
-            if options.list_only_field!=None:
-                only_list.append(filesystem_query.descend_tree(self.pointers,self.header,self.header_simple,search_path,list_level=options.list_only_field))
-            else:
-                filesystem_query.descend_tree(self.pointers,self.header,self.header_simple,search_path)
-
+            only_list.append(filesystem_query.descend_tree(self,search_path,list_level=options.list_only_field))
 
         #ESGF search
         remote_paths=[search_path for search_path in 
                         self.header['search_list']
                         if not os.path.exists(os.path.abspath(os.path.expanduser(os.path.expandvars(search_path))))]
         for search_path in remote_paths:
-            if options.list_only_field!=None:
-                only_list.append(esgf_query.descend_tree(self.pointers,self.drs,self.header,search_path,options,list_level=options.list_only_field))
-            else:
-                esgf_query.descend_tree(self.pointers,self.drs,self.header,search_path,options)
-        #print json.dumps(self.pointers.tree,sort_keys=True, indent=4)
+            only_list.append(esgf_query.descend_tree(self,search_path,options,list_level=options.list_only_field))
 
         if options.list_only_field!=None:
             for field_name in set([item for sublist in only_list for item in sublist]):
                 print field_name
         else:
-            valid_experiments_path.intersection(self,self.drs)
-            #print json.dumps(self.pointers.tree,sort_keys=True, indent=4)
+            valid_experiments_path.intersection(self)
             #List data_nodes:
             self.header['data_node_list']=self.list_data_nodes()
             self.create_netcdf_container(options,'record_paths')
@@ -223,52 +212,6 @@ class SimpleTree:
         self.create_netcdf_container(options,'record_paths')
         return
 
-
-#def remote_retrieve(options):
-#    data=netCDF4.Dataset(options.in_diagnostic_netcdf_file,'r')
-#    paths_list=[]
-#    for timestamp in options.timestamp:
-#        paths_list.append(netcdf_utils.descend_tree(options,data,timestamp=timestamp))
-#    data.close()
-#    identical_paths,unique_paths=organize_identical_paths(paths_list)
-#    if options.nco: print 'unset NCO_RETRIEVE;'
-#    if options.list_data_nodes: print 'unset DOMAINS;'
-#    for path_num, path in enumerate(unique_paths):
-#        if options.cdo:
-#            sel_string=' -seltimestep,'+','.join([str(item+1) for item in identical_paths[path]['indices']])
-#            #print sel_string+' '+path.replace('fileServer','dodsC')
-#            print 'CDO_RETRIEVE="'+' '.join([sel_string,path.replace('fileServer','dodsC')])+'"'
-#        elif options.nco:
-#            for slice_indices in convert_indices_to_slices(identical_paths[path]['indices']):
-#                if len(slice_indices)==2:
-#                    sel_string='-d time,'+','.join([str(item) for item in slice_indices])
-#                else:
-#                    sel_string='-d time,'+str(slice_indices[0])+','+str(slice_indices[0])
-#                print 'NCO_RETRIEVE['+str(path_num+1)+']="'+' '.join([sel_string,path.replace('fileServer','dodsC')])+'";'
-#        elif options.list_data_nodes:
-#            print 'DOMAINS['+str(path_num+1)+']="'+' '.join(identical_paths[path]['data_nodes'])+'";'
-#        #else:
-#        #    netcdf_utils.create_local_netcdf(options,options.out_netcdf_file,tuple_list)
-#
-#    return
-
-#def organize_identical_paths(paths_list):
-#    #FIND UNIQUE PATHS AND ENSURE THAT THEY ARE SORTED:
-#    sort_timestamp=np.argsort([item['timestamp'] for item in paths_list])
-#    unique_paths, unique_indices=np.unique(np.array([item['path'] for item in paths_list])[sort_timestamp],return_index=True)
-#    unique_paths=np.array([item['path'] for item in paths_list])[sort_timestamp][unique_indices]
-#    paths_organized={}
-#    for path in unique_paths:
-#        indices=[item['index'] for item in paths_list if item['path']==path]
-#        indices_sort=np.argsort(indices)
-#        if len(indices)>1: indices=np.array(indices)[indices_sort]
-#        paths_organized[path]={
-#                                'indices': indices,
-#                                'timestamps':np.array([item['timestamp'] for item in paths_list if item['path']==path])[indices_sort],
-#                                'data_nodes':[item['data_nodes'] for item in paths_list if item['path']==path][0]
-#                              }
-#    return paths_organized, unique_paths
-                             
 
 def find_simple(pointers,file_expt):
     #for item in dir(file_expt):

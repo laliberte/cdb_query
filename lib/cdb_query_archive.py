@@ -65,11 +65,11 @@ def main(project):
     if options.command=='remote_retrieve':
         netcdf_utils.retrieve_data(options,project_drs)
     elif 'in_diagnostic_headers_file' in dir(options):
-        paths_dict=cdb_query_archive_class.SimpleTree(io_tools.open_json(options),options,project_drs)
+        paths_dict=cdb_query_archive_class.SimpleTree(options,project_drs)
         #Run the command:
         getattr(paths_dict,options.command)(options)
     elif 'in_diagnostic_netcdf_file' in dir(options):
-        paths_dict=cdb_query_archive_class.SimpleTree(io_tools.open_netcdf(options,project_drs),options,project_drs)
+        paths_dict=cdb_query_archive_class.SimpleTree(options,project_drs)
         #Run the command:
         getattr(paths_dict,options.command)(options)
         
