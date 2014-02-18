@@ -487,13 +487,16 @@ def worker(input, output):
 
 def retrieve_data(options,project_drs):
     from multiprocessing import Process, current_process
-    tree=cdb_query_archive_class.SimpleTree(io_tools.open_netcdf(options,project_drs),options,project_drs)
-    data_node_list=tree.get_data_nodes_list(options)
+    database=cdb_query_archive_class.SimpleTree(options,project_drs)
+    database.load_nc_file(options.in_diagnostic_netcdf_file)
+    database.nc_Database.populate_database(database.Dataset,cdb_query_archive_class.find_simple)
+
+    data_node_list=database.nc_Database.list_data_nodes()
     queues=define_queues(data_node_list)
 
     #First step: Define the queues:
     if not options.netcdf:
-        paths_list=tree.get_paths_list(options)
+        paths_list=database.nc_Database.list_paths(options)
         for path in paths_list:
             queues[get_data_node(*path[:2])].put((retrieve_path,)+path+(options,))
     else:

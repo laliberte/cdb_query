@@ -4,9 +4,6 @@ import hashlib
 import filesystem_query
 import esgf_query
 
-import valid_experiments_path
-import valid_experiments_time
-
 import copy
 
 import remote_archive

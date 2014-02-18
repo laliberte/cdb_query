@@ -3,6 +3,7 @@ import sqlalchemy.orm
 import numpy as np
 import datetime
 import os
+import json
 
 import netcdf_utils
 import netCDF4
@@ -36,10 +37,80 @@ class nc_Database:
         self.file_expt = File_Expt(self.drs.discovered_drs)
         return
 
-    def populate_database(self,find_function):
+    def populate_database(self,Dataset,find_function):
         self.file_expt.time='0'
-        populate_database_recursive(self,self.Dataset,find_function)
+        populate_database_recursive(self,Dataset,find_function)
         return
+
+    def simulations_list(self):
+        subset_desc=(getattr(File_Expt,item) for item in self.drs.simulations_desc)
+        simulations_list=self.list_subset(subset_desc)
+        return simulations_list
+
+    def list_subset(self,subset):
+        subset_list=self.session.query(*subset).distinct().all()
+        return subset_list
+
+    def list_data_nodes(self):
+        return sorted(
+                    list(
+                        set(
+                            [netcdf_utils.get_data_node(*path) for 
+                                path in self.list_subset((File_Expt.path,File_Expt.file_type))
+                              ]
+                            )
+                         )
+                      )
+
+    def list_paths(self):
+        subset=tuple([File_Expt.path,File_Expt.file_type]+[getattr(File_Expt,item) for item in self.drs.official_drs])
+        return sorted(list(set(self.list_subset(subset))))
+
+    def create_netcdf_container(self,header,options,record_function_handle):
+        #List all the trees:
+        drs_list=self.drs.base_drs
+
+        drs_to_remove=['search','path','file_type','version','time']
+        for drs in drs_to_remove: drs_list.remove(drs)
+        #Remove the time:
+        drs_to_remove.remove('time')
+
+        #Find the unique tuples:
+        trees_list=self.list_subset([getattr(File_Expt,level) for level in drs_list])
+
+        #Create output:
+        output_file_name=options.out_diagnostic_netcdf_file
+        output_root=netCDF4.Dataset(output_file_name,'w',format='NETCDF4')
+        
+        for tree in trees_list:
+            time_frequency=tree[drs_list.index('time_frequency')]
+            experiment=tree[drs_list.index('experiment')]
+            var=tree[drs_list.index('var')]
+            output=netcdf_utils.create_tree(output_root,zip(drs_list,tree))
+            output_root.sync()
+            conditions=[ getattr(File_Expt,level)==value for level,value in zip(drs_list,tree)]
+            out_tuples=[ getattr(File_Expt,level) for level in drs_to_remove]
+            #Find list of paths:
+            paths_list=[{drs_name:path[drs_id] for drs_id, drs_name in enumerate(drs_to_remove)} for path in self.session.query(*out_tuples
+                                    ).filter(sqlalchemy.and_(*conditions)).distinct().all()]
+            #Record data:
+            getattr(netcdf_utils,record_function_handle)(header,output,paths_list,var,time_frequency,experiment)
+            #Remove recorded data from database:
+            self.session.query(*out_tuples).filter(sqlalchemy.and_(*conditions)).delete()
+
+        self.record_header(header,output_root)
+        output_root.close()
+        return
+
+    def record_header(self,header,output):
+        #output_hdr=output.createGroup('headers')
+        for value in header.keys():
+            output.setncattr(value,json.dumps(header[value]))
+        #Put version:
+        output.setncattr('cdb_query_file_spec_version','1.0')
+        output.sync()
+        return
+
 
 #####################################################################
 #####################################################################
@@ -51,7 +122,7 @@ def populate_database_recursive(nc_Database,nc_Dataset,find_function):
     if len(nc_Dataset.groups.keys())>0:
         for group in nc_Dataset.groups.keys():
             setattr(nc_Database.file_expt,nc_Dataset.groups[group].getncattr('level_name'),group)
-            populate_nc_Database_recursive(nc_Database,nc_Dataset.groups[group],find_function)
+            populate_database_recursive(nc_Database,nc_Dataset.groups[group],find_function)
     else:
         if 'path' in nc_Dataset.variables.keys():
             paths=nc_Dataset.variables['path'][:]

@@ -1,8 +1,7 @@
 import copy
 import os
 
-from tree_utils import File_Expt
-import tree_utils
+from nc_Database import File_Expt
 
 import retrieval_utils
 
@@ -120,7 +119,7 @@ def obtain_time_list(diagnostic,project_drs,var_name,experiment,model):
                ]
     for field_id, field in enumerate(project_drs.var_specs):
         conditions.append(getattr(File_Expt,field)==diagnostic.header['variable_list'][var_name][field_id])
-    time_list_var=[x[0] for x in diagnostic.pointers.session.query(
+    time_list_var=[x[0] for x in diagnostic.nc_Database.session.query(
                              File_Expt.time
                             ).filter(sqlalchemy.and_(*conditions)).distinct().all()]
     return time_list_var
@@ -179,36 +178,46 @@ def get_diag_months_list(diagnostic):
         diag_months_list=range(1,13)
     return diag_months_list
 
+def optimset(database,options):
+    database.load_nc_file(options.in_diagnostic_netcdf_file)
+
+    #Find the list of institute / model with all the months for all the years / experiments and variables requested:
+    intersection(database)
+    #print json.dumps(database.pointers.tree,sort_keys=True, indent=4)
+    
+    database.nc_Database.create_netcdf_container(database.header,options,'record_meta_data')
+    return
+
 #def intersection(self,diag_tree_desc, diag_tree_desc_final):
-def intersection(diagnostic,project_drs):
+def intersection(database):
     #This function finds the models that satisfy all the criteria
-    diagnostic.pointers.create_database(find_time)
+    database.nc_Database.populate_database(database.Dataset,find_time)
 
     #Step one: find all the institute / model tuples with all the requested variables
     #          for all months of all years for all experiments.
-    simulations_list=diagnostic.simulations_list()
+    simulations_list=database.nc_Database.simulations_list()
     simulations_list_no_fx=[simulation for simulation in simulations_list if 
-                                simulation[project_drs.simulations_desc.index('ensemble')]!='r0i0p0']
+                                simulation[database.drs.simulations_desc.index('ensemble')]!='r0i0p0']
     model_list=copy.copy(simulations_list_no_fx)
 
     min_time=dict()
         #print experiment,model_list
-    for experiment in diagnostic.header['experiment_list'].keys():
-        model_list, min_time = find_model_list(diagnostic,project_drs,model_list,experiment,min_time)
+    for experiment in database.header['experiment_list'].keys():
+        model_list, min_time = find_model_list(database,database.drs,model_list,experiment,min_time)
 
     #Step two: create the new paths dictionary:
     variable_list_requested=[]
-    for var_name in diagnostic.header['variable_list'].keys():
-        variable_list_requested.append((var_name,)+tuple(diagnostic.header['variable_list'][var_name]))
+    for var_name in database.header['variable_list'].keys():
+        variable_list_requested.append((var_name,)+tuple(database.header['variable_list'][var_name]))
 
     #Step three: find the models to remove:
-    simulations_desc_indices_without_ensemble=range(0,len(project_drs.simulations_desc))
-    simulations_desc_indices_without_ensemble.remove(project_drs.simulations_desc.index('ensemble'))
+    simulations_desc_indices_without_ensemble=range(0,len(database.drs.simulations_desc))
+    simulations_desc_indices_without_ensemble.remove(database.drs.simulations_desc.index('ensemble'))
     models_to_remove=set(simulations_list_no_fx).difference(model_list)
 
     #Step four: remove from database:
     for model in models_to_remove:
-        conditions=[ getattr(File_Expt,field)==model[field_id] for field_id, field in enumerate(itemgetter(*simulations_desc_indices_without_ensemble)(project_drs.simulations_desc))]
-        diagnostic.pointers.session.query(File_Expt).filter(*conditions).delete()
+        conditions=[ getattr(File_Expt,field)==model[field_id] for field_id, field in enumerate(itemgetter(*simulations_desc_indices_without_ensemble)(database.drs.simulations_desc))]
+        database.nc_Database.session.query(File_Expt).filter(*conditions).delete()
                 
     return 
