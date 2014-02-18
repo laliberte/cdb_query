@@ -187,9 +187,13 @@ class SimpleTree:
             output_root.sync()
             conditions=[ getattr(File_Expt,level)==value for level,value in zip(drs_list,tree)]
             out_tuples=[ getattr(File_Expt,level) for level in drs_to_remove]
+            #Find list of paths:
             paths_list=[{drs_name:path[drs_id] for drs_id, drs_name in enumerate(drs_to_remove)} for path in self.pointers.session.query(*out_tuples
                                     ).filter(sqlalchemy.and_(*conditions)).distinct().all()]
+            #Record data:
             getattr(netcdf_utils,record_function_handle)(self.header,output,paths_list,var,time_frequency,experiment)
+            #Remove recorded data from database:
+            self.pointers.session.query(*out_tuples).filter(sqlalchemy.and_(*conditions)).delete()
 
         #if record_function_handle=='record_meta_data':
         #    del self.header['data_node_list']
