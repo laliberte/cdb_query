@@ -187,8 +187,9 @@ def intersection(diagnostic,project_drs):
     #Step one: find all the institute / model tuples with all the requested variables
     #          for all months of all years for all experiments.
     simulations_list=diagnostic.simulations_list()
-    #model_list=[model for model in copy.copy(simulations_list) if model[2]!='r0i0p0']
-    model_list=copy.copy(simulations_list)
+    simulations_list_no_fx=[simulation for simulation in simulations_list if 
+                                simulation[project_drs.simulations_desc.index('ensemble')]!='r0i0p0']
+    model_list=copy.copy(simulations_list_no_fx)
 
     min_time=dict()
         #print experiment,model_list
@@ -203,66 +204,11 @@ def intersection(diagnostic,project_drs):
     #Step three: find the models to remove:
     simulations_desc_indices_without_ensemble=range(0,len(project_drs.simulations_desc))
     simulations_desc_indices_without_ensemble.remove(project_drs.simulations_desc.index('ensemble'))
-    models_to_remove=set(simulations_list).difference(model_list)
+    models_to_remove=set(simulations_list_no_fx).difference(model_list)
 
     #Step four: remove from database:
     for model in models_to_remove:
         conditions=[ getattr(File_Expt,field)==model[field_id] for field_id, field in enumerate(itemgetter(*simulations_desc_indices_without_ensemble)(project_drs.simulations_desc))]
         diagnostic.pointers.session.query(File_Expt).filter(*conditions).delete()
                 
-#    #Delete the original tree to rebuild it with only the elements we want:
-#    diagnostic.pointers.clear_tree(project_drs.discovered_drs)
-#    
-#    #time-less variables:
-#    time_less_frequencies=['fx','clim']
-#    #Loop through models:
-#    for model in model_list:
-#        #print '_'.join(model)
-#        item_list=diagnostic.pointers.session.query(
-#                                  File_Expt
-#                                 ).filter(sqlalchemy.and_(
-#                                                            File_Expt.institute==model[0],
-#                                                            File_Expt.model==model[1],
-#                                                         )).all()
-#        item_list_final=[item for item in item_list if 
-#                                    item.var in diagnostic.header['variable_list'].keys() and
-#                                    not item.time_frequency in time_less_frequencies and
-#                                    [getattr(item,field) for field in project_drs.var_specs]==diagnostic.header['variable_list'][item.var] and
-#                                    item.ensemble==model[2]
-#                         ]
-#            
-#        item_list_final.extend(
-#                        [item for item in item_list if 
-#                            item.var in diagnostic.header['variable_list'].keys() and
-#                            item.time_frequency in time_less_frequencies and
-#                            [getattr(item,field) for field in project_drs.var_specs]==diagnostic.header['variable_list'][item.var]
-#                        ]
-#                        )
-#        
-#        for item in item_list_final:
-#            #Retrieve the demanded years list for this experiment
-#            period_list = diagnostic.header['experiment_list'][item.experiment]
-#            if not isinstance(period_list,list): period_list=[period_list]
-#            for period in period_list:
-#                years_range=[int(year) for year in period.split(',')]
-#                years_list=range(*years_range)
-#                years_list.append(years_range[1])
-#
-#                time_list=[ str(year).zfill(4)+str(month).zfill(2) for year in years_list for month in get_diag_months_list(diagnostic)]
-#                if not item.time_frequency in time_less_frequencies:
-#                    min_time_id=[item.institute,item.model,item.ensemble,item.experiment]
-#                    #Works if the variable is not fx:
-#                    if str(int(item.time)-int(min_time['_'.join(min_time_id)])).zfill(6) in time_list:
-#                        diagnostic.pointers.attribute_item(item)
-#                        #print('Adding item')
-#                        diagnostic.pointers.add_item()
-#                        #print('Done adding item')
-#                else:
-#                    #If fx, we create the time axis for easy retrieval:
-#                    for time in time_list:
-#                        item.time=time
-#                        diagnostic.pointers.attribute_item(item)
-#                        diagnostic.pointers.add_item()
-#            #print [ getattr(item,val) for val in dir(item) if val[0]!='_']
-#            #print('Done item list')
     return 

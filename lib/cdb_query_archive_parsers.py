@@ -38,9 +38,6 @@ def generate_subparsers(parser,epilog,project_drs):
     subparsers = parser.add_subparsers(help='Commands to discover available data on the archive',dest='command')
     discover(subparsers,epilog,project_drs)
     list_fields(subparsers,epilog,project_drs)
-    #slice(subparsers,epilog,project_drs)
-    #simplify(subparsers,epilog,project_drs)
-    #simulations(subparsers,epilog,project_drs)
 
     #Optimset tree
     optimset(subparsers,epilog,project_drs)
@@ -53,7 +50,7 @@ def discover(subparsers,epilog,project_drs):
     parser=subparsers.add_parser('discover',
                                            description=textwrap.dedent(
                                                 '''Returns pointers to models that have as a subset the requested experiments and variables.\n\
-                                                 It is good practice to check the results with \'simulations\' before
+                                                 It is good practice to check the results with \'list_fields\' before
                                                  proceeding with \'optimset\'.
                                                  The output of \'optimset\' might depend on the order of the header attribute
                                                  \'data_node_list\' in the output file of \'discover\'. It is good practice to
@@ -95,39 +92,6 @@ def list_fields(subparsers,epilog,project_drs):
     parser.add_argument('-f','--field',action='append', type=str, choices=project_drs.base_drs,
                                        help='List the field (or fields if repeated) found in the file' )
     return
-
-def slice(subparsers,epilog,project_drs):
-    #Slice data
-    parser=subparsers.add_parser('slice',
-                                   description=textwrap.dedent('Slice the data according the passed keywords.'),
-                                   argument_default=argparse.SUPPRESS
-                                   )
-    #input_arguments_json(parser)
-    input_arguments(parser)
-    output_arguments(parser)
-    slicing_arguments(parser,project_drs)
-    return
-
-def simplify(subparsers,epilog,project_drs):
-    #Slice data
-    parser=subparsers.add_parser('simplify',
-                                   description=textwrap.dedent('Simplify the data by removing data_node names that are not requested'),
-                                   argument_default=argparse.SUPPRESS
-                                   )
-    input_arguments(parser)
-    output_arguments(parser)
-    slicing_arguments(parser,project_drs)
-    return
-
-#def find_local(subparsers,epilog):
-#    #find_local
-#    parser=subparsers.add_parser('find_local',
-#                                           help='Find the local files that were downloaded'
-#                                           )
-#    input_arguments(parser)
-#    output_arguments(parser)
-#    slicing_arguments(parser)
-#    return
 
 def optimset(subparsers,epilog,project_drs):
     #Find Optimset Months

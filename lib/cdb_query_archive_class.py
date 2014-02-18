@@ -118,20 +118,10 @@ class SimpleTree:
         return
 
     def simulations_list(self):
-        ensemble_index=self.drs.simulations_desc.index('ensemble')
         subset_desc=(getattr(File_Expt,item) for item in self.drs.simulations_desc)
         simulations_list=self.list_subset(subset_desc)
-        return [simulation for simulation in simulations_list if simulation[ensemble_index]!='r0i0p0']
-
-    def simulations(self,options):
-        self.pointers.slice(options)
-        self.pointers.create_database(find_simple)
-
-        simulations_list=self.simulations_list()
-        for simulation in simulations_list:
-            #if simulation[2]!='r0i0p0':
-            print '_'.join(simulation)
-        return
+        return simulations_list
+        #return [simulation for simulation in simulations_list if simulation[ensemble_index]!='r0i0p0']
 
     def list_data_nodes(self):
         return sorted(
