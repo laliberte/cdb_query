@@ -59,8 +59,8 @@ def descend_tree_recursive(database,file_expt,tree_desc,top_path,list_level=None
         for subdir in subdir_list:
             file_expt_copy=copy.deepcopy(file_expt)
             setattr(file_expt_copy,local_tree_desc,subdir)
-            if (not getattr(options.field) or 
-                    (local_tree_desc in database.drs.official_drs and getattr(options,field)==subdir)):
+            if (not getattr(options,local_tree_desc) or 
+                    (local_tree_desc in database.drs.official_drs and getattr(options,local_tree_desc)==subdir)):
                 only_list.append(descend_tree_recursive(database,file_expt_copy,
                                             next_tree_desc,top_path+'/'+subdir,
                                                 list_level=list_level))

@@ -27,7 +27,7 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
                         experiment=experiment)
     ctx=ctx.constrain(**{field:var_desc[field_id] for field_id, field in enumerate(nc_Database.drs.var_specs)})
 
-    for field in nc_Database.drs.official_drs:
+    for field in nc_Database.drs.simulations_desc:
         if getattr(options,field):
             ctx=ctx.constrain({field:getattr(options.field)})
     #if options.model:
