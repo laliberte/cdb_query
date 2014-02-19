@@ -1,6 +1,10 @@
 import copy
-from nc_Database import File_Expt
+import nc_Database
 from operator import itemgetter
+import os
+
+import filesystem_query
+import esgf_query
 
 import sqlalchemy
 
@@ -18,6 +22,26 @@ def discover(database,options):
 
     only_list=[]
 
+    only_list.append(discover_database(database,options))
+    if options.ensemble!=None:
+        options_copy=copy.copy(options)
+        options_copy.ensemble='r0i0p0'
+        only_list.append(discover_database(database,options_copy))
+
+    if options.list_only_field!=None:
+        output=set([item for sublist in only_list for item in sublist])
+    else:
+        intersection(database)
+        #List data_nodes:
+        database.header['data_node_list']=database.nc_Database.list_data_nodes()
+        output=database.nc_Database.create_netcdf_container(database.header,options,'record_paths')
+
+    database.nc_Database.close_database()
+    del database.nc_Database
+    return output
+
+def discover_database(database,options):
+    only_list=[]
     #Local filesystem archive
     local_paths=[search_path for search_path in 
                     database.header['search_list']
@@ -31,16 +55,7 @@ def discover(database,options):
                     if not os.path.exists(os.path.abspath(os.path.expanduser(os.path.expandvars(search_path))))]
     for search_path in remote_paths:
         only_list.append(esgf_query.descend_tree(database,search_path,options,list_level=options.list_only_field))
-
-    if options.list_only_field!=None:
-        for field_name in set([item for sublist in only_list for item in sublist]):
-            print field_name
-    else:
-        intersection(database)
-        #List data_nodes:
-        database.header['data_node_list']=database.nc_Database.list_data_nodes()
-        database.nc_Database.create_netcdf_container(database.header,options,'record_paths')
-    return
+    return [item for sublist in only_list for item in sublist]
 
 def intersection(database):
     #Step one: find all the institute / model tuples with all the requested variables
@@ -57,16 +72,16 @@ def intersection(database):
             if not time_frequency in ['fx','en']:
                 #Do this without fx variables:
                 conditions=[
-                             File_Expt.var==var_name,
-                             File_Expt.experiment==experiment
+                             nc_Database.File_Expt.var==var_name,
+                             nc_Database.File_Expt.experiment==experiment
                            ]
                 for field_id, field in enumerate(database.drs.var_specs):
-                    conditions.append(getattr(File_Expt,field)==database.header['variable_list'][var_name][field_id])
+                    conditions.append(getattr(nc_Database.File_Expt,field)==database.header['variable_list'][var_name][field_id])
 
                 model_list_var=database.nc_Database.session.query(
-                                         File_Expt.institute,
-                                         File_Expt.model,
-                                         File_Expt.ensemble
+                                         nc_Database.File_Expt.institute,
+                                         nc_Database.File_Expt.model,
+                                         nc_Database.File_Expt.ensemble
                                         ).filter(sqlalchemy.and_(*conditions)).distinct().all()
                 model_list=set(model_list).intersection(set(model_list_var))
 
@@ -76,14 +91,14 @@ def intersection(database):
             time_frequency=database.header['variable_list'][var_name][database.drs.var_specs.index('time_frequency')]
             if time_frequency in ['fx','en']:
                 conditions=[
-                             File_Expt.var==var_name,
-                             File_Expt.experiment==experiment
+                             nc_Database.File_Expt.var==var_name,
+                             nc_Database.File_Expt.experiment==experiment
                            ]
                 for field_id, field in enumerate(database.drs.var_specs):
-                    conditions.append(getattr(File_Expt,field)==database.header['variable_list'][var_name][field_id])
+                    conditions.append(getattr(nc_Database.File_Expt,field)==database.header['variable_list'][var_name][field_id])
                 model_list_var=database.nc_Database.session.query(
-                                         File_Expt.institute,
-                                         File_Expt.model,
+                                         nc_Database.File_Expt.institute,
+                                         nc_Database.File_Expt.model,
                                            ).filter(sqlalchemy.and_(*conditions)).distinct().all()
                 model_list_fx=set(model_list_fx).intersection(set(model_list_var))
 
@@ -94,8 +109,8 @@ def intersection(database):
 
     #Step three: remove from database:
     for model in models_to_remove:
-        conditions=[ getattr(File_Expt,field)==model[field_id] for field_id, field in enumerate(database.drs.simulations_desc)]
-        database.nc_Database.session.query(File_Expt).filter(*conditions).delete()
+        conditions=[ getattr(nc_Database.File_Expt,field)==model[field_id] for field_id, field in enumerate(database.drs.simulations_desc)]
+        database.nc_Database.session.query(nc_Database.File_Expt).filter(*conditions).delete()
 
     #Step four: remove remaining models that only have fixed variables:
     simulations_list=database.nc_Database.simulations_list()
@@ -110,8 +125,8 @@ def intersection(database):
                          ).difference([remove_ensemble(simulation,database.drs) for simulation in simulations_list_no_fx])
 
     for model in models_to_remove:
-        conditions=[ getattr(File_Expt,field)==model[field_id] for field_id, field in enumerate(remove_ensemble(database.drs.simulations_desc,database.drs))]
-        database.nc_Database.session.query(File_Expt).filter(*conditions).delete()
+        conditions=[ getattr(nc_Database.File_Expt,field)==model[field_id] for field_id, field in enumerate(remove_ensemble(database.drs.simulations_desc,database.drs))]
+        database.nc_Database.session.query(nc_Database.File_Expt).filter(*conditions).delete()
 
     return
 

@@ -1,33 +1,11 @@
-import os
-import hashlib
-
-import filesystem_query
-import esgf_query
-
 import discover
 import optimset
 
-import copy
-
-import tree_utils
-from nc_Database import File_Expt
-
-import cdb_query_archive_parsers
-import netcdf_utils
 import netCDF4
-import retrieval_utils
 
 import nc_Database
 
-
 import json
-
-import datetime
-import sqlalchemy
-
-import numpy as np
-
-import warnings
 
 class SimpleTree:
     def __init__(self,options,project_drs):
@@ -67,21 +45,47 @@ class SimpleTree:
         #Simplify the header:
         self.union_header()
 
-        discover.discover(self,options)
+        if options.list_only_field!=None:
+            for field_name in discover.discover(self,options):
+                print field_name
+            return
+        else:
+            simulations_list=discover_simulations_recursive(self,options,self.drs.simulations_desc)
+            simulations_list_no_fx=[simulation for simulation in simulations_list if 
+                                        simulation[self.drs.simulations_desc.index('ensemble')]!='r0i0p0']
+            for simulation in simulations_list_no_fx:
+                print simulation
+                for desc_id, desc in enumerate(self.drs.simulations_desc):
+                    setattr(options,desc,simulation[desc_id])
+                output=discover.discover(self,options)
+                output.close()
+                for desc_id, desc in enumerate(self.drs.simulations_desc):
+                    setattr(options,desc,None)
         return
 
     def optimset(self,options):
-        optimset.optimset(self,options)
+        simulations_list=self.list_fields_local(options.in_diagnostic_netcdf_file,self.drs.simulations_desc)
+        simulations_list_no_fx=[simulation for simulation in simulations_list if 
+                                    simulation[self.drs.simulations_desc.index('ensemble')]!='r0i0p0']
+        output=optimset.optimset(self,options)
+        output.close()
         return
 
     def list_fields(self,options):
         #slice with options:
-        self.load_nc_file(options.in_diagnostic_netcdf_file)
-        self.nc_Database.populate_database(self.Dataset,find_simple)
-        fields_list=sorted(list(set(self.nc_Database.list_subset((getattr(File_Expt,field) for field in options.field)))))
+        fields_list=self.list_fields_local(options.in_diagnostic_netcdf_file,options.field)
         for field in fields_list:
             print ','.join(field)
         return
+
+    def list_fields_local(self,netcdf4_file,fields_to_list):
+        self.load_nc_file(netcdf4_file)
+        self.nc_Database.populate_database(self.Dataset,find_simple)
+        self.Dataset.close()
+        fields_list=self.nc_Database.list_fields(fields_to_list)
+        self.nc_Database.close_database()
+        del self.nc_Database
+        return fields_list
 
     def load_nc_file(self,netcdf4_file):
         self.Dataset=netCDF4.Dataset(netcdf4_file,'r')
@@ -92,8 +96,22 @@ class SimpleTree:
         self.nc_Database=nc_Database.nc_Database(self.drs)
         return
 
-
-
+def discover_simulations_recursive(database,options,simulations_desc):
+    if isinstance(simulations_desc,list) and len(simulations_desc)>1:
+        options.list_only_field=simulations_desc[0]
+        output=discover.discover(database,options)
+        options.list_only_field=None
+        simulations_list=[]
+        for val in output:
+            setattr(options,simulations_desc[0],val)
+            simulations_list.extend([(val,)+item for item in discover_simulations_recursive(database,options,simulations_desc[1:])])
+            setattr(options,simulations_desc[0],None)
+    else:
+        options.list_only_field=simulations_desc[0]
+        simulations_list=[(item,) for item in discover.discover(database,options)]
+        options.list_only_field=None
+    return simulations_list
+        
 def find_simple(pointers,file_expt):
     #for item in dir(file_expt):
     #    if item[0]!='_':

@@ -447,25 +447,6 @@ def get_data_node(path,file_type):
     else:
         return ''
 
-#def create_local_netcdf(options,out_netcdf_file,tuple_list):
-#    output=netCDF4.Dataset(out_netcdf_file,'w')
-#    time_axis_datetime=[item[2] for item in tuple_list]
-#    for item_id, item in enumerate(tuple_list):
-#        data=netCDF4.Dataset(item[0].replace('fileServer','dodsC'),'r')
-#        if item_id==0:
-#            output=replicate_netcdf_file(output,data)
-#            time_axis=netCDF4.date2num(time_axis_datetime,units=data.variables['time'].units, calendar=netcdf_calendar(data))
-#            create_time_axis(output,data,time_axis)
-#            ouptut=replicate_netcdf_var(output,data,options.var)
-#            var_out=output.variables[options.var]
-#        temp=data.variables[options.var][item[1],...]
-#        var_out[item_id,...]=temp
-#        output.sync()
-#        print output
-#        data.close()
-#    output.close()
-#    return
-
 def netcdf_calendar(data):
     if 'calendar' in dir(data.variables['time']):
         calendar=data.variables['time'].calendar

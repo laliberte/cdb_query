@@ -1,9 +1,8 @@
 import sqlalchemy
 import sqlalchemy.orm
-import numpy as np
-import datetime
-import os
 import json
+
+import os
 
 import netcdf_utils
 import netCDF4
@@ -37,6 +36,11 @@ class nc_Database:
         self.file_expt = File_Expt(self.drs.discovered_drs)
         return
 
+    def close_database(self):
+        self.session.close()
+        self.engine.dispose()
+        return
+
     def populate_database(self,Dataset,find_function):
         self.file_expt.time='0'
         populate_database_recursive(self,Dataset,find_function)
@@ -50,6 +54,10 @@ class nc_Database:
     def list_subset(self,subset):
         subset_list=self.session.query(*subset).distinct().all()
         return subset_list
+
+    def list_fields(self,fields_to_list):
+        fields_list=sorted(list(set(self.list_subset((getattr(File_Expt,field) for field in fields_to_list)))))
+        return fields_list
 
     def list_data_nodes(self):
         return sorted(
@@ -68,7 +76,7 @@ class nc_Database:
 
     def create_netcdf_container(self,header,options,record_function_handle):
         #List all the trees:
-        drs_list=self.drs.base_drs
+        drs_list=copy.copy(self.drs.base_drs)
 
         drs_to_remove=['search','path','file_type','version','time']
         for drs in drs_to_remove: drs_list.remove(drs)
@@ -80,7 +88,9 @@ class nc_Database:
 
         #Create output:
         output_file_name=options.out_diagnostic_netcdf_file
-        output_root=netCDF4.Dataset(output_file_name,'w',format='NETCDF4')
+        output_root=netCDF4.Dataset(output_file_name+'.pid'+str(os.getpid()),'w',format='NETCDF4',diskless=True,persist=True)
+        #output_root=netCDF4.Dataset(output_file_name+'.pid'+str(os.getpid()),'w',format='NETCDF4',diskless=True)
+        #output_root=netCDF4.Dataset(output_file_name,'w',format='NETCDF4')
         
         for tree in trees_list:
             time_frequency=tree[drs_list.index('time_frequency')]
@@ -99,8 +109,7 @@ class nc_Database:
             self.session.query(*out_tuples).filter(sqlalchemy.and_(*conditions)).delete()
 
         self.record_header(header,output_root)
-        output_root.close()
-        return
+        return output_root
 
     def record_header(self,header,output):
         #output_hdr=output.createGroup('headers')

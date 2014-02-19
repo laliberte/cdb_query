@@ -1,7 +1,7 @@
 import copy
 import os
 
-from nc_Database import File_Expt
+import nc_Database
 
 import retrieval_utils
 
@@ -112,15 +112,15 @@ def find_time_file(pointers,file_expt):#session,file_expt,path_name):
 def obtain_time_list(diagnostic,project_drs,var_name,experiment,model):
     #Do this without fx variables:
     conditions=[
-                 File_Expt.var==var_name,
-                 File_Expt.institute==model[0],
-                 File_Expt.model==model[1],
-                 File_Expt.ensemble==model[2]
+                 nc_Database.File_Expt.var==var_name,
+                 nc_Database.File_Expt.institute==model[0],
+                 nc_Database.File_Expt.model==model[1],
+                 nc_Database.File_Expt.ensemble==model[2]
                ]
     for field_id, field in enumerate(project_drs.var_specs):
-        conditions.append(getattr(File_Expt,field)==diagnostic.header['variable_list'][var_name][field_id])
+        conditions.append(getattr(nc_Database.File_Expt,field)==diagnostic.header['variable_list'][var_name][field_id])
     time_list_var=[x[0] for x in diagnostic.nc_Database.session.query(
-                             File_Expt.time
+                             nc_Database.File_Expt.time
                             ).filter(sqlalchemy.and_(*conditions)).distinct().all()]
     return time_list_var
 
@@ -182,16 +182,18 @@ def optimset(database,options):
     database.load_nc_file(options.in_diagnostic_netcdf_file)
 
     #Find the list of institute / model with all the months for all the years / experiments and variables requested:
-    intersection(database)
+    intersection(database,options)
     #print json.dumps(database.pointers.tree,sort_keys=True, indent=4)
     
-    database.nc_Database.create_netcdf_container(database.header,options,'record_meta_data')
-    return
+    output=database.nc_Database.create_netcdf_container(database.header,options,'record_meta_data')
+    database.nc_Database.close_database()
+    del database.nc_Database
+    return output
 
-#def intersection(self,diag_tree_desc, diag_tree_desc_final):
-def intersection(database):
+def intersection(database,options):
     #This function finds the models that satisfy all the criteria
     database.nc_Database.populate_database(database.Dataset,find_time)
+    database.Dataset.close()
 
     #Step one: find all the institute / model tuples with all the requested variables
     #          for all months of all years for all experiments.
@@ -217,7 +219,7 @@ def intersection(database):
 
     #Step four: remove from database:
     for model in models_to_remove:
-        conditions=[ getattr(File_Expt,field)==model[field_id] for field_id, field in enumerate(itemgetter(*simulations_desc_indices_without_ensemble)(database.drs.simulations_desc))]
-        database.nc_Database.session.query(File_Expt).filter(*conditions).delete()
+        conditions=[ getattr(nc_Database.File_Expt,field)==model[field_id] for field_id, field in enumerate(itemgetter(*simulations_desc_indices_without_ensemble)(database.drs.simulations_desc))]
+        database.nc_Database.session.query(nc_Database.File_Expt).filter(*conditions).delete()
                 
     return 

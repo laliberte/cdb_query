@@ -29,7 +29,7 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
 
     for field in nc_Database.drs.simulations_desc:
         if getattr(options,field):
-            ctx=ctx.constrain({field:getattr(options.field)})
+            ctx=ctx.constrain(**{field:getattr(options,field)})
     #if options.model:
     #    ctx=ctx.constrain(model=options.model)
     #if options.institute:
