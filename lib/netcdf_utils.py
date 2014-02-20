@@ -275,7 +275,8 @@ def retrieve_time_and_meta_data(header,output,source_files,var,experiment):
         paths_indices[path.replace('fileServer','dodsC')==table['paths']]=path_id
 
     #USE VERSION 4 OF SOFT LINKS BECAUSE NCO AND OTHER TOOLS ARE NOT READY FOR COMPOUND TYPES.
-    create_variable_soft_links(data,output,var,time_axis,time_axis_unique,paths_indices,table)
+    #create_variable_soft_links(data,output,var,time_axis,time_axis_unique,paths_indices,table)
+    create_variable_soft_links2(data,output,var,time_axis,time_axis_unique,paths_indices,paths_list,table)
     output.variables[var].setncattr('cdb_query_dimensions',','.join(data.variables[var].dimensions))
     data.close()
 
@@ -304,12 +305,33 @@ def create_variable_soft_links(data,output,var,time_axis,time_axis_unique,paths_
     for time_id, time in enumerate(time_axis_unique):
         var_out[time_id,0]=np.min(paths_indices[time==time_axis])
         var_out[time_id,1]=table['indices'][np.logical_and(paths_indices==var_out[time_id,0],time==time_axis)][0]
-        #if time_id % 100 == 0:
-        #    output.sync()
-    #output.sync()
+    return
+
+def create_variable_soft_links2(data,output,var,time_axis,time_axis_unique,paths_indices,paths_list,table):
+    #CREATE LOOK-UP TABLE:
+    indices=output.createVariable('indices',np.uint32,('time',),zlib=False,fill_value=np.iinfo(np.uint32).max)
+    soft_link_numpy=np.dtype([(path.replace('/','&#47;'),np.byte) for path in paths_list])
+    soft_link=output.createCompoundType(soft_link_numpy,'soft_link')
+    replicate_netcdf_var(output,data,var,chunksize=-1,datatype=soft_link)
+    for var in data.variables.keys():
+        if not 'time' in data.variables[var].dimensions:
+            output=replicate_netcdf_var(output,data,var)
+            output.variables[var][:]=data.variables[var][:]
+    shape = (1,)+output.variables[var].shape[1:]
+
+    #Create soft links:
+    var_out=output.variables[var]
+    for time_id, time in enumerate(time_axis_unique):
+        var_temp=np.zeros(shape,dtype=soft_link_numpy)
+
+        path_id=np.min(paths_indices[time==time_axis])
+        var_temp[paths_list[path_id].replace('/','&#47;')]=1
+        var_out[time_id,...]=var_temp
+        indices[time_id]=table['indices'][np.logical_and(paths_indices==path_id,time==time_axis)][0]
     return
 
 #def create_variable_soft_links3(data,soft_link_desc,output_root,output,var,time_axis,time_axis_unique,time_indices,paths_indices,paths_ordering,id_list,table):
+
 #    #OUTPUT TO NETCDF FILE PATHS DESCRIPTIONS:
 #    output.createDimension('path',len(paths_ordering))
 #    output.createVariable('version',np.uint32,('path',))[:]=paths_ordering['version']
