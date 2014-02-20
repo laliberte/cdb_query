@@ -79,6 +79,23 @@ def convert_to_date_absolute(absolute_time):
     remainder*=60.0
     seconds=int(math.floor(remainder))
     return datetime.datetime(year,month,day,hour,minute,seconds)
+
+def replicate_full_netcdf_recursive(output,data):
+    if len(data.groups.keys())>0:
+        for group in data.groups.keys():
+            if not group in output.groups.keys():
+                output_grp=output.createGroup(group)
+            else:
+                output_grp=output.groups[group]
+            for att in data.groups[group].ncattrs():
+                if not att in output_grp.ncattrs():
+                    output_grp.setncattr(att,getattr(data.groups[group],att))
+            replicate_full_netcdf_recursive(output_grp,data.groups[group])
+    else:
+        for var in data.variables.keys():
+            replicate_netcdf_var(output,data,var)
+            output.variables[var][:]=data.variables[var][:]
+    return
     
 def replicate_netcdf_file(output,data):
     for att in data.ncattrs():
@@ -104,6 +121,11 @@ def replicate_netcdf_var(output,data,var,datatype=None,fill_value=None,add_dim=N
     if not datatype: datatype=data.variables[var].dtype
     output=replicate_netcdf_var_dimensions(output,data,var)
 
+    #netcdf4_kwargs={'zlib':,'complevel','shuffle','fletcher32',
+    #                'contiguous','chunksizes', 'endian', 
+    #                'least_significant_digit', 'fill_value'}
+    #replicate_kwargs={kwarg:data.variables[var] pr kawrg
+    
     if var not in output.variables.keys():
         dimensions=data.variables[var].dimensions
         if add_dim:
@@ -118,7 +140,6 @@ def replicate_netcdf_var(output,data,var,datatype=None,fill_value=None,add_dim=N
         else:
             output.createVariable(var,datatype,dimensions,zlib=True,fill_value=fill_value)
     output = replicate_netcdf_var_att(output,data,var)
-    output.sync()
     return output
 
 def replicate_netcdf_var_att(output,data,var):
@@ -178,7 +199,6 @@ def create_netcdf_pointers_file(header,output,source_files,paths_ordering,id_lis
         temp=output.createVariable(id,str,('path',))
         for file_id, file in enumerate(paths_ordering['path']):
             temp[file_id]=str(paths_ordering[id][file_id])
-    output.sync()
     return 
 
 def record_meta_data(header,output,paths_list,var,time_frequency,experiment):
@@ -270,7 +290,6 @@ def retrieve_time_and_meta_data(header,output,source_files,var,experiment):
 
     #remove data_node_list header
     #del header['data_node_list']
-    output.sync()
     return
 
 def create_variable_soft_links(data,output,var,time_axis,time_axis_unique,paths_indices,table):
@@ -292,9 +311,9 @@ def create_variable_soft_links(data,output,var,time_axis,time_axis_unique,paths_
     for time_id, time in enumerate(time_axis_unique):
         var_out[time_id,0]=np.min(paths_indices[time==time_axis])
         var_out[time_id,1]=table['indices'][np.logical_and(paths_indices==var_out[time_id,0],time==time_axis)][0]
-        if time_id % 100 == 0:
-            output.sync()
-    output.sync()
+        #if time_id % 100 == 0:
+        #    output.sync()
+    #output.sync()
     return
 
 #def create_variable_soft_links3(data,soft_link_desc,output_root,output,var,time_axis,time_axis_unique,time_indices,paths_indices,paths_ordering,id_list,table):
@@ -470,7 +489,7 @@ def retrieve_data(options,project_drs):
     from multiprocessing import Process, current_process
     database=cdb_query_archive_class.SimpleTree(options,project_drs)
     database.load_nc_file(options.in_diagnostic_netcdf_file)
-    database.nc_Database.populate_database(database.Dataset,cdb_query_archive_class.find_simple)
+    database.nc_Database.populate_database(database.Dataset,options,cdb_query_archive_class.find_simple)
 
     data_node_list=database.nc_Database.list_data_nodes()
     queues=define_queues(data_node_list)
@@ -495,6 +514,7 @@ def retrieve_data(options,project_drs):
 
     #Third step: Close the queues:
     print('Retrieving...')
+    print datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     if not options.netcdf:
         for path in paths_list:
             print '\t', queues['end'].get()
@@ -505,6 +525,7 @@ def retrieve_data(options,project_drs):
             output.sync()
         output.close()
     print('Done!')
+    print datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     return
 
 def assign_tree(output,val,sort_table,tree):
@@ -537,6 +558,7 @@ def descend_tree_recursive(options,data,output,tree,queues):
                 output_fx.variables[var][:]=data.variables[var][:]
             output_fx.sync()
     return 
+
             
 def retrieve_remote_vars(options,data,output,tree,queues):
     if not 'time' in output.dimensions.keys():
@@ -572,22 +594,6 @@ def retrieve_remote_vars(options,data,output,tree,queues):
                 if len(convert_indices_to_slices(source_dimensions[dim]))==1:
                     source_dimensions[dim]=convert_indices_to_slices(source_dimensions[dim])[0]
         remote_data.close()
-
-        #Retrieve the data path by path. This is the most efficient method since paths only have to be queried once
-        #retrieved_data=map(retrieve_path_data,
-        #                    zip(paths_list[unique_paths_list_id],
-        #                        [sorted_soft_link[sorted_soft_link[:,0]==path_id,1] for path_id in unique_paths_list_id],
-        #                        [var_to_retrieve for path_id in unique_paths_list_id],
-        #                        [source_dimensions for path_id in unique_paths_list_id],
-        #                        [np.argsort(sorting_paths)[sorted_soft_link[:,0]==path_id] for path_id in unique_paths_list_id],
-        #                        [output.variables[var_to_retrieve] for path_id in unique_paths_list_id]
-        #                        )
-        #                    )
-        #for item in retrieved_data:
-        #    item[2][item[1]]=item[0]
-
-        #Assign retrieved variables to output. We sort back the time axis:
-        #output.variables[var_to_retrieve][:]=np.concatenate(retrieved_data,axis=0)[sort_table,...]
 
         for path_id in unique_paths_list_id:
             path=paths_list[path_id]

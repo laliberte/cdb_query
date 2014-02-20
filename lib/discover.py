@@ -34,7 +34,9 @@ def discover(database,options):
         intersection(database)
         #List data_nodes:
         database.header['data_node_list']=database.nc_Database.list_data_nodes()
-        output=database.nc_Database.create_netcdf_container(database.header,options,'record_paths')
+        dataset=database.nc_Database.create_netcdf_container(database.header,options,'record_paths')
+        output=dataset.filepath()
+        dataset.close()
 
     database.nc_Database.close_database()
     del database.nc_Database

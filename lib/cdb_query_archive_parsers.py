@@ -63,9 +63,9 @@ def discover(subparsers,epilog,project_drs):
     input_arguments_json(parser)
     output_arguments(parser)
     slicing_arguments(parser,project_drs,exclude_args=project_drs.discover_exclude_args)
-    #parser.add_argument('--num_procs',
-    #                             default=1, type=int,
-    #                             help='Use num_procs processors to query the archive. NOT WORKING YET.')
+    parser.add_argument('--num_procs',
+                                 default=1, type=int,
+                                 help='Use num_procs processors to query the archive.')
     parser.add_argument('--distrib',
                                  default=False, action='store_true',
                                  help='Distribute the search. Will likely result in a pointers originating from one node.')
@@ -110,6 +110,9 @@ def optimset(subparsers,epilog,project_drs):
     input_arguments(parser)
     output_arguments(parser)
     slicing_arguments(parser,project_drs)
+    parser.add_argument('--num_procs',
+                                 default=1, type=int,
+                                 help='Use num_procs processors to query the archive.')
     return
 
 #def netcdf_paths(subparsers,epilog):

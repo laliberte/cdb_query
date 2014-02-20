@@ -41,9 +41,9 @@ class nc_Database:
         self.engine.dispose()
         return
 
-    def populate_database(self,Dataset,find_function):
+    def populate_database(self,Dataset,options,find_function):
         self.file_expt.time='0'
-        populate_database_recursive(self,Dataset,find_function)
+        populate_database_recursive(self,Dataset,options,find_function)
         return
 
     def simulations_list(self):
@@ -97,7 +97,6 @@ class nc_Database:
             experiment=tree[drs_list.index('experiment')]
             var=tree[drs_list.index('var')]
             output=netcdf_utils.create_tree(output_root,zip(drs_list,tree))
-            output_root.sync()
             conditions=[ getattr(File_Expt,level)==value for level,value in zip(drs_list,tree)]
             out_tuples=[ getattr(File_Expt,level) for level in drs_to_remove]
             #Find list of paths:
@@ -117,7 +116,6 @@ class nc_Database:
             output.setncattr(value,json.dumps(header[value]))
         #Put version:
         output.setncattr('cdb_query_file_spec_version','1.0')
-        output.sync()
         return
 
 
@@ -127,11 +125,15 @@ class nc_Database:
 #####################################################################
 #####################################################################
 
-def populate_database_recursive(nc_Database,nc_Dataset,find_function):
+def populate_database_recursive(nc_Database,nc_Dataset,options,find_function):
     if len(nc_Dataset.groups.keys())>0:
         for group in nc_Dataset.groups.keys():
-            setattr(nc_Database.file_expt,nc_Dataset.groups[group].getncattr('level_name'),group)
-            populate_database_recursive(nc_Database,nc_Dataset.groups[group],find_function)
+            level_name=nc_Dataset.groups[group].getncattr('level_name')
+            if ((not level_name in dir(options)) or 
+                (getattr(options,level_name)==None) or 
+                (getattr(options,level_name)==group)): 
+                setattr(nc_Database.file_expt,nc_Dataset.groups[group].getncattr('level_name'),group)
+                populate_database_recursive(nc_Database,nc_Dataset.groups[group],options,find_function)
     else:
         if 'path' in nc_Dataset.variables.keys():
             paths=nc_Dataset.variables['path'][:]

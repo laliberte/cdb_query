@@ -69,46 +69,6 @@ def find_time_file(pointers,file_expt):#session,file_expt,path_name):
                     pointers.session.commit()
     return
 
-#def find_time_opendap(pointers,file_expt):
-#    #If the file is local  or opendap, it is queryable and we can recover the
-#    #indices corresponding to the month. It is slower but it allows for a fast implementation
-#    #of scripts over a distant connection.
-#
-#    if file_expt.time_frequency in ['fx','clim']:
-#        #If the time axis is fixed or it is a climatology, do nothing:
-#        file_expt_copy = copy.deepcopy(file_expt)
-#        setattr(file_expt_copy,'time',str(000000))
-#        pointers.session.add(file_expt_copy)
-#        pointers.session.commit()
-#        return
-#
-#    year_axis, month_axis = netcdf_utils.get_year_axis(file_expt.path)
-#    if year_axis is None or month_axis is None:
-#        #File could not be opened and should be excluded from analysis
-#        return
-#
-#    #Record the indices per month:
-#    for year in set(year_axis):
-#        year_id = np.where(year_axis==year)[0]
-#
-#        if file_expt.time_frequency in ['yr']:
-#            month_id=year_id
-#            for month in range(1,13):
-#                file_expt_copy = copy.deepcopy(file_expt)
-#                setattr(file_expt_copy,'time',str(year)+str(month).zfill(2))
-#                setattr(file_expt_copy,'path',file_expt.path+'|'+str(np.min(month_id))+'|'+str(np.max(month_id)))
-#                pointers.session.add(file_expt_copy)
-#        else:
-#            months_year=np.unique(month_axis[year_id])
-#            for month in months_year:
-#                month_id = year_id[np.where(month==month_axis[year_id])[0]]
-#                file_expt_copy = copy.deepcopy(file_expt)
-#                setattr(file_expt_copy,'time',str(year)+str(month).zfill(2))
-#                setattr(file_expt_copy,'path',file_expt.path+'|'+str(np.min(month_id))+'|'+str(np.max(month_id)))
-#                pointers.session.add(file_expt_copy)
-#        pointers.session.commit()
-#    return
-
 def obtain_time_list(diagnostic,project_drs,var_name,experiment,model):
     #Do this without fx variables:
     conditions=[
@@ -185,15 +145,27 @@ def optimset(database,options):
     intersection(database,options)
     #print json.dumps(database.pointers.tree,sort_keys=True, indent=4)
     
-    output=database.nc_Database.create_netcdf_container(database.header,options,'record_meta_data')
+    dataset=database.nc_Database.create_netcdf_container(database.header,options,'record_meta_data')
     database.nc_Database.close_database()
     del database.nc_Database
+    output=dataset.filepath()
+    dataset.close()
     return output
 
 def intersection(database,options):
     #This function finds the models that satisfy all the criteria
-    database.nc_Database.populate_database(database.Dataset,find_time)
+    database.nc_Database.populate_database(database.Dataset,options,find_time)
+    if options.ensemble!=None:
+        #Always include r0i0p0 when ensemble was sliced:
+        options_copy=copy.copy(options)
+        options_copy.ensemble='r0i0p0'
+        database.nc_Database.populate_database(database.Dataset,options_copy,find_time)
     database.Dataset.close()
+
+    #Slice:
+    #conditions=[ getattr(nc_Database.File_Expt,field)!=getattr(options,field) for field in database.drs.slicing_args 
+    #                                if (field in dir(options) and getattr(options,field)!=None)] 
+    #database.nc_Database.session.query(nc_Database.File_Expt).filter(sqlalchemy.or_(*conditions)).delete()
 
     #Step one: find all the institute / model tuples with all the requested variables
     #          for all months of all years for all experiments.
