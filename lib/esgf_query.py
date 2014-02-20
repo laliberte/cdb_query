@@ -3,8 +3,6 @@ import copy
 import warnings
 from pyesgf.search import SearchConnection
 
-from tree_utils import File_Expt
-
 import multiprocessing as mproc
 import retrieval_utils
 

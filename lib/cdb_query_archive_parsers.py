@@ -42,6 +42,7 @@ def generate_subparsers(parser,epilog,project_drs):
     #Optimset tree
     optimset(subparsers,epilog,project_drs)
     remote_retrieve(subparsers,epilog)
+    download(subparsers,epilog)
     return
 
 def discover(subparsers,epilog,project_drs):
@@ -139,12 +140,27 @@ def remote_retrieve(subparsers,epilog):
                                            epilog=epilog_optimset,
                                          )
     input_arguments(parser)
+    #parser.add_argument('out_destination',
+    #                         help='Destination directory for retrieval.')
+    output_arguments(parser)
+    parser.add_argument('--num_procs',
+                                 default=1, type=int,
+                                 help='Use num_procs processors to set up the retrieval.')
+    return
+
+def download(subparsers,epilog):
+    epilog_download=textwrap.dedent(epilog)
+    parser=subparsers.add_parser('download',
+                                           description=textwrap.dedent('Take as an input the results from \'optimset\' and downloads the data.'),
+                                           epilog=epilog_download,
+                                         )
+    input_arguments(parser)
     parser.add_argument('out_destination',
                              help='Destination directory for retrieval.')
-    parser.add_argument('--netcdf',default=False,action='store_true',
-                             help='If activated, the data is retrieved to a hierachical netCDF4 file.\n\
-                                   in this case, out_destination should point to a file.')
     return
+
+
+
 
 #def remote_retrieve(subparsers,epilog):
 #    #Find Optimset Months

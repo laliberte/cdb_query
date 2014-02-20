@@ -35,8 +35,11 @@ def discover(database,options):
         #List data_nodes:
         database.header['data_node_list']=database.nc_Database.list_data_nodes()
         dataset=database.nc_Database.create_netcdf_container(database.header,options,'record_paths')
+        #Remove data_nodes:
+        delattr(dataset,'data_node_list')
         output=dataset.filepath()
         dataset.close()
+
 
     database.nc_Database.close_database()
     del database.nc_Database
@@ -136,4 +139,20 @@ def remove_ensemble(simulation,project_drs):
     simulations_desc_indices_without_ensemble=range(0,len(project_drs.simulations_desc))
     simulations_desc_indices_without_ensemble.remove(project_drs.simulations_desc.index('ensemble'))
     return itemgetter(*simulations_desc_indices_without_ensemble)(simulation)
+
+def discover_simulations_recursive(database,options,simulations_desc):
+    if isinstance(simulations_desc,list) and len(simulations_desc)>1:
+        options.list_only_field=simulations_desc[0]
+        output=discover(database,options)
+        options.list_only_field=None
+        simulations_list=[]
+        for val in output:
+            setattr(options,simulations_desc[0],val)
+            simulations_list.extend([(val,)+item for item in discover_simulations_recursive(database,options,simulations_desc[1:])])
+            setattr(options,simulations_desc[0],None)
+    else:
+        options.list_only_field=simulations_desc[0]
+        simulations_list=[(item,) for item in discover(database,options)]
+        options.list_only_field=None
+    return simulations_list
 

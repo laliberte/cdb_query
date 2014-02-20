@@ -69,6 +69,8 @@ class nc_Database:
                             )
                          )
                       )
+    def list_paths_by_data_node(self,data_node):
+        return [ path[0] for path in self.list_subset((File_Expt.path,File_Expt.file_type)) if netcdf_utils.get_data_node(*path) == data_node]
 
     def list_paths(self):
         subset=tuple([File_Expt.path,File_Expt.file_type]+[getattr(File_Expt,item) for item in self.drs.official_drs])

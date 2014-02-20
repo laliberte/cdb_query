@@ -13,6 +13,8 @@ import sqlalchemy
 
 import numpy as np
 
+import timeit
+
 queryable_file_types=['HTTPServer','local_file']
 
 def find_time(pointers,file_expt):
@@ -141,6 +143,7 @@ def get_diag_months_list(diagnostic):
 def optimset(database,options):
     database.load_nc_file(options.in_diagnostic_netcdf_file)
 
+
     #Find the list of institute / model with all the months for all the years / experiments and variables requested:
     intersection(database,options)
     #print json.dumps(database.pointers.tree,sort_keys=True, indent=4)
@@ -161,6 +164,15 @@ def intersection(database,options):
         options_copy.ensemble='r0i0p0'
         database.nc_Database.populate_database(database.Dataset,options_copy,find_time)
     database.Dataset.close()
+
+    if not 'data_node_list' in database.header.keys():
+        #find the data node list by pinging urls:
+        data_node_list=database.nc_Database.list_data_nodes()
+        data_node_timing=[]
+        for data_node in data_node_list:
+            url=database.nc_Database.list_paths_by_data_node(data_node)[0].split('|')[0].replace('fileServer','dodsC')
+            data_node_timing.append(timeit.timeit('import netCDF4; dataset=netCDF4.Dataset(\''+url+'\',\'r\');dataset.close()',number=10))
+        database.header['data_node_list']=list(np.array(data_node_list)[np.argsort(data_node_timing)])
 
     #Slice:
     #conditions=[ getattr(nc_Database.File_Expt,field)!=getattr(options,field) for field in database.drs.slicing_args 

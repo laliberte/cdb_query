@@ -62,17 +62,17 @@ class SimpleTree:
                     pass
             else:
                 #Find the atomic simulations:
-                simulations_list=discover_simulations_recursive(self,options,self.drs.simulations_desc)
+                simulations_list=discover.discover_simulations_recursive(self,options,self.drs.simulations_desc)
 
                 output=distributed_recovery(discover.discover,self,options,simulations_list)
 
                 #Finally, find the list of data_nodes and record it in the header
-                self.nc_Database=nc_Database.nc_Database(self.drs)
-                self.nc_Database.populate_database(output,options,find_simple)
-                data_node_list=self.nc_Database.list_data_nodes()
-                self.nc_Database.close_database()
-                del self.nc_Database
-                output.setncattr('data_node_list', json.dumps(data_node_list))
+                #self.nc_Database=nc_Database.nc_Database(self.drs)
+                #self.nc_Database.populate_database(output,options,find_simple)
+                #data_node_list=self.nc_Database.list_data_nodes()
+                #self.nc_Database.close_database()
+                #del self.nc_Database
+                #output.setncattr('data_node_list', json.dumps(data_node_list))
 
                 #Close dataset
                 output.close()
@@ -119,45 +119,20 @@ class SimpleTree:
         self.nc_Database=nc_Database.nc_Database(self.drs)
         return
 
-def worker(function,database,options,queue):
-    queue.put(function(database,options))
+
+
+def worker(function,database,options,queue,*args):
+    queue.put(function(database,options,*args))
     return
 
-def record_to_file(output_root,output):
-    netcdf_utils.replicate_netcdf_file(output_root,output)
-    netcdf_utils.replicate_full_netcdf_recursive(output_root,output)
-    filepath=output.filepath()
-    output.close()
-    try:
-        os.remove(filepath)
-    except OSError:
-        pass
-    return
-
-def discover_simulations_recursive(database,options,simulations_desc):
-    if isinstance(simulations_desc,list) and len(simulations_desc)>1:
-        options.list_only_field=simulations_desc[0]
-        output=discover.discover(database,options)
-        options.list_only_field=None
-        simulations_list=[]
-        for val in output:
-            setattr(options,simulations_desc[0],val)
-            simulations_list.extend([(val,)+item for item in discover_simulations_recursive(database,options,simulations_desc[1:])])
-            setattr(options,simulations_desc[0],None)
-    else:
-        options.list_only_field=simulations_desc[0]
-        simulations_list=[(item,) for item in discover.discover(database,options)]
-        options.list_only_field=None
-    return simulations_list
-
-def distributed_recovery(function_handle,self,options,simulations_list):
+def distributed_recovery(function_handle,database,options,simulations_list,args=tuple()):
 
         #Open output file:
         output_file_name=options.out_diagnostic_netcdf_file
         output_root=netCDF4.Dataset(output_file_name,'w',format='NETCDF4')
 
         simulations_list_no_fx=[simulation for simulation in simulations_list if 
-                                    simulation[self.drs.simulations_desc.index('ensemble')]!='r0i0p0']
+                                    simulation[database.drs.simulations_desc.index('ensemble')]!='r0i0p0']
 
         from multiprocessing import Queue
         record_to_file_queue=Queue()
@@ -167,15 +142,15 @@ def distributed_recovery(function_handle,self,options,simulations_list):
         #Perform the discovery simulation per simulation:
         for simulation_id,simulation in enumerate(simulations_list_no_fx):
             options_copy=copy.copy(options)
-            for desc_id, desc in enumerate(self.drs.simulations_desc):
+            for desc_id, desc in enumerate(database.drs.simulations_desc):
                 setattr(options_copy,desc,simulation[desc_id])
-            Process(target=worker, args=(function_handle,copy.copy(self),options_copy,record_to_file_queue)).start()
+            Process(target=worker, args=(function_handle,copy.copy(database),options_copy,record_to_file_queue)+args).start()
             if simulation_id>options.num_procs:
-                record_to_file(output_root,netCDF4.Dataset(record_to_file_queue.get(),'r'))
+                netcdf_utils.record_to_file(output_root,netCDF4.Dataset(record_to_file_queue.get(),'r'))
 
         #Record the output to single file:
         for simulation_id in range(options.num_procs+1):
-            record_to_file(output_root,netCDF4.Dataset(record_to_file_queue.get(),'r'))
+            netcdf_utils.record_to_file(output_root,netCDF4.Dataset(record_to_file_queue.get(),'r'))
 
         return output_root
         

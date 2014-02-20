@@ -17,16 +17,9 @@ import io_tools
 import json
 
 import retrieval_utils
-from itertools import groupby, count
 
-def md5_for_file(f, block_size=2**20):
-    md5 = hashlib.md5()
-    while True:
-        data = f.read(block_size)
-        if not data:
-            break
-        md5.update(data)
-    return md5.hexdigest()
+import indices_utils
+
 
 def get_year_axis(path_name):
     try:
@@ -89,7 +82,7 @@ def replicate_full_netcdf_recursive(output,data):
                 output_grp=output.groups[group]
             for att in data.groups[group].ncattrs():
                 if not att in output_grp.ncattrs():
-                    output_grp.setncattr(att,getattr(data.groups[group],att))
+                    output_grp.setncattr(att,data.groups[group].getncattr(att))
             replicate_full_netcdf_recursive(output_grp,data.groups[group])
     else:
         for var in data.variables.keys():
@@ -99,10 +92,10 @@ def replicate_full_netcdf_recursive(output,data):
     
 def replicate_netcdf_file(output,data):
     for att in data.ncattrs():
-        att_val=getattr(data,att)
+        att_val=data.getncattr(att)
         if 'encode' in dir(att_val):
             att_val=att_val.encode('ascii','replace')
-        setattr(output,att,att_val)
+        output.setncattr(att,att_val)
     return output
 
 def replicate_netcdf_var_dimensions(output,data,var):
@@ -144,11 +137,11 @@ def replicate_netcdf_var(output,data,var,datatype=None,fill_value=None,add_dim=N
 
 def replicate_netcdf_var_att(output,data,var):
     for att in data.variables[var].ncattrs():
-        att_val=getattr(data.variables[var],att)
+        att_val=data.variables[var].getncattr(att)
         if att[0]!='_':
             if 'encode' in dir(att_val):
                 att_val=att_val.encode('ascii','replace')
-            setattr(output.variables[var],att,att_val)
+            output.variables[var].setncattr(att,att_val)
     return output
 
 def recover_time(file):
@@ -405,30 +398,10 @@ def retrieve_fx(output,paths_list,var):
             output.setncattr(att,path[att])
     output.setncattr('path',path['path'].split('|')[0])
     output.setncattr('checksum',path['path'].split('|')[1])
-    remote_data=open_remote_netCDF(path['path'].split('|')[0].replace('fileServer','dodsC'))
+    remote_data=retrieval_utils.open_remote_netCDF(path['path'].split('|')[0].replace('fileServer','dodsC'))
     replicate_netcdf_var(output,remote_data,var)
     output.variables[var][:]=remote_data.variables[var][:]
     return
-
-def open_remote_netCDF(url):
-    try:
-        return netCDF4.Dataset(url)
-    except:
-        error=' '.join('''
-The url {0} could not be opened. 
-Copy and paste this url in a browser and try downloading the file.
-If it works, you can stop the download and retry using cdb_query. If
-it still does not work it is likely that your certificates are either
-not available or out of date.
-        '''.splitlines())
-        raise dodsError(error.format(url.replace('dodsC','fileServer')))
-        
-
-class dodsError(Exception):
-     def __init__(self, value):
-         self.value = value
-     def __str__(self):
-         return repr(self.value)
 
 def order_paths_by_preference(source_files,header,sorts_list,id_list):
     #FIND ORDERING:
@@ -477,7 +450,6 @@ def define_queues(data_node_list):
     from multiprocessing import Queue
     queues={data_node : Queue() for data_node in data_node_list}
     queues['end']= Queue()
-    queues['num_files']=0
     return queues
 
 def worker(input, output):
@@ -487,27 +459,42 @@ def worker(input, output):
 
 def retrieve_data(options,project_drs):
     from multiprocessing import Process, current_process
+
+    #Recover the database meta data:
     database=cdb_query_archive_class.SimpleTree(options,project_drs)
     database.load_nc_file(options.in_diagnostic_netcdf_file)
     database.nc_Database.populate_database(database.Dataset,options,cdb_query_archive_class.find_simple)
+    database.Dataset.close()
 
+    #Find data node list:
     data_node_list=database.nc_Database.list_data_nodes()
     queues=define_queues(data_node_list)
 
     #First step: Define the queues:
     if not options.netcdf:
-        paths_list=database.nc_Database.list_paths(options)
+        #paths_list=database.nc_Database.list_paths(options)
+        paths_list=database.nc_Database.list_paths()
         for path in paths_list:
-            queues[get_data_node(*path[:2])].put((retrieve_path,)+path+(options,))
+            queues[get_data_node(*path[:2])].put((retrieval_utils.retrieve_path,)+path+(options,))
     else:
-        data=netCDF4.Dataset(options.in_diagnostic_netcdf_file,'r')
-        output=netCDF4.Dataset(options.out_destination,'w')
-        descend_tree_recursive(options,data,output,[],queues)
+        if options.num_procs==1:
+            output=netCDF4.Dataset(options.out_diagnostic_netcdf_file,'w')
+            data=netCDF4.Dataset(options.in_diagnostic_netcdf_file,'r')
+            descend_tree_recursive(options,data,output,[],queues)
+            data.close()
+        else:
+            #Find simulations list:
+            simulations_list=database.nc_Database.list_fields(database.drs.simulations_desc)
+            #Distributed analysis:
+            output=cdb_query_archive_class.distributed_recovery(descend_tree,database,options,simulations_list,args=(queues,))
         output.sync()
-        data.close()
+    database.nc_Database.close_database()
+    del database.nc_Database
 
     #Second step: Process the queues:
+    num_files=0
     for data_node in data_node_list:
+        num_files+=queues[data_node].qsize()
         Process(target=worker, args=(queues[data_node], queues['end'])).start()
     for data_node in data_node_list:
         queues[data_node].put('STOP')
@@ -519,7 +506,7 @@ def retrieve_data(options,project_drs):
         for path in paths_list:
             print '\t', queues['end'].get()
     else:
-        for i in range(queues['num_files']):
+        for i in range(num_files):
             #print i, queues['num_files']
             assign_tree(output,*queues['end'].get())
             output.sync()
@@ -535,19 +522,33 @@ def assign_tree(output,val,sort_table,tree):
         output.variables[tree[0]][sort_table]=val
     return
 
+def descend_tree(database,options,queues):
+    data=netCDF4.Dataset(options.in_diagnostic_netcdf_file,'r')
+    output_file_name=options.out_diagnostic_netcdf_file
+    output=netCDF4.Dataset(output_file_name+'.pid'+str(os.getpid()),'w',format='NETCDF4',diskless=True,persist=True)
+    descend_tree_recursive(options,data,output,[],queues)
+    filepath=output.filepath()
+    output.close()
+    data.close()
+    return filepath
+
 def descend_tree_recursive(options,data,output,tree,queues):
     if len(data.groups.keys())>0:
         for group in data.groups.keys():
-            if not group in output.groups.keys():
-                output_grp=output.createGroup(group)
-            else:
-                output_grp=output.groups[group]
-            for att in data.groups[group].ncattrs():
-                if not att in output_grp.ncattrs():
-                    output_grp.setncattr(att,getattr(data.groups[group],att))
-            tree_copy=copy.copy(tree)
-            tree_copy.append(group)
-            descend_tree_recursive(options,data.groups[group],output_grp,tree_copy,queues)
+            level_name=data.groups[group].getncattr('level_name')
+            if ((not level_name in dir(options)) or 
+                (getattr(options,level_name)==None) or 
+                (getattr(options,level_name)==group)): 
+                if not group in output.groups.keys():
+                    output_grp=output.createGroup(group)
+                else:
+                    output_grp=output.groups[group]
+                for att in data.groups[group].ncattrs():
+                    if not att in output_grp.ncattrs():
+                        output_grp.setncattr(att,getattr(data.groups[group],att))
+                tree_copy=copy.copy(tree)
+                tree_copy.append(group)
+                descend_tree_recursive(options,data.groups[group],output_grp,tree_copy,queues)
     else:
         if 'time' in data.dimensions.keys():
             retrieve_remote_vars(options,data,output,tree,queues)
@@ -558,7 +559,6 @@ def descend_tree_recursive(options,data,output,tree,queues):
                 output_fx.variables[var][:]=data.variables[var][:]
             output_fx.sync()
     return 
-
             
 def retrieve_remote_vars(options,data,output,tree,queues):
     if not 'time' in output.dimensions.keys():
@@ -584,21 +584,20 @@ def retrieve_remote_vars(options,data,output,tree,queues):
         file_type_list=data.variables['file_type'][:]
         
         #Get attributes from variable to retrieve:
-        remote_data=open_remote_netCDF(paths_list[unique_paths_list_id[0]].replace('fileServer','dodsC'))
+        remote_data=retrieval_utils.open_remote_netCDF(paths_list[unique_paths_list_id[0]].replace('fileServer','dodsC'))
         output=replicate_netcdf_var(output,remote_data,var_to_retrieve,chunksize=-1)
         source_dimensions=dict()
         for dim in data.variables[var_to_retrieve].getncattr('cdb_query_dimensions').split(','):
             if dim != 'time':
                 source_dimensions[dim]=remote_data.variables[dim][:]
-                source_dimensions[dim]=get_indices_from_dim( source_dimensions[dim],output.variables[dim][:])
-                if len(convert_indices_to_slices(source_dimensions[dim]))==1:
-                    source_dimensions[dim]=convert_indices_to_slices(source_dimensions[dim])[0]
+                source_dimensions[dim]=indices_utils.get_indices_from_dim( source_dimensions[dim],output.variables[dim][:])
+                if len(indices_utils.convert_indices_to_slices(source_dimensions[dim]))==1:
+                    source_dimensions[dim]=indices_utils.convert_indices_to_slices(source_dimensions[dim])[0]
         remote_data.close()
 
         for path_id in unique_paths_list_id:
             path=paths_list[path_id]
-            queues['num_files']+=1
-            queues[get_data_node(path,file_type_list[path_id])].put((retrieve_path_data,path,
+            queues[get_data_node(path,file_type_list[path_id])].put((retrieval_utils.retrieve_path_data,path,
                                                                      sorted_soft_link[sorted_soft_link[:,0]==path_id,1],
                                                                      var_to_retrieve,
                                                                      source_dimensions,
@@ -607,79 +606,14 @@ def retrieve_remote_vars(options,data,output,tree,queues):
             #print path, sorted_soft_link[sorted_soft_link[:,0]==path_id,1], copy.copy(tree)+[var_to_retrieve]
     return 
 
-def get_indices_from_dim(source,output):
-    #This function finds which indices from source should be used and in which order:
-    indices=np.arange(max(source.shape))[np.in1d(source,output)]
-    return np.array([ indices[source[indices]==val][0] for val in output ])
-
-def retrieve_path_data(in_tuple,pointer_var):
-    path=in_tuple[0].replace('fileServer','dodsC')
-    indices=in_tuple[1]
-    var=in_tuple[2]
-    other_indices=in_tuple[3]
-
-    sort_table=in_tuple[4]
-    #pointer_var=in_tuple[5]
-
-    remote_data=open_remote_netCDF(path)
-    if len(indices)==1:
-        retrieved_data=add_axis(grab_remote_indices(remote_data.variables[var],indices,other_indices))
-    else:
-        retrieved_data=grab_remote_indices(remote_data.variables[var],indices,other_indices)
-    remote_data.close()
-    return (retrieved_data, sort_table,pointer_var)
-
-
-def add_axis(array):
-    return np.reshape(array,(1,)+array.shape)
-
-def grab_remote_indices(variable,indices,other_indices):
     
-    indices_sort=np.argsort(indices)
-    other_slices=tuple([other_indices[dim] for dim in variable.dimensions if dim!='time'])
-    #return variable.__getitem__((indices[indices_sort],)+other_slices)[np.argsort(indices_sort),...]
-    return np.concatenate(map(lambda x: variable.__getitem__((x,)+other_slices),
-                                convert_indices_to_slices(indices[indices_sort])
-                             ),axis=0
-                             )[np.argsort(indices_sort),...]
-
-def convert_indices_to_slices(indices):
-    slices = []
-    for key, it in groupby(enumerate(indices), lambda x: x[1] - x[0]):
-        indices = [y for x, y in it]
-        slices.append(slice(indices[0], indices[-1]+1))
-        #if len(indices) == 1:
-        #    slices.append(slice(indices[0],indices[0]+1))
-        #else:
-        #    slices.append(slice(indices[0], indices[-1]+1))
-    return slices
-
-def retrieve_path(path,options):
-    decomposition=path[0].split('|')
-    if not (isinstance(decomposition,list) and len(decomposition)>1):
-        return
-
-    root_path=decomposition[0]
-    dest_name=options.out_destination+'/'+'/'.join(path[2:])+'/'+root_path.split('/')[-1]
+def record_to_file(output_root,output):
+    replicate_netcdf_file(output_root,output)
+    replicate_full_netcdf_recursive(output_root,output)
+    filepath=output.filepath()
+    output.close()
     try:
-        md5sum=md5_for_file(open(dest_name,'r'))
-    except:
-        md5sum=''
-    if md5sum==decomposition[1]:
-        return 'File '+dest_name+' found. MD5 OK! Not retrieving.'
-
-    size_string=retrieval_utils.download_secure(root_path,dest_name)
-    try:
-        md5sum=md5_for_file(open(dest_name,'r'))
-    except:
-        md5sum=''
-    if md5sum!=decomposition[1]:
-        try:
-            os.remove(dest_name)
-        except:
-            pass
-        return size_string+'\n'+'File '+dest_name+' does not have the same MD5 checksum as published on the ESGF. Removing this file...'
-    else:
-        return size_string+'\n'+'Checking MD5 checksum of retrieved file... MD5 OK!'
-    
-
+        os.remove(filepath)
+    except OSError:
+        pass
+    return

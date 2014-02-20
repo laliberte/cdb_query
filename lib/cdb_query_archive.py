@@ -11,9 +11,6 @@ import remote_archive
 #import database_utils
 import io_tools
 
-import tree_utils
-from tree_utils import File_Expt
-
 import cdb_query_archive_parsers
 import cdb_query_archive_class
 
@@ -60,6 +57,10 @@ def main(project):
 
     #Load pointer file:
     if options.command=='remote_retrieve':
+        options.netcdf=True
+        netcdf_utils.retrieve_data(options,project_drs)
+    elif options.command=='download':
+        options.netcdf=False
         netcdf_utils.retrieve_data(options,project_drs)
     elif 'in_diagnostic_headers_file' in dir(options):
         paths_dict=cdb_query_archive_class.SimpleTree(options,project_drs)
