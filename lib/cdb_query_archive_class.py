@@ -4,7 +4,7 @@ import optimset
 import netCDF4
 
 import nc_Database
-import netcdf_utils
+import netcdf_soft_links
 
 import copy
 import os
@@ -146,11 +146,11 @@ def distributed_recovery(function_handle,database,options,simulations_list,args=
                 setattr(options_copy,desc,simulation[desc_id])
             Process(target=worker, args=(function_handle,copy.copy(database),options_copy,record_to_file_queue)+args).start()
             if simulation_id>options.num_procs:
-                netcdf_utils.record_to_file(output_root,netCDF4.Dataset(record_to_file_queue.get(),'r'))
+                netcdf_soft_links.record_to_file(output_root,netCDF4.Dataset(record_to_file_queue.get(),'r'))
 
         #Record the output to single file:
         for simulation_id in range(options.num_procs+1):
-            netcdf_utils.record_to_file(output_root,netCDF4.Dataset(record_to_file_queue.get(),'r'))
+            netcdf_soft_links.record_to_file(output_root,netCDF4.Dataset(record_to_file_queue.get(),'r'))
 
         return output_root
         

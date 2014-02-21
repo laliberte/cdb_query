@@ -14,7 +14,7 @@ import io_tools
 import cdb_query_archive_parsers
 import cdb_query_archive_class
 
-import netcdf_utils
+import netcdf_soft_links
 
 def main_CMIP5():
     main('CMIP5')
@@ -58,10 +58,10 @@ def main(project):
     #Load pointer file:
     if options.command=='remote_retrieve':
         options.netcdf=True
-        netcdf_utils.retrieve_data(options,project_drs)
+        netcdf_soft_links.retrieve_data(options,project_drs)
     elif options.command=='download':
         options.netcdf=False
-        netcdf_utils.retrieve_data(options,project_drs)
+        netcdf_soft_links.retrieve_data(options,project_drs)
     elif 'in_diagnostic_headers_file' in dir(options):
         paths_dict=cdb_query_archive_class.SimpleTree(options,project_drs)
         #Run the command:

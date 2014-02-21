@@ -146,6 +146,12 @@ def remote_retrieve(subparsers,epilog):
     parser.add_argument('--num_procs',
                                  default=1, type=int,
                                  help='Use num_procs processors to set up the retrieval.')
+    parser.add_argument('--year',
+                                 default=None, type=int,
+                                 help='Retrieve only this year.')
+    parser.add_argument('--month',
+                                 default=None, type=int,
+                                 help='Retrieve only this month (1 to 12).')
     return
 
 def download(subparsers,epilog):

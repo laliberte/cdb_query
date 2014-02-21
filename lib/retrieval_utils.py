@@ -125,18 +125,19 @@ def retrieve_path(path,options):
 
 def retrieve_path_data(in_tuple,pointer_var):
     path=in_tuple[0].replace('fileServer','dodsC')
-    indices=in_tuple[1]
-    var=in_tuple[2]
-    other_indices=in_tuple[3]
+    var=in_tuple[1]
+    indices=in_tuple[2]
+    unsort_indices=in_tuple[3]
 
     sort_table=in_tuple[4]
     #pointer_var=in_tuple[5]
 
     remote_data=open_remote_netCDF(path)
-    if len(indices)==1:
-        retrieved_data=add_axis(grab_remote_indices(remote_data.variables[var],indices,other_indices))
-    else:
-        retrieved_data=grab_remote_indices(remote_data.variables[var],indices,other_indices)
+    retrieved_data=grab_remote_indices(remote_data.variables[var],indices,unsort_indices)
+    #if len(indices)==1:
+    #    retrieved_data=add_axis(grab_remote_indices(remote_data.variables[var],indices,other_indices))
+    #else:
+    #    retrieved_data=grab_remote_indices(remote_data.variables[var],indices,other_indices)
     remote_data.close()
     return (retrieved_data, sort_table,pointer_var)
 
@@ -160,15 +161,25 @@ class dodsError(Exception):
      def __str__(self):
          return repr(self.value)
 
-def add_axis(array):
-    return np.reshape(array,(1,)+array.shape)
+#def add_axis(array,axis_id):
+#    return np.reshape(array,(1,)+array.shape)
 
-def grab_remote_indices(variable,indices,other_indices):
-    
-    indices_sort=np.argsort(indices)
-    other_slices=tuple([other_indices[dim] for dim in variable.dimensions if dim!='time'])
-    #return variable.__getitem__((indices[indices_sort],)+other_slices)[np.argsort(indices_sort),...]
-    return np.concatenate(map(lambda x: variable.__getitem__((x,)+other_slices),
-                                indices_utils.convert_indices_to_slices(indices[indices_sort])
-                             ),axis=0
-                             )[np.argsort(indices_sort),...]
+def grab_remote_indices(variable,indices,unsort_indices):
+    dimensions=variable.dimensions
+    return retrieve_slice(variable,indices,unsort_indices,dimensions[0],dimensions[1:],0)
+
+def retrieve_slice(variable,indices,unsort_indices,dim,dimensions,dim_id,getitem_tuple=tuple()):
+    if len(dimensions)>0:
+        return np.take(np.concatenate(map(lambda x: retrieve_slice(variable,
+                                                 indices,
+                                                 unsort_indices,
+                                                 dimensions[0],
+                                                 dimensions[1:],
+                                                 dim_id+1,
+                                                 getitem_tuple=getitem_tuple+(x,)),
+                                                 indices[dim]),
+                              axis=dim_id),unsort_indices[dim],axis=dim_id)
+    else:
+        return np.take(np.concatenate(map(lambda x: variable.__getitem__(getitem_tuple+(x,)),
+                                                 indices[dim]),
+                              axis=dim_id),unsort_indices[dim],axis=dim_id)

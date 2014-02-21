@@ -171,7 +171,8 @@ def intersection(database,options):
         data_node_timing=[]
         for data_node in data_node_list:
             url=database.nc_Database.list_paths_by_data_node(data_node)[0].split('|')[0].replace('fileServer','dodsC')
-            data_node_timing.append(timeit.timeit('import netCDF4; dataset=netCDF4.Dataset(\''+url+'\',\'r\');dataset.close()',number=10))
+            #data_node_timing.append(timeit.timeit('import netCDF4; dataset=netCDF4.Dataset(\''+url+'\',\'r\');dataset.close()',number=10))
+            data_node_timing.append(timeit.timeit('import cdb_query.retrieval_utils; dataset=cdb_query.retrieval_utils.open_remote_netCDF(\''+url+'\');dataset.close()',number=10))
         database.header['data_node_list']=list(np.array(data_node_list)[np.argsort(data_node_timing)])
 
     #Slice:

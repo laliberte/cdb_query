@@ -5,6 +5,7 @@ import json
 import os
 
 import netcdf_utils
+import netcdf_soft_links
 import netCDF4
 
 import copy
@@ -98,14 +99,14 @@ class nc_Database:
             time_frequency=tree[drs_list.index('time_frequency')]
             experiment=tree[drs_list.index('experiment')]
             var=tree[drs_list.index('var')]
-            output=netcdf_utils.create_tree(output_root,zip(drs_list,tree))
+            output=create_tree(output_root,zip(drs_list,tree))
             conditions=[ getattr(File_Expt,level)==value for level,value in zip(drs_list,tree)]
             out_tuples=[ getattr(File_Expt,level) for level in drs_to_remove]
             #Find list of paths:
             paths_list=[{drs_name:path[drs_id] for drs_id, drs_name in enumerate(drs_to_remove)} for path in self.session.query(*out_tuples
                                     ).filter(sqlalchemy.and_(*conditions)).distinct().all()]
             #Record data:
-            getattr(netcdf_utils,record_function_handle)(header,output,paths_list,var,time_frequency,experiment)
+            getattr(netcdf_soft_links,record_function_handle)(header,output,paths_list,var,time_frequency,experiment)
             #Remove recorded data from database:
             self.session.query(*out_tuples).filter(sqlalchemy.and_(*conditions)).delete()
 
@@ -128,7 +129,18 @@ class nc_Database:
 #####################################################################
 
 def populate_database_recursive(nc_Database,nc_Dataset,options,find_function):
-    if len(nc_Dataset.groups.keys())>0:
+    if 'soft_links' in nc_Dataset.groups.keys():
+        soft_links=nc_Dataset.groups['soft_links']
+        paths=soft_links.variables['path'][:]
+        for path_id, path in enumerate(paths):
+            id_list=['file_type','search']
+            for id in id_list:
+                setattr(nc_Database.file_expt,id,soft_links.variables[id][path_id])
+            setattr(nc_Database.file_expt,'path','|'.join([soft_links.variables['path'][path_id],
+                                                   soft_links.variables['checksum'][path_id]]))
+            setattr(nc_Database.file_expt,'version','v'+str(soft_links.variables['version'][path_id]))
+            find_function(nc_Database,copy.deepcopy(nc_Database.file_expt))
+    elif len(nc_Dataset.groups.keys())>0:
         for group in nc_Dataset.groups.keys():
             level_name=nc_Dataset.groups[group].getncattr('level_name')
             if ((not level_name in dir(options)) or 
@@ -136,27 +148,27 @@ def populate_database_recursive(nc_Database,nc_Dataset,options,find_function):
                 (getattr(options,level_name)==group)): 
                 setattr(nc_Database.file_expt,nc_Dataset.groups[group].getncattr('level_name'),group)
                 populate_database_recursive(nc_Database,nc_Dataset.groups[group],options,find_function)
-    else:
-        if 'path' in nc_Dataset.variables.keys():
-            paths=nc_Dataset.variables['path'][:]
-            for path_id, path in enumerate(paths):
-                id_list=['file_type','search']
-                for id in id_list:
-                    setattr(nc_Database.file_expt,id,nc_Dataset.variables[id][path_id])
-                setattr(nc_Database.file_expt,'path','|'.join([nc_Dataset.variables['path'][path_id],
-                                                       nc_Dataset.variables['checksum'][path_id]]))
-                setattr(nc_Database.file_expt,'version','v'+str(nc_Dataset.variables['version'][path_id]))
-                find_function(nc_Database,copy.deepcopy(nc_Database.file_expt))
-        elif 'path' in nc_Dataset.ncattrs():
-            #for fx variables:
-            id_list=['file_type','search']
-            for id in id_list:
-                setattr(nc_Database.file_expt,id,nc_Dataset.getncattr(id))
-            setattr(nc_Database.file_expt,'path','|'.join([nc_Dataset.getncattr('path'),
-                                                   nc_Dataset.getncattr('checksum')]))
-            setattr(nc_Database.file_expt,'version',str(nc_Dataset.getncattr('version')))
-            find_function(nc_Database,copy.deepcopy(nc_Database.file_expt))
+    elif 'path' in nc_Dataset.ncattrs():
+        #for fx variables:
+        id_list=['file_type','search']
+        for id in id_list:
+            setattr(nc_Database.file_expt,id,nc_Dataset.getncattr(id))
+        setattr(nc_Database.file_expt,'path','|'.join([nc_Dataset.getncattr('path'),
+                                               nc_Dataset.getncattr('checksum')]))
+        setattr(nc_Database.file_expt,'version',str(nc_Dataset.getncattr('version')))
+        find_function(nc_Database,copy.deepcopy(nc_Database.file_expt))
     return
+
+def create_tree(output_top,tree):
+    level_name=tree[0][1]
+    if not level_name in output_top.groups.keys(): 
+        output=output_top.createGroup(level_name)
+        output.level_name=tree[0][0]
+    else:
+        output=output_top.groups[level_name]
+    if len(tree)>1:
+        output=create_tree(output,tree[1:])
+    return output
 
 
 class File_Expt(object):
