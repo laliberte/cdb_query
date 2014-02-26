@@ -219,7 +219,7 @@ def apply_to_variable(database,options):
             os.remove(file)
     except OSError:
         pass
-    return temp_output_file_name, var
+    return (temp_output_file_name, var)
 
 def replace_netcdf_variable_recursive(output,data,level_desc,tree):
     level_name=level_desc[0]
@@ -286,7 +286,9 @@ def distributed_apply(function_handle,database,options,vars_list,args=tuple()):
             result=pool.map_async(worker,args_list,chunksize=1)
             #Record files to main file:
             for arg in args_list:
-                temp_file_name, var=queue.get()
+                description=queue.get()
+                temp_file_name=description[0]
+                var=description[1]
                 data=netCDF4.Dataset(temp_file_name,'r')
                 tree=zip(database.drs.official_drs_no_version,var)
                 replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:])

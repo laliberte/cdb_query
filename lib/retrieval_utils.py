@@ -177,32 +177,6 @@ def retrieve_path_data(in_tuple,pointer_var):
     return (retrieved_data, sort_table,pointer_var)
 
 
-def open_remote_netCDF(url):
-    try:
-        return netCDF4.Dataset(url)
-    except:
-        error=' '.join('''
-The url {0} could not be opened. 
-Copy and paste this url in a browser and try downloading the file.
-If it works, you can stop the download and retry using cdb_query. If
-it still does not work it is likely that your certificates are either
-not available or out of date.
-        '''.splitlines())
-        raise dodsError(error.format(url.replace('dodsC','fileServer')))
-
-def test_remote_netCDF(url):
-    data = open_remote_netCDF(url)
-    try:
-        dataset.cose()
-    except:
-        pass
-    return
-
-class dodsError(Exception):
-     def __init__(self, value):
-         self.value = value
-     def __str__(self):
-         return repr(self.value)
 
 #def add_axis(array,axis_id):
 #    return np.reshape(array,(1,)+array.shape)
