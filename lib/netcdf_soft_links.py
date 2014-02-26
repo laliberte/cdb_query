@@ -543,7 +543,7 @@ def retrieve_remote_vars(options,data,output,queues):
                 #Get the file tree:
                 tree=data.path.split('/')[1:]+[var_to_retrieve]
                 args = (path,var_to_retrieve,dimensions,unsort_dimensions,np.argsort(sorting_paths)[sorted_paths_link==path_id],tree)
-                queues[get_data_node(path,file_type)].put((retrieval_utils.retrieve_path_data,)+copy.copy(args))
+                queues[get_data_node(path,file_type)].put((retrieval_utils.retrieve_path_data,)+copy.deepcopy(args))
     return 
 
     
