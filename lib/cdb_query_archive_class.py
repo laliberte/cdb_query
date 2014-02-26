@@ -71,14 +71,6 @@ class SimpleTree:
 
                 output=distributed_recovery(discover.discover,self,options,simulations_list)
 
-                #Finally, find the list of data_nodes and record it in the header
-                #self.nc_Database=nc_Database.nc_Database(self.drs)
-                #self.nc_Database.populate_database(output,options,find_simple)
-                #data_node_list=self.nc_Database.list_data_nodes()
-                #self.nc_Database.close_database()
-                #del self.nc_Database
-                #output.setncattr('data_node_list', json.dumps(data_node_list))
-
                 #Close dataset
                 output.close()
         return

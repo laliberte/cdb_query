@@ -90,11 +90,7 @@ class nc_Database:
         trees_list=self.list_subset([getattr(File_Expt,level) for level in drs_list])
 
         #Create output:
-        output_file_name=options.out_diagnostic_netcdf_file
-        output_root=netCDF4.Dataset(output_file_name+'.pid'+str(os.getpid()),'w',format='NETCDF4',diskless=True,persist=True)
-        self.record_header(header,output_root)
-        #output_root=netCDF4.Dataset(output_file_name+'.pid'+str(os.getpid()),'w',format='NETCDF4',diskless=True)
-        #output_root=netCDF4.Dataset(output_file_name,'w',format='NETCDF4')
+        netcdf_pointers=netcdf_soft_links.netCDF_pointers(header,options,[])
         
         for tree in trees_list:
             time_frequency=tree[drs_list.index('time_frequency')]
@@ -107,13 +103,13 @@ class nc_Database:
                                     ).filter(sqlalchemy.and_(*conditions)).distinct().all()]
 
             #Record data:
-            output=create_tree(output_root,zip(drs_list,tree))
-            getattr(netcdf_soft_links,record_function_handle)(header,output,paths_list,var,time_frequency,experiment)
+            print tree, record_function_handle
+            getattr(netcdf_pointers,record_function_handle)(tree,paths_list,var,time_frequency,experiment)
 
             #Remove recorded data from database:
             self.session.query(*out_tuples).filter(sqlalchemy.and_(*conditions)).delete()
 
-        return output_root
+        return netcdf_pointers.output_root
 
     def record_header(self,header,output):
         #output_hdr=output.createGroup('headers')

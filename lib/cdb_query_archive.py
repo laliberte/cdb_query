@@ -9,12 +9,11 @@ import copy
 import remote_archive
 
 #import database_utils
-import io_tools
 
 import cdb_query_archive_parsers
 import cdb_query_archive_class
 
-import netcdf_soft_links
+import retrieve_netcdf_soft_links
 import netcdf_utils
 
 def main_CMIP5():
@@ -59,10 +58,10 @@ def main(project):
     #Load pointer file:
     if options.command=='remote_retrieve':
         options.netcdf=True
-        netcdf_soft_links.retrieve_data(options,project_drs)
+        retrieve_netcdf_soft_links.retrieve_data(options,project_drs)
     elif options.command=='download':
         options.netcdf=False
-        netcdf_soft_links.retrieve_data(options,project_drs)
+        retrieve_netcdf_soft_links.retrieve_data(options,project_drs)
     elif options.command=='apply':
         netcdf_utils.apply(options,project_drs)
     elif 'in_diagnostic_headers_file' in dir(options):

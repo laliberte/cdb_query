@@ -12,7 +12,6 @@ import copy
 import os
 
 import cdb_query_archive_class
-import io_tools
 
 import json
 
