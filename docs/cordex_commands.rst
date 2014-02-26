@@ -53,3 +53,20 @@ its location (either local or remote) and store it in a local netCDF4 file.
     This command requires ESGF credentials to function properly.
 
 .. command-output:: cdb_query_CORDEX remote_retrieve --help
+
+`download`
+^^^^^^^^^^
+This command reads the output from `optimset` and retrieves the data from
+its location (either local or remote) and store it in a local file.
+
+.. warning::
+    This command requires ESGF credentials to function properly.
+
+.. command-output:: cdb_query_CORDEX download --help
+
+`apply`
+^^^^^^^
+This command reads the output from `remote_retrieve` and applies a command-line
+operator. This is a glorified for-loop.
+
+.. command-output:: cdb_query_CORDEX apply --help

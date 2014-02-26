@@ -12,9 +12,11 @@ The standard workflow for both packages is similar:
    Its output is used by the "optimset" command.
 2. The `optimset` command refines the "discover" step to check on full availability of 
    specified data over the specified date information. Its output feeds is used by the `remote_retrieve` command.
-3. The `remote_retrieve` command then produces the final list of paths that enables 
-   retrieving of data from simple scripts using either wget or OpenDAP protocols.
-4. The user executes either a wget or OpenDAP based retrieval. The output data is structured in a 
-   way that can be accessed by subsequent `discover` and other commands.
+3. The `remote_retrieve` or `download` commands then retrieves the data using the OPeNDAP protocol
+   or a wget command, respectively. 
+4. The data retrieved from `download` is structured in a way that can be accessed by subsequent `discover` and
+   other commands.
+5. The data retrieved from `remote_retrieve` keep the same structure as `optimset`. It can then be processed
+   using the command `apply`.
 
 The source code for this project is available on github: https://github.com/laliberte/cdb_query
