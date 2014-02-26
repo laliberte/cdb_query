@@ -41,8 +41,9 @@ def generate_subparsers(parser,epilog,project_drs):
 
     #Optimset tree
     optimset(subparsers,epilog,project_drs)
-    remote_retrieve(subparsers,epilog)
-    download(subparsers,epilog)
+    remote_retrieve(subparsers,epilog,project_drs)
+    download(subparsers,epilog,project_drs)
+    apply(subparsers,epilog,project_drs)
     return
 
 def discover(subparsers,epilog,project_drs):
@@ -108,12 +109,14 @@ def optimset(subparsers,epilog,project_drs):
                                          certificates have not been installed on this machine.'),
                                    epilog=epilog_optimset,
                                  )
-    input_arguments(parser)
-    output_arguments(parser)
     slicing_arguments(parser,project_drs)
     parser.add_argument('--num_procs',
                                  default=1, type=int,
                                  help='Use num_procs processors to query the archive.')
+    input_arguments(parser)
+    output_arguments(parser)
+    #parser.add_argument('--data_nodes',default=None,type=(lambda x: x.split(',')),
+    #                             help='Ordered list of data nodes to be used.')
     return
 
 #def netcdf_paths(subparsers,epilog):
@@ -132,7 +135,7 @@ def optimset(subparsers,epilog,project_drs):
 #    slicing_arguments(parser)
 #    return
 
-def remote_retrieve(subparsers,epilog):
+def remote_retrieve(subparsers,epilog,project_drs):
     epilog_optimset=textwrap.dedent(epilog)
     parser=subparsers.add_parser('remote_retrieve',
                                            description=textwrap.dedent('Take as an input the results from \'optimset\' and returns a\n\
@@ -143,18 +146,20 @@ def remote_retrieve(subparsers,epilog):
     #parser.add_argument('out_destination',
     #                         help='Destination directory for retrieval.')
     output_arguments(parser)
-    parser.add_argument('--num_procs',
-                                 default=1, type=int,
-                                 help='Use num_procs processors to set up the retrieval.')
+    #parser.add_argument('--num_procs',
+    #                             default=1, type=int,
+    #                             help='Use num_procs processors to set up the retrieval.')
+    parser.add_argument('--source_dir',default=None,help='local cache of data retrieved using \'download\'')
     parser.add_argument('--year',
                                  default=None, type=int,
                                  help='Retrieve only this year.')
     parser.add_argument('--month',
                                  default=None, type=int,
                                  help='Retrieve only this month (1 to 12).')
+    slicing_arguments(parser,project_drs)
     return
 
-def download(subparsers,epilog):
+def download(subparsers,epilog,project_drs):
     epilog_download=textwrap.dedent(epilog)
     parser=subparsers.add_parser('download',
                                            description=textwrap.dedent('Take as an input the results from \'optimset\' and downloads the data.'),
@@ -163,39 +168,25 @@ def download(subparsers,epilog):
     input_arguments(parser)
     parser.add_argument('out_destination',
                              help='Destination directory for retrieval.')
+    slicing_arguments(parser,project_drs)
     return
 
-
-
-
-#def remote_retrieve(subparsers,epilog):
-#    #Find Optimset Months
-#    epilog_optimset=textwrap.dedent(epilog)
-#    parser=subparsers.add_parser('remote_retrieve',
-#                                           description=textwrap.dedent('Take as an input the results from \'netcdf_pathst\' and returns a\n\
-#                                                 netcdf file.'),
-#                                           epilog=epilog_optimset,
-#                                         )
-#    slicing_list=['institute','model','experiment','time_frequency','realm','mip','rip','var']
-#    for arg in slicing_list:
-#        parser.add_argument(arg,type=project_drs.slicing_args[arg][0],help=project_drs.slicing_args[arg][1])
-#
-#    parser.add_argument('--cdo',default=False,action='store_true',help='Output cdo command for retrieval')
-#    parser.add_argument('--nco',default=False,action='store_true',help='Output nco command for retrieval')
-#    parser.add_argument('--list_data_nodes',default=False,action='store_true',help='List all the data_nodes that house the remote source')
-#    parser.add_argument('--data_node',type=str,help='The requested data_node')
-#
-#    parser.add_argument('timestamp', type=timestamps,
-#                                 help='Comma-separated lis of time stamps in ISO format YYYYmmDDTHH:MM:SS')
-#    parser.add_argument('in_diagnostic_netcdf_file',
-#                                 help='Diagnostic paths file structured as a netcdf file (input)')
-#    #parser.add_argument('out_netcdf_file',
-#    #                             help='Retrieved data as a netcdf file (output)')
-#    return
-#
-#def timestamps(ts):
-#    try:
-#        timestamp_list=map(lambda x: datetime.datetime.strptime(x, "%Y-%m-%dT%H:%M:%S" ), ts.split(','))
-#        return timestamp_list
-#    except:
-#        raise argparse.ArgumentTypeError("Timestamps must be ISO YYYY-mm-DDTHH:MM:SS")
+def apply(subparsers,epilog,project_drs):
+    epilog_apply=textwrap.dedent(epilog)
+    parser=subparsers.add_parser('apply',
+                                           description=textwrap.dedent('Take as an input retrieved data and apply bash script'),
+                                           epilog=epilog_apply
+                                         )
+    parser.add_argument('--num_procs',
+                                 default=1, type=int,
+                                 help='Use num_procs processors to perform the computation.')
+    slicing_arguments(parser,project_drs)
+    parser.add_argument('-s','--script',default='',help="Command-line script")
+    parser.add_argument('in_diagnostic_netcdf_file',
+                                 help='NETCDF retrieved files (input).')
+    parser.add_argument('in_extra_netcdf_files',nargs='*',
+                                 help='NETCDF extra retrieved files (input).')
+    parser.add_argument('out_netcdf_file',
+                                 help='NETCDF file (output)')
+    return
+    

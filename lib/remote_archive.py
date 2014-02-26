@@ -1,3 +1,4 @@
+import copy
 
 class DRS:
     def __init__(self,project):
@@ -25,6 +26,8 @@ class DRS:
               'var',
               'version'
               ]
+        self.official_drs_no_version=copy.copy(self.official_drs)
+        self.official_drs_no_version.remove('version')
         self.base_drs=self.official_drs+[
                   'search',
                   'file_type',
@@ -70,6 +73,8 @@ class DRS:
         self.var_specs=['time_frequency','realm','cmor_table']
 
         self.official_drs=['institute','model','experiment','time_frequency','realm','cmor_table','ensemble','version','var']
+        self.official_drs_no_version=copy.copy(self.official_drs)
+        self.official_drs_no_version.remove('version')
 
         self.header_desc=['search_list','file_type_list','months_list','data_node_list','experiment_list','variable_list']
         self.base_drs=self.official_drs+[

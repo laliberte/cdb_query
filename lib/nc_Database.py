@@ -157,6 +157,12 @@ def populate_database_recursive(nc_Database,nc_Dataset,options,find_function):
                                                nc_Dataset.getncattr('checksum')]))
         setattr(nc_Database.file_expt,'version',str(nc_Dataset.getncattr('version')))
         find_function(nc_Database,copy.deepcopy(nc_Database.file_expt))
+    else:
+        #for retrieved datasets:
+        id_list=['file_type','search','path','version']
+        for id in id_list:
+            setattr(nc_Database.file_expt,id,'')
+        find_function(nc_Database,copy.deepcopy(nc_Database.file_expt))
     return
 
 def create_tree(output_top,tree):

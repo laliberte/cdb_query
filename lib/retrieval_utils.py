@@ -9,6 +9,8 @@ import indices_utils
 
 import numpy as np
 
+import hashlib
+
 class HTTPSClientAuthHandler(urllib2.HTTPSHandler):
     def __init__(self, key, cert):
         urllib2.HTTPSHandler.__init__(self)
@@ -102,7 +104,7 @@ def retrieve_path(path,options):
 
     root_path=decomposition[0]
     dest_name=options.out_destination+'/'+'/'.join(path[2:])+'/'+root_path.split('/')[-1]
-    try:
+    try: 
         md5sum=md5_for_file(open(dest_name,'r'))
     except:
         md5sum=''
@@ -110,7 +112,7 @@ def retrieve_path(path,options):
         return 'File '+dest_name+' found. MD5 OK! Not retrieving.'
 
     size_string=download_secure(root_path,dest_name)
-    try:
+    try: 
         md5sum=md5_for_file(open(dest_name,'r'))
     except:
         md5sum=''
@@ -123,6 +125,34 @@ def retrieve_path(path,options):
     else:
         return size_string+'\n'+'Checking MD5 checksum of retrieved file... MD5 OK!'
 
+def find_local_file(options,data):
+    paths_list=data.variables['path'][:]
+    version_list=data.variables['version'][:]
+    checksum_list=data.variables['checksum'][:]
+    file_type_list=data.variables['file_type'][:]
+    #THIS IS NOT DRS-SAFE:
+    tree='/'.join(data.path.split('/')[1:-2])
+    var=data.path.split('/')[-2]
+    unique_paths_list=list(np.unique([options.source_dir+'/'+tree+'/v'+str(version)+'/'+var+'/'+path.split('/')[-1] for path, version in zip(paths_list,version_list)]))
+    unique_checksum_list=[]
+    for path in unique_paths_list:
+        try:
+            md5sum=md5_for_file(open(path,'r'))
+        except:
+            md5sum=''
+        unique_checksum_list.append(md5sum)
+    new_paths_list=[]
+    new_file_type_list=[]
+    for path_id,path in enumerate(paths_list):
+        local_path=options.source_dir+'/'+tree+'/v'+str(version_list[path_id])+'/'+var+'/'+path.split('/')[-1]
+        if unique_checksum_list[unique_paths_list.index(local_path)]==checksum_list[path_id]:
+            new_paths_list.append(local_path)
+            new_file_type_list.append('local_file')
+        else:
+            new_paths_list.append(path)
+            new_file_type_list.append(file_type_list[path_id])
+    return new_paths_list, new_file_type_list
+
 def retrieve_path_data(in_tuple,pointer_var):
     path=in_tuple[0].replace('fileServer','dodsC')
     var=in_tuple[1]
@@ -131,8 +161,13 @@ def retrieve_path_data(in_tuple,pointer_var):
 
     sort_table=in_tuple[4]
     #pointer_var=in_tuple[5]
-
     remote_data=open_remote_netCDF(path)
+    for dim in remote_data.variables[var].dimensions:
+        if dim != 'time':
+            indices[dim], unsort_indices[dim] = indices_utils.prepare_indices(
+                                                            indices_utils.get_indices_from_dim(remote_data.variables[dim][:],
+                                                                            indices[dim]))
+        
     retrieved_data=grab_remote_indices(remote_data.variables[var],indices,unsort_indices)
     #if len(indices)==1:
     #    retrieved_data=add_axis(grab_remote_indices(remote_data.variables[var],indices,other_indices))
@@ -140,6 +175,7 @@ def retrieve_path_data(in_tuple,pointer_var):
     #    retrieved_data=grab_remote_indices(remote_data.variables[var],indices,other_indices)
     remote_data.close()
     return (retrieved_data, sort_table,pointer_var)
+
 
 def open_remote_netCDF(url):
     try:
@@ -153,7 +189,14 @@ it still does not work it is likely that your certificates are either
 not available or out of date.
         '''.splitlines())
         raise dodsError(error.format(url.replace('dodsC','fileServer')))
-        
+
+def test_remote_netCDF(url):
+    data = open_remote_netCDF(url)
+    try:
+        dataset.cose()
+    except:
+        pass
+    return
 
 class dodsError(Exception):
      def __init__(self, value):

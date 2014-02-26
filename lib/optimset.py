@@ -13,7 +13,6 @@ import sqlalchemy
 
 import numpy as np
 
-import timeit
 
 queryable_file_types=['HTTPServer','local_file']
 
@@ -140,45 +139,21 @@ def get_diag_months_list(diagnostic):
         diag_months_list=range(1,13)
     return diag_months_list
 
+
 def optimset(database,options):
-    database.load_nc_file(options.in_diagnostic_netcdf_file)
-
-
+    database.load_database(options,find_time)
     #Find the list of institute / model with all the months for all the years / experiments and variables requested:
     intersection(database,options)
     #print json.dumps(database.pointers.tree,sort_keys=True, indent=4)
     
     dataset=database.nc_Database.create_netcdf_container(database.header,options,'record_meta_data')
-    database.nc_Database.close_database()
-    del database.nc_Database
+    database.close_database()
     output=dataset.filepath()
     dataset.close()
     return output
 
 def intersection(database,options):
     #This function finds the models that satisfy all the criteria
-    database.nc_Database.populate_database(database.Dataset,options,find_time)
-    if options.ensemble!=None:
-        #Always include r0i0p0 when ensemble was sliced:
-        options_copy=copy.copy(options)
-        options_copy.ensemble='r0i0p0'
-        database.nc_Database.populate_database(database.Dataset,options_copy,find_time)
-    database.Dataset.close()
-
-    if not 'data_node_list' in database.header.keys():
-        #find the data node list by pinging urls:
-        data_node_list=database.nc_Database.list_data_nodes()
-        data_node_timing=[]
-        for data_node in data_node_list:
-            url=database.nc_Database.list_paths_by_data_node(data_node)[0].split('|')[0].replace('fileServer','dodsC')
-            #data_node_timing.append(timeit.timeit('import netCDF4; dataset=netCDF4.Dataset(\''+url+'\',\'r\');dataset.close()',number=10))
-            data_node_timing.append(timeit.timeit('import cdb_query.retrieval_utils; dataset=cdb_query.retrieval_utils.open_remote_netCDF(\''+url+'\');dataset.close()',number=10))
-        database.header['data_node_list']=list(np.array(data_node_list)[np.argsort(data_node_timing)])
-
-    #Slice:
-    #conditions=[ getattr(nc_Database.File_Expt,field)!=getattr(options,field) for field in database.drs.slicing_args 
-    #                                if (field in dir(options) and getattr(options,field)!=None)] 
-    #database.nc_Database.session.query(nc_Database.File_Expt).filter(sqlalchemy.or_(*conditions)).delete()
 
     #Step one: find all the institute / model tuples with all the requested variables
     #          for all months of all years for all experiments.

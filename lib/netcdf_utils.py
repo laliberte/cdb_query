@@ -20,6 +20,9 @@ import retrieval_utils
 
 import indices_utils
 
+import multiprocessing
+import subprocess
+
 
 def get_year_axis(path_name):
     try:
@@ -73,12 +76,17 @@ def convert_to_date_absolute(absolute_time):
     seconds=int(math.floor(remainder))
     return datetime.datetime(year,month,day,hour,minute,seconds)
 
+#def replicate_full_netcdf_recursive(output,data,options=None):
 def replicate_full_netcdf_recursive(output,data):
     for var in data.variables.keys():
         replicate_netcdf_var(output,data,var)
         output.variables[var][:]=data.variables[var][:]
     if len(data.groups.keys())>0:
         for group in data.groups.keys():
+            #if (options==None or
+            #    (not data.groups[group].getncattr('level_name') in dir(options)) or 
+            #    (getattr(options,data.groups[group].getncattr('level_name'))==None) or 
+            #    (getattr(options,data.groups[group].getncattr('level_name'))==group)): 
             if not group in output.groups.keys():
                 output_grp=output.createGroup(group)
             else:
@@ -87,10 +95,6 @@ def replicate_full_netcdf_recursive(output,data):
                 if not att in output_grp.ncattrs():
                     output_grp.setncattr(att,data.groups[group].getncattr(att))
             replicate_full_netcdf_recursive(output_grp,data.groups[group])
-    #else:
-    #    for var in data.variables.keys():
-    #        replicate_netcdf_var(output,data,var)
-    #        output.variables[var][:]=data.variables[var][:]
     return
     
 def replicate_netcdf_file(output,data):
@@ -169,3 +173,144 @@ def netcdf_calendar(data):
         calendar='standard'
     return calendar
 
+def apply(options,project_drs):
+    if options.script=='': return
+    #Recover the database meta data:
+    database=cdb_query_archive_class.SimpleTree(options,project_drs)
+    database.load_header(options)
+    database.load_database(options,cdb_query_archive_class.find_simple)
+
+    vars_list=database.nc_Database.list_fields(database.drs.official_drs_no_version)
+    database.close_database()
+
+    output_root=distributed_apply(apply_to_variable,database,options,vars_list)
+    output_root.close()
+    return
+
+def apply_to_variable(database,options):
+    input_file_name=options.in_diagnostic_netcdf_file
+    files_list=[input_file_name,]+options.in_extra_netcdf_files
+
+    temp_files_list=[]
+    for file in files_list:
+        data=netCDF4.Dataset(file,'r')
+        temp_file=file+'.pid'+str(os.getpid())
+        output_tmp=netCDF4.Dataset(temp_file,'w',format='NETCDF4',diskless=True,persist=True)
+        extract_netcdf_variable_recursive(output_tmp,data,options)
+        temp_files_list.append(temp_file)
+        output_tmp.close()
+        data.close()
+
+    script_to_call=options.script
+    for file_id, file in enumerate(temp_files_list):
+        if not '{'+str(file_id)+'}' in options.script:
+            script_to_call+=' {'+str(file_id)+'}'
+
+    output_file_name=options.out_netcdf_file+'.pid'+str(os.getpid())
+    temp_output_file_name= output_file_name+'.tmp'
+    script_to_call+=' '+temp_output_file_name
+
+    var=[getattr(options,opt) for opt in database.drs.official_drs_no_version]
+    print '/'.join(var)
+    out=subprocess.call(script_to_call.format(*temp_files_list),shell=True)
+
+    try:
+        for file in temp_files_list:
+            os.remove(file)
+    except OSError:
+        pass
+    return temp_output_file_name, var
+
+def replace_netcdf_variable_recursive(output,data,level_desc,tree):
+    level_name=level_desc[0]
+    group_name=level_desc[1]
+    if not level_desc[1] in output.groups.keys():
+        output_grp=output.createGroup(group_name)
+    else:
+        output_grp=output.groups[group_name]
+    if 'level_name' not in output_grp.ncattrs():
+        output_grp.setncattr('level_name',level_name)
+
+    if len(tree)>0:
+        replace_netcdf_variable_recursive(output_grp,data,tree[0],tree[1:])
+    else:
+        for att in data.ncattrs():
+            if not att in output_grp.ncattrs():
+                output_grp.setncattr(att,data.getncattr(att))
+        for var in data.variables.keys():
+            replicate_netcdf_var(output_grp,data,var)
+            output_grp.variables[var][:]=data.variables[var][:]
+    return
+        
+    
+
+def extract_netcdf_variable_recursive(output,data,options):
+    for var in data.variables.keys():
+        replicate_netcdf_var(output,data,var)
+        output.variables[var][:]=data.variables[var][:]
+    if len(data.groups.keys())>0:
+        for group in data.groups.keys():
+            if (
+                (not data.groups[group].getncattr('level_name') in dir(options)) or 
+                (getattr(options,data.groups[group].getncattr('level_name'))==None) or 
+                (getattr(options,data.groups[group].getncattr('level_name'))==group)): 
+                for att in data.groups[group].ncattrs():
+                    if ( not att in output.ncattrs() and att!='level_name'):
+                        output.setncattr(att,data.groups[group].getncattr(att))
+                extract_netcdf_variable_recursive(output,data.groups[group],options)
+    return
+
+def worker(tuple):
+    return tuple[-1].put(tuple[0](*tuple[1:-1]))
+    
+def distributed_apply(function_handle,database,options,vars_list,args=tuple()):
+
+        #Open output file:
+        output_file_name=options.out_netcdf_file
+        output_root=netCDF4.Dataset(output_file_name,'w',format='NETCDF4')
+
+        manager=multiprocessing.Manager()
+        queue=manager.Queue()
+        #Set up the discovery var per var:
+        args_list=[]
+        for var_id,var in enumerate(vars_list):
+            options_copy=copy.copy(options)
+            for opt_id, opt in enumerate(database.drs.official_drs_no_version):
+                setattr(options_copy,opt,var[opt_id])
+            args_list.append((function_handle,copy.copy(database),options_copy)+args+(queue,))
+        
+        #Span up to options.num_procs processes and each child process analyzes only one simulation
+        if options.num_procs>1:
+            pool=multiprocessing.Pool(processes=options.num_procs,maxtasksperchild=1)
+            result=pool.map_async(worker,args_list,chunksize=1)
+            #Record files to main file:
+            for arg in args_list:
+                temp_file_name, var=queue.get()
+                data=netCDF4.Dataset(temp_file_name,'r')
+                tree=zip(database.drs.official_drs_no_version,var)
+                replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:])
+                data.close()
+                try:
+                    os.remove(temp_file_name)
+                except OSError:
+                    pass
+                output_root.sync()
+
+                pool.close()
+                pool.join()
+        else:
+            for arg in args_list:
+                worker(arg)
+                temp_file_name, var=queue.get()
+                data=netCDF4.Dataset(temp_file_name,'r')
+                tree=zip(database.drs.official_drs_no_version,var)
+                replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:])
+                data.close()
+                try:
+                    os.remove(temp_file_name)
+                except OSError:
+                    pass
+                output_root.sync()
+
+
+        return output_root

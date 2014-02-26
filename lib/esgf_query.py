@@ -45,13 +45,14 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
     if list_level!=None:
         return ctx.facet_counts[list_level].keys()
     else:
+        file_list_remote=[]
+        file_list_found=[]
         try:
             file_list_found=ctx.search(variable=var_name)
+            file_list_remote=map(lambda x: get_urls(nc_Database.drs,x,file_type_list,var_name),file_list_found)
+            file_list_remote=[item for sublist in file_list_remote for item in sublist]
         except:
             warnings.warn('Search path {0} is unresponsive at the moment'.format(search_path),UserWarning)
-            file_list_found=[]
-        file_list_remote=map(lambda x: get_urls(nc_Database.drs,x,file_type_list,var_name),file_list_found)
-        file_list_remote=[item for sublist in file_list_remote for item in sublist]
        
         map(lambda x: record_url(x,nc_Database),file_list_remote)
         return []
@@ -84,11 +85,18 @@ def get_urls(drs,result,file_type_list,var_name):
         #If remote file types were requested
         fil_ctx = result.file_context()
         try:
+            shard_name=fil_ctx.shards[0]
+        except:
+            shard_name=None
+        try:
             fil = fil_ctx.search(variable=var_name)
             for item in fil:
                 file_list_remote.extend(get_url_remote(item,file_type_list,drs))
         except:
-            warnings.warn('Shard {0} is unresponsive at the moment'.format(fil_ctx.shards[0]))
+            if shard_name==None:
+                 warnings.warn('An unknown shard is unresponsive at the moment'.format(shard_name))
+            else:
+                warnings.warn('Shard {0} is unresponsive at the moment'.format(shard_name))
         
     return file_list_remote
 

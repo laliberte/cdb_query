@@ -10,6 +10,11 @@ import copy
 import os
 
 import json
+import timeit
+
+import numpy as np
+
+import multiprocessing
 
 class SimpleTree:
     def __init__(self,options,project_drs):
@@ -79,6 +84,14 @@ class SimpleTree:
         return
 
     def optimset(self,options):
+        self.load_header(options)
+        #if options.data_nodes!=None:
+        #    self.header['data_node_list']=options.data_nodes
+
+        if not 'data_node_list' in self.header.keys():
+            self.header['data_node_list']=self.retrieve_and_rank_data_nodes(options)
+            #print self.header['data_node_list']
+
         if options.num_procs==1:
             filepath=optimset.optimset(self,options)
             try:
@@ -87,43 +100,90 @@ class SimpleTree:
                 pass
         else:
             #Find the atomic simulations:
-            simulations_list=self.list_fields_local(options.in_diagnostic_netcdf_file,options,self.drs.simulations_desc)
+            simulations_list=self.list_fields_local(options,self.drs.simulations_desc)
 
             output=distributed_recovery(optimset.optimset,self,options,simulations_list)
-            #Close dataset:
+            #Close datasets:
             output.close()
         return
 
+    def retrieve_and_rank_data_nodes(self,options):
+        #We have to time the response of the data node.
+        self.load_database(options,find_simple)
+        data_node_list=self.nc_Database.list_data_nodes()
+        data_node_timing=[]
+        data_node_list_timed=[]
+        for data_node in data_node_list:
+            url=self.nc_Database.list_paths_by_data_node(data_node)[0].split('|')[0].replace('fileServer','dodsC')
+            #Try opening a link on the data node. If it does not work do not use this data_node
+            number_of_trials=10
+            try:
+                timing=timeit.timeit('import cdb_query.retrieval_utils; cdb_query.retrieval_utils.test_remote_netCDF(\''+url+'\');',number=number_of_trials)
+                data_node_timing.append(timing)
+                data_node_list_timed.append(data_node)
+            except:
+                pass
+        self.close_database()
+        #print data_node_list
+        #print data_node_list_timed
+        #print data_node_timing
+        return list(np.array(data_node_list_timed)[np.argsort(data_node_timing)])+list(set(data_node_list).difference(data_node_list_timed))
+
     def list_fields(self,options):
         #slice with options:
-        fields_list=self.list_fields_local(options.in_diagnostic_netcdf_file,options,options.field)
+        fields_list=self.list_fields_local(options,options.field)
         for field in fields_list:
             print ','.join(field)
         return
 
-    def list_fields_local(self,netcdf4_file,options,fields_to_list):
-        self.load_nc_file(netcdf4_file)
-        self.nc_Database.populate_database(self.Dataset,options,find_simple)
-        self.Dataset.close()
+    def list_fields_local(self,options,fields_to_list):
+        self.load_database(options,find_simple)
         fields_list=self.nc_Database.list_fields(fields_to_list)
-        self.nc_Database.close_database()
-        del self.nc_Database
+        self.close_database()
         return fields_list
 
     def load_nc_file(self,netcdf4_file):
         self.Dataset=netCDF4.Dataset(netcdf4_file,'r')
+        return
+
+    def close_nc_file(self):
+        self.Dataset.close()
+        del self.Dataset
+        return
+
+    def load_header(self,options):
+        self.load_nc_file(options.in_diagnostic_netcdf_file)
         #Load header:
         self.header=dict()
         for att in set(self.drs.header_desc).intersection(self.Dataset.ncattrs()):
             self.header[att]=json.loads(self.Dataset.getncattr(att))
-        self.nc_Database=nc_Database.nc_Database(self.drs)
+        #self.nc_Database=nc_Database.nc_Database(self.drs)
+        self.close_nc_file()
         return
 
+    def load_database(self,options,find_function):
+        #if 'database_semaphore' in dir(self):
+        #    self.database_semaphore.acquire()
+        self.load_nc_file(options.in_diagnostic_netcdf_file)
+        self.nc_Database=nc_Database.nc_Database(self.drs)
+        self.nc_Database.populate_database(self.Dataset,options,find_function)
+        if 'ensemble' in dir(options) and options.ensemble!=None:
+            #Always include r0i0p0 when ensemble was sliced:
+            options_copy=copy.copy(options)
+            options_copy.ensemble='r0i0p0'
+            self.nc_Database.populate_database(self.Dataset,options_copy,find_function)
+        self.close_nc_file()
+        #if 'database_semaphore' in dir(self):
+        #    self.database_semaphore.release()
+        return
 
+    def close_database(self):
+        self.nc_Database.close_database()
+        del self.nc_Database
+        return
 
-def worker(function,database,options,queue,*args):
-    queue.put(function(database,options,*args))
-    return
+def worker(tuple):
+    return tuple[-1].put(tuple[0](*tuple[1:-1]))
 
 def distributed_recovery(function_handle,database,options,simulations_list,args=tuple()):
 
@@ -134,23 +194,25 @@ def distributed_recovery(function_handle,database,options,simulations_list,args=
         simulations_list_no_fx=[simulation for simulation in simulations_list if 
                                     simulation[database.drs.simulations_desc.index('ensemble')]!='r0i0p0']
 
-        from multiprocessing import Queue
-        record_to_file_queue=Queue()
-
-        from multiprocessing import Process, current_process
-
-        #Perform the discovery simulation per simulation:
+        manager=multiprocessing.Manager()
+        queue=manager.Queue()
+        #Set up the discovery simulation per simulation:
+        args_list=[]
         for simulation_id,simulation in enumerate(simulations_list_no_fx):
             options_copy=copy.copy(options)
             for desc_id, desc in enumerate(database.drs.simulations_desc):
                 setattr(options_copy,desc,simulation[desc_id])
-            Process(target=worker, args=(function_handle,copy.copy(database),options_copy,record_to_file_queue)+args).start()
-            if simulation_id>options.num_procs:
-                netcdf_soft_links.record_to_file(output_root,netCDF4.Dataset(record_to_file_queue.get(),'r'))
-
-        #Record the output to single file:
-        for simulation_id in range(options.num_procs+1):
-            netcdf_soft_links.record_to_file(output_root,netCDF4.Dataset(record_to_file_queue.get(),'r'))
+            args_list.append((function_handle,copy.copy(database),options_copy)+args+(queue,))
+        
+        #Span up to options.num_procs processes and each child process analyzes only one simulation
+        pool=multiprocessing.Pool(processes=options.num_procs,maxtasksperchild=1)
+        result=pool.map_async(worker,args_list,chunksize=1)
+        for arg in args_list:
+            filename=queue.get()
+            netcdf_soft_links.record_to_file(output_root,netCDF4.Dataset(filename,'r'))
+            output_root.sync()
+        pool.close()
+        pool.join()
 
         return output_root
         
