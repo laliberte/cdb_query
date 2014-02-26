@@ -1,3 +1,5 @@
+import netCDF4
+import numpy as np
 
 class remote_netCDF:
     def __init__(self,netcdf_file_name,semaphores):
@@ -52,3 +54,4 @@ class dodsError(Exception):
          self.value = value
      def __str__(self):
          return repr(self.value)
+

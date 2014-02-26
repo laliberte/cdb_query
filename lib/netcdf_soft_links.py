@@ -79,7 +79,7 @@ class netCDF_pointers:
         output.setncattr('path',path['path'].split('|')[0])
         output.setncattr('checksum',path['path'].split('|')[1])
 
-        dataset=remote_netcdf.remote_netCDF(path['path'].split('|')[0].replace('fileServer','dodsC'))
+        dataset=remote_netcdf.remote_netCDF(path['path'].split('|')[0].replace('fileServer','dodsC'),self.semaphores)
         dataset.open()
         remote_data=dataset.Dataset
         for var_name in remote_data.variables.keys():
@@ -166,9 +166,9 @@ class soft_links_netCDF:
         #sort and reverse order to get from most to least:
         return np.sort(paths_ordering,order=self.sorts_list)[::-1]
 
-    def recover_time(self,path):
+    def _recover_time(self,path):
         path_name=str(path['path']).replace('fileServer','dodsC').split('|')[0]
-        dataset=remote_netCDF(path,self.semaphores)
+        dataset=remote_netcdf.remote_netCDF(path_name,self.semaphores)
         time_axis=dataset.get_time()
         table_desc=[
                    ('paths','a255'),
@@ -182,20 +182,20 @@ class soft_links_netCDF:
     
     def obtain_table(self):
         self.time_axis, self.table= map(np.concatenate,
-                        zip(*map(recover_time,np.nditer(self.path_ordering))))
+                        zip(*map(self._recover_time,np.nditer(self.paths_ordering))))
         return
 
     def reduce_paths_ordering(self):
         #CREATE LOOK-UP TABLE:
         self.paths_indices=np.empty(self.time_axis.shape,dtype=np.uint32)
-        self.ime_indices=np.empty(self.time_axis.shape,dtype=np.uint32)
+        self.time_indices=np.empty(self.time_axis.shape,dtype=np.uint32)
 
         paths_list=[path for path in self.paths_ordering['path'] ]
         for path_id, path in enumerate(paths_list):
-            paths_indices[path.replace('fileServer','dodsC')==table['paths']]=path_id
+            self.paths_indices[path.replace('fileServer','dodsC')==self.table['paths']]=path_id
 
         #Remove paths that are not necessary over the requested time range:
-        paths_id_list=list(np.unique([np.min(paths_indices[time==self.time_axis])  for time_id, time in enumerate(self.time_axis_unique)]))
+        paths_id_list=list(np.unique([np.min(self.paths_indices[time==self.time_axis])  for time_id, time in enumerate(self.time_axis_unique)]))
         useful_file_name_list=[path.split('/')[-1] for path in self.paths_ordering['path'][paths_id_list] ]
         for file_id, file in enumerate(self.paths_ordering):
             if not file_id in paths_id_list:
@@ -207,7 +207,7 @@ class soft_links_netCDF:
         #Sort paths_ordering:
         self.paths_ordering=self.paths_ordering[np.sort(paths_id_list)]
         #Finally, set the path_id field to be following the indices in paths_ordering:
-        self.paths_ordering['path_id']=range(len(paths_ordering))
+        self.paths_ordering['path_id']=range(len(self.paths_ordering))
 
         #Recompute the indices to paths:
         paths_list=[path for path in self.paths_ordering['path'] ]
@@ -215,7 +215,7 @@ class soft_links_netCDF:
             self.paths_indices[path.replace('fileServer','dodsC')==self.table['paths']]=path_id
         return
 
-    def unique_time_axis(data,experiment):
+    def unique_time_axis(self,data,experiment):
         time_axis = netCDF4.date2num(self.time_axis,units=data.variables['time'].units,calendar=data.variables['time'].calendar)
         time_axis_unique = np.unique(time_axis)
 
@@ -262,7 +262,7 @@ class soft_links_netCDF:
         remote_data.close()
         return
 
-    def record_indices(self,output,var):
+    def record_indices(self,output,data,var):
         netcdf_utils.replicate_netcdf_var(output,data,var)
 
         for other_var in data.variables.keys():
