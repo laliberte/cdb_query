@@ -483,8 +483,6 @@ def retrieve_remote_vars(options,data,output,queues):
             output=netcdf_utils.replicate_netcdf_var(output,data,var)
             output.variables[var][:]=data.variables[var][:]
 
-    #Get the file tree:
-    tree=data.path.split('/')[1:]
 
     #Get list of paths:
     paths_list=data.groups['soft_links'].variables['path'][:]
@@ -542,14 +540,10 @@ def retrieve_remote_vars(options,data,output,queues):
             for time_chunk in range(num_time_chunk):
                 dimensions['time'], unsort_dimensions['time'] = indices_utils.prepare_indices(time_indices[time_chunk*max_time_steps:(time_chunk+1)*max_time_steps])
                 
-                queues[get_data_node(path,file_type)].put((retrieval_utils.retrieve_path_data,
-                                                                         path,
-                                                                         var_to_retrieve,
-                                                                         dimensions,
-                                                                         unsort_dimensions,
-                                                                         np.argsort(sorting_paths)[sorted_paths_link==path_id],
-                                                                         copy.copy(tree)+[var_to_retrieve]))
-                #print path, sorted_soft_link[sorted_soft_link[:,0]==path_id,1], copy.copy(tree)+[var_to_retrieve]
+                #Get the file tree:
+                tree=data.path.split('/')[1:]+[var_to_retrieve]
+                args = (path,var_to_retrieve,dimensions,unsort_dimensions,np.argsort(sorting_paths)[sorted_paths_link==path_id],tree)
+                queues[get_data_node(path,file_type)].put((retrieval_utils.retrieve_path_data,)+copy.copy(args))
     return 
 
     
