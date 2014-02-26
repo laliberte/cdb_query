@@ -92,6 +92,7 @@ class nc_Database:
         #Create output:
         output_file_name=options.out_diagnostic_netcdf_file
         output_root=netCDF4.Dataset(output_file_name+'.pid'+str(os.getpid()),'w',format='NETCDF4',diskless=True,persist=True)
+        self.record_header(header,output_root)
         #output_root=netCDF4.Dataset(output_file_name+'.pid'+str(os.getpid()),'w',format='NETCDF4',diskless=True)
         #output_root=netCDF4.Dataset(output_file_name,'w',format='NETCDF4')
         
@@ -99,18 +100,19 @@ class nc_Database:
             time_frequency=tree[drs_list.index('time_frequency')]
             experiment=tree[drs_list.index('experiment')]
             var=tree[drs_list.index('var')]
-            output=create_tree(output_root,zip(drs_list,tree))
             conditions=[ getattr(File_Expt,level)==value for level,value in zip(drs_list,tree)]
             out_tuples=[ getattr(File_Expt,level) for level in drs_to_remove]
             #Find list of paths:
             paths_list=[{drs_name:path[drs_id] for drs_id, drs_name in enumerate(drs_to_remove)} for path in self.session.query(*out_tuples
                                     ).filter(sqlalchemy.and_(*conditions)).distinct().all()]
+
             #Record data:
+            output=create_tree(output_root,zip(drs_list,tree))
             getattr(netcdf_soft_links,record_function_handle)(header,output,paths_list,var,time_frequency,experiment)
+
             #Remove recorded data from database:
             self.session.query(*out_tuples).filter(sqlalchemy.and_(*conditions)).delete()
 
-        self.record_header(header,output_root)
         return output_root
 
     def record_header(self,header,output):

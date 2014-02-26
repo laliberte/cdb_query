@@ -447,7 +447,7 @@ def descend_tree_recursive(options,data,output,queues):
                     output_grp=output.groups[group]
                 for att in data.groups[group].ncattrs():
                     if not att in output_grp.ncattrs():
-                        output_grp.setncattr(att,getncattr(data.groups[group],att))
+                        output_grp.setncattr(att,data.groups[group].getncattr(att))
                 descend_tree_recursive(options,data.groups[group],output_grp,queues)
     else:
         #Fixed variables. Do not retrieve, just copy:

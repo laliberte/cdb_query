@@ -239,7 +239,8 @@ def replace_netcdf_variable_recursive(output,data,level_desc,tree):
                 output_grp.setncattr(att,data.getncattr(att))
         for var in data.variables.keys():
             replicate_netcdf_var(output_grp,data,var)
-            output_grp.variables[var][:]=data.variables[var][:]
+            if np.min(data.variables[var].shape)>0:
+                output_grp.variables[var][:]=data.variables[var][:]
     return
         
     
