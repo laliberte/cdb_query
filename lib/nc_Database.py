@@ -4,7 +4,7 @@ import json
 
 import os
 
-import netcdf_utils
+import retrieval_utils
 import netcdf_soft_links
 import netCDF4
 
@@ -64,14 +64,14 @@ class nc_Database:
         return sorted(
                     list(
                         set(
-                            [netcdf_utils.get_data_node(*path) for 
+                            [retrieval_utils.get_data_node(*path) for 
                                 path in self.list_subset((File_Expt.path,File_Expt.file_type))
                               ]
                             )
                          )
                       )
     def list_paths_by_data_node(self,data_node):
-        return [ path[0] for path in self.list_subset((File_Expt.path,File_Expt.file_type)) if netcdf_utils.get_data_node(*path) == data_node]
+        return [ path[0] for path in self.list_subset((File_Expt.path,File_Expt.file_type)) if retrieval_utils.get_data_node(*path) == data_node]
 
     def list_paths(self):
         subset=tuple([File_Expt.path,File_Expt.file_type]+[getattr(File_Expt,item) for item in self.drs.official_drs])
@@ -103,8 +103,7 @@ class nc_Database:
                                     ).filter(sqlalchemy.and_(*conditions)).distinct().all()]
 
             #Record data:
-            print tree, record_function_handle
-            getattr(netcdf_pointers,record_function_handle)(tree,paths_list,var,time_frequency,experiment)
+            getattr(netcdf_pointers,record_function_handle)(zip(drs_list,tree),paths_list,var,time_frequency,experiment)
 
             #Remove recorded data from database:
             self.session.query(*out_tuples).filter(sqlalchemy.and_(*conditions)).delete()

@@ -157,14 +157,6 @@ def create_time_axis(output,data,time_axis):
     time[:]=time_axis
     return
 
-def get_data_node(path,file_type):
-    if file_type=='HTTPServer':
-        return '/'.join(path.split('/')[:3])
-    elif file_type=='local_file':
-        return '/'.join(path.split('/')[:2])
-    else:
-        return ''
-
 def netcdf_calendar(data):
     if 'calendar' in dir(data.variables['time']):
         calendar=data.variables['time'].calendar

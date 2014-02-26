@@ -19,6 +19,8 @@ import retrieval_utils
 
 import netcdf_utils
 
+import remote_netcdf
+
 import indices_utils
 
 import nc_Database
@@ -45,16 +47,14 @@ class netCDF_pointers:
     def create_tree(self,tree):
         return create_tree_recursive(self.output_root,tree)
 
-    def record_paths(tree,paths_list,var,time_frequency,experiment):
+    def record_paths(self,tree,paths_list,var,time_frequency,experiment):
         #First order source files by preference:
-        self.output_root.setncattr('test','allo')
-        self.output_root.sync()
-        #soft_links=soft_links_netCDF(self.header,self.semaphores,paths_list)
-        #output=self.create_tree(tree)
-        #soft_links.create(output)
+        soft_links=soft_links_netCDF(self.header,self.semaphores,paths_list)
+        output=self.create_tree(tree)
+        soft_links.create(output)
         return
 
-    def record_meta_data(tree,paths_list,var,time_frequency,experiment):
+    def record_meta_data(self,tree,paths_list,var,time_frequency,experiment):
         if not time_frequency in ['fx','clim']:
             #Retrieve time and meta:
             soft_links=soft_links_netCDF(self.header,self.semaphores,paths_list)
@@ -65,7 +65,7 @@ class netCDF_pointers:
             self.retrieve_fx(tree,paths_list,var)
         return
 
-    def retrieve_fx(tree,paths_list,var):
+    def retrieve_fx(self,tree,paths_list,var):
         #Create tree:
         output=self.create_tree(tree)
 
@@ -88,15 +88,15 @@ class netCDF_pointers:
         dataset.close()
         return
 
-def create_tree_recursive(output_root,tree):
+def create_tree_recursive(output_top,tree):
     level_name=tree[0][1]
-    if not level_name in output_root.groups.keys(): 
+    if not level_name in output_top.groups.keys(): 
         output=output_top.createGroup(level_name)
         output.level_name=tree[0][0]
     else:
-        output=output_root.groups[level_name]
+        output=output_top.groups[level_name]
     if len(tree)>1:
-        output=create_tree(output,tree[1:])
+        output=create_tree_recursive(output,tree[1:])
     return output
 
 def record_to_file(output_root,output):
@@ -116,7 +116,7 @@ class soft_links_netCDF:
         self.sorts_list=['version','file_type_id','data_node_id','path_id']
         self.id_list=['data_node','file_type','path','checksum','search']
         self.header=header
-        self.semaphores=sempaphores
+        self.semaphores=semaphores
         self.paths_list=paths_list
         self.paths_ordering=self.order_paths_by_preference()
         return
@@ -131,7 +131,7 @@ class soft_links_netCDF:
         output_grp.createDimension('path',len(self.paths_ordering))
         for id in ['version','path_id']:
             output_grp.createVariable(id,np.uint32,('path',))[:]=self.paths_ordering[id]
-        for id in id_list:
+        for id in self.id_list:
             temp=output_grp.createVariable(id,str,('path',))
             for file_id, file in enumerate(self.paths_ordering['path']):
                 temp[file_id]=str(self.paths_ordering[id][file_id])
@@ -152,7 +152,7 @@ class soft_links_netCDF:
             paths_ordering['search'][file_id]=file['search']
             paths_ordering['version'][file_id]=np.uint32(file['version'][1:])
             paths_ordering['file_type'][file_id]=file['file_type']
-            paths_ordering['data_node'][file_id]=get_data_node(file['path'],paths_ordering['file_type'][file_id])
+            paths_ordering['data_node'][file_id]=retrieval_utils.get_data_node(file['path'],paths_ordering['file_type'][file_id])
 
         #Sort paths from most desired to least desired:
         #First order desiredness for least to most:
