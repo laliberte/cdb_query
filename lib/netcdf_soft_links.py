@@ -10,7 +10,7 @@ import netcdf_utils
 
 import remote_netcdf
 
-import netcdf_soft_links
+import create_soft_links
 
 class netCDF_pointers:
     def __init__(self,out_netcdf_file,file_type_list,data_node_list,semaphores=[]):
@@ -33,14 +33,14 @@ class netCDF_pointers:
 
     def record_paths(self,tree,paths_list,var,years,months):
         #First order source files by preference:
-        soft_links=netcdf_soft_links.soft_links(paths_list,self.file_type_list,self.data_node_list,semaphores=self.semaphores)
+        soft_links=create_soft_links.soft_links(paths_list,self.file_type_list,self.data_node_list,semaphores=self.semaphores)
         output=self.create_tree(tree)
         soft_links.create(output)
         return
 
     def record_meta_data(self,tree,paths_list,var,years,months):
         #Retrieve time and meta:
-        soft_links=netcdf_soft_links.soft_links(paths_list,self.file_type_list,self.data_node_list,semaphores=self.semaphores)
+        soft_links=create_soft_links.soft_links(paths_list,self.file_type_list,self.data_node_list,semaphores=self.semaphores)
         output=self.create_tree(tree)
         soft_links.create_variable(output,var,years,months)
         return
