@@ -18,6 +18,7 @@ def find_path(nc_Database,file_expt):
     return
 
 def discover(database,options):
+    database.define_database(options)
     only_list=[]
 
     only_list.append(discover_database(database,options))
@@ -39,8 +40,7 @@ def discover(database,options):
         dataset.close()
 
 
-    database.nc_Database.close_database()
-    del database.nc_Database
+    database.close_database()
     return output
 
 def discover_database(database,options):

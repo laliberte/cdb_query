@@ -7,6 +7,7 @@ import os
 import retrieval_utils
 import netcdf_soft_links
 import netCDF4
+import netcdf_utils
 
 import copy
 
@@ -158,14 +159,14 @@ class nc_Database:
         return output_root
 
     def retrieve_database(self,options,output,queues):
-        self.load_file()
+        self.load_nc_file()
         descend_tree_recursive(options,self.Dataset,output,queues)
         if 'ensemble' in dir(options) and options.ensemble!=None:
             #Always include r0i0p0 when ensemble was sliced:
             options_copy=copy.copy(options)
             options_copy.ensemble='r0i0p0'
             descend_tree_recursive(options_copy,self.Dataset,output,queues)
-        self.close_file()
+        self.close_nc_file()
         return
 
 
@@ -230,7 +231,6 @@ def descend_tree_recursive(options,data,output,queues):
     if 'soft_links' in data.groups.keys():
         netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data,queues=queues)
         netcdf_pointers.retrieve(output,year=options.year,month=options.month,min_year=options.min_year,source_dir=options.source_dir)
-        retrieve_remote_vars(options,data,output,queues)
     elif len(data.groups.keys())>0:
         for group in data.groups.keys():
             level_name=data.groups[group].getncattr('level_name')

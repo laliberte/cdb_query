@@ -57,11 +57,11 @@ def main(project):
 
     #Load pointer file:
     if options.command=='remote_retrieve':
-        options.netcdf=True
-        retrieve_soft_links.retrieve_data(options,project_drs)
+        paths_dict=cdb_query_archive_class.SimpleTree(options,project_drs)
+        getattr(paths_dict,options.command)(options)
     elif options.command=='download':
-        options.netcdf=False
-        retrieve_soft_links.retrieve_data(options,project_drs)
+        paths_dict=cdb_query_archive_class.SimpleTree(options,project_drs)
+        getattr(paths_dict,options.command)(options)
     elif options.command=='apply':
         netcdf_utils.apply(options,project_drs)
     elif 'in_diagnostic_headers_file' in dir(options):

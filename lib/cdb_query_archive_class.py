@@ -16,14 +16,19 @@ import numpy as np
 
 import multiprocessing
 
+import random
+
+import retrieval_utils
+
+import datetime
+
+import netcdf_utils
+
+
 class SimpleTree:
     def __init__(self,options,project_drs):
 
         self.drs=project_drs
-        if 'in_diagnostic_netcdf_file' in dir(options):
-            self.nc_Database=nc_Database.nc_Database(self.drs,database_file=options.in_diagnostic_netcdf_file)
-        else:
-            self.nc_Database=nc_Database.nc_Database(self.drs)
         return
 
     def union_header(self):
@@ -80,7 +85,9 @@ class SimpleTree:
         return
 
     def optimset(self,options):
+        self.define_database(options)
         self.header=self.nc_Database.load_header()
+        self.close_database()
         #if options.data_nodes!=None:
         #    self.header['data_node_list']=options.data_nodes
 
@@ -104,7 +111,9 @@ class SimpleTree:
 
     def remote_retrieve(self,options):
         #Recover the database meta data:
+        self.define_database(options)
         self.header=self.nc_Database.load_header()
+        self.close_database()
 
         paths_list, data_node_list, queues = self.setup_remote_retrieve_and_download(options)
         #Check if years should be relative, eg for piControl:
@@ -117,14 +126,17 @@ class SimpleTree:
 
         #Create queues:
         output=netCDF4.Dataset(options.out_diagnostic_netcdf_file,'w')
-        database.nc_Database.retrieve_database(options,output,queues)
-        launch_download_and_remote_retrieve(data_node_list,queues,False)
-        output.sync()
+        self.define_database(options)
+        self.nc_Database.retrieve_database(options,output,queues)
+        self.close_database()
+        launch_download_and_remote_retrieve(output,data_node_list,queues,False)
         return
 
     def download(self,options):
         #Recover the database meta data:
+        self.define_database(options)
         self.header=self.nc_Database.load_header()
+        self.close_database()
 
         paths_list, data_node_list, queues = self.setup_remote_retrieve_and_download(options)
         #First find the unique paths:
@@ -136,8 +148,7 @@ class SimpleTree:
             if path[0].split('/')[-1] in unique_paths_list:
                 queues[retrieval_utils.get_data_node(*path[:2])].put((retrieval_utils.retrieve_path,)+path+(options,))
                 unique_paths_list.remove(path[0].split('/')[-1])
-        launch_download_and_remote_retrieve(data_node_list,queues,False)
-        output.sync()
+        launch_download_and_remote_retrieve([],data_node_list,queues,True)
         return
 
     def setup_remote_retrieve_and_download(self,options):
@@ -189,7 +200,15 @@ class SimpleTree:
         self.close_database()
         return fields_list
 
+    def define_database(self,options):
+        if 'in_diagnostic_netcdf_file' in dir(options):
+            self.nc_Database=nc_Database.nc_Database(self.drs,database_file=options.in_diagnostic_netcdf_file)
+        else:
+            self.nc_Database=nc_Database.nc_Database(self.drs)
+        return
+
     def load_database(self,options,find_function):
+        self.define_database(options)
         self.nc_Database.populate_database(options,find_function)
         if 'ensemble' in dir(options) and options.ensemble!=None:
             #Always include r0i0p0 when ensemble was sliced:
@@ -200,7 +219,7 @@ class SimpleTree:
 
     def close_database(self):
         self.nc_Database.close_database()
-        #del self.nc_Database
+        del self.nc_Database
         return
 
 
@@ -235,13 +254,16 @@ def distributed_recovery(function_handle,database,options,simulations_list,args=
 
     return output_root
 
+def worker_query(tuple):
+    return tuple[-1].put(tuple[0](*tuple[1:-1]))
+
 def worker_retrieve(input, output):
     for tuple in iter(input.get, 'STOP'):
         result = tuple[0](tuple[1:-1],tuple[-1])
         output.put(result)
     return
 
-def launch_download_and_remote_retrieve(data_node_list,queues,download_flag):
+def launch_download_and_remote_retrieve(output,data_node_list,queues,download_flag):
     #Second step: Process the queues:
     print datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     print('Retrieving from data nodes:')
@@ -252,7 +274,7 @@ def launch_download_and_remote_retrieve(data_node_list,queues,download_flag):
     processes=dict()
     for data_node in data_node_list:
         num_files+=queues[data_node].qsize()
-        processes[data_node]=Process(target=worker_retrieve, args=(queues[data_node], queues['end']))
+        processes[data_node]=multiprocessing.Process(target=worker_retrieve, args=(queues[data_node], queues['end']))
         queues[data_node].put('STOP')
         processes[data_node].start()
 
@@ -284,13 +306,12 @@ def find_simple(pointers,file_expt):
 
 def define_queues(options,data_node_list):
     #from multiprocessing import Manager
-    from multiprocessing import Queue
     #manager=Manager()
-    queues={data_node : Queue() for data_node in data_node_list}
+    queues={data_node : multiprocessing.Queue() for data_node in data_node_list}
     #sem=manager.Semaphore()
     #semaphores={data_node : manager.Semaphore() for data_node in data_node_list}
     #semaphores={data_node : sem for data_node in data_node_list}
-    queues['end']= Queue()
+    queues['end']= multiprocessing.Queue()
     if 'source_dir' in dir(options) and options.source_dir!=None:
-        queues[retrieval_utils.get_data_node(options.source_dir,'local_file')]=Queue()
+        queues[retrieval_utils.get_data_node(options.source_dir,'local_file')]=multiprocessing.Queue()
     return queues

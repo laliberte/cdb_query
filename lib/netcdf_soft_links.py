@@ -12,6 +12,12 @@ import remote_netcdf
 
 import create_soft_links
 
+import indices_utils
+
+import retrieval_utils
+
+import copy
+
 class create_netCDF_pointers:
     def __init__(self,file_type_list,data_node_list,semaphores=[]):
         self.file_type_list=file_type_list
@@ -73,7 +79,7 @@ class read_netCDF_pointers:
 
     def retrieve_time_axis(self,output,year=None,month=None,min_year=None):
         if not 'time' in output.dimensions.keys():
-            time_axis=self.data.variables['time'][:]
+            time_axis=self.data_root.variables['time'][:]
             time_restriction=np.ones(time_axis.shape,dtype=np.bool)
             if year!=None or month!=None:
                 date_axis=netcdf_utils.get_date_axis(self.data_root.variables['time'])
@@ -106,16 +112,16 @@ class read_netCDF_pointers:
 
         vars_to_retrieve=self.find_variables_to_retrieve(output)
         #Get list of paths:
-        paths_list=data.groups['soft_links'].variables['path'][:]
-        paths_id_list=data.groups['soft_links'].variables['path_id'][:]
-        file_type_list=data.groups['soft_links'].variables['file_type'][:]
+        paths_list=self.data_root.groups['soft_links'].variables['path'][:]
+        paths_id_list=self.data_root.groups['soft_links'].variables['path_id'][:]
+        file_type_list=self.data_root.groups['soft_links'].variables['file_type'][:]
         if source_dir!=None:
             #Check if the file has already been retrieved:
-            paths_list,file_type_list=retrieval_utils.find_local_file(source_dir,data.groups['soft_links'])
+            paths_list,file_type_list=retrieval_utils.find_local_file(source_dir,self.data_root.groups['soft_links'])
 
         for var_to_retrieve in vars_to_retrieve:
-            paths_link=data.groups['soft_links'].variables[var_to_retrieve][time_restriction,0]
-            indices_link=data.groups['soft_links'].variables[var_to_retrieve][time_restriction,1]
+            paths_link=self.data_root.groups['soft_links'].variables[var_to_retrieve][time_restriction,0]
+            indices_link=self.data_root.groups['soft_links'].variables[var_to_retrieve][time_restriction,1]
 
             #Convert paths_link to id in path dimension:
             paths_link=np.array([list(paths_id_list).index(path_id) for path_id in paths_link])
@@ -127,7 +133,7 @@ class read_netCDF_pointers:
             sorted_indices_link=indices_link[sorting_paths]
             
             #Replicate variable to output:
-            output=netcdf_utils.replicate_netcdf_var(output,data,var_to_retrieve,chunksize=-1)
+            output=netcdf_utils.replicate_netcdf_var(output,self.data_root,var_to_retrieve,chunksize=-1)
 
             dimensions=dict()
             unsort_dimensions=dict()
@@ -154,6 +160,6 @@ class read_netCDF_pointers:
                     #Get the file tree:
                     tree=self.data_root.path.split('/')[1:]+[var_to_retrieve]
                     args = (path,var_to_retrieve,dimensions,unsort_dimensions,np.argsort(sorting_paths)[sorted_paths_link==path_id],tree)
-                    queues[retrieval_utils.get_data_node(path,file_type)].put((retrieval_utils.retrieve_path_self.data_root,)+copy.deepcopy(args))
+                    self.queues[retrieval_utils.get_data_node(path,file_type)].put((retrieval_utils.retrieve_path_data,)+copy.deepcopy(args))
         return 
 
