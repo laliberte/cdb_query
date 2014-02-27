@@ -164,6 +164,13 @@ def netcdf_calendar(data):
         calendar='standard'
     return calendar
 
+def assign_tree(output,val,sort_table,tree):
+    if len(tree)>1:
+        assign_tree(output.groups[tree[0]],val,sort_table,tree[1:])
+    else:
+        output.variables[tree[0]][sort_table]=val
+    return
+
 def apply(options,project_drs):
     if options.script=='': return
     #Recover the database meta data:

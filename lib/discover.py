@@ -18,8 +18,6 @@ def find_path(nc_Database,file_expt):
     return
 
 def discover(database,options):
-    database.nc_Database=nc_Database.nc_Database(database.drs)
-
     only_list=[]
 
     only_list.append(discover_database(database,options))
@@ -34,7 +32,7 @@ def discover(database,options):
         intersection(database)
         #List data_nodes:
         database.header['data_node_list']=database.nc_Database.list_data_nodes()
-        dataset=database.nc_Database.create_netcdf_container(database.header,options,'record_paths')
+        dataset=database.nc_Database.write_database(database.header,options,'record_paths')
         #Remove data_nodes:
         delattr(dataset,'data_node_list')
         output=dataset.filepath()

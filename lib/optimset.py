@@ -146,7 +146,7 @@ def optimset(database,options):
     intersection(database,options)
     #print json.dumps(database.pointers.tree,sort_keys=True, indent=4)
     
-    dataset=database.nc_Database.create_netcdf_container(database.header,options,'record_meta_data')
+    dataset=database.nc_Database.write_database(database.header,options,'record_meta_data')
     database.close_database()
     output=dataset.filepath()
     dataset.close()

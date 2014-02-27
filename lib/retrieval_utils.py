@@ -125,7 +125,7 @@ def retrieve_path(path,options):
     else:
         return size_string+'\n'+'Checking MD5 checksum of retrieved file... MD5 OK!'
 
-def find_local_file(options,data):
+def find_local_file(source_dir,data):
     paths_list=data.variables['path'][:]
     version_list=data.variables['version'][:]
     checksum_list=data.variables['checksum'][:]
@@ -133,7 +133,7 @@ def find_local_file(options,data):
     #THIS IS NOT DRS-SAFE:
     tree='/'.join(data.path.split('/')[1:-2])
     var=data.path.split('/')[-2]
-    unique_paths_list=list(np.unique([options.source_dir+'/'+tree+'/v'+str(version)+'/'+var+'/'+path.split('/')[-1] for path, version in zip(paths_list,version_list)]))
+    unique_paths_list=list(np.unique([source_dir+'/'+tree+'/v'+str(version)+'/'+var+'/'+path.split('/')[-1] for path, version in zip(paths_list,version_list)]))
     unique_checksum_list=[]
     for path in unique_paths_list:
         try:
@@ -144,7 +144,7 @@ def find_local_file(options,data):
     new_paths_list=[]
     new_file_type_list=[]
     for path_id,path in enumerate(paths_list):
-        local_path=options.source_dir+'/'+tree+'/v'+str(version_list[path_id])+'/'+var+'/'+path.split('/')[-1]
+        local_path=source_dir+'/'+tree+'/v'+str(version_list[path_id])+'/'+var+'/'+path.split('/')[-1]
         if unique_checksum_list[unique_paths_list.index(local_path)]==checksum_list[path_id]:
             new_paths_list.append(local_path)
             new_file_type_list.append('local_file')

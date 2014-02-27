@@ -11,9 +11,10 @@ import netCDF4
 import copy
 
 class nc_Database:
-    def __init__(self,project_drs):
+    def __init__(self,project_drs,database_file=None):
         #Defines the tree structure:
         self.drs=project_drs
+        self.database_file=database_file
 
         self._setup_database()
 
@@ -33,18 +34,44 @@ class nc_Database:
         sqlalchemy.orm.clear_mappers()
         sqlalchemy.orm.mapper(File_Expt,self.time_db)
 
-        self.session = sqlalchemy.orm.create_session(bind=self.engine, autocommit=False, autoflush=True)
         self.file_expt = File_Expt(self.drs.discovered_drs)
+        self.session = sqlalchemy.orm.create_session(bind=self.engine, autocommit=False, autoflush=True)
         return
 
     def close_database(self):
         self.session.close()
         self.engine.dispose()
+        self._setup_database()
         return
 
-    def populate_database(self,Dataset,options,find_function):
+    def load_nc_file(self):
+        self.Dataset=netCDF4.Dataset(self.database_file,'r')
+        return
+
+    def close_nc_file(self):
+        self.Dataset.close()
+        del self.Dataset
+        return
+
+    def load_header(self):
+        self.load_nc_file()
+        #Load header:
+        header=dict()
+        for att in set(self.drs.header_desc).intersection(self.Dataset.ncattrs()):
+            header[att]=json.loads(self.Dataset.getncattr(att))
+        self.close_nc_file()
+        return header
+
+    def record_header(self,output_root,header):
+        for value in header.keys():
+            output_root.setncattr(value,json.dumps(header[value]))
+        return
+
+    def populate_database(self,options,find_function):
+        self.load_nc_file()
         self.file_expt.time='0'
-        populate_database_recursive(self,Dataset,options,find_function)
+        populate_database_recursive(self,self.Dataset,options,find_function)
+        self.close_nc_file()
         return
 
     def simulations_list(self):
@@ -77,7 +104,7 @@ class nc_Database:
         subset=tuple([File_Expt.path,File_Expt.file_type]+[getattr(File_Expt,item) for item in self.drs.official_drs])
         return sorted(list(set(self.list_subset(subset))))
 
-    def create_netcdf_container(self,header,options,record_function_handle):
+    def write_database(self,header,options,record_function_handle):
         #List all the trees:
         drs_list=copy.copy(self.drs.base_drs)
 
@@ -90,11 +117,14 @@ class nc_Database:
         trees_list=self.list_subset([getattr(File_Expt,level) for level in drs_list])
 
         #Create output:
-        netcdf_pointers=netcdf_soft_links.netCDF_pointers(
-                                                          options.out_diagnostic_netcdf_file,
+        output_root=netCDF4.Dataset(options.out_diagnostic_netcdf_file+'.pid'+str(os.getpid()),
+                                      'w',format='NETCDF4',diskless=True,persist=True)
+        #output_root=netCDF4.Dataset(options.out_diagnostic_netcdf_file+'.pid'+str(os.getpid()),
+        #                              'w',format='NETCDF4')
+        netcdf_pointers=netcdf_soft_links.create_netCDF_pointers(
                                                           header['file_type_list'],
                                                           header['data_node_list'])
-        netcdf_pointers.record_header(header)
+        self.record_header(output_root,header)
 
         #Define time subset:
         if 'months_list' in header.keys():
@@ -112,19 +142,31 @@ class nc_Database:
             paths_list=[{drs_name:path[drs_id] for drs_id, drs_name in enumerate(drs_to_remove)} for path in self.session.query(*out_tuples
                                     ).filter(sqlalchemy.and_(*conditions)).distinct().all()]
 
+            output=create_tree(output_root,zip(drs_list,tree))
             #Record data:
             if (time_frequency in ['fx','clim'] and record_function_handle!='record_paths'):
-                netcdf_pointers.record_fx(zip(drs_list,tree),paths_list,var)
+                netcdf_pointers.record_fx(output,paths_list,var)
             else:
                 years=[ int(year) for year in header['experiment_list'][experiment].split(',')]
-                getattr(netcdf_pointers,record_function_handle)(zip(drs_list,tree),
+                getattr(netcdf_pointers,record_function_handle)(output,
                                                                 paths_list,
                                                                 var,years,months)
 
             #Remove recorded data from database:
             self.session.query(*out_tuples).filter(sqlalchemy.and_(*conditions)).delete()
 
-        return netcdf_pointers.output_root
+        return output_root
+
+    def retrieve_database(self,options,output,queues):
+        self.load_file()
+        descend_tree_recursive(options,self.Dataset,output,queues)
+        if 'ensemble' in dir(options) and options.ensemble!=None:
+            #Always include r0i0p0 when ensemble was sliced:
+            options_copy=copy.copy(options)
+            options_copy.ensemble='r0i0p0'
+            descend_tree_recursive(options_copy,self.Dataset,output,queues)
+        self.close_file()
+        return
 
 
 #####################################################################
@@ -133,9 +175,9 @@ class nc_Database:
 #####################################################################
 #####################################################################
 
-def populate_database_recursive(nc_Database,nc_Dataset,options,find_function):
-    if 'soft_links' in nc_Dataset.groups.keys():
-        soft_links=nc_Dataset.groups['soft_links']
+def populate_database_recursive(nc_Database,data,options,find_function):
+    if 'soft_links' in data.groups.keys():
+        soft_links=data.groups['soft_links']
         paths=soft_links.variables['path'][:]
         for path_id, path in enumerate(paths):
             id_list=['file_type','search']
@@ -145,22 +187,22 @@ def populate_database_recursive(nc_Database,nc_Dataset,options,find_function):
                                                    soft_links.variables['checksum'][path_id]]))
             setattr(nc_Database.file_expt,'version','v'+str(soft_links.variables['version'][path_id]))
             find_function(nc_Database,copy.deepcopy(nc_Database.file_expt))
-    elif len(nc_Dataset.groups.keys())>0:
-        for group in nc_Dataset.groups.keys():
-            level_name=nc_Dataset.groups[group].getncattr('level_name')
+    elif len(data.groups.keys())>0:
+        for group in data.groups.keys():
+            level_name=data.groups[group].getncattr('level_name')
             if ((not level_name in dir(options)) or 
                 (getattr(options,level_name)==None) or 
                 (getattr(options,level_name)==group)): 
-                setattr(nc_Database.file_expt,nc_Dataset.groups[group].getncattr('level_name'),group)
-                populate_database_recursive(nc_Database,nc_Dataset.groups[group],options,find_function)
-    elif 'path' in nc_Dataset.ncattrs():
+                setattr(nc_Database.file_expt,data.groups[group].getncattr('level_name'),group)
+                populate_database_recursive(nc_Database,data.groups[group],options,find_function)
+    elif 'path' in data.ncattrs():
         #for fx variables:
         id_list=['file_type','search']
         for id in id_list:
-            setattr(nc_Database.file_expt,id,nc_Dataset.getncattr(id))
-        setattr(nc_Database.file_expt,'path','|'.join([nc_Dataset.getncattr('path'),
-                                               nc_Dataset.getncattr('checksum')]))
-        setattr(nc_Database.file_expt,'version',str(nc_Dataset.getncattr('version')))
+            setattr(nc_Database.file_expt,id,data.getncattr(id))
+        setattr(nc_Database.file_expt,'path','|'.join([data.getncattr('path'),
+                                               data.getncattr('checksum')]))
+        setattr(nc_Database.file_expt,'version',str(data.getncattr('version')))
         find_function(nc_Database,copy.deepcopy(nc_Database.file_expt))
     else:
         #for retrieved datasets:
@@ -170,7 +212,10 @@ def populate_database_recursive(nc_Database,nc_Dataset,options,find_function):
         find_function(nc_Database,copy.deepcopy(nc_Database.file_expt))
     return
 
-def create_tree(output_top,tree):
+def create_tree(output_root,tree):
+    return create_tree_recursive(output_root,tree)
+
+def create_tree_recursive(output_top,tree):
     level_name=tree[0][1]
     if not level_name in output_top.groups.keys(): 
         output=output_top.createGroup(level_name)
@@ -178,9 +223,36 @@ def create_tree(output_top,tree):
     else:
         output=output_top.groups[level_name]
     if len(tree)>1:
-        output=create_tree(output,tree[1:])
+        output=create_tree_recursive(output,tree[1:])
     return output
 
+def descend_tree_recursive(options,data,output,queues):
+    if 'soft_links' in data.groups.keys():
+        netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data,queues=queues)
+        netcdf_pointers.retrieve(output,year=options.year,month=options.month,min_year=options.min_year,source_dir=options.source_dir)
+        retrieve_remote_vars(options,data,output,queues)
+    elif len(data.groups.keys())>0:
+        for group in data.groups.keys():
+            level_name=data.groups[group].getncattr('level_name')
+            if ((not level_name in dir(options)) or 
+                (getattr(options,level_name)==None) or 
+                (getattr(options,level_name)==group)): 
+                if not group in output.groups.keys():
+                    output_grp=output.createGroup(group)
+                else:
+                    output_grp=output.groups[group]
+                for att in data.groups[group].ncattrs():
+                    if not att in output_grp.ncattrs():
+                        output_grp.setncattr(att,data.groups[group].getncattr(att))
+                descend_tree_recursive(options,data.groups[group],output_grp,queues)
+    else:
+        #Fixed variables. Do not retrieve, just copy:
+        for var in data.variables.keys():
+            output_fx=netcdf_utils.replicate_netcdf_var(output,data,var)
+            output_fx.variables[var][:]=data.variables[var][:]
+        output_fx.sync()
+    return 
+            
 
 class File_Expt(object):
     #Create a class that can be used with sqlachemy:

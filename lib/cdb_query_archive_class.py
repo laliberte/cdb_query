@@ -20,6 +20,10 @@ class SimpleTree:
     def __init__(self,options,project_drs):
 
         self.drs=project_drs
+        if 'in_diagnostic_netcdf_file' in dir(options):
+            self.nc_Database=nc_Database.nc_Database(self.drs,database_file=options.in_diagnostic_netcdf_file)
+        else:
+            self.nc_Database=nc_Database.nc_Database(self.drs)
         return
 
     def union_header(self):
@@ -76,13 +80,12 @@ class SimpleTree:
         return
 
     def optimset(self,options):
-        self.load_header(options)
+        self.header=self.nc_Database.load_header()
         #if options.data_nodes!=None:
         #    self.header['data_node_list']=options.data_nodes
 
         if not 'data_node_list' in self.header.keys():
             self.header['data_node_list']=self.retrieve_and_rank_data_nodes(options)
-            #print self.header['data_node_list']
 
         if options.num_procs==1:
             filepath=optimset.optimset(self,options)
@@ -98,6 +101,58 @@ class SimpleTree:
             #Close datasets:
             output.close()
         return
+
+    def remote_retrieve(self,options):
+        #Recover the database meta data:
+        self.header=self.nc_Database.load_header()
+
+        paths_list, data_node_list, queues = self.setup_remote_retrieve_and_download(options)
+        #Check if years should be relative, eg for piControl:
+        options.min_year=None
+        for experiment in self.header['experiment_list']:
+            min_year=int(self.header['experiment_list'][experiment].split(',')[0])
+            if min_year<10:
+                options.min_year=min_year
+                print 'Using min year {0} for experiment {1}'.format(str(min_year),experiment)
+
+        #Create queues:
+        output=netCDF4.Dataset(options.out_diagnostic_netcdf_file,'w')
+        database.nc_Database.retrieve_database(options,output,queues)
+        launch_download_and_remote_retrieve(data_node_list,queues,False)
+        output.sync()
+        return
+
+    def download(self,options):
+        #Recover the database meta data:
+        self.header=self.nc_Database.load_header()
+
+        paths_list, data_node_list, queues = self.setup_remote_retrieve_and_download(options)
+        #First find the unique paths:
+        unique_paths_list=list(np.unique([path[0].split('/')[-1] for path in paths_list]))
+
+        #Then attribute paths randomly:
+        random.shuffle(paths_list)
+        for path in paths_list:
+            if path[0].split('/')[-1] in unique_paths_list:
+                queues[retrieval_utils.get_data_node(*path[:2])].put((retrieval_utils.retrieve_path,)+path+(options,))
+                unique_paths_list.remove(path[0].split('/')[-1])
+        launch_download_and_remote_retrieve(data_node_list,queues,False)
+        output.sync()
+        return
+
+    def setup_remote_retrieve_and_download(self,options):
+        self.load_database(options,find_simple)
+
+        #Find data node list:
+        data_node_list=self.nc_Database.list_data_nodes()
+        paths_list=self.nc_Database.list_paths()
+        self.close_database()
+
+        queues=define_queues(options,data_node_list)
+        #Redefine data nodes:
+        data_node_list=queues.keys()
+        data_node_list.remove('end')
+        return paths_list, data_node_list, queues
 
     def retrieve_and_rank_data_nodes(self,options):
         #We have to time the response of the data node.
@@ -134,79 +189,90 @@ class SimpleTree:
         self.close_database()
         return fields_list
 
-    def load_nc_file(self,netcdf4_file):
-        self.Dataset=netCDF4.Dataset(netcdf4_file,'r')
-        return
-
-    def close_nc_file(self):
-        self.Dataset.close()
-        del self.Dataset
-        return
-
-    def load_header(self,options):
-        self.load_nc_file(options.in_diagnostic_netcdf_file)
-        #Load header:
-        self.header=dict()
-        for att in set(self.drs.header_desc).intersection(self.Dataset.ncattrs()):
-            self.header[att]=json.loads(self.Dataset.getncattr(att))
-        #self.nc_Database=nc_Database.nc_Database(self.drs)
-        self.close_nc_file()
-        return
-
     def load_database(self,options,find_function):
-        #if 'database_semaphore' in dir(self):
-        #    self.database_semaphore.acquire()
-        self.load_nc_file(options.in_diagnostic_netcdf_file)
-        self.nc_Database=nc_Database.nc_Database(self.drs)
-        self.nc_Database.populate_database(self.Dataset,options,find_function)
+        self.nc_Database.populate_database(options,find_function)
         if 'ensemble' in dir(options) and options.ensemble!=None:
             #Always include r0i0p0 when ensemble was sliced:
             options_copy=copy.copy(options)
             options_copy.ensemble='r0i0p0'
-            self.nc_Database.populate_database(self.Dataset,options_copy,find_function)
-        self.close_nc_file()
-        #if 'database_semaphore' in dir(self):
-        #    self.database_semaphore.release()
+            self.nc_Database.populate_database(options_copy,find_function)
         return
 
     def close_database(self):
         self.nc_Database.close_database()
-        del self.nc_Database
+        #del self.nc_Database
         return
 
-def worker(tuple):
-    return tuple[-1].put(tuple[0](*tuple[1:-1]))
 
 def distributed_recovery(function_handle,database,options,simulations_list,args=tuple()):
 
-        #Open output file:
-        output_file_name=options.out_diagnostic_netcdf_file
-        output_root=netCDF4.Dataset(output_file_name,'w',format='NETCDF4')
+    #Open output file:
+    output_file_name=options.out_diagnostic_netcdf_file
+    output_root=netCDF4.Dataset(output_file_name,'w',format='NETCDF4')
 
-        simulations_list_no_fx=[simulation for simulation in simulations_list if 
-                                    simulation[database.drs.simulations_desc.index('ensemble')]!='r0i0p0']
+    simulations_list_no_fx=[simulation for simulation in simulations_list if 
+                                simulation[database.drs.simulations_desc.index('ensemble')]!='r0i0p0']
 
-        manager=multiprocessing.Manager()
-        queue=manager.Queue()
-        #Set up the discovery simulation per simulation:
-        args_list=[]
-        for simulation_id,simulation in enumerate(simulations_list_no_fx):
-            options_copy=copy.copy(options)
-            for desc_id, desc in enumerate(database.drs.simulations_desc):
-                setattr(options_copy,desc,simulation[desc_id])
-            args_list.append((function_handle,copy.copy(database),options_copy)+args+(queue,))
-        
-        #Span up to options.num_procs processes and each child process analyzes only one simulation
-        pool=multiprocessing.Pool(processes=options.num_procs,maxtasksperchild=1)
-        result=pool.map_async(worker,args_list,chunksize=1)
-        for arg in args_list:
-            filename=queue.get()
-            netcdf_soft_links.record_to_file(output_root,netCDF4.Dataset(filename,'r'))
-            output_root.sync()
-        pool.close()
-        pool.join()
+    manager=multiprocessing.Manager()
+    queue=manager.Queue()
+    #Set up the discovery simulation per simulation:
+    args_list=[]
+    for simulation_id,simulation in enumerate(simulations_list_no_fx):
+        options_copy=copy.copy(options)
+        for desc_id, desc in enumerate(database.drs.simulations_desc):
+            setattr(options_copy,desc,simulation[desc_id])
+        args_list.append((function_handle,copy.copy(database),options_copy)+args+(queue,))
+    
+    #Span up to options.num_procs processes and each child process analyzes only one simulation
+    pool=multiprocessing.Pool(processes=options.num_procs,maxtasksperchild=1)
+    result=pool.map_async(worker_query,args_list,chunksize=1)
+    for arg in args_list:
+        filename=queue.get()
+        netcdf_soft_links.record_to_file(output_root,netCDF4.Dataset(filename,'r'))
+        output_root.sync()
+    pool.close()
+    pool.join()
 
-        return output_root
+    return output_root
+
+def worker_retrieve(input, output):
+    for tuple in iter(input.get, 'STOP'):
+        result = tuple[0](tuple[1:-1],tuple[-1])
+        output.put(result)
+    return
+
+def launch_download_and_remote_retrieve(data_node_list,queues,download_flag):
+    #Second step: Process the queues:
+    print datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    print('Retrieving from data nodes:')
+    for data_node in data_node_list:
+        print data_node,' ',queues[data_node].qsize()
+
+    num_files=0
+    processes=dict()
+    for data_node in data_node_list:
+        num_files+=queues[data_node].qsize()
+        processes[data_node]=Process(target=worker_retrieve, args=(queues[data_node], queues['end']))
+        queues[data_node].put('STOP')
+        processes[data_node].start()
+
+    open_queues_list=copy.copy(data_node_list)
+    #Third step: Close the queues:
+    if download_flag:
+        for i in range(num_files):
+            print '\t', queues['end'].get()
+    else:
+        for i in range(num_files):
+            netcdf_utils.assign_tree(output,*queues['end'].get())
+            output.sync()
+            for data_node in data_node_list:
+                if queues[data_node].qsize()==0 and data_node in open_queues_list:
+                    print 'Finished retrieving from data node '+data_node
+                    open_queues_list.remove(data_node)
+        output.close()
+    print('Done!')
+    print datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    return
         
 def find_simple(pointers,file_expt):
     #for item in dir(file_expt):
@@ -215,3 +281,16 @@ def find_simple(pointers,file_expt):
     pointers.session.add(file_expt)
     pointers.session.commit()
     return
+
+def define_queues(options,data_node_list):
+    #from multiprocessing import Manager
+    from multiprocessing import Queue
+    #manager=Manager()
+    queues={data_node : Queue() for data_node in data_node_list}
+    #sem=manager.Semaphore()
+    #semaphores={data_node : manager.Semaphore() for data_node in data_node_list}
+    #semaphores={data_node : sem for data_node in data_node_list}
+    queues['end']= Queue()
+    if 'source_dir' in dir(options) and options.source_dir!=None:
+        queues[retrieval_utils.get_data_node(options.source_dir,'local_file')]=Queue()
+    return queues

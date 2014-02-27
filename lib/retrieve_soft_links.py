@@ -78,14 +78,10 @@ def retrieve_data(options,project_drs):
                 queues[retrieval_utils.get_data_node(*path[:2])].put((retrieval_utils.retrieve_path,)+path+(options,))
                 unique_paths_list.remove(path[0].split('/')[-1])
     else:
-        #if options.num_procs==1:
         output=netCDF4.Dataset(options.out_diagnostic_netcdf_file,'w')
         data=netCDF4.Dataset(options.in_diagnostic_netcdf_file,'r')
         descend_tree_recursive(options,data,output,queues)
         data.close()
-        #else:
-        #    #Distributed analysis:
-        #    output=cdb_query_archive_class.distributed_recovery(descend_tree,database,options,simulations_list,args=(queues,))
         output.sync()
 
     #Second step: Process the queues:
@@ -110,7 +106,7 @@ def retrieve_data(options,project_drs):
     else:
         for i in range(num_files):
             #print i, queues['num_files']
-            assign_tree(output,*queues['end'].get())
+            netcdf_utils.assign_tree(output,*queues['end'].get())
             output.sync()
             for data_node in data_node_list:
                 if queues[data_node].qsize()==0 and data_node in open_queues_list:
@@ -121,69 +117,23 @@ def retrieve_data(options,project_drs):
     print datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     return
 
-def assign_tree(output,val,sort_table,tree):
-    if len(tree)>1:
-        assign_tree(output.groups[tree[0]],val,sort_table,tree[1:])
-    else:
-        output.variables[tree[0]][sort_table]=val
-    return
 
-def descend_tree(database,options,queues):
-    data=netCDF4.Dataset(options.in_diagnostic_netcdf_file,'r')
-    output_file_name=options.out_diagnostic_netcdf_file
-    output=netCDF4.Dataset(output_file_name+'.pid'+str(os.getpid()),'w',format='NETCDF4',diskless=True,persist=True)
-    descend_tree_recursive(options,data,output,queues)
-    if 'ensemble' in dir(options) and options.ensemble!=None:
-        #Always include r0i0p0 when ensemble was sliced:
-        options_copy=copy.copy(options)
-        options_copy.ensemble='r0i0p0'
-        descend_tree_recursive(options_copy,data,output,queues)
-    filepath=output.filepath()
-    output.close()
-    data.close()
-    return filepath
-
-def descend_tree_recursive(options,data,output,queues):
-    if 'soft_links' in data.groups.keys():
-        retrieve_remote_vars(options,data,output,queues)
-    elif len(data.groups.keys())>0:
-        for group in data.groups.keys():
-            level_name=data.groups[group].getncattr('level_name')
-            if ((not level_name in dir(options)) or 
-                (getattr(options,level_name)==None) or 
-                (getattr(options,level_name)==group)): 
-                if not group in output.groups.keys():
-                    output_grp=output.createGroup(group)
-                else:
-                    output_grp=output.groups[group]
-                for att in data.groups[group].ncattrs():
-                    if not att in output_grp.ncattrs():
-                        output_grp.setncattr(att,data.groups[group].getncattr(att))
-                descend_tree_recursive(options,data.groups[group],output_grp,queues)
-    else:
-        #Fixed variables. Do not retrieve, just copy:
-        for var in data.variables.keys():
-            output_fx=netcdf_utils.replicate_netcdf_var(output,data,var)
-            output_fx.variables[var][:]=data.variables[var][:]
-        output_fx.sync()
-    return 
-            
-def retrieve_remote_vars(options,data,output,queues):
+def retrieve_remote_vars(data,output,queues,year=None,month=None,min_year=None,source_dir=None):
     if not 'time' in output.dimensions.keys():
         time_axis=data.variables['time'][:]
         time_restriction=np.ones(time_axis.shape,dtype=np.bool)
-        if options.year!=None or options.month!=None:
+        if year!=None or month!=None:
             date_axis=netcdf_utils.get_date_axis(data.variables['time'])
-            if options.year!=None:
+            if year!=None:
                 year_axis=np.array([date.year for date in date_axis])
-                if 'min_year' in dir(options):
+                if min_year!=None:
                     #Important for piControl:
-                    time_restriction=np.logical_and(time_restriction,year_axis-year_axis.min()+options.min_year== options.year)
+                    time_restriction=np.logical_and(time_restriction,year_axis-year_axis.min()+min_year== year)
                 else:
-                    time_restriction=np.logical_and(time_restriction,year_axis== options.year)
-            if options.month!=None:
+                    time_restriction=np.logical_and(time_restriction,year_axis== year)
+            if month!=None:
                 month_axis=np.array([date.month for date in date_axis])
-                time_restriction=np.logical_and(time_restriction,month_axis== options.month)
+                time_restriction=np.logical_and(time_restriction,month_axis== month)
         netcdf_utils.create_time_axis(output,data,time_axis[time_restriction])
 
     vars_to_retrieve=[var for var in data.variables.keys() if  var in data.groups['soft_links'].variables.keys()]
@@ -199,9 +149,9 @@ def retrieve_remote_vars(options,data,output,queues):
     paths_list=data.groups['soft_links'].variables['path'][:]
     paths_id_list=data.groups['soft_links'].variables['path_id'][:]
     file_type_list=data.groups['soft_links'].variables['file_type'][:]
-    if options.source_dir!=None:
+    if source_dir!=None:
         #Check if the file has already been retrieved:
-        paths_list,file_type_list=retrieval_utils.find_local_file(options,data.groups['soft_links'])
+        paths_list,file_type_list=retrieval_utils.find_local_file(source_dir,data.groups['soft_links'])
 
     for var_to_retrieve in vars_to_retrieve:
         paths_link=data.groups['soft_links'].variables[var_to_retrieve][time_restriction,0]
