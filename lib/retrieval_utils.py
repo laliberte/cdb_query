@@ -4,8 +4,8 @@ import subprocess
 import urllib2, httplib
 from cookielib import CookieJar
 
-import netCDF4
 import indices_utils
+import remote_netcdf
 
 import numpy as np
 
@@ -161,14 +161,15 @@ def retrieve_path_data(in_tuple,pointer_var):
 
     sort_table=in_tuple[4]
     #pointer_var=in_tuple[5]
-    remote_data=open_remote_netCDF(path)
-    for dim in remote_data.variables[var].dimensions:
+    remote_data=remote_netcdf.remote_netCDF(path,[])
+    remote_data.open()
+    for dim in remote_data.Dataset.variables[var].dimensions:
         if dim != 'time':
             indices[dim], unsort_indices[dim] = indices_utils.prepare_indices(
-                                                            indices_utils.get_indices_from_dim(remote_data.variables[dim][:],
+                                                            indices_utils.get_indices_from_dim(remote_data.Dataset.variables[dim][:],
                                                                             indices[dim]))
         
-    retrieved_data=grab_remote_indices(remote_data.variables[var],indices,unsort_indices)
+    retrieved_data=grab_remote_indices(remote_data.Dataset.variables[var],indices,unsort_indices)
     #if len(indices)==1:
     #    retrieved_data=add_axis(grab_remote_indices(remote_data.variables[var],indices,other_indices))
     #else:

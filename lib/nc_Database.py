@@ -90,7 +90,17 @@ class nc_Database:
         trees_list=self.list_subset([getattr(File_Expt,level) for level in drs_list])
 
         #Create output:
-        netcdf_pointers=netcdf_soft_links.netCDF_pointers(header,options,[])
+        netcdf_pointers=netcdf_soft_links.netCDF_pointers(
+                                                          options.out_diagnostic_netcdf_file,
+                                                          header['file_type_list'],
+                                                          header['data_node_list'])
+        netcdf_pointers.record_header(header)
+
+        #Define time subset:
+        if 'months_list' in header.keys():
+            months=header['months_list']
+        else:
+            months=range(1,13)
         
         for tree in trees_list:
             time_frequency=tree[drs_list.index('time_frequency')]
@@ -103,20 +113,18 @@ class nc_Database:
                                     ).filter(sqlalchemy.and_(*conditions)).distinct().all()]
 
             #Record data:
-            getattr(netcdf_pointers,record_function_handle)(zip(drs_list,tree),paths_list,var,time_frequency,experiment)
+            if (time_frequency in ['fx','clim'] and record_function_handle!='record_paths'):
+                netcdf_pointers.record_fx(zip(drs_list,tree),paths_list,var)
+            else:
+                years=[ int(year) for year in header['experiment_list'][experiment].split(',')]
+                getattr(netcdf_pointers,record_function_handle)(zip(drs_list,tree),
+                                                                paths_list,
+                                                                var,years,months)
 
             #Remove recorded data from database:
             self.session.query(*out_tuples).filter(sqlalchemy.and_(*conditions)).delete()
 
         return netcdf_pointers.output_root
-
-    def record_header(self,header,output):
-        #output_hdr=output.createGroup('headers')
-        for value in header.keys():
-            output.setncattr(value,json.dumps(header[value]))
-        #Put version:
-        output.setncattr('cdb_query_file_spec_version','1.0')
-        return
 
 
 #####################################################################

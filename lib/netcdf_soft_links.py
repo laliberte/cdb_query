@@ -29,17 +29,17 @@ import random
 
 
 class netCDF_pointers:
-    def __init__(self,header,options,semaphores):
-        output_file_name=options.out_diagnostic_netcdf_file
-        self.output_root=netCDF4.Dataset(output_file_name+'.pid'+str(os.getpid()),'w',format='NETCDF4',diskless=True,persist=True)
-        self.header=header
-        self.record_header()
+    def __init__(self,out_netcdf_file,file_type_list,data_node_list,semaphores=[]):
+        self.output_root=netCDF4.Dataset(out_netcdf_file+'.pid'+str(os.getpid()),
+                                          'w',format='NETCDF4',diskless=True,persist=True)
+        self.file_type_list=file_type_list
+        self.data_node_list=data_node_list
         self.semaphores=semaphores
         return
 
-    def record_header(self):
-        for value in self.header.keys():
-            self.output_root.setncattr(value,json.dumps(self.header[value]))
+    def record_header(self,header):
+        for value in header.keys():
+            self.output_root.setncattr(value,json.dumps(header[value]))
         #Put version:
         self.output_root.setncattr('cdb_query_file_spec_version','1.0')
         return
@@ -47,25 +47,21 @@ class netCDF_pointers:
     def create_tree(self,tree):
         return create_tree_recursive(self.output_root,tree)
 
-    def record_paths(self,tree,paths_list,var,time_frequency,experiment):
+    def record_paths(self,tree,paths_list,var,years,months):
         #First order source files by preference:
-        soft_links=soft_links_netCDF(self.header,self.semaphores,paths_list)
+        soft_links=soft_links_netCDF(paths_list,self.file_type_list,self.data_node_list,semaphores=self.semaphores)
         output=self.create_tree(tree)
         soft_links.create(output)
         return
 
-    def record_meta_data(self,tree,paths_list,var,time_frequency,experiment):
-        if not time_frequency in ['fx','clim']:
-            #Retrieve time and meta:
-            soft_links=soft_links_netCDF(self.header,self.semaphores,paths_list)
-            output=self.create_tree(tree)
-            soft_links.create_variable(output,var,experiment)
-        else:
-            #Retrieve fixed and clim variables:
-            self.retrieve_fx(tree,paths_list,var)
+    def record_meta_data(self,tree,paths_list,var,years,months):
+        #Retrieve time and meta:
+        soft_links=soft_links_netCDF(paths_list,self.file_type_list,self.data_node_list,semaphores=self.semaphores)
+        output=self.create_tree(tree)
+        soft_links.create_variable(output,var,years,months)
         return
 
-    def retrieve_fx(self,tree,paths_list,var):
+    def record_fx(self,tree,paths_list,var):
         #Create tree:
         output=self.create_tree(tree)
 
@@ -112,10 +108,11 @@ def record_to_file(output_root,output):
 
 
 class soft_links_netCDF:
-    def __init__(self,header,semaphores,paths_list):
+    def __init__(self,paths_list,file_type_list,data_node_list,semaphores=[]):
         self.sorts_list=['version','file_type_id','data_node_id','path_id']
         self.id_list=['data_node','file_type','path','checksum','search']
-        self.header=header
+        self.file_type_list=file_type_list
+        self.data_node_list=data_node_list
         self.semaphores=semaphores
         self.paths_list=paths_list
         self.paths_ordering=self.order_paths_by_preference()
@@ -156,8 +153,8 @@ class soft_links_netCDF:
 
         #Sort paths from most desired to least desired:
         #First order desiredness for least to most:
-        data_node_order=copy.copy(self.header['data_node_list'])[::-1]#list(np.unique(paths_ordering['data_node']))
-        file_type_order=copy.copy(self.header['file_type_list'])[::-1]#list(np.unique(paths_ordering['file_type']))
+        data_node_order=copy.copy(self.data_node_list)[::-1]#list(np.unique(paths_ordering['data_node']))
+        file_type_order=copy.copy(self.file_type_list)[::-1]#list(np.unique(paths_ordering['file_type']))
         for file_id, file in enumerate(self.paths_list):
             paths_ordering['data_node_id'][file_id]=data_node_order.index(paths_ordering['data_node'][file_id])
             paths_ordering['file_type_id'][file_id]=file_type_order.index(paths_ordering['file_type'][file_id])
@@ -215,7 +212,7 @@ class soft_links_netCDF:
             self.paths_indices[path.replace('fileServer','dodsC')==self.table['paths']]=path_id
         return
 
-    def unique_time_axis(self,data,experiment):
+    def unique_time_axis(self,data,years,months):
         time_axis = netCDF4.date2num(self.time_axis,units=data.variables['time'].units,calendar=data.variables['time'].calendar)
         time_axis_unique = np.unique(time_axis)
 
@@ -223,24 +220,20 @@ class soft_links_netCDF:
 
         #Include a filter on years: 
         time_desc={}
-        years_range=range(*[ int(year) for year in self.header['experiment_list'][experiment].split(',')])
+        years_range=range(*years)
         years_range+=[years_range[-1]+1]
-        if int(self.header['experiment_list'][experiment].split(',')[0])<10:
+        if years[0]<10:
             #This is important for piControl
             years_range=list(np.array(years_range)+np.min([date.year for date in time_axis_unique_date]))
             #min_year=np.min([date.year for date in time_axis_unique_date])
-        if 'months_list' in self.header.keys():
-            months_range=self.header['months_list']
-        else:
-            months_range=range(1,13)
 
         valid_times=np.array([True  if (date.year in years_range and 
-                                     date.month in months_range) else False for date in  time_axis_unique_date])
+                                     date.month in months) else False for date in  time_axis_unique_date])
         self.time_axis_unique=time_axis_unique[valid_times]
         self.time_axis=time_axis
         return
 
-    def create_variable(self,output,var,experiment):
+    def create_variable(self,output,var,years,months):
         #Recover time axis for all files:
         self.obtain_table()
 
@@ -251,7 +244,7 @@ class soft_links_netCDF:
         netcdf_utils.replicate_netcdf_file(output,data)
 
         #Convert time axis to numbers and find the unique time axis:
-        self.unique_time_axis(data,experiment)
+        self.unique_time_axis(data,years,months)
 
         self.reduce_paths_ordering()
         #Create time axis in ouptut:
