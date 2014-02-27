@@ -173,13 +173,10 @@ def assign_tree(output,val,sort_table,tree):
 
 def apply(options,project_drs):
     if options.script=='': return
-    #Recover the database meta data:
     database=cdb_query_archive_class.SimpleTree(options,project_drs)
+    #Recover the database meta data:
+    vars_list=database.list_fields_local(options,database.drs.official_drs_no_version)
     database.load_header(options)
-    database.load_database(options,cdb_query_archive_class.find_simple)
-
-    vars_list=database.nc_Database.list_fields(database.drs.official_drs_no_version)
-    database.close_database()
 
     output_root=distributed_apply(apply_to_variable,database,options,vars_list)
     output_root.close()
@@ -188,6 +185,11 @@ def apply(options,project_drs):
 def apply_to_variable(database,options):
     input_file_name=options.in_diagnostic_netcdf_file
     files_list=[input_file_name,]+options.in_extra_netcdf_files
+
+    output_file_name=options.out_netcdf_file+'.pid'+str(os.getpid())
+    temp_output_file_name= output_file_name+'.tmp'
+
+    var=[getattr(options,opt) for opt in database.drs.official_drs_no_version]
 
     temp_files_list=[]
     for file in files_list:
@@ -204,13 +206,19 @@ def apply_to_variable(database,options):
         if not '{'+str(file_id)+'}' in options.script:
             script_to_call+=' {'+str(file_id)+'}'
 
-    output_file_name=options.out_netcdf_file+'.pid'+str(os.getpid())
-    temp_output_file_name= output_file_name+'.tmp'
     script_to_call+=' '+temp_output_file_name
 
-    var=[getattr(options,opt) for opt in database.drs.official_drs_no_version]
-    print '/'.join(var)
+    #print '/'.join(var)
+    #print script_to_call.format(*temp_files_list)
     out=subprocess.call(script_to_call.format(*temp_files_list),shell=True)
+
+    #import shlex
+    #args = shlex.split(script_to_call.format(*temp_files_list))
+    #out=subprocess.call(args,shell=True)
+    #out=subprocess.Popen(script_to_call.format(*temp_files_list),shell=True,
+    #                     stdout=subprocess.PIPE,
+    #                     stderr=subprocess.PIPE)
+    #out.wait()
 
     try:
         for file in temp_files_list:
@@ -260,7 +268,9 @@ def extract_netcdf_variable_recursive(output,data,options):
     return
 
 def worker(tuple):
-    return tuple[-1].put(tuple[0](*tuple[1:-1]))
+    result=tuple[0](*tuple[1:-1])
+    tuple[-1].put(result)
+    return
     
 def distributed_apply(function_handle,database,options,vars_list,args=tuple()):
 
@@ -270,6 +280,7 @@ def distributed_apply(function_handle,database,options,vars_list,args=tuple()):
 
         manager=multiprocessing.Manager()
         queue=manager.Queue()
+        #queue=multiprocessing.Queue()
         #Set up the discovery var per var:
         args_list=[]
         for var_id,var in enumerate(vars_list):
@@ -297,8 +308,8 @@ def distributed_apply(function_handle,database,options,vars_list,args=tuple()):
                     pass
                 output_root.sync()
 
-                pool.close()
-                pool.join()
+            pool.close()
+            pool.join()
         else:
             for arg in args_list:
                 worker(arg)

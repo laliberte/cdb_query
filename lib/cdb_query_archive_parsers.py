@@ -31,6 +31,15 @@ def slicing_arguments(parser,project_drs,exclude_args=[]):
                                 help=project_drs.slicing_args[arg][1]
                                 )
     return
+def excluded_slicing_arguments(parser,project_drs,exclude_args=[]):
+    #Define the data slicing arguments in a dictionnary:
+    for arg in project_drs.slicing_args.keys():
+        if not arg in exclude_args:
+            parser.add_argument('--'+'X'+arg,
+                                type=project_drs.slicing_args[arg][0],
+                                help='Exclude '+project_drs.slicing_args[arg][1]
+                                )
+    return
 
 
 def generate_subparsers(parser,epilog,project_drs):
@@ -157,6 +166,7 @@ def remote_retrieve(subparsers,epilog,project_drs):
                                  default=None, type=int,
                                  help='Retrieve only this month (1 to 12).')
     slicing_arguments(parser,project_drs)
+    excluded_slicing_arguments(parser,project_drs)
     return
 
 def download(subparsers,epilog,project_drs):
@@ -169,6 +179,7 @@ def download(subparsers,epilog,project_drs):
     parser.add_argument('out_destination',
                              help='Destination directory for retrieval.')
     slicing_arguments(parser,project_drs)
+    excluded_slicing_arguments(parser,project_drs)
     return
 
 def apply(subparsers,epilog,project_drs):
@@ -181,6 +192,7 @@ def apply(subparsers,epilog,project_drs):
                                  default=1, type=int,
                                  help='Use num_procs processors to perform the computation.')
     slicing_arguments(parser,project_drs)
+    excluded_slicing_arguments(parser,project_drs)
     parser.add_argument('-s','--script',default='',help="Command-line script")
     parser.add_argument('in_diagnostic_netcdf_file',
                                  help='NETCDF retrieved files (input).')

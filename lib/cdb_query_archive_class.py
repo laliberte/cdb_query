@@ -85,9 +85,7 @@ class SimpleTree:
         return
 
     def optimset(self,options):
-        self.define_database(options)
-        self.header=self.nc_Database.load_header()
-        self.close_database()
+        self.load_header(options)
         #if options.data_nodes!=None:
         #    self.header['data_node_list']=options.data_nodes
 
@@ -111,9 +109,7 @@ class SimpleTree:
 
     def remote_retrieve(self,options):
         #Recover the database meta data:
-        self.define_database(options)
-        self.header=self.nc_Database.load_header()
-        self.close_database()
+        self.load_header(options)
 
         paths_list, data_node_list, queues = self.setup_remote_retrieve_and_download(options)
         #Check if years should be relative, eg for piControl:
@@ -134,9 +130,7 @@ class SimpleTree:
 
     def download(self,options):
         #Recover the database meta data:
-        self.define_database(options)
-        self.header=self.nc_Database.load_header()
-        self.close_database()
+        self.load_header(options)
 
         paths_list, data_node_list, queues = self.setup_remote_retrieve_and_download(options)
         #First find the unique paths:
@@ -205,6 +199,12 @@ class SimpleTree:
             self.nc_Database=nc_Database.nc_Database(self.drs,database_file=options.in_diagnostic_netcdf_file)
         else:
             self.nc_Database=nc_Database.nc_Database(self.drs)
+        return
+
+    def load_header(self,options):
+        self.define_database(options)
+        self.header=self.nc_Database.load_header()
+        self.close_database()
         return
 
     def load_database(self,options,find_function):

@@ -4,7 +4,13 @@ from itertools import groupby, count
 def get_indices_from_dim(source,output):
     #This function finds which indices from source should be used and in which order:
     indices=np.arange(max(source.shape))[np.in1d(source,output)]
-    return np.array([ indices[source[indices]==val][0] for val in output ])
+    try:
+        return np.array([ indices[source[indices]==val][0] for val in output ])
+    except IndexError:
+        #The in1d might have encountered afloating point error. Make the equality fuzzy:
+        #warnings.warn('Dimension matching was done to floating point tolerance for some model',UserWarning)
+        indices=np.arange(max(source.shape))[np.array([np.any(np.isclose(output-item,0.0)) for item in source])]
+        return np.array([ indices[np.isclose(source[indices]-val,0.0)][0] for val in output ])
 
 def convert_indices_to_slices(indices):
     if len(indices)>1:

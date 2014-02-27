@@ -191,9 +191,7 @@ def populate_database_recursive(nc_Database,data,options,find_function):
     elif len(data.groups.keys())>0:
         for group in data.groups.keys():
             level_name=data.groups[group].getncattr('level_name')
-            if ((not level_name in dir(options)) or 
-                (getattr(options,level_name)==None) or 
-                (getattr(options,level_name)==group)): 
+            if is_level_name_included_and_not_excluded(level_name,options,group):
                 setattr(nc_Database.file_expt,data.groups[group].getncattr('level_name'),group)
                 populate_database_recursive(nc_Database,data.groups[group],options,find_function)
     elif 'path' in data.ncattrs():
@@ -210,7 +208,8 @@ def populate_database_recursive(nc_Database,data,options,find_function):
         id_list=['file_type','search','path','version']
         for id in id_list:
             setattr(nc_Database.file_expt,id,'')
-        find_function(nc_Database,copy.deepcopy(nc_Database.file_expt))
+        if len(data.variables.keys())>0:
+            find_function(nc_Database,copy.deepcopy(nc_Database.file_expt))
     return
 
 def create_tree(output_root,tree):
@@ -234,9 +233,8 @@ def descend_tree_recursive(options,data,output,queues):
     elif len(data.groups.keys())>0:
         for group in data.groups.keys():
             level_name=data.groups[group].getncattr('level_name')
-            if ((not level_name in dir(options)) or 
-                (getattr(options,level_name)==None) or 
-                (getattr(options,level_name)==group)): 
+            if ( is_level_name_included_and_not_excluded(level_name,options,group) and
+                 descend_tree_recursive_check_not_empty(options,data.groups[group])):
                 if not group in output.groups.keys():
                     output_grp=output.createGroup(group)
                 else:
@@ -245,14 +243,41 @@ def descend_tree_recursive(options,data,output,queues):
                     if not att in output_grp.ncattrs():
                         output_grp.setncattr(att,data.groups[group].getncattr(att))
                 descend_tree_recursive(options,data.groups[group],output_grp,queues)
+
     else:
         #Fixed variables. Do not retrieve, just copy:
-        for var in data.variables.keys():
-            output_fx=netcdf_utils.replicate_netcdf_var(output,data,var)
-            output_fx.variables[var][:]=data.variables[var][:]
-        output_fx.sync()
-    return 
-            
+        if len(data.variables.keys())>0:
+            for var in data.variables.keys():
+                output_fx=netcdf_utils.replicate_netcdf_var(output,data,var)
+                output_fx.variables[var][:]=data.variables[var][:]
+            output_fx.sync()
+    return
+
+def descend_tree_recursive_check_not_empty(options,data):
+    if 'soft_links' in data.groups.keys():
+        return True
+    elif len(data.groups.keys())>0:
+        empty_list=[]
+        for group in data.groups.keys():
+            level_name=data.groups[group].getncattr('level_name')
+            if is_level_name_included_and_not_excluded(level_name,options,group):
+                empty_list.append(descend_tree_recursive_check_not_empty(options,data.groups[group]))
+        return any(empty_list)
+    else:
+        if len(data.variables.keys())>0:
+            return True
+        else:
+            return False
+
+def is_level_name_included_and_not_excluded(level_name,options,group):
+    included=((not level_name in dir(options)) or 
+                (getattr(options,level_name)==None) or 
+                (getattr(options,level_name)==group)) 
+    not_excluded=((not 'X'+level_name in dir(options)) or 
+                (getattr(options,'X'+level_name)==None) or 
+                (getattr(options,'X'+level_name)!=group)) 
+    return included and not_excluded
+
 
 class File_Expt(object):
     #Create a class that can be used with sqlachemy:
