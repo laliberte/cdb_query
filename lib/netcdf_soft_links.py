@@ -107,12 +107,13 @@ class read_netCDF_pointers:
         return vars_to_retrieve
 
 
-    def retrieve(self,output,year=None,month=None,min_year=None,source_dir=None):
+    def retrieve(self,output,year=None,month=None,min_year=None,source_dir=None,semaphores=dict()):
         time_restriction=self.retrieve_time_axis(output,year=year,month=month,min_year=min_year)
 
         vars_to_retrieve=self.find_variables_to_retrieve(output)
         #Get list of paths:
         paths_list=self.data_root.groups['soft_links'].variables['path'][:]
+        checksums_list=self.data_root.groups['soft_links'].variables['checksum'][:]
         paths_id_list=self.data_root.groups['soft_links'].variables['path_id'][:]
         file_type_list=self.data_root.groups['soft_links'].variables['file_type'][:]
         if source_dir!=None:
@@ -149,6 +150,10 @@ class read_netCDF_pointers:
             for path_id in unique_paths_list_id:
                 path=paths_list[paths_id_list[path_id]]
 
+                #Next, we check if the file is available. If it is not we replace it
+                #with another file with the same checksum, if there is one!
+                remote_data=remote_netcdf.remote_netCDF(path,semaphores)
+                path=remote_data.check_if_available_and_find_alternative(paths_list,checksums_list)
 
                 file_type=file_type_list[list(paths_list).index(path)]
                  

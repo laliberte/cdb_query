@@ -11,11 +11,11 @@ class remote_netCDF:
             self.Dataset=netCDF4.Dataset(self.file_name)
         except:
             error=' '.join('''
-    The url {0} could not be opened. 
-    Copy and paste this url in a browser and try downloading the file.
-    If it works, you can stop the download and retry using cdb_query. If
-    it still does not work it is likely that your certificates are either
-    not available or out of date.
+The url {0} could not be opened. 
+Copy and paste this url in a browser and try downloading the file.
+If it works, you can stop the download and retry using cdb_query. If
+it still does not work it is likely that your certificates are either
+not available or out of date.
             '''.splitlines())
             raise dodsError(error.format(self.file_name.replace('dodsC','fileServer')))
     
@@ -31,6 +31,26 @@ class remote_netCDF:
         self.Dataset=netCDF4.Dataset(self.file_name)
         self.close() 
         return
+
+    def is_available(self):
+        try:
+            self.open()
+            self.close()
+            return True
+        except:
+            return False
+
+    def check_if_available_and_find_alternative(self,paths_list,checksums_list):
+        if not self.is_available:
+            checksum=checksums_list[paths_list.index(self.file_name)]
+            for cs_id, cs in enumerate(checksums_list):
+                if cs==checksum and paths_list[id]!=path:
+                    remote_data=remote_netCDF(paths_list[id],self.semaphores)
+                    if remote_data.isavailable():
+                        return paths_list[id]
+            return self.file_name
+        else:
+            return self.file_name
 
     def get_time(self):
 

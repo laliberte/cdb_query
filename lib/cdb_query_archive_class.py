@@ -140,6 +140,12 @@ class SimpleTree:
         random.shuffle(paths_list)
         for path in paths_list:
             if path[0].split('/')[-1] in unique_paths_list:
+                if retrieval_utils.check_file_availability(path[0].split('|')[0]): 
+                    queues[retrieval_utils.get_data_node(*path[:2])].put((retrieval_utils.retrieve_path,)+path+(options,))
+                    unique_paths_list.remove(path[0].split('/')[-1])
+        #Redo it without checking availability in order for the error messages to reach the user:
+        for path in paths_list:
+            if path[0].split('/')[-1] in unique_paths_list:
                 queues[retrieval_utils.get_data_node(*path[:2])].put((retrieval_utils.retrieve_path,)+path+(options,))
                 unique_paths_list.remove(path[0].split('/')[-1])
         launch_download_and_remote_retrieve([],data_node_list,queues,True)

@@ -284,8 +284,8 @@ You will need to first install `jasper`::
 
     $ wget http://www.ece.uvic.ca/~frodo/jasper/software/jasper-1.900.1.zip
     $ unzip jasper-1.900.1.zip
-    $ cd jasper1.900.1
-    $ ./configure --with-pic --prefix=$HOME/jasper-1.900.1
+    $ cd jasper-1.900.1
+    $ ./configure --with-pic --prefix=$HOME/local/jasper-1.900.1
     $ make
     $ make install
 
@@ -296,7 +296,7 @@ Next, you will need `proj`::
     $ wget http://download.osgeo.org/proj/proj-4.8.0.tar.gz
     $ tar xvfz proj-4.8.0.tar.gz
     $ cd proj-4.8.0
-    $ ./configure --prefix=$HOME/local/proj-4.8.0
+    $ ./configure --without-jni --prefix=$HOME/local/proj-4.8.0
     $ make check
     $ make install
 
