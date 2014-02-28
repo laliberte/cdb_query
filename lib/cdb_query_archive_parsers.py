@@ -53,6 +53,7 @@ def generate_subparsers(parser,epilog,project_drs):
     remote_retrieve(subparsers,epilog,project_drs)
     download(subparsers,epilog,project_drs)
     apply(subparsers,epilog,project_drs)
+    convert(subparsers,epilog,project_drs)
     return
 
 def discover(subparsers,epilog,project_drs):
@@ -181,6 +182,23 @@ def download(subparsers,epilog,project_drs):
     slicing_arguments(parser,project_drs)
     excluded_slicing_arguments(parser,project_drs)
     return
+
+def convert(subparsers,epilog,project_drs):
+    epilog_convert=textwrap.dedent(epilog)
+    parser=subparsers.add_parser('convert',
+                                           description=textwrap.dedent('Take as an input the results from \'remote_retrieve\' and converts the data.'),
+                                           epilog=epilog_convert,
+                                         )
+    input_arguments(parser)
+    parser.add_argument('out_destination',
+                             help='Destination directory for retrieval.')
+    slicing_arguments(parser,project_drs)
+    excluded_slicing_arguments(parser,project_drs)
+    parser.add_argument('--num_procs',
+                                 default=1, type=int,
+                                 help='Use num_procs processors to perform the computation.')
+    return
+
 
 def apply(subparsers,epilog,project_drs):
     epilog_apply=textwrap.dedent(epilog)

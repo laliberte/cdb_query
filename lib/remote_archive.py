@@ -15,6 +15,7 @@ class DRS:
 
         self.header_desc=['search_list','file_type_list','months_list','data_node_list','experiment_list','variable_list']
 
+        self.filename_drs=['var','cmor_table','model','experiment','ensemble']
         self.official_drs=[
               'domain',
               'institute',
@@ -75,6 +76,8 @@ class DRS:
         self.official_drs=['institute','model','experiment','time_frequency','realm','cmor_table','ensemble','version','var']
         self.official_drs_no_version=copy.copy(self.official_drs)
         self.official_drs_no_version.remove('version')
+
+        self.filename_drs=['var','cmor_table','model','experiment','ensemble']
 
         self.header_desc=['search_list','file_type_list','months_list','data_node_list','experiment_list','variable_list']
         self.base_drs=self.official_drs+[

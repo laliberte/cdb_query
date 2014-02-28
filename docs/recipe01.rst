@@ -185,7 +185,7 @@ Retrieving the data: `wget`
 
 `cdb_query_CMIP5` includes built-in functionality for retrieving the paths. It is used as follows ::
 
-    $ cdb_query_CMIP5 remote_retrieve tas_ONDJF_pointers.optimset.nc ./in/CMIP5/
+    $ cdb_query_CMIP5 download tas_ONDJF_pointers.optimset.nc ./in/CMIP5/
 
 It downloads the paths listed in ``tas_ONDJF_pointers.optimset.nc``.
 
@@ -210,7 +210,7 @@ To do the subsetting, one should have a recent version of NCO (more recent than 
 
 The new file will have only the first 29 days of the time axis for all the simulations stored in the file. To retrieve the first 30 days::
     
-    $ cdb_query_CMIP5 remote_retrieve --netcdf tas_ONDJF_pointers.optimset.0-29.nc tas_ONDJF_pointers.optimset.0-29.retrieved.nc 
+    $ cdb_query_CMIP5 remote_retrieve tas_ONDJF_pointers.optimset.0-29.nc tas_ONDJF_pointers.optimset.0-29.retrieved.nc 
 
 The file ``tas_ONDJF_pointers.optimset.0-29.retrieved.nc`` should now contain the first thirty days for all experiments! To check the daily
 surface temperature in the amip experiment from simulation CNRM-CERFACS,CNRM-CM5,r1i1p1 `ncview` (if installed)::
@@ -275,7 +275,7 @@ This recipe is summarized in the following BASH script::
 
     #CHOOSE:
         # *1* Retrieve files:
-            cdb_query_CMIP5 remote_retrieve \
+            cdb_query_CMIP5 download \
                                 tas_ONDJF_pointers.optimset.nc \
                                 ./in/CMIP5/
 
@@ -285,7 +285,7 @@ This recipe is summarized in the following BASH script::
                               tas_ONDJF_pointers.optimset.0-29.nc
 
             #Retrieve:
-            cdb_query_CMIP5 remote_retrieve --netcdf \
+            cdb_query_CMIP5 remote_retrieve \
                                 tas_ONDJF_pointers.optimset.0-29.nc \
                                 tas_ONDJF_pointers.optimset.0-29.retrieved.nc 
 

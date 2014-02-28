@@ -56,14 +56,16 @@ def main(project):
             options.time=True
 
     #Load pointer file:
-    if options.command=='remote_retrieve':
-        paths_dict=cdb_query_archive_class.SimpleTree(options,project_drs)
-        getattr(paths_dict,options.command)(options)
-    elif options.command=='download':
-        paths_dict=cdb_query_archive_class.SimpleTree(options,project_drs)
-        getattr(paths_dict,options.command)(options)
-    elif options.command=='apply':
+    #if options.command=='remote_retrieve':
+    #    paths_dict=cdb_query_archive_class.SimpleTree(options,project_drs)
+    #    getattr(paths_dict,options.command)(options)
+    #elif options.command=='download':
+    #    paths_dict=cdb_query_archive_class.SimpleTree(options,project_drs)
+    #    getattr(paths_dict,options.command)(options)
+    if options.command=='apply':
         netcdf_utils.apply(options,project_drs)
+    elif options.command=='convert':
+        netcdf_utils.convert(options,project_drs)
     elif 'in_diagnostic_headers_file' in dir(options):
         paths_dict=cdb_query_archive_class.SimpleTree(options,project_drs)
         #Run the command:

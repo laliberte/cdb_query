@@ -11,7 +11,7 @@ Core requirements
   * SZIP compiled using ZLIB (tested with szip-2.1)
   * HDF5 compiled using SZIP and ZLIB (tested with hdf5-1.8.11)
   * netCDF4 library compiled with DAP support. DAP support requires CURL (usually installed on 
-    common OS, here tested with curl-7,15,5). The version of netcdf used here is netcdf-4.3.1-rc2
+    common OS, here tested with curl-7.15.5). The version of netcdf used here is netcdf-4.3.1-rc2
 
   Please visit http://www.unidata.ucar.edu/software/netcdf/docs/netcdf-install/Quick-Instructions.html#Quick-Instructions
   for instructions on how to build these libraries.
@@ -29,6 +29,10 @@ Core requirements
 These three requirements could be difficult to get right. It is strongly suggested that the user check
 with their system administrator or look through online forums to ensure that these three key steps
 are completed successfully.
+
+.. warning:: netCDF4 versions prior to netcdf-4.3.1-rc2 are likely to fail with this package and
+             version netcdf-4.3.1 is likely to require a more recent version of curl.
+
 
 Python packages requirements
 ----------------------------

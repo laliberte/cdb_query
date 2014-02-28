@@ -164,6 +164,73 @@ def netcdf_calendar(data):
         calendar='standard'
     return calendar
 
+def convert(options,project_drs):
+    database=cdb_query_archive_class.SimpleTree(options,project_drs)
+    #Recover the database meta data:
+    vars_list=database.list_fields_local(options,database.drs.official_drs_no_version)
+    database.load_header(options)
+
+    #Find the list of arguments to pass to convert_variable:
+    args_list=[]
+    for var_id,var in enumerate(vars_list):
+        options_copy=copy.copy(options)
+        for opt_id, opt in enumerate(database.drs.official_drs_no_version):
+            setattr(options_copy,opt,var[opt_id])
+        args_list.append((copy.copy(database),options_copy))
+    if options.num_procs>1:
+        pool=multiprocessing.Pool(processes=options.num_procs,maxtasksperchild=1)
+        result=pool.map(convert_to_variable_tuple,args_list,chunksize=1)
+        pool.close()
+        pool.join()
+    else:
+        result=map(convert_to_variable_tuple,args_list)
+    return
+
+def convert_to_variable_tuple(x):
+    return convert_to_variable(*x)
+
+def convert_to_variable(database,options):
+    input_file_name=options.in_diagnostic_netcdf_file
+
+    options.version='v'+datetime.datetime.now().strftime('%Y%m%d')
+    var=[getattr(options,opt) for opt in database.drs.official_drs]
+    file_name=[getattr(options,opt) for opt in database.drs.filename_drs]
+    output_file_name=options.out_destination+'/'+'/'.join(var)+'/'+'_'.join(file_name)
+    temp_output_file_name=output_file_name+'.pid'+str(os.getpid())
+
+    try:
+        directory=os.path.dirname(temp_output_file_name)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+    except:
+        pass
+
+    data=netCDF4.Dataset(input_file_name,'r')
+    output_tmp=netCDF4.Dataset(temp_output_file_name,'w',format='NETCDF4',diskless=True,persist=True)
+    extract_netcdf_variable_recursive(output_tmp,data,options)
+    data.close()
+
+    #Get the time:
+    date_axis=get_date_axis(output_tmp.variables['time'])[[0,-1]]
+    output_tmp.close()
+    timestamp=convert_dates_to_timestamps(date_axis,options.time_frequency)
+    print timestamp
+    os.rename(temp_output_file_name,output_file_name+timestamp+'.nc')
+    return
+
+def convert_dates_to_timestamps(date_axis,time_frequency):
+    conversion=dict()
+    conversion['year']=(lambda x: x.strftime('%Y'))
+    conversion['mon']=(lambda x: x.strftime('%Y%m'))
+    conversion['day']=(lambda x: x.strftime('%Y%m%d'))
+    conversion['6hr']=(lambda x: x.strftime('%Y%m%d%H%M%S'))
+    conversion['3hr']=(lambda x: x.strftime('%Y%m%d%H%M%S'))
+    if time_frequency!='fx':
+        return '-'.join([conversion[time_frequency](date) for date in date_axis])
+    else:
+        return ''
+
+
 def assign_tree(output,val,sort_table,tree):
     if len(tree)>1:
         assign_tree(output.groups[tree[0]],val,sort_table,tree[1:])

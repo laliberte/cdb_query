@@ -140,7 +140,7 @@ Retrieving the data: `wget`
 
 `cdb_query_CORDEX` includes built-in functionality for retrieving the paths. It is used as follows ::
 
-    $ cdb_query_CORDEX remote_retrieve pr_JJAS_France_pointers.optimset.nc ./in/CORDEX/
+    $ cdb_query_CORDEX download pr_JJAS_France_pointers.optimset.nc ./in/CORDEX/
 
 It downloads the paths listed in ``pr_JJAS_France_pointers.optimset.nc``.
 
@@ -165,8 +165,8 @@ We begin by subsetting the first month using a recent version of NCO (more recen
 
 We then retrieve the first month::
 
-    $ cdb_query_CORDEX remote_retrieve --netcdf pr_JJAS_France_pointers.optimset.0-0.nc \
-                                                pr_JJAS_France_pointers.optimset.0-0.retrieved.nc 
+    $ cdb_query_CORDEX remote_retrieve pr_JJAS_France_pointers.optimset.0-0.nc \
+                                       pr_JJAS_France_pointers.optimset.0-0.retrieved.nc 
 
 This step took about 4 minutes from the University of Toronto. Next, we extract precipitation for the simulation with the EUR-11 domain::
 
@@ -212,8 +212,8 @@ And we recombine::
 
 Finally, we retrieve the data::
     
-    $ cdb_query_CORDEX remote_retrieve --netcdf pr_JJAS_France_pointers.optimset.France.nc \
-                                                pr_JJAS_France_pointers.optimset.France.retrieved.nc 
+    $ cdb_query_CORDEX remote_retrieve pr_JJAS_France_pointers.optimset.France.nc \
+                                        pr_JJAS_France_pointers.optimset.France.retrieved.nc 
 
 This step took about 40s from the University of Toronto. It retrieves the whole time series for France.
 We can then check the variables::
@@ -274,7 +274,7 @@ This recipe is summarized in the following BASH script::
 
     #CHOOSE:
         # *1* Retrieve files:
-            cdb_query_CORDEX remote_retrieve \
+            cdb_query_CORDEX download \
                                 pr_JJAS_France_pointers.optimset.nc \
                                 ./in/CORDEX/
 
@@ -283,8 +283,8 @@ This recipe is summarized in the following BASH script::
             ncks -d time,0,0 pr_JJAS_France_pointers.optimset.nc \
                              pr_JJAS_France_pointers.optimset.0-0.nc
             #Retrieve first month:
-            cdb_query_CORDEX remote_retrieve --netcdf pr_JJAS_France_pointers.optimset.0-0.nc \
-                                                      pr_JJAS_France_pointers.optimset.0-0.retrieved.nc 
+            cdb_query_CORDEX remote_retrieve pr_JJAS_France_pointers.optimset.0-0.nc \
+                                             pr_JJAS_France_pointers.optimset.0-0.retrieved.nc 
 
             #Extract first domain:
             ncks -G : -g /EUR-11/IPSL-INERIS/IPSL-IPSL-CM5A-MR/historical/r1i1p1/IPSL-INERIS-WRF331F/mon/pr \
@@ -315,8 +315,8 @@ This recipe is summarized in the following BASH script::
                           pr_JJAS_France_pointers.optimset.France.nc
     
             #Retrieve the data:
-            cdb_query_CORDEX remote_retrieve --netcdf pr_JJAS_France_pointers.optimset.France.nc \
-                                                      pr_JJAS_France_pointers.optimset.France.retrieved.nc 
+            cdb_query_CORDEX remote_retrieve pr_JJAS_France_pointers.optimset.France.nc \
+                                             pr_JJAS_France_pointers.optimset.France.retrieved.nc 
 
             #Check result:
             ncks -G : -g /EUR-44/IPSL-INERIS/IPSL-IPSL-CM5A-MR/historical/r1i1p1/IPSL-INERIS-WRF331F/mon/pr \
