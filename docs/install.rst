@@ -321,7 +321,7 @@ Finally, you are ready to install `CDO`::
     $ wget --no-check-certificate https://code.zmaw.de/attachments/download/6764/cdo-1.6.2.tar.gz
     $ tar xvfz cdo-1.6.2.tar.gz
     $ cd cdo-1.6.2
-    $ ./configure --prefix=$HOME/local/cdo-1.6.1 \
+    $ ./configure --prefix=$HOME/local/cdo-1.6.2 \
                   --with-proj=$HOME/local/proj-4.8.0 \
                   --with-grib_api=$HOME/local/grib_api-1.11.0 \
                   --with-jasper=$HOME/local/jasper-1.900.1 \
