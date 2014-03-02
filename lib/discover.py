@@ -50,7 +50,7 @@ def discover_database(database,options):
                     database.header['search_list']
                     if os.path.exists(os.path.abspath(os.path.expanduser(os.path.expandvars(search_path))))]
     for search_path in local_paths:
-        only_list.append(filesystem_query.descend_tree(database,search_path,list_level=options.list_only_field))
+        only_list.append(filesystem_query.descend_tree(database,search_path,options,list_level=options.list_only_field))
 
     #ESGF search
     remote_paths=[search_path for search_path in 
