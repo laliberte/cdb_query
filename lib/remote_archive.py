@@ -73,7 +73,15 @@ class DRS:
 
         self.var_specs=['time_frequency','realm','cmor_table']
 
-        self.official_drs=['institute','model','experiment','time_frequency','realm','cmor_table','ensemble','version','var']
+        self.official_drs=['institute',
+                            'model',
+                            'experiment',
+                            'time_frequency',
+                            'realm',
+                            'cmor_table',
+                            'ensemble',
+                            'version',
+                            'var']
         self.official_drs_no_version=copy.copy(self.official_drs)
         self.official_drs_no_version.remove('version')
 

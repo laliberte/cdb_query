@@ -219,7 +219,7 @@ def convert_to_variable(database,options):
     data=netCDF4.Dataset(input_file_name,'r')
     output_tmp=netCDF4.Dataset(temp_output_file_name,'w',format='NETCDF4',diskless=True,persist=True)
     #extract_netcdf_variable_recursive(output_tmp,data,options)
-    tree=zip(database.drs.official_drs,var)
+    tree=zip(database.drs.official_drs_no_version,var)
     extract_netcdf_variable_recursive(output_tmp,data,tree[0],tree[1:],options)
     data.close()
 
