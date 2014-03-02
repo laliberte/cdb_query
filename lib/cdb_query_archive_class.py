@@ -120,10 +120,10 @@ class SimpleTree:
                 options.min_year=min_year
                 print 'Using min year {0} for experiment {1}'.format(str(min_year),experiment)
 
-        #Create queues:
+        #Create output:
         output=netCDF4.Dataset(options.out_diagnostic_netcdf_file,'w')
         self.define_database(options)
-        self.nc_Database.retrieve_database(options,output,queues)
+        self.nc_Database.retrieve_database(options,output,queues,retrieval_utils.retrieve_path_data)
         self.close_database()
         launch_download_and_remote_retrieve(output,data_node_list,queues,False)
         return

@@ -158,14 +158,14 @@ class nc_Database:
 
         return output_root
 
-    def retrieve_database(self,options,output,queues):
+    def retrieve_database(self,options,output,queues,retrieval_function):
         self.load_nc_file()
         retrieve_tree_recursive(options,self.Dataset,output,queues)
         if 'ensemble' in dir(options) and options.ensemble!=None:
             #Always include r0i0p0 when ensemble was sliced:
             options_copy=copy.copy(options)
             options_copy.ensemble='r0i0p0'
-            retrieve_tree_recursive(options_copy,self.Dataset,output,queues)
+            retrieve_tree_recursive(options_copy,self.Dataset,output,queues,retrieval_function)
         self.close_nc_file()
         return
 
@@ -226,31 +226,41 @@ def create_tree_recursive(output_top,tree):
         output=create_tree_recursive(output,tree[1:])
     return output
 
-def retrieve_tree_recursive(options,data,output,queues):
+def retrieve_tree_recursive(options,data,output,queues,retrieval_function):
     if 'soft_links' in data.groups.keys():
         netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data,queues=queues)
-        netcdf_pointers.retrieve(output,year=options.year,month=options.month,min_year=options.min_year,source_dir=options.source_dir)
+        netcdf_pointers.retrieve(output,
+                                 retrieval_function,
+                                 year=options.year,
+                                 month=options.month,
+                                 min_year=options.min_year,
+                                 source_dir=options.source_dir)
     elif len(data.groups.keys())>0:
         for group in data.groups.keys():
             level_name=data.groups[group].getncattr('level_name')
             if ( is_level_name_included_and_not_excluded(level_name,options,group) and
                  retrieve_tree_recursive_check_not_empty(options,data.groups[group])):
-                if not group in output.groups.keys():
-                    output_grp=output.createGroup(group)
+                if (isinstance(output,netCDF4.Dataset) or
+                    isinstance(output,netCDF4.Group)):
+                    if not group in output.groups.keys():
+                        output_grp=output.createGroup(group)
+                    else:
+                        output_grp=output.groups[group]
+                    for att in data.groups[group].ncattrs():
+                        if not att in output_grp.ncattrs():
+                            output_grp.setncattr(att,data.groups[group].getncattr(att))
                 else:
-                    output_grp=output.groups[group]
-                for att in data.groups[group].ncattrs():
-                    if not att in output_grp.ncattrs():
-                        output_grp.setncattr(att,data.groups[group].getncattr(att))
-                retrieve_tree_recursive(options,data.groups[group],output_grp,queues)
-
+                    output_grp=output
+                retrieve_tree_recursive(options,data.groups[group],output_grp,queues,retrieval_function)
     else:
         #Fixed variables. Do not retrieve, just copy:
-        if len(data.variables.keys())>0:
-            for var in data.variables.keys():
-                output_fx=netcdf_utils.replicate_netcdf_var(output,data,var)
-                output_fx.variables[var][:]=data.variables[var][:]
-            output_fx.sync()
+        if (isinstance(output,netCDF4.Dataset) or
+            isinstance(output,netCDF4.Group)):
+            if len(data.variables.keys())>0:
+                for var in data.variables.keys():
+                    output_fx=netcdf_utils.replicate_netcdf_var(output,data,var)
+                    output_fx.variables[var][:]=data.variables[var][:]
+                output_fx.sync()
     return
 
 def retrieve_tree_recursive_check_not_empty(options,data):

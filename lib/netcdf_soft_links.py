@@ -120,10 +120,12 @@ class read_netCDF_pointers:
         return vars_to_retrieve
 
 
-    def retrieve(self,output,year=None,month=None,min_year=None,source_dir=None,semaphores=dict()):
-        time_restriction=self.retrieve_time_axis(output,year=year,month=month,min_year=min_year)
+    def retrieve(self,output,retrieval_function,year=None,month=None,min_year=None,source_dir=None,semaphores=dict()):
+        if (isinstance(output,netCDF4.Dataset) or
+            isinstance(output,netCDF4.Group)):
+            time_restriction=self.retrieve_time_axis(output,year=year,month=month,min_year=min_year)
+            vars_to_retrieve=self.find_variables_to_retrieve(output)
 
-        vars_to_retrieve=self.find_variables_to_retrieve(output)
         #Get list of paths:
         paths_list=self.data_root.groups['soft_links'].variables['path'][:]
         checksums_list=self.data_root.groups['soft_links'].variables['checksum'][:]
@@ -147,14 +149,16 @@ class read_netCDF_pointers:
             sorted_indices_link=indices_link[sorting_paths]
             
             #Replicate variable to output:
-            output=netcdf_utils.replicate_netcdf_var(output,self.data_root,var_to_retrieve,chunksize=-1)
+            if (isinstance(output,netCDF4.Dataset) or
+                isinstance(output,netCDF4.Group)):
+                output=netcdf_utils.replicate_netcdf_var(output,self.data_root,var_to_retrieve,chunksize=-1)
 
             dimensions=dict()
             unsort_dimensions=dict()
             dims_length=[]
-            for dim in output.variables[var_to_retrieve].dimensions:
+            for dim in self.data_root.variables[var_to_retrieve].dimensions:
                 if dim != 'time':
-                    dimensions[dim] = output.variables[dim][:]
+                    dimensions[dim] = self.data_root.variables[dim][:]
                     unsort_dimensions[dim] = None
                     dims_length.append(len(dimensions[dim]))
             #Maximum number of time step per request:
@@ -177,7 +181,12 @@ class read_netCDF_pointers:
                     
                     #Get the file tree:
                     tree=self.data_root.path.split('/')[1:]+[var_to_retrieve]
-                    args = (path,var_to_retrieve,dimensions,unsort_dimensions,np.argsort(sorting_paths)[sorted_paths_link==path_id],tree)
-                    self.queues[retrieval_utils.get_data_node(path,file_type)].put((retrieval_utils.retrieve_path_data,)+copy.deepcopy(args))
+                    args = (path,
+                            var_to_retrieve,
+                            dimensions,
+                            unsort_dimensions,
+                            np.argsort(sorting_paths)[sorted_paths_link==path_id],
+                            tree)
+                    self.queues[retrieval_utils.get_data_node(path,file_type)].put((retrieval_function,)+copy.deepcopy(args))
         return 
 
