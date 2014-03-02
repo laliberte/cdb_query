@@ -74,17 +74,15 @@ def discover(subparsers,epilog,project_drs):
                                          )
     input_arguments_json(parser)
     output_arguments(parser)
-    slicing_arguments(parser,project_drs,exclude_args=project_drs.discover_exclude_args)
-    parser.add_argument('--num_procs',
-                                 default=1, type=int,
-                                 help='Use num_procs processors to query the archive.')
     parser.add_argument('--distrib',
                                  default=False, action='store_true',
                                  help='Distribute the search. Will likely result in a pointers originating from one node.')
-    parser.add_argument('--list_only_field',default=None, choices=project_drs.remote_fields,
-                                  help='When this option is used, the discovery function prints only the specified field \n\
-                                        for which published data COULD match the query. Does nothing to the output file.\n\
-                                        Listing separate fields is usually much quicker than the discovery step.')
+    proc_group = parser.add_argument_group('These arguments set threading options')
+    proc_group.add_argument('--num_procs',
+                                 default=1, type=int,
+                                 help='Use num_procs processors to perform the computation.')
+    inc_group = parser.add_argument_group('Inclusions')
+    slicing_arguments(inc_group,project_drs)
     return parser
 
 def list_fields(subparsers,epilog,project_drs):
@@ -99,10 +97,14 @@ def list_fields(subparsers,epilog,project_drs):
                                             formatter_class=argparse.RawTextHelpFormatter,
                                             epilog=epilog
                                            )
-    slicing_arguments(parser,project_drs)
     input_arguments(parser)
-    parser.add_argument('-f','--field',action='append', type=str, choices=project_drs.base_drs,
+    select_group = parser.add_argument_group('These arguments specify the structure of the output')
+    select_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.base_drs,
                                        help='List the field (or fields if repeated) found in the file' )
+    inc_group = parser.add_argument_group('Inclusions')
+    slicing_arguments(inc_group,project_drs)
+    exc_group = parser.add_argument_group('Exclusions')
+    excluded_slicing_arguments(exc_group,project_drs)
     return
 
 def optimset(subparsers,epilog,project_drs):
@@ -119,31 +121,18 @@ def optimset(subparsers,epilog,project_drs):
                                          certificates have not been installed on this machine.'),
                                    epilog=epilog_optimset,
                                  )
-    slicing_arguments(parser,project_drs)
-    parser.add_argument('--num_procs',
-                                 default=1, type=int,
-                                 help='Use num_procs processors to query the archive.')
     input_arguments(parser)
     output_arguments(parser)
-    #parser.add_argument('--data_nodes',default=None,type=(lambda x: x.split(',')),
-    #                             help='Ordered list of data nodes to be used.')
-    return
+    proc_group = parser.add_argument_group('These arguments set threading options')
+    proc_group.add_argument('--num_procs',
+                                 default=1, type=int,
+                                 help='Use num_procs processors to perform the computation.')
 
-#def netcdf_paths(subparsers,epilog):
-#    #Find Optimset Months
-#    epilog_netcdf=textwrap.dedent(epilog)
-#    parser=subparsers.add_parser('netcdf_paths',
-#                                           description=textwrap.dedent('Take as an input the results from \'optimset\'.\n\
-#                                                 Returns pointers to models that have all the\n\
-#                                                 requested experiments and variables for all requested years',
-#                                           epilog=epilog_netcdf,
-#                                         )
-#    input_arguments(parser)
-#    output_arguments(parser)
-#    #parser.add_argument('out_diagnostic_netcdf_file',
-#    #                             help='Diagnostic paths file structured as a netcdf file (output)')
-#    slicing_arguments(parser)
-#    return
+    inc_group = parser.add_argument_group('Inclusions')
+    slicing_arguments(inc_group,project_drs)
+    exc_group = parser.add_argument_group('Exclusions')
+    excluded_slicing_arguments(exc_group,project_drs)
+    return
 
 def remote_retrieve(subparsers,epilog,project_drs):
     epilog_optimset=textwrap.dedent(epilog)
@@ -153,21 +142,20 @@ def remote_retrieve(subparsers,epilog,project_drs):
                                            epilog=epilog_optimset,
                                          )
     input_arguments(parser)
-    #parser.add_argument('out_destination',
-    #                         help='Destination directory for retrieval.')
     output_arguments(parser)
-    #parser.add_argument('--num_procs',
-    #                             default=1, type=int,
-    #                             help='Use num_procs processors to set up the retrieval.')
-    parser.add_argument('--source_dir',default=None,help='local cache of data retrieved using \'download\'')
-    parser.add_argument('--year',
+    source_group = parser.add_argument_group('Specify sources')
+    source_group.add_argument('--source_dir',default=None,help='local cache of data retrieved using \'download\'')
+
+    inc_group = parser.add_argument_group('Inclusions')
+    inc_group.add_argument('--year',
                                  default=None, type=int,
                                  help='Retrieve only this year.')
-    parser.add_argument('--month',
+    inc_group.add_argument('--month',
                                  default=None, type=int,
                                  help='Retrieve only this month (1 to 12).')
-    slicing_arguments(parser,project_drs)
-    excluded_slicing_arguments(parser,project_drs)
+    slicing_arguments(inc_group,project_drs)
+    exc_group = parser.add_argument_group('Exclusions')
+    excluded_slicing_arguments(exc_group,project_drs)
     return
 
 def download(subparsers,epilog,project_drs):
@@ -179,8 +167,15 @@ def download(subparsers,epilog,project_drs):
     input_arguments(parser)
     parser.add_argument('out_destination',
                              help='Destination directory for retrieval.')
-    slicing_arguments(parser,project_drs)
-    excluded_slicing_arguments(parser,project_drs)
+    proc_group = parser.add_argument_group('These arguments set threading options')
+    proc_group.add_argument('--num_procs',
+                                 default=1, type=int,
+                                 help='Use num_procs processors to perform the computation.')
+
+    inc_group = parser.add_argument_group('Inclusions')
+    slicing_arguments(inc_group,project_drs)
+    exc_group = parser.add_argument_group('Exclusions')
+    excluded_slicing_arguments(exc_group,project_drs)
     return
 
 def convert(subparsers,epilog,project_drs):
@@ -192,11 +187,15 @@ def convert(subparsers,epilog,project_drs):
     input_arguments(parser)
     parser.add_argument('out_destination',
                              help='Destination directory for retrieval.')
-    slicing_arguments(parser,project_drs)
-    excluded_slicing_arguments(parser,project_drs)
-    parser.add_argument('--num_procs',
+    proc_group = parser.add_argument_group('These arguments set threading options')
+    proc_group.add_argument('--num_procs',
                                  default=1, type=int,
                                  help='Use num_procs processors to perform the computation.')
+
+    inc_group = parser.add_argument_group('Inclusions')
+    slicing_arguments(inc_group,project_drs)
+    exc_group = parser.add_argument_group('Exclusions')
+    excluded_slicing_arguments(exc_group,project_drs)
     return
 
 
@@ -206,17 +205,25 @@ def apply(subparsers,epilog,project_drs):
                                            description=textwrap.dedent('Take as an input retrieved data and apply bash script'),
                                            epilog=epilog_apply
                                          )
-    parser.add_argument('--num_procs',
-                                 default=1, type=int,
-                                 help='Use num_procs processors to perform the computation.')
-    slicing_arguments(parser,project_drs)
-    excluded_slicing_arguments(parser,project_drs)
-    parser.add_argument('-s','--script',default='',help="Command-line script")
+    parser.add_argument('script',default='',help="Command-line script")
     parser.add_argument('in_diagnostic_netcdf_file',
                                  help='NETCDF retrieved files (input).')
     parser.add_argument('in_extra_netcdf_files',nargs='*',
                                  help='NETCDF extra retrieved files (input).')
     parser.add_argument('out_netcdf_file',
                                  help='NETCDF file (output)')
+
+    select_group = parser.add_argument_group('These arguments specify the structure of the output')
+    select_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.official_drs_no_version,
+                                       help='Keep these fields in the applied file.' )
+    proc_group = parser.add_argument_group('These arguments set threading options')
+    proc_group.add_argument('--num_procs',
+                                 default=1, type=int,
+                                 help='Use num_procs processors to perform the computation.')
+
+    inc_group = parser.add_argument_group('Inclusions')
+    slicing_arguments(inc_group,project_drs)
+    exc_group = parser.add_argument_group('Exclusions')
+    excluded_slicing_arguments(exc_group,project_drs)
     return
     

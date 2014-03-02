@@ -22,6 +22,9 @@ import indices_utils
 import multiprocessing
 import subprocess
 
+import netcdf_soft_links
+
+import nc_Database
 
 def get_year_axis(path_name):
     try:
@@ -77,31 +80,39 @@ def convert_to_date_absolute(absolute_time):
 
 #def replicate_full_netcdf_recursive(output,data,options=None):
 def replicate_full_netcdf_recursive(output,data):
-    for var in data.variables.keys():
-        replicate_netcdf_var(output,data,var)
-        output.variables[var][:]=data.variables[var][:]
+    for var_name in data.variables.keys():
+        replicate_and_copy_variables(output,data,var_name)
     if len(data.groups.keys())>0:
         for group in data.groups.keys():
-            #if (options==None or
-            #    (not data.groups[group].getncattr('level_name') in dir(options)) or 
-            #    (getattr(options,data.groups[group].getncattr('level_name'))==None) or 
-            #    (getattr(options,data.groups[group].getncattr('level_name'))==group)): 
-            if not group in output.groups.keys():
-                output_grp=output.createGroup(group)
-            else:
-                output_grp=output.groups[group]
-            for att in data.groups[group].ncattrs():
-                if not att in output_grp.ncattrs():
-                    output_grp.setncattr(att,data.groups[group].getncattr(att))
+            output_grp=replicate_group(output,data,group)
             replicate_full_netcdf_recursive(output_grp,data.groups[group])
     return
+
+def replicate_and_copy_variable(output,data,var_name):
+    replicate_netcdf_var(output,data,var_name)
+    if max(data.variables[var_name].shape)>0:
+        output.variables[var_name][:]=data.variables[var_name][:]
+    return
+
+def replicate_group(output,data,group_name):
+    output_grp=create_group(output,data,group_name)
+    replicate_netcdf_file(output_grp,data.groups[group_name])
+    return output_grp
+
+def create_group(output,data,group_name):
+    if not group_name in output.groups.keys():
+        output_grp=output.createGroup(group_name)
+    else:
+        output_grp=output.groups[group_name]
+    return output_grp
     
 def replicate_netcdf_file(output,data):
     for att in data.ncattrs():
         att_val=data.getncattr(att)
         if 'encode' in dir(att_val):
             att_val=att_val.encode('ascii','replace')
-        output.setncattr(att,att_val)
+        if not att in output.ncattrs():
+            output.setncattr(att,att_val)
     return output
 
 def replicate_netcdf_var_dimensions(output,data,var):
@@ -241,7 +252,14 @@ def apply(options,project_drs):
     if options.script=='': return
     database=cdb_query_archive_class.SimpleTree(options,project_drs)
     #Recover the database meta data:
-    vars_list=database.list_fields_local(options,database.drs.official_drs_no_version)
+    if options.field!=None:
+        drs_to_eliminate=[field for field in database.drs.official_drs_no_version if
+                                             not field in options.field]
+    else:
+        drs_to_eliminate=database.drs.official_drs_no_version
+    vars_list=[[ var[drs_to_eliminate.index(field)] if field in drs_to_eliminate else None
+                        for field in database.drs.official_drs_no_version] for var in 
+                        database.list_fields_local(options,drs_to_eliminate) ]
     database.load_header(options)
 
     output_root=distributed_apply(apply_to_variable,database,options,vars_list)
@@ -256,13 +274,14 @@ def apply_to_variable(database,options):
     temp_output_file_name= output_file_name+'.tmp'
 
     var=[getattr(options,opt) for opt in database.drs.official_drs_no_version]
+    tree=zip(database.drs.official_drs_no_version,var)
 
     temp_files_list=[]
     for file in files_list:
         data=netCDF4.Dataset(file,'r')
         temp_file=file+'.pid'+str(os.getpid())
         output_tmp=netCDF4.Dataset(temp_file,'w',format='NETCDF4',diskless=True,persist=True)
-        extract_netcdf_variable_recursive(output_tmp,data,options)
+        extract_netcdf_variable_recursive(output_tmp,data,tree[0],tree[1:],options)
         temp_files_list.append(temp_file)
         output_tmp.close()
         data.close()
@@ -293,45 +312,27 @@ def apply_to_variable(database,options):
         pass
     return (temp_output_file_name, var)
 
-def replace_netcdf_variable_recursive(output,data,level_desc,tree):
+def extract_netcdf_variable_recursive(output,data,level_desc,tree,options):
     level_name=level_desc[0]
     group_name=level_desc[1]
-    if not level_desc[1] in output.groups.keys():
-        output_grp=output.createGroup(group_name)
-    else:
-        output_grp=output.groups[group_name]
-    if 'level_name' not in output_grp.ncattrs():
-        output_grp.setncattr('level_name',level_name)
-
-    if len(tree)>0:
-        replace_netcdf_variable_recursive(output_grp,data,tree[0],tree[1:])
-    else:
-        for att in data.ncattrs():
-            if not att in output_grp.ncattrs():
-                output_grp.setncattr(att,data.getncattr(att))
-        for var in data.variables.keys():
-            replicate_netcdf_var(output_grp,data,var)
-            if np.min(data.variables[var].shape)>0:
-                output_grp.variables[var][:]=data.variables[var][:]
-    return
-        
-    
-
-def extract_netcdf_variable_recursive(output,data,options):
-    for var in data.variables.keys():
-        replicate_netcdf_var(output,data,var)
-        output.variables[var][:]=data.variables[var][:]
-    if len(data.groups.keys())>0:
+    if group_name==None:
         for group in data.groups.keys():
-            if (
-                (not data.groups[group].getncattr('level_name') in dir(options)) or 
-                (getattr(options,data.groups[group].getncattr('level_name'))==None) or 
-                (getattr(options,data.groups[group].getncattr('level_name'))==group)): 
-                for att in data.groups[group].ncattrs():
-                    if ( not att in output.ncattrs() and att!='level_name'):
-                        output.setncattr(att,data.groups[group].getncattr(att))
-                extract_netcdf_variable_recursive(output,data.groups[group],options)
+            if ( nc_Database.is_level_name_included_and_not_excluded(level_name,options,group) and
+                 nc_Database.retrieve_tree_recursive_check_not_empty(options,data.groups[group])):
+                output_grp=replicate_group(output,data,group)
+                if len(tree)>0:
+                    extract_netcdf_variable_recursive(output_grp,data.groups[group],tree[0],tree[1:],options)
+                else:
+                    netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data)
+                    netcdf_pointers.replicate(output_grp)
+    else:
+        if len(tree)>0:
+            extract_netcdf_variable_recursive(output,data.groups[group_name],tree[0],tree[1:],options)
+        else:
+            netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data.groups[group_name])
+            netcdf_pointers.replicate(output)
     return
+
 
 def worker(tuple):
     result=tuple[0](*tuple[1:-1])
@@ -392,3 +393,28 @@ def distributed_apply(function_handle,database,options,vars_list,args=tuple()):
 
 
         return output_root
+
+def replace_netcdf_variable_recursive(output,data,level_desc,tree):
+    level_name=level_desc[0]
+    group_name=level_desc[1]
+    if group_name==None:
+        for group in data.groups.keys():
+            if len(tree)>0:
+                    output_grp=replicate_group(output,data,group)
+                    replace_netcdf_variable_recursive(output_grp,data.groups[group],tree[0],tree[1:])
+            else:
+                output_grp=create_group(output,data,group)
+                output_grp.setncattr('level_name',level_name)
+                netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data.groups[group])
+                netcdf_pointers.replicate(output_grp)
+    else:
+        output_grp=create_group(output,data,group_name)
+        output_grp.setncattr('level_name',level_name)
+        if len(tree)>0:
+            replace_netcdf_variable_recursive(output_grp,data,tree[0],tree[1:])
+        else:
+            netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data.groups[group_name])
+            netcdf_pointers.replicate(output_grp)
+    return
+
+    

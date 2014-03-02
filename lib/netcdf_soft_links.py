@@ -77,6 +77,19 @@ class read_netCDF_pointers:
         self.queues=queues
         return
 
+    def replicate(self,output):
+        #replicate attributes
+        netcdf_utils.replicate_netcdf_file(output,self.data_root)
+        #replicate and copy variables:
+        for var_name in self.data_root.variables.keys():
+            netcdf_utils.replicate_and_copy_variable(output,self.data_root,var_name)
+        if 'soft_links' in self.data_root.groups.keys():
+            output_grp=netcdf_utils.replicate_group(output,data,'soft_links')
+            netcdf_utils.replicate_netcdf_file(output_grp,self.data_root.groups['soft_links'])
+            for var_name in self.data_root.groups['soft_links'].variables.keys():
+                replicate_and_copy_variable(output_grp,self.data_root.groups['soft_links'],var_name)
+        return
+
     def retrieve_time_axis(self,output,year=None,month=None,min_year=None):
         if not 'time' in output.dimensions.keys():
             time_axis=self.data_root.variables['time'][:]

@@ -160,12 +160,12 @@ class nc_Database:
 
     def retrieve_database(self,options,output,queues):
         self.load_nc_file()
-        descend_tree_recursive(options,self.Dataset,output,queues)
+        retrieve_tree_recursive(options,self.Dataset,output,queues)
         if 'ensemble' in dir(options) and options.ensemble!=None:
             #Always include r0i0p0 when ensemble was sliced:
             options_copy=copy.copy(options)
             options_copy.ensemble='r0i0p0'
-            descend_tree_recursive(options_copy,self.Dataset,output,queues)
+            retrieve_tree_recursive(options_copy,self.Dataset,output,queues)
         self.close_nc_file()
         return
 
@@ -226,7 +226,7 @@ def create_tree_recursive(output_top,tree):
         output=create_tree_recursive(output,tree[1:])
     return output
 
-def descend_tree_recursive(options,data,output,queues):
+def retrieve_tree_recursive(options,data,output,queues):
     if 'soft_links' in data.groups.keys():
         netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data,queues=queues)
         netcdf_pointers.retrieve(output,year=options.year,month=options.month,min_year=options.min_year,source_dir=options.source_dir)
@@ -234,7 +234,7 @@ def descend_tree_recursive(options,data,output,queues):
         for group in data.groups.keys():
             level_name=data.groups[group].getncattr('level_name')
             if ( is_level_name_included_and_not_excluded(level_name,options,group) and
-                 descend_tree_recursive_check_not_empty(options,data.groups[group])):
+                 retrieve_tree_recursive_check_not_empty(options,data.groups[group])):
                 if not group in output.groups.keys():
                     output_grp=output.createGroup(group)
                 else:
@@ -242,7 +242,7 @@ def descend_tree_recursive(options,data,output,queues):
                 for att in data.groups[group].ncattrs():
                     if not att in output_grp.ncattrs():
                         output_grp.setncattr(att,data.groups[group].getncattr(att))
-                descend_tree_recursive(options,data.groups[group],output_grp,queues)
+                retrieve_tree_recursive(options,data.groups[group],output_grp,queues)
 
     else:
         #Fixed variables. Do not retrieve, just copy:
@@ -253,7 +253,7 @@ def descend_tree_recursive(options,data,output,queues):
             output_fx.sync()
     return
 
-def descend_tree_recursive_check_not_empty(options,data):
+def retrieve_tree_recursive_check_not_empty(options,data):
     if 'soft_links' in data.groups.keys():
         return True
     elif len(data.groups.keys())>0:
@@ -261,7 +261,7 @@ def descend_tree_recursive_check_not_empty(options,data):
         for group in data.groups.keys():
             level_name=data.groups[group].getncattr('level_name')
             if is_level_name_included_and_not_excluded(level_name,options,group):
-                empty_list.append(descend_tree_recursive_check_not_empty(options,data.groups[group]))
+                empty_list.append(retrieve_tree_recursive_check_not_empty(options,data.groups[group]))
         return any(empty_list)
     else:
         if len(data.variables.keys())>0:
