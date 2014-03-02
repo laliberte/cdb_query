@@ -71,5 +71,5 @@ def descend_tree_recursive(database,file_expt,tree_desc,top_path,options,list_le
             #      ):
                 only_list.append(descend_tree_recursive(database,file_expt_copy,
                                             next_tree_desc,top_path+'/'+subdir,
-                                                list_level=list_level))
+                                            options,list_level=list_level))
         return [item for sublist in only_list for item in sublist]
