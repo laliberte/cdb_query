@@ -84,7 +84,7 @@ class read_netCDF_pointers:
         for var_name in self.data_root.variables.keys():
             netcdf_utils.replicate_and_copy_variable(output,self.data_root,var_name)
         if 'soft_links' in self.data_root.groups.keys():
-            output_grp=netcdf_utils.replicate_group(output,data,'soft_links')
+            output_grp=netcdf_utils.replicate_group(output,self.data_root,'soft_links')
             netcdf_utils.replicate_netcdf_file(output_grp,self.data_root.groups['soft_links'])
             for var_name in self.data_root.groups['soft_links'].variables.keys():
                 replicate_and_copy_variable(output_grp,self.data_root.groups['soft_links'],var_name)
