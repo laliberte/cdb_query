@@ -63,7 +63,7 @@ class nc_Database:
         self.close_nc_file()
         return header
 
-    def record_header(self,output_root,header):
+    def record_header(self,header,output_root):
         for value in header.keys():
             output_root.setncattr(value,json.dumps(header[value]))
         return
