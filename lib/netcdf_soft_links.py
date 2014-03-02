@@ -87,7 +87,7 @@ class read_netCDF_pointers:
             output_grp=netcdf_utils.replicate_group(output,self.data_root,'soft_links')
             netcdf_utils.replicate_netcdf_file(output_grp,self.data_root.groups['soft_links'])
             for var_name in self.data_root.groups['soft_links'].variables.keys():
-                replicate_and_copy_variable(output_grp,self.data_root.groups['soft_links'],var_name)
+                netcdf_utils.replicate_and_copy_variable(output_grp,self.data_root.groups['soft_links'],var_name)
         return
 
     def retrieve_time_axis(self,output,year=None,month=None,min_year=None):
