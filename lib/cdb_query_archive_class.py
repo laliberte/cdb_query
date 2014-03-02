@@ -213,6 +213,13 @@ class SimpleTree:
         self.close_database()
         return
 
+    def record_header(self,options,output):
+        self.define_database(options)
+        self.header=self.nc_Database.load_header()
+        self.nc_Database.record_header(self.header,output)
+        self.close_database()
+        return
+
     def load_database(self,options,find_function):
         self.define_database(options)
         self.nc_Database.populate_database(options,find_function)
