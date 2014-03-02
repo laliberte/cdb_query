@@ -37,7 +37,7 @@ def descend_tree_recursive(database,file_expt,tree_desc,top_path,options,list_le
                 file_expt_copy.path='|'.join([file,retrieval_utils.md5_for_file(open(file,'r'))])
                 database.nc_Database.session.add(file_expt_copy)
                 database.nc_Database.session.commit()
-        return
+        return file_list
 
     local_tree_desc=tree_desc[0]
     next_tree_desc=tree_desc[1:]
@@ -55,9 +55,6 @@ def descend_tree_recursive(database,file_expt,tree_desc,top_path,options,list_le
                 subdir_list.append(subdir)
 
     if list_level!=None and local_tree_desc==list_level:
-        print local_tree_desc
-        print list_level
-        print subdir_list
         return subdir_list
     else:
         only_list=[]
