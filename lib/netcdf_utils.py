@@ -90,7 +90,7 @@ def replicate_full_netcdf_recursive(output,data):
 
 def replicate_and_copy_variable(output,data,var_name):
     replicate_netcdf_var(output,data,var_name)
-    if max(data.variables[var_name].shape)>0:
+    if len(data.variables[var_name].shape)>0 and max(data.variables[var_name].shape)>0:
         output.variables[var_name][:]=data.variables[var_name][:]
     return
 
@@ -323,7 +323,7 @@ def extract_netcdf_variable_recursive(output,data,level_desc,tree,options):
                 if len(tree)>0:
                     extract_netcdf_variable_recursive(output_grp,data.groups[group],tree[0],tree[1:],options)
                 else:
-                    netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data)
+                    netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data.groups[group])
                     netcdf_pointers.replicate(output_grp)
     else:
         if len(tree)>0:
@@ -399,12 +399,11 @@ def replace_netcdf_variable_recursive(output,data,level_desc,tree):
     group_name=level_desc[1]
     if group_name==None:
         for group in data.groups.keys():
+            output_grp=create_group(output,data,group)
+            output_grp.setncattr('level_name',level_name)
             if len(tree)>0:
-                    output_grp=replicate_group(output,data,group)
                     replace_netcdf_variable_recursive(output_grp,data.groups[group],tree[0],tree[1:])
             else:
-                output_grp=create_group(output,data,group)
-                output_grp.setncattr('level_name',level_name)
                 netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data.groups[group])
                 netcdf_pointers.replicate(output_grp)
     else:
@@ -413,7 +412,7 @@ def replace_netcdf_variable_recursive(output,data,level_desc,tree):
         if len(tree)>0:
             replace_netcdf_variable_recursive(output_grp,data,tree[0],tree[1:])
         else:
-            netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data.groups[group_name])
+            netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data)
             netcdf_pointers.replicate(output_grp)
     return
 
