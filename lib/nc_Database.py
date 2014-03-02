@@ -160,7 +160,7 @@ class nc_Database:
 
     def retrieve_database(self,options,output,queues,retrieval_function):
         self.load_nc_file()
-        retrieve_tree_recursive(options,self.Dataset,output,queues)
+        retrieve_tree_recursive(options,self.Dataset,output,queues,retrieval_function)
         if 'ensemble' in dir(options) and options.ensemble!=None:
             #Always include r0i0p0 when ensemble was sliced:
             options_copy=copy.copy(options)
