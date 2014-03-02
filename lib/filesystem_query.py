@@ -55,6 +55,9 @@ def descend_tree_recursive(database,file_expt,tree_desc,top_path,options,list_le
                 subdir_list.append(subdir)
 
     if list_level!=None and local_tree_desc==list_level:
+        print local_tree_desc
+        print list_level
+        print subdir_list
         return subdir_list
     else:
         only_list=[]
