@@ -260,9 +260,9 @@ def apply(options,project_drs):
     vars_list=[[ var[drs_to_eliminate.index(field)] if field in drs_to_eliminate else None
                         for field in database.drs.official_drs_no_version] for var in 
                         database.list_fields_local(options,drs_to_eliminate) ]
-    database.record_header(options,output_root)
 
     output_root=distributed_apply(apply_to_variable,database,options,vars_list)
+    database.record_header(options,output_root)
     output_root.close()
     return
 
