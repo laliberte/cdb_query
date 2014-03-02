@@ -227,7 +227,7 @@ def convert_to_variable(database,options):
     date_axis=get_date_axis(output_tmp.variables['time'])[[0,-1]]
     output_tmp.close()
     timestamp=convert_dates_to_timestamps(date_axis,options.time_frequency)
-    os.rename(temp_output_file_name,output_file_name+timestamp+'.nc')
+    os.rename(temp_output_file_name,output_file_name+'_'+timestamp+'.nc')
     return
 
 def convert_dates_to_timestamps(date_axis,time_frequency):

@@ -15,7 +15,7 @@ class DRS:
 
         self.header_desc=['search_list','file_type_list','months_list','data_node_list','experiment_list','variable_list']
 
-        self.filename_drs=['var','domain','driving_model','experiment','ensemble','model','time_frequency']
+        self.filename_drs=['var','domain','driving_model','experiment','ensemble','model','version','time_frequency']
         self.official_drs=[
               'domain',
               'institute',
