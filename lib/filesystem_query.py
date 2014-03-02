@@ -2,6 +2,7 @@ import os
 import glob
 import copy
 import netcdf_utils
+import nc_Database
 
 def get_immediate_subdirectories(path):
     return [name for name in os.listdir(path)
