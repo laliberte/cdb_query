@@ -216,7 +216,7 @@ class SimpleTree:
     def record_header(self,options,output):
         self.define_database(options)
         self.header=self.nc_Database.load_header()
-        self.nc_Database.record_header(self.header,output)
+        self.nc_Database.record_header(output,self.header)
         self.close_database()
         return
 
