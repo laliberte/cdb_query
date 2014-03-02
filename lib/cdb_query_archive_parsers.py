@@ -74,6 +74,10 @@ def discover(subparsers,epilog,project_drs):
                                          )
     input_arguments_json(parser)
     output_arguments(parser)
+    parser.add_argument('--list_only_field',default=None, choices=project_drs.remote_fields,
+                          help='When this option is used, the discovery function prints only the specified field \n\
+                              for which published data COULD match the query. Does nothing to the output file.\n\
+                                  Listing separate fields is usually much quicker than the discovery step.')
     parser.add_argument('--distrib',
                                  default=False, action='store_true',
                                  help='Distribute the search. Will likely result in a pointers originating from one node.')
