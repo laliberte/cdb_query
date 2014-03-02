@@ -1,7 +1,7 @@
 import os
 import glob
 import copy
-import netcdf_utils
+import retrieval_utils
 import nc_Database
 
 def get_immediate_subdirectories(path):
