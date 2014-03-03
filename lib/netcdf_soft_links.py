@@ -171,10 +171,10 @@ class read_netCDF_pointers:
                 #with another file with the same checksum, if there is one!
                 remote_data=remote_netcdf.remote_netCDF(path,semaphores)
                 path=remote_data.check_if_available_and_find_alternative(paths_list,checksums_list)
+                file_type=file_type_list[list(paths_list).index(path)]
+
                 path+='|'+checksums_list[list(paths_list).index(path)]
 
-                file_type=file_type_list[list(paths_list).index(path)]
-                 
                 time_indices=sorted_indices_link[sorted_paths_link==path_id]
                 num_time_chunk=int(np.ceil(len(time_indices)/float(max_time_steps)))
                 for time_chunk in range(num_time_chunk):
