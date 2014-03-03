@@ -154,7 +154,6 @@ def find_local_file(source_dir,data):
     return new_paths_list, new_file_type_list
 
 def retrieve_path_data(in_tuple,pointer_var):
-    print 'retrieving',in_tuple, pointer_var
     path=in_tuple[0].replace('fileServer','dodsC').split('|')[0]
     var=in_tuple[1]
     indices=in_tuple[2]
