@@ -204,21 +204,20 @@ Retrieving the data: `OPeNDAP`
 
 `cdb_query_CMIP5` includes built-in functionality for retrieving a subset of the data.
 
-To do the subsetting, one should have a recent version of NCO (more recent than 4.0) linked to the netCDF4 library. To subset the first 30 days::
-
-    $ ncks -d time,0,29 tas_ONDJF_pointers.optimset.nc tas_ONDJF_pointers.optimset.0-29.nc
-
-The new file will have only the first 29 days of the time axis for all the simulations stored in the file. To retrieve the first 30 days::
+To retrieve the first month of daily data::
     
-    $ cdb_query_CMIP5 remote_retrieve tas_ONDJF_pointers.optimset.0-29.nc tas_ONDJF_pointers.optimset.0-29.retrieved.nc 
+    $ cdb_query_CMIP5 remote_retrieve --year=1979 \
+                                      --month=1 \
+                            tas_ONDJF_pointers.optimset.197901.nc \
+                            tas_ONDJF_pointers.optimset.197901.retrieved.nc 
 
-The file ``tas_ONDJF_pointers.optimset.0-29.retrieved.nc`` should now contain the first thirty days for all experiments! To check the daily
+The file ``tas_ONDJF_pointers.optimset.197901.retrieved.nc`` should now contain the first thirty days for all experiments! To check the daily
 surface temperature in the amip experiment from simulation CNRM-CERFACS,CNRM-CM5,r1i1p1 `ncview` (if installed)::
 
     $ ncks -G : -g /CNRM-CERFACS/CNRM-CM5/amip/day/atmos/day/r1i1p1/tas \
-                    tas_ONDJF_pointers.optimset.0-29.retrieved.nc \
-                    tas_ONDJF_pointers.optimset.0-29.retrieved.CNRM-CERFACS_CNRM-CM5_r1i1p1.nc
-    $ ncview tas_ONDJF_pointers.optimset.0-29.retrieved.CNRM-CERFACS_CNRM-CM5_r1i1p1.nc
+                    tas_ONDJF_pointers.optimset.197901.retrieved.nc \
+                    tas_ONDJF_pointers.optimset.197901.retrieved.CNRM-CERFACS_CNRM-CM5_r1i1p1.nc
+    $ ncview tas_ONDJF_pointers.optimset.197901.retrieved.CNRM-CERFACS_CNRM-CM5_r1i1p1.nc
 
 BASH script
 ^^^^^^^^^^^
@@ -275,25 +274,21 @@ This recipe is summarized in the following BASH script::
 
     #CHOOSE:
         # *1* Retrieve files:
-            cdb_query_CMIP5 download \
-                                tas_ONDJF_pointers.optimset.nc \
-                                ./in/CMIP5/
+            #cdb_query_CMIP5 download \
+            #                    tas_ONDJF_pointers.optimset.nc \
+            #                    ./in/CMIP5/
 
         # *2* Retrieve to netCDF:
-            #Subset first 30 days:
-            ncks -d time,0,29 tas_ONDJF_pointers.optimset.nc \
-                              tas_ONDJF_pointers.optimset.0-29.nc
-
-            #Retrieve:
-            cdb_query_CMIP5 remote_retrieve \
-                                tas_ONDJF_pointers.optimset.0-29.nc \
-                                tas_ONDJF_pointers.optimset.0-29.retrieved.nc 
+            #Retrieve the first month:
+            cdb_query_CMIP5 remote_retrieve --year=1979 --month=1 \
+                                tas_ONDJF_pointers.optimset.nc \
+                                tas_ONDJF_pointers.optimset.197901.retrieved.nc
 
             #Pick one simulation:
             ncks -G : -g /CNRM-CERFACS/CNRM-CM5/amip/day/atmos/day/r1i1p1/tas \
-               tas_ONDJF_pointers.optimset.0-29.retrieved.nc \
-               tas_ONDJF_pointers.optimset.0-29.retrieved.CNRM-CERFACS_CNRM-CM5_r1i1p1.nc
+               tas_ONDJF_pointers.optimset.197901.retrieved.nc \
+               tas_ONDJF_pointers.optimset.197901.retrieved.CNRM-CERFACS_CNRM-CM5_r1i1p1.nc
+            
             #Look at it:
-            ncview tas_ONDJF_pointers.optimset.0-29.retrieved.CNRM-CERFACS_CNRM-CM5_r1i1p1.nc
-
-
+            #When done, look at it. A good tool for that is ncview:
+            #   ncview tas_ONDJF_pointers.optimset.197901.retrieved.CNRM-CERFACS_CNRM-CM5_r1i1p1.nc

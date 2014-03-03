@@ -234,26 +234,28 @@ def convert_to_variable(database,options):
     data=netCDF4.Dataset(input_file_name,'r')
     output_tmp=netCDF4.Dataset(temp_output_file_name,'w',format='NETCDF4',diskless=True,persist=True)
     #extract_netcdf_variable_recursive(output_tmp,data,options)
+    #tree=zip(database.drs.official_drs_no_version,var)
+    var=[getattr(options,opt) for opt in database.drs.official_drs_no_version]
     tree=zip(database.drs.official_drs_no_version,var)
     extract_netcdf_variable_recursive(output_tmp,data,tree[0],tree[1:],options)
     data.close()
 
     #Get the time:
-    date_axis=get_date_axis(output_tmp.variables['time'])[[0,-1]]
+    timestamp=convert_dates_to_timestamps(output_tmp,options.time_frequency)
     output_tmp.close()
-    timestamp=convert_dates_to_timestamps(date_axis,options.time_frequency)
-    os.rename(temp_output_file_name,output_file_name+'_'+timestamp+'.nc')
+    os.rename(temp_output_file_name,output_file_name+timestamp+'.nc')
     return
 
-def convert_dates_to_timestamps(date_axis,time_frequency):
+def convert_dates_to_timestamps(output_tmp,time_frequency):
     conversion=dict()
-    conversion['year']=(lambda x: x.strftime('%Y'))
-    conversion['mon']=(lambda x: x.strftime('%Y%m'))
-    conversion['day']=(lambda x: x.strftime('%Y%m%d'))
-    conversion['6hr']=(lambda x: x.strftime('%Y%m%d%H%M%S'))
-    conversion['3hr']=(lambda x: x.strftime('%Y%m%d%H%M%S'))
+    conversion['year']=(lambda x: str(x.year).zfill(4))
+    conversion['mon']=(lambda x: str(x.year).zfill(4)+str(x.month.zfill(2)))
+    conversion['day']=(lambda x: str(x.year).zfill(4)+str(x.month).zfill(2)+str(x.day).zfille(2))
+    conversion['6hr']=(lambda x: str(x.year).zfill(4)+str(x.month).zfill(2)+str(x.day).zfille(2)+str(x.hour).zfill(2)+str(x.minute).zfill(2)+str(x.second).zfill(2))
+    conversion['3hr']=(lambda x: str(x.year).zfill(4)+str(x.month).zfill(2)+str(x.day).zfille(2)+str(x.hour).zfill(2)+str(x.minute).zfill(2)+str(x.second).zfill(2))
     if time_frequency!='fx':
-        return '-'.join([conversion[time_frequency](date) for date in date_axis])
+        date_axis=get_date_axis(output_tmp.variables['time'])[[0,-1]]
+        return '_'+'-'.join([conversion[time_frequency](date) for date in date_axis])
     else:
         return ''
 

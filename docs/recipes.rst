@@ -27,3 +27,6 @@ The command ``cdb_query_CMIP5`` contains several commands:
 
 .. remapping
 .. include:: recipe04.rst
+
+.. picontrol
+.. include:: recipe05.rst

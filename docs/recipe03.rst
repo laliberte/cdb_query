@@ -157,58 +157,43 @@ The downloaded paths are now discoverable by ``cdb_query_CORDEX discover``.
 Retrieving the data: `OPeNDAP`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-`cdb_query_CORDEX` includes built-in functionality for retrieving a subset of the data. We want to subset over France.
-We begin by subsetting the first month using a recent version of NCO (more recent than 4.0) linked to the netCDF4 library::
+We retrieve the first month::
 
-    $ ncks -d time,0,0 pr_JJAS_France_pointers.optimset.nc \
-                       pr_JJAS_France_pointers.optimset.0-0.nc
-
-We then retrieve the first month::
-
-    $ cdb_query_CORDEX remote_retrieve pr_JJAS_France_pointers.optimset.0-0.nc \
-                                       pr_JJAS_France_pointers.optimset.0-0.retrieved.nc 
+    $ cdb_query_CORDEX remote_retrieve --year=1979 --month=6 \
+                                    pr_JJAS_France_pointers.optimset.197906.nc \
+                                   pr_JJAS_France_pointers.optimset.197906.retrieved.nc 
 
 This step took about 4 minutes from the University of Toronto. Next, we extract precipitation for the simulation with the EUR-11 domain::
 
     $ ncks -G : -g /EUR-11/IPSL-INERIS/IPSL-IPSL-CM5A-MR/historical/r1i1p1/IPSL-INERIS-WRF331F/mon/pr \
-                    pr_JJAS_France_pointers.optimset.0-0.retrieved.nc \
-                    pr_JJAS_France_pointers.optimset.0-0.retrieved.EUR-11.nc
-    $ ncview pr_JJAS_France_pointers.optimset.0-0.retrieved.EUR-11.nc
+                    pr_JJAS_France_pointers.optimset.197906.retrieved.nc \
+                    pr_JJAS_France_pointers.optimset.197906.retrieved.EUR-11.nc
+    $ ncview pr_JJAS_France_pointers.optimset.197906.retrieved.EUR-11.nc
 
 By looking at the map, we see that France lies between indices 120 and 210 along the rotated longitude (rlon) and between indices
 130 and 225 alon the rotated latitude (rlat). We thus subset this region and look at the result::
 
-    $ ncks -d rlon,120,211 -d rlat,130,226 pr_JJAS_France_pointers.optimset.0-0.retrieved.EUR-11.nc \
-                                           pr_JJAS_France_pointers.optimset.0-0.retrieved.EUR-11_France.nc
+    $ ncks -d rlon,-15.5,-5.5 -d rlat,-9.1,1.5 pr_JJAS_France_pointers.optimset.197906.retrieved.EUR-11.nc \
+                                           pr_JJAS_France_pointers.optimset.197906.retrieved.EUR-11_France.nc
 
 .. note:: We added one the the indices to conform with ``ncks`` conventions.
 
 We can make sure that our subsetting was ok::
     
-    $ ncview pr_JJAS_France_pointers.optimset.0-0.retrieved.EUR-11_France.nc
+    $ ncview pr_JJAS_France_pointers.optimset.197906.retrieved.EUR-11_France.nc
 
-We repeat the procedure for domain EUR-44. There we find 30 to 55 for rotated longitude (rlon) and 25 to 60 for rotated latitude (rlat).
-We want to subset thee two regions. To do so, we split ``pr_JJAS_France_pointers.optimset.nc`` according to domains::
+Next subset the data. We can use ``ncks`` or  `apply` to do this. ``ncks`` tends to be
+slow because it has not been optimized::
 
-    $ for DOMAIN in EUR-11 EUR-44; do
-        ncks -g $DOMAIN pr_JJAS_France_pointers.optimset.nc \
-                        pr_JJAS_France_pointers.optimset.$DOMAIN.nc
-      done
+    $ ncks -d rlon,-15.5,-5.5 -d rlat,-9.1,1.5 -v pr \
+                                pr_JJAS_France_pointers.optimset.nc \
+                                pr_JJAS_France_pointers.optimset.France.nc
+                            
+or::
 
-We next subset the data::
-
-    $ ncks -d rlon,120,211 -d rlat,130,226 pr_JJAS_France_pointers.optimset.EUR-11.nc \
-                                           pr_JJAS_France_pointers.optimset.EUR-11.France.nc
-    $ ncks -d rlon,30,55 -d rlat,25,60 pr_JJAS_France_pointers.optimset.EUR-44.nc \
-                                       pr_JJAS_France_pointers.optimset.EUR-44.France.nc
-
-And we recombine::
-
-    $ ncecat --gag  pr_JJAS_France_pointers.optimset.EUR-11.France.nc \
-                    pr_JJAS_France_pointers.optimset.EUR-44.France.nc \
-                    pr_JJAS_France_pointers.optimset.France.nc
-    $ ncks -O -G :1 pr_JJAS_France_pointers.optimset.France.nc \
-                    pr_JJAS_France_pointers.optimset.France.nc
+    $ cdb_query_CORDEX apply --var=pr 'ncks -d rlon,-15.5,-5.5 -d rlat,-9.1,1.5' \
+                                pr_JJAS_France_pointers.optimset.nc \
+                                pr_JJAS_France_pointers.optimset.France.nc
 
 Finally, we retrieve the data::
     
@@ -245,7 +230,6 @@ This recipe is summarized in the following BASH script::
         },
     "search_list":
         [
-        "./in/CORDEX",
         "http://esgf-node.ipsl.fr/esg-search/"
         ],
     "file_type_list":
@@ -256,6 +240,7 @@ This recipe is summarized in the following BASH script::
     }
     }
     EndOfHDR
+        #"./in/CORDEX",
     #Make search dir otherwise result in error:
     mkdir -p ./in/CORDEX
 
@@ -271,58 +256,42 @@ This recipe is summarized in the following BASH script::
     #Find optimal set of simulations:
     cdb_query_CORDEX optimset pr_JJAS_France_pointers.nc \
                              pr_JJAS_France_pointers.optimset.nc
-
     #CHOOSE:
         # *1* Retrieve files:
-            cdb_query_CORDEX download \
-                                pr_JJAS_France_pointers.optimset.nc \
-                                ./in/CORDEX/
+            #cdb_query_CORDEX download \
+            #                    pr_JJAS_France_pointers.optimset.nc \
+            #                    ./in/CORDEX/
 
         # *2* Retrieve to netCDF:
-            #Subset first month:
-            ncks -d time,0,0 pr_JJAS_France_pointers.optimset.nc \
-                             pr_JJAS_France_pointers.optimset.0-0.nc
             #Retrieve first month:
-            cdb_query_CORDEX remote_retrieve pr_JJAS_France_pointers.optimset.0-0.nc \
-                                             pr_JJAS_France_pointers.optimset.0-0.retrieved.nc 
-
+            cdb_query_CORDEX remote_retrieve  --year=1979 --month=6 \
+                                    pr_JJAS_France_pointers.optimset.nc \
+                                    pr_JJAS_France_pointers.optimset.197906.retrieved.nc
             #Extract first domain:
             ncks -G : -g /EUR-11/IPSL-INERIS/IPSL-IPSL-CM5A-MR/historical/r1i1p1/IPSL-INERIS-WRF331F/mon/pr \
-                            pr_JJAS_France_pointers.optimset.0-0.retrieved.nc \
-                            pr_JJAS_France_pointers.optimset.0-0.retrieved.EUR-11.nc
+                            pr_JJAS_France_pointers.optimset.197906.retrieved.nc \
+                            pr_JJAS_France_pointers.optimset.197906.retrieved.EUR-11.nc
 
-            #Use ncview to find indices to restrict to France and then subset using ncks:
-            ncks -d rlon,120,211 -d rlat,130,226 pr_JJAS_France_pointers.optimset.0-0.retrieved.EUR-11.nc \
-                                                 pr_JJAS_France_pointers.optimset.0-0.retrieved.EUR-11_France.nc
-            #Repeat for domain EUR-44:
-            ncks -d rlon,30,55 -d rlat,25,60 pr_JJAS_France_pointers.optimset.0-0.retrieved.EUR-44.nc \
-                                             pr_JJAS_France_pointers.optimset.0-0.retrieved.EUR-44_France.nc
-            #Extract domains from optimal set:
-            for DOMAIN in EUR-11 EUR-44; do
-                ncks -g $DOMAIN pr_JJAS_France_pointers.optimset.nc \
-                                pr_JJAS_France_pointers.optimset.$DOMAIN.nc
-            done
-            #Subset the optimal set over France:
-            ncks -d rlon,120,211 -d rlat,130,226 pr_JJAS_France_pointers.optimset.EUR-11.nc \
-                                                 pr_JJAS_France_pointers.optimset.EUR-11.France.nc
-            ncks -d rlon,30,55 -d rlat,25,60 pr_JJAS_France_pointers.optimset.EUR-44.nc \
-                                             pr_JJAS_France_pointers.optimset.EUR-44.France.nc
-            #Recombine:
-            ncecat --gag  pr_JJAS_France_pointers.optimset.EUR-11.France.nc \
-                          pr_JJAS_France_pointers.optimset.EUR-44.France.nc \
-                          pr_JJAS_France_pointers.optimset.France.nc
-            ncks -O -G :1 pr_JJAS_France_pointers.optimset.France.nc \
-                          pr_JJAS_France_pointers.optimset.France.nc
-    
-            #Retrieve the data:
+            #We can then use any program, eg ncview to find where France lies in the rotated coordinates:
+            # ncview  pr_JJAS_France_pointers.optimset.197906.retrieved.EUR-11.nc
+            #
+            #We then find that France lies between -15.5 and -5.5 of rlon and between -9.1 and 1.5 of rlat.
+            #We can verify that this is right:
+            ncks -d rlon,-15.5,-5.5 -d rlat,-9.1,1.5 pr_JJAS_France_pointers.optimset.197906.retrieved.EUR-11.nc \
+                                                 pr_JJAS_France_pointers.optimset.197906.retrieved.EUR-11_France.nc
+            #We can verify that this was right:
+            # ncview  pr_JJAS_France_pointers.optimset.197906.retrieved.EUR-11_France.nc
+
+            #When we are satisfied, we can subset the pointers file. Any program would do but
+            #we suggest using ncks. We can use cdb_query_CORDEX apply to do this:
+            cdb_query_CORDEX apply --var=pr 'ncks -d rlon,-15.5,-5.5 -d rlat,-9.1,1.5' \
+                                    pr_JJAS_France_pointers.optimset.nc \
+                                    pr_JJAS_France_pointers.optimset.France.nc
+
+            #We then retrieve the whole time series over France:
             cdb_query_CORDEX remote_retrieve pr_JJAS_France_pointers.optimset.France.nc \
-                                             pr_JJAS_France_pointers.optimset.France.retrieved.nc 
+                                             pr_JJAS_France_pointers.optimset.France.retrieved.nc
 
-            #Check result:
-            ncks -G : -g /EUR-44/IPSL-INERIS/IPSL-IPSL-CM5A-MR/historical/r1i1p1/IPSL-INERIS-WRF331F/mon/pr \
-                          pr_JJAS_France_pointers.optimset.France.retrieved.nc \
-                          pr_JJAS_France_pointers.optimset.France.retrieved.EUR-44.nc
-            ncks -G : -g /EUR-11/IPSL-INERIS/IPSL-IPSL-CM5A-MR/historical/r1i1p1/IPSL-INERIS-WRF331F/mon/pr \
-                          pr_JJAS_France_pointers.optimset.France.retrieved.nc \
-                          pr_JJAS_France_pointers.optimset.France.retrieved.EUR-11.nc
-
+            #Finally, convert back to a CMIP5 file tree:
+            cdb_query_CORDEX convert pr_JJAS_France_pointers.optimset.France.retrieved.nc \
+                                     out/CORDEX/
