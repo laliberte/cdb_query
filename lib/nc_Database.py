@@ -102,10 +102,11 @@ class nc_Database:
         return [ path[0] for path in self.list_subset((File_Expt.path,File_Expt.file_type)) if retrieval_utils.get_data_node(*path) == data_node]
 
     def list_paths(self):
-        subset=tuple([File_Expt.path,File_Expt.file_type]+[getattr(File_Expt,item) for item in self.drs.official_drs])
+        #subset=tuple([File_Expt.path,File_Expt.file_type]+[getattr(File_Expt,item) for item in self.drs.official_drs])
+        subset=tuple([File_Expt.path,]+[getattr(File_Expt,item) for item in self.drs.official_drs])
         return sorted(list(set(self.list_subset(subset))))
 
-    def write_database(self,header,options,record_function_handle):
+    def write_database(self,header,options,record_function_handle,semaphores=dict()):
         #List all the trees:
         drs_list=copy.copy(self.drs.base_drs)
 
@@ -124,7 +125,8 @@ class nc_Database:
         #                              'w',format='NETCDF4')
         netcdf_pointers=netcdf_soft_links.create_netCDF_pointers(
                                                           header['file_type_list'],
-                                                          header['data_node_list'])
+                                                          header['data_node_list'],
+                                                          semaphores=semaphores)
         self.record_header(output_root,header)
 
         #Define time subset:
@@ -228,7 +230,10 @@ def create_tree_recursive(output_top,tree):
 
 def retrieve_tree_recursive(options,data,output,queues,retrieval_function):
     if 'soft_links' in data.groups.keys():
-        netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data,queues=queues)
+        if 'data_node' in dir(options):
+            netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data,queues=queues,data_node=options.data_node)
+        else:
+            netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data,queues=queues)
         netcdf_pointers.retrieve(output,
                                  retrieval_function,
                                  year=options.year,

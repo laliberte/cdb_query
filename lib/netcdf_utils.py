@@ -81,7 +81,7 @@ def convert_to_date_absolute(absolute_time):
 #def replicate_full_netcdf_recursive(output,data,options=None):
 def replicate_full_netcdf_recursive(output,data):
     for var_name in data.variables.keys():
-        replicate_and_copy_variables(output,data,var_name)
+        replicate_and_copy_variable(output,data,var_name)
     if len(data.groups.keys())>0:
         for group in data.groups.keys():
             output_grp=replicate_group(output,data,group)
@@ -128,12 +128,23 @@ def replicate_netcdf_var_dimensions(output,data,var):
                     output.variables[output.variables[dims].getncattr('bounds')][:]=data.variables[output.variables[dims].getncattr('bounds')][:]
     return output
 
-def replicate_netcdf_var(output,data,var,datatype=None,fill_value=None,add_dim=None,chunksize=None):
+def replicate_netcdf_var(output,data,var,datatype=None,fill_value=None,add_dim=None,chunksize=None,zlib=None):
     output=replicate_netcdf_var_dimensions(output,data,var)
     if datatype==None: datatype=data.variables[var].datatype
     if (isinstance(datatype,netCDF4.CompoundType) and
         not datatype.name in output.cmptypes.keys()):
         datatype=output.createCompoundType(datatype.dtype,datatype.name)
+
+    kwargs=dict()
+    kwargs['fill_value']=fill_value
+    print data.variables[var].filters()
+    if zlib==None:
+        if data.variables[var].filters()==None:
+            kwargs['zlib']=False
+        else:
+            kwargs['zlib']=True
+    else:
+        kwargs['zlib']=zlib
     
     if var not in output.variables.keys():
         dimensions=data.variables[var].dimensions
@@ -145,9 +156,10 @@ def replicate_netcdf_var(output,data,var,datatype=None,fill_value=None,add_dim=N
             else:
                 #chunksizes=tuple([1 if output.dimensions[dim].isunlimited() else 10 for dim in dimensions])
                 chunksizes=tuple([1 if dim=='time' else chunksize for dim in dimensions])
-            output.createVariable(var,datatype,dimensions,zlib=True,fill_value=fill_value,chunksizes=chunksizes)
+            output.createVariable(var,datatype,dimensions,chunksizes=chunksizes,**kwargs)
         else:
-            output.createVariable(var,datatype,dimensions,zlib=True,fill_value=fill_value)
+            kwargs['chunksizes']=data.variables[var].chunking()
+            output.createVariable(var,datatype,dimensions,**kwargs)
     output = replicate_netcdf_var_att(output,data,var)
     return output
 

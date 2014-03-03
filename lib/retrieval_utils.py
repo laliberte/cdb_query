@@ -97,13 +97,18 @@ def md5_for_file(f, block_size=2**20):
         md5.update(data)
     return md5.hexdigest()
 
-def retrieve_path(path,options):
-    decomposition=path[0].split('|')
+#def retrieve_path(path,out_destination):
+def retrieve_path(in_tuple,pointer_var):
+    path=in_tuple[0]
+    tree=pointer_var[:-1]+[in_tuple[5],]
+    out_destination=in_tuple[6]
+
+    decomposition=path.split('|')
     if not (isinstance(decomposition,list) and len(decomposition)>1):
         return
 
     root_path=decomposition[0]
-    dest_name=options.out_destination+'/'+'/'.join(path[2:])+'/'+root_path.split('/')[-1]
+    dest_name=out_destination+'/'+'/'.join(tree)+'/'+root_path.split('/')[-1]
     try: 
         md5sum=md5_for_file(open(dest_name,'r'))
     except:
@@ -160,7 +165,7 @@ def retrieve_path_data(in_tuple,pointer_var):
     unsort_indices=in_tuple[3]
 
     sort_table=in_tuple[4]
-    #pointer_var=in_tuple[5]
+    version=in_tuple[5]
     remote_data=remote_netcdf.remote_netCDF(path,[])
     remote_data.open()
     for dim in remote_data.Dataset.variables[var].dimensions:

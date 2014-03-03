@@ -1,15 +1,24 @@
 import netCDF4
 import numpy as np
+import retrieval_utils
 
 class remote_netCDF:
     def __init__(self,netcdf_file_name,semaphores):
         self.file_name=netcdf_file_name
         self.semaphores=semaphores
+        self.remote_data_node=retrieval_utils.get_data_node(self.file_name, 'HTTPServer')
+        if isinstance(semaphores,dict):
+            self.in_semaphores=(self.remote_data_node in  self.semaphores.keys())
+        else:
+            self.in_semaphores=False
         return
+
     def open(self):
+        self.acquire_semaphore()
         try:
             self.Dataset=netCDF4.Dataset(self.file_name)
         except:
+            self.release_semaphore()
             error=' '.join('''
 The url {0} could not be opened. 
 Copy and paste this url in a browser and try downloading the file.
@@ -25,6 +34,17 @@ not available or out of date.
         except:
             pass
         del self.Dataset
+        self.release_semaphore()
+        return
+
+    def acquire_semaphore(self):
+        if self.in_semaphores:
+            self.semaphores[self.remote_data_node].acquire()
+        return
+
+    def release_semaphore(self):
+        if self.in_semaphores:
+            self.semaphores[self.remote_data_node].release()
         return
 
     def test(self):

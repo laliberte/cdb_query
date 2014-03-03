@@ -139,14 +139,16 @@ def get_diag_months_list(diagnostic):
         diag_months_list=range(1,13)
     return diag_months_list
 
+def optimset_distributed(database,options,semaphores):
+    return optimset(database,options,semaphores=semaphores)
 
-def optimset(database,options):
+def optimset(database,options,semaphores=dict()):
     database.load_database(options,find_time)
     #Find the list of institute / model with all the months for all the years / experiments and variables requested:
     intersection(database,options)
     #print json.dumps(database.pointers.tree,sort_keys=True, indent=4)
     
-    dataset=database.nc_Database.write_database(database.header,options,'record_meta_data')
+    dataset=database.nc_Database.write_database(database.header,options,'record_meta_data',semaphores=semaphores)
     database.close_database()
     output=dataset.filepath()
     dataset.close()

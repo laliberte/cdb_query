@@ -171,12 +171,24 @@ def download(subparsers,epilog,project_drs):
     input_arguments(parser)
     parser.add_argument('out_destination',
                              help='Destination directory for retrieval.')
-    proc_group = parser.add_argument_group('These arguments set threading options')
-    proc_group.add_argument('--num_procs',
-                                 default=1, type=int,
-                                 help='Use num_procs processors to perform the computation.')
+    #proc_group = parser.add_argument_group('These arguments set threading options')
+    #proc_group.add_argument('--num_procs',
+    #                             default=1, type=int,
+    #                             help='Use num_procs processors to perform the computation.')
+
+    source_group = parser.add_argument_group('Specify sources')
+    source_group.add_argument('--source_dir',default=None,help='local cache of data retrieved using \'download\'')
+
+    data_node_group = parser.add_argument_group('Limit download from specific data nodes')
+    source_group.add_argument('--data_node',default=None,help='Retrieve only from the specified data node')
 
     inc_group = parser.add_argument_group('Inclusions')
+    inc_group.add_argument('--year',
+                                 default=None, type=int,
+                                 help='Retrieve only this year.')
+    inc_group.add_argument('--month',
+                                 default=None, type=int,
+                                 help='Retrieve only this month (1 to 12).')
     slicing_arguments(inc_group,project_drs)
     exc_group = parser.add_argument_group('Exclusions')
     excluded_slicing_arguments(exc_group,project_drs)

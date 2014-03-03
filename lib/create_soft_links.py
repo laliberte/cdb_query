@@ -177,7 +177,7 @@ class soft_links:
         return
 
     def record_indices(self,output,data,var):
-        netcdf_utils.replicate_netcdf_var(output,data,var)
+        netcdf_utils.replicate_netcdf_var(output,data,var,zlib=True)
 
         for other_var in data.variables.keys():
             if not 'time' in data.variables[other_var].dimensions:
