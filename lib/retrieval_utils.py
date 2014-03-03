@@ -97,10 +97,6 @@ def md5_for_file(f, block_size=2**20):
         md5.update(data)
     return md5.hexdigest()
 
-#def retrieve_path_wrapper(in_tuple,pointer_var):
-#    path=in_tuple[0]
-#    return path, pointer_var
-
 def retrieve_path(path,options):
     decomposition=path[0].split('|')
     if not (isinstance(decomposition,list) and len(decomposition)>1):
@@ -158,7 +154,6 @@ def find_local_file(source_dir,data):
     return new_paths_list, new_file_type_list
 
 def retrieve_path_data(in_tuple,pointer_var):
-    print 'retrieving',in_tuple, pointer_var
     path=in_tuple[0].replace('fileServer','dodsC').split('|')[0]
     var=in_tuple[1]
     indices=in_tuple[2]

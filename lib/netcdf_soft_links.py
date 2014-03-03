@@ -121,10 +121,10 @@ class read_netCDF_pointers:
 
 
     def retrieve(self,output,retrieval_function,year=None,month=None,min_year=None,source_dir=None,semaphores=dict()):
-        if (isinstance(output,netCDF4.Dataset) or
-            isinstance(output,netCDF4.Group)):
-            time_restriction=self.retrieve_time_axis(output,year=year,month=month,min_year=min_year)
-            vars_to_retrieve=self.find_variables_to_retrieve(output)
+        #if (isinstance(output,netCDF4.Dataset) or
+        #    isinstance(output,netCDF4.Group)):
+        time_restriction=self.retrieve_time_axis(output,year=year,month=month,min_year=min_year)
+        vars_to_retrieve=self.find_variables_to_retrieve(output)
 
         #Get list of paths:
         paths_list=self.data_root.groups['soft_links'].variables['path'][:]
@@ -138,6 +138,7 @@ class read_netCDF_pointers:
         for var_to_retrieve in vars_to_retrieve:
             paths_link=self.data_root.groups['soft_links'].variables[var_to_retrieve][time_restriction,0]
             indices_link=self.data_root.groups['soft_links'].variables[var_to_retrieve][time_restriction,1]
+            print paths_link
 
             #Convert paths_link to id in path dimension:
             paths_link=np.array([list(paths_id_list).index(path_id) for path_id in paths_link])
