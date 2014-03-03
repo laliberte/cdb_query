@@ -188,7 +188,6 @@ class read_netCDF_pointers:
                             unsort_dimensions,
                             np.argsort(sorting_paths)[sorted_paths_link==path_id],
                             tree)
-                    print args
                     self.queues[retrieval_utils.get_data_node(path,file_type)].put((retrieval_function,)+copy.deepcopy(args))
         return 
 
