@@ -171,7 +171,7 @@ class read_netCDF_pointers:
                 #with another file with the same checksum, if there is one!
                 remote_data=remote_netcdf.remote_netCDF(path,semaphores)
                 path=remote_data.check_if_available_and_find_alternative(paths_list,checksums_list)
-                path+='|'+checksums_list[paths_list.index(path)]
+                path+='|'+checksums_list[list(paths_list).index(path)]
 
                 file_type=file_type_list[list(paths_list).index(path)]
                  
