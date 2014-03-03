@@ -98,6 +98,7 @@ def md5_for_file(f, block_size=2**20):
     return md5.hexdigest()
 
 def retrieve_path(path,options):
+    print path
     decomposition=path[0].split('|')
     if not (isinstance(decomposition,list) and len(decomposition)>1):
         return
