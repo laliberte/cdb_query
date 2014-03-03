@@ -137,12 +137,12 @@ def replicate_netcdf_var(output,data,var,datatype=None,fill_value=None,add_dim=N
 
     kwargs=dict()
     kwargs['fill_value']=fill_value
-    print data.variables[var].filters()
     if zlib==None:
         if data.variables[var].filters()==None:
             kwargs['zlib']=False
         else:
-            kwargs['zlib']=True
+            for item in data.variables[var].filters():
+                kwargs[item]=data.variables[var].filters()[item]
     else:
         kwargs['zlib']=zlib
     
@@ -158,7 +158,10 @@ def replicate_netcdf_var(output,data,var,datatype=None,fill_value=None,add_dim=N
                 chunksizes=tuple([1 if dim=='time' else chunksize for dim in dimensions])
             output.createVariable(var,datatype,dimensions,chunksizes=chunksizes,**kwargs)
         else:
-            kwargs['chunksizes']=data.variables[var].chunking()
+            if data.variables[var].chunking()=='contiguous':
+                kwargs['contiguous']=True
+            else:
+                kwargs['chunksizes']=data.variables[var].chunking()
             output.createVariable(var,datatype,dimensions,**kwargs)
     output = replicate_netcdf_var_att(output,data,var)
     return output

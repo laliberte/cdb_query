@@ -84,7 +84,7 @@ def discover(subparsers,epilog,project_drs):
     proc_group = parser.add_argument_group('These arguments set threading options')
     proc_group.add_argument('--num_procs',
                                  default=1, type=int,
-                                 help='Use num_procs processors to perform the computation.')
+                                 help='Use num_procs processes to perform the computation.')
     inc_group = parser.add_argument_group('Inclusions')
     slicing_arguments(inc_group,project_drs)
     return parser
@@ -130,7 +130,7 @@ def optimset(subparsers,epilog,project_drs):
     proc_group = parser.add_argument_group('These arguments set threading options')
     proc_group.add_argument('--num_procs',
                                  default=1, type=int,
-                                 help='Use num_procs processors to perform the computation.')
+                                 help='Use num_procs processes to perform the computation.')
 
     inc_group = parser.add_argument_group('Inclusions')
     slicing_arguments(inc_group,project_drs)
@@ -174,7 +174,7 @@ def download(subparsers,epilog,project_drs):
     #proc_group = parser.add_argument_group('These arguments set threading options')
     #proc_group.add_argument('--num_procs',
     #                             default=1, type=int,
-    #                             help='Use num_procs processors to perform the computation.')
+    #                             help='Use num_procs processes to perform the computation.')
 
     source_group = parser.add_argument_group('Specify sources')
     source_group.add_argument('--source_dir',default=None,help='local cache of data retrieved using \'download\'')
@@ -206,7 +206,7 @@ def convert(subparsers,epilog,project_drs):
     proc_group = parser.add_argument_group('These arguments set threading options')
     proc_group.add_argument('--num_procs',
                                  default=1, type=int,
-                                 help='Use num_procs processors to perform the computation.')
+                                 help='Use num_procs processes to perform the computation.')
 
     inc_group = parser.add_argument_group('Inclusions')
     slicing_arguments(inc_group,project_drs)
@@ -235,7 +235,7 @@ def apply(subparsers,epilog,project_drs):
     proc_group = parser.add_argument_group('These arguments set threading options')
     proc_group.add_argument('--num_procs',
                                  default=1, type=int,
-                                 help='Use num_procs processors to perform the computation.')
+                                 help='Use num_procs processes to perform the computation.')
 
     inc_group = parser.add_argument_group('Inclusions')
     slicing_arguments(inc_group,project_drs)
