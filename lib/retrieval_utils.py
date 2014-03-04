@@ -167,7 +167,7 @@ def retrieve_path_data(in_tuple,pointer_var):
     sort_table=in_tuple[4]
     version=in_tuple[5]
     remote_data=remote_netcdf.remote_netCDF(path,[])
-    remote_data.open()
+    remote_data.open_with_error()
     for dim in remote_data.Dataset.variables[var].dimensions:
         if dim != 'time':
             indices[dim], unsort_indices[dim] = indices_utils.prepare_indices(

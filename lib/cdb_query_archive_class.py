@@ -165,7 +165,9 @@ class SimpleTree:
             #Try opening a link on the data node. If it does not work do not use this data_node
             number_of_trials=10
             try:
-                timing=timeit.timeit('import cdb_query.remote_netcdf; remote_data=cdb_query.remote_netcdf.remote_netCDF(\''+url+'\',[]);remote_data.test()',number=number_of_trials)
+                import_string='import cdb_query.remote_netcdf;import time;'
+                load_string='remote_data=cdb_query.remote_netcdf.remote_netCDF(\''+url+'\',[]);remote_data.is_available();time.sleep(1);'
+                timing=timeit.timeit(import_string+load_string,number=number_of_trials)
                 data_node_timing.append(timing)
                 data_node_list_timed.append(data_node)
             except:

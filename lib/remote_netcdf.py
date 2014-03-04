@@ -20,14 +20,7 @@ class remote_netCDF:
             self.Dataset=netCDF4.Dataset(self.file_name)
         except:
             self.release_semaphore()
-            error=' '.join('''
-The url {0} could not be opened. 
-Copy and paste this url in a browser and try downloading the file.
-If it works, you can stop the download and retry using cdb_query. If
-it still does not work it is likely that your certificates are either
-not available or out of date.
-            '''.splitlines())
-            raise dodsError(error.format(self.file_name.replace('dodsC','fileServer')))
+        return
     
     def close(self):
         try:
@@ -48,11 +41,18 @@ not available or out of date.
             self.semaphores[self.remote_data_node].release()
         return
 
-    def test(self):
-        self.Dataset=netCDF4.Dataset(self.file_name)
-        self.close() 
-        time.sleep(1)
-        return
+    def open_with_error(self):
+        error_statement=' '.join('''
+The url {0} could not be opened. 
+Copy and paste this url in a browser and try downloading the file.
+If it works, you can stop the download and retry using cdb_query. If
+it still does not work it is likely that your certificates are either
+not available or out of date.
+            '''.splitlines()).format(self.file_name.replace('dodsC','fileServer'))
+        try:
+            self.Dataset=netCDF4.Dataset(self.file_name)
+        except:
+            raise dodsError(error)
 
     def is_available(self):
         try:
@@ -75,7 +75,6 @@ not available or out of date.
             return self.file_name
 
     def get_time(self):
-
         self.open()
         try:
             if 'calendar' in dir(self.Dataset.variables['time']):

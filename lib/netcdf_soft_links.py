@@ -45,19 +45,27 @@ class create_netCDF_pointers:
         most_recent_version='v'+str(np.max([int(item['version'][1:]) for item in paths_list]))
         path=paths_list[[item['version'] for item in paths_list].index(most_recent_version)]
 
+        #Check if data in available:
+        remote_data=remote_netcdf.remote_netCDF(path['path'],self.semaphores)
+        alt_path_name=remote_data.check_if_available_and_find_alternative([item['path'] for item in paths_list],
+                                                                 [item['checksum'] for item in paths_list])
+
+        #Use aternative path:
+        path=paths_list[[item['path'] for item in paths_list].index(alt_path_name)]
+
         for att in path.keys():
             if att!='path':      
                 output.setncattr(att,path[att])
         output.setncattr('path',path['path'].split('|')[0])
         output.setncattr('checksum',path['path'].split('|')[1])
 
-        dataset=remote_netcdf.remote_netCDF(path['path'].split('|')[0].replace('fileServer','dodsC'),self.semaphores)
-        dataset.open()
-        remote_data=dataset.Dataset
+        remote_data=remote_netcdf.remote_netCDF(path['path'].split('|')[0].replace('fileServer','dodsC'),self.semaphores)
+        remote_data.open()
+        remote_data=remote_data.Dataset
         for var_name in remote_data.variables.keys():
             netcdf_utils.replicate_netcdf_var(output,remote_data,var_name)
             output.variables[var_name][:]=remote_data.variables[var_name][:]
-        dataset.close()
+        remote_data.close()
         return
 
 def record_to_file(output_root,output):

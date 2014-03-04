@@ -86,8 +86,11 @@ class soft_links:
 
     def _recover_time(self,path):
         path_name=str(path['path']).replace('fileServer','dodsC').split('|')[0]
-        dataset=remote_netcdf.remote_netCDF(path_name,self.semaphores)
-        time_axis=dataset.get_time()
+        remote_data=remote_netcdf.remote_netCDF(path_name,self.semaphores)
+        if remote_data.is_available():
+            time_axis=remote_data.get_time()
+        else:
+            time_axis=np.zeros((0,))
         table_desc=[
                    ('paths','a255'),
                    ('indices','uint32')
