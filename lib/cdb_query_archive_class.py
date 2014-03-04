@@ -105,9 +105,8 @@ class SimpleTree:
             simulations_list=self.list_fields_local(options,self.drs.simulations_desc)
 
             manager=multiprocessing.Manager()
-            data_node_list=self.list_data_nodes(options)
             semaphores=dict()
-            for data_node in data_node_list:
+            for data_node in  self.header['data_node_list']:
                 semaphores[data_node]=manager.Semaphore()
             output=distributed_recovery(optimset.optimset_distributed,self,options,simulations_list,manager,args=(semaphores,))
             #Close datasets:
@@ -166,7 +165,7 @@ class SimpleTree:
             #Try opening a link on the data node. If it does not work do not use this data_node
             number_of_trials=10
             try:
-                timing=timeit.timeit('import cdb_query.retrieval_utils; cdb_query.retrieval_utils.test_remote_netCDF(\''+url+'\');',number=number_of_trials)
+                timing=timeit.timeit('import cdb_query.remote_netcdf; remote_data=cdb_query.remote_netcdf.remote_netCDF(\''+url+'\',[]);remote_data.test()',number=number_of_trials)
                 data_node_timing.append(timing)
                 data_node_list_timed.append(data_node)
             except:
@@ -175,6 +174,7 @@ class SimpleTree:
         #print data_node_list
         #print data_node_list_timed
         #print data_node_timing
+        #print list(np.array(data_node_list_timed)[np.argsort(data_node_timing)])+list(set(data_node_list).difference(data_node_list_timed))
         return list(np.array(data_node_list_timed)[np.argsort(data_node_timing)])+list(set(data_node_list).difference(data_node_list_timed))
 
     def list_fields(self,options):

@@ -1,41 +1,95 @@
 Installation instructions
 =========================
 
+
+.. attention:: The long list of requirements may seem daunting but on many
+               standard linux distributions they should be relatively easy to
+               fulfill. Here it is assumed that Linux is used.
+
 This package requires:
 
 Core requirements
 -----------------
-* Recent versions of the following libraries, compiled in this order:
 
-  * ZLIB (tested with zlib-1.2.8)
-  * SZIP compiled using ZLIB (tested with szip-2.1)
-  * HDF5 compiled using SZIP and ZLIB (tested with hdf5-1.8.11)
-  * netCDF4 library compiled with DAP support. DAP support requires CURL (usually installed on 
-    common OS, here tested with curl-7.15.5). The version of netcdf used here is netcdf-4.3.1-rc2
+* A `myproxy` manager.
+* Python 2.7.x.
+* A recent version of the netCDF4 library. Ideally, it would be of the 4.3.1 vintage.
 
-  Please visit http://www.unidata.ucar.edu/software/netcdf/docs/netcdf-install/Quick-Instructions.html#Quick-Instructions
-  for instructions on how to build these libraries.
+.. attention:: If you have a knowledgeable system administrator that can help you with
+               the following steps, it is strongly recommended that you seek help before
+               attempting to compile these libraries yourself.
 
-* Python 2.7.x, depending on your OS you might have to retrieve the source code.
+To check whether you have those installed, you should ask yourself the following questions:
 
-* Globus Toolkit, ``myproxy`` subpackage.
-  Go to http://toolkit.globus.org/toolkit/downloads/ and retrieve the latest version of the Full Toolkit appropriate for your system.
-  Installation instructions can be found on that webpage. The installation allows the user to install only subpackages. Here,
-  we will only need the ``myproxy`` subackage. Once installed, the command-line tool ``myproxy-logon`` should become available.
-  On unix systems (tried on CentOS 5), the following command should work::
+* Do you have a `myproxy` manager? Our experience suggests the best and easiest way to obtain a
+  `myproxy` manager is through the ``myproxy`` package available on most Linux distributions.
 
-    $ yum install myproxy
+    * It is easily installed by a system administrator with::
+        
+        $ yum install myproxy
 
-These three requirements could be difficult to get right. It is strongly suggested that the user check
-with their system administrator or look through online forums to ensure that these three key steps
-are completed successfully.
+    * If you are not a Linux user, you best option is to parse through
+      http://www.unidata.ucar.edu/software/netcdf/docs/esg.html or 
+      http://cmip-pcmdi.llnl.gov/cmip5/data_getting_started.html (points 6,7).
 
-.. warning:: netCDF4 versions prior to netcdf-4.3.1-rc2 are likely to fail with this package and
-             version netcdf-4.3.1 is likely to require a more recent version of curl.
+    * If you are a Linux user and your system administrator cannot install this package,
+      you best bet is to compile only a section of the Globus Toolkit. This is a difficult 
+      package to install but we have been successful with the following procedure::
 
+          $ wget http://www.globus.org/ftppub/gt5/5.0/5.0.0/installers/src/gt5.0.0-all-source-installer.tar.bz2
+          $ tar xvfz gt5.0.0-all-source-installer.tar.bz2
+          $ ./configure --prefix=$HOME/local/gt-5.0.0
+          $ make install myproxy
+      
+      Some warnings may persist but it is likely to work for the purpose of this package.
 
-Python packages requirements
-----------------------------
+* Do you have Python 2.7.x? To check this, run::
+
+    $ python --version
+    Python 2.7.6
+
+  If your version is 2.6.x or older, this package will NOT work. Ask your system administrator
+  to install a Python 2.7.x. Alternatively, you can install bundled python distributions
+  like Enthough Python Distribution (EPD) or their more recent version, Enthought Canopy.
+  These distirbutions are free of charge for academic use.
+  If you decide to use Enthought Canopy, you can skip to section :ref:`Enthought`.
+  If you are not a Linux user, this will likely be the easiest way to get started with this package.
+
+* Do you have netCDF4 installed?
+    * First, check whether you have ``nc-config`` and find its version::
+        
+        $ nc-config --version
+        netCDF 4.3.1-rc4
+
+    * If you have a working netCDF4 version that is older than 4.3.0 but more recent than 4.2.0
+      most features in this package should work.
+
+    * It is however strongly recommended that you upgrade to 4.3.1-rc4 or a more recent version.
+      If you have netCDF4 already installed, you should have ZLIB, SZIP and HDF5. Then
+      you only need to install a recent version of netCDF4.
+      We are suggesting version 4.3.1-rc4
+      because version 4.3.1.1 appears to require a recent version of CURL to work properly
+      and most common Linux distributions do not have the adequate version. For the purposes
+      of this package version 4.3.1-rc4 should work just fine. It can be obtained through::
+
+          $ wget ftp://ftp.unidata.ucar.edu/pub/netcdf/netcdf-4.3.1-rc4.tar.gz
+      
+      Please visit http://www.unidata.ucar.edu/software/netcdf/docs/netcdf-install/Quick-Instructions.html#Quick-Instructions
+      for instructions on how to build this library. 
+
+    * If you do not have ``nc-config``, then it is likely that you will need to compile the following libraries,
+      compiled in this order:
+          * ZLIB (tested with zlib-1.2.8)
+          * SZIP compiled using ZLIB (tested with szip-2.1)
+          * HDF5 compiled using SZIP and ZLIB (tested with hdf5-1.8.11)
+          * netCDF4 library compiled with DAP support. DAP support requires CURL (usually installed on 
+            common OS, here tested with curl-7.15.5). The version of netcdf used here is netcdf-4.3.1-rc4
+
+          Please visit http://www.unidata.ucar.edu/software/netcdf/docs/netcdf-install/Quick-Instructions.html#Quick-Instructions
+          for instructions on how to build these libraries.
+
+You are NOT using an Enthought distribution of Python
+-----------------------------------------------------
 
 Packages installable from PyPI
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -43,7 +97,6 @@ The next step is to install the following python packages:
 
 * numpy
 * sqlalchemy
-* esgf-pyclient
 * Cython
 * python-dateutil
 
@@ -51,7 +104,6 @@ These should be easy to install::
 
     $ pip install numpy
     $ pip install sqlalchemy
-    $ pip install esgf-pyclient
     $ pip install Cython
     $ pip install python-dateutil
 
@@ -82,7 +134,6 @@ Finally, install the python packages you require::
 
     $ pip install numpy 
     $ pip install sqlalchemy
-    $ pip install esgf-pyclient
     $ pip install Cython
     $ pip install python-dateutil
 
@@ -133,11 +184,33 @@ Run the tests::
 
 If all tests were passed, the installation was successful!
 
-This package: `cdb_query`
--------------------------
+.. _Enthought:
+
+You are using an Enthought distribution of Python
+-------------------------------------------------
+* If you are using Enthought Python Distribution (EPD), it should provide you
+  with a command line ``python`` with the right version and all the requirements.
+
+* If you are using the more recent Enthough Canopy, you need to run the following
+  command::
+
+    $ canopy_cli setup
+
+  This will "construct a full, user-accessible Python environment". See 
+  http://docs.enthought.com/canopy/configure/canopy-cli.html#canopy-cli-setup
+  for more information. This installs a python environment in a pre-specified
+  location, depending on your OS. A complete list can be found here in
+  http://docs.enthought.com/canopy/configure/canopy-cli.html#canopy-cli-s-default-location-in-the-canopy-user-python-environment.
+  On Linux, it tends to be easier to simply activate the command-line interface::
+
+    $ source /path/canopy/location/bin/activate
+
+Installing this package: `cdb_query`
+-------------------------------------
 This package can be installed with ``pip``::
 
     $ pip install cdb_query
+    $ pip install esgf-pyclient
 
 .. warning:: If you are using a virtual environment, you must always ``source $HOME/python/bin/activate`` BEFORE
              using ``cdb_query``
@@ -231,15 +304,18 @@ ESGF username.
 Alternatively, users can have a look at http://www.unidata.ucar.edu/software/netcdf/docs/esg.html
 or at http://cmip-pcmdi.llnl.gov/cmip5/data_getting_started.html (points 6,7)
 
+Secondary tools used in the recipes
+-----------------------------------
+
 netCDF Operators (NCO)
-----------------------
+^^^^^^^^^^^^^^^^^^^^^^
 Some of the recipes make use of `NCO`. These recipes were tested using version 4.4.0 linked against the aforementioned
 netcdf libraries. Please consult the project's webpage for information on how to install: http://nco.sourceforge.net/.
 
 These recipes were tested using the `NCO` built using the BASH script found in :ref:`install-nco`
 
 NcView
-------
+^^^^^^
 With all the libraries properly installed, `NcView` is now easy to install::
     
     $ wget ftp://cirrus.ucsd.edu/pub/ncview/ncview-2.1.2.tar.gz
@@ -258,7 +334,7 @@ With all the libraries properly installed, `NcView` is now easy to install::
 This installation installs `NcView` in ``$HOME/local/ncview-2.1.2/bin`` and this directory should be added to your path.
 
 GNU-parallel
-------------
+^^^^^^^^^^^^
 `GNU-parallel` can be used to speed up part of the discovery process. It can be installed this way::
 
     $ wget http://ftp.gnu.org/gnu/parallel/parallel-latest.tar.bz2
@@ -271,7 +347,7 @@ GNU-parallel
 This installation installs `GNU-parallel` in ``$HOME/local/parallel-20140122/bin`` and this directory should be added to your path.
 
 Climate Data Operators (CDO)
-----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The netCDF4 files generated by `cdb_query` are not compatible with `CDO`. `NCO` can be used to extract variables and
 remove the hierarchical structure. The retrieved data will then be compatible with `CDO`. With all the installed libraries,
@@ -279,7 +355,7 @@ remove the hierarchical structure. The retrieved data will then be compatible wi
 
 
 JASPER
-^^^^^^
+""""""
 You will need to first install `jasper`::
 
     $ wget http://www.ece.uvic.ca/~frodo/jasper/software/jasper-1.900.1.zip
@@ -290,7 +366,7 @@ You will need to first install `jasper`::
     $ make install
 
 PROJ
-^^^^
+""""
 Next, you will need `proj`::
     
     $ wget http://download.osgeo.org/proj/proj-4.8.0.tar.gz
@@ -301,7 +377,7 @@ Next, you will need `proj`::
     $ make install
 
 GRIB-API
-^^^^^^^^
+""""""""
 Then you will need ``grib-api``::
 
     $ wget https://software.ecmwf.int/wiki/download/attachments/3473437/grib_api-1.11.0.tar.gz
@@ -314,7 +390,7 @@ Then you will need ``grib-api``::
     $ make install
 
 CDO
-^^^
+"""
 
 Finally, you are ready to install `CDO`::
 

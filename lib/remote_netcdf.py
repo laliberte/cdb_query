@@ -1,6 +1,7 @@
 import netCDF4
 import numpy as np
 import retrieval_utils
+import time
 
 class remote_netCDF:
     def __init__(self,netcdf_file_name,semaphores):
@@ -50,6 +51,7 @@ not available or out of date.
     def test(self):
         self.Dataset=netCDF4.Dataset(self.file_name)
         self.close() 
+        time.sleep(1)
         return
 
     def is_available(self):
