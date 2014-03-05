@@ -12,6 +12,7 @@ class remote_netCDF:
             self.in_semaphores=(self.remote_data_node in  self.semaphores.keys())
         else:
             self.in_semaphores=False
+        self.Dataset=none
         return
 
     def open(self):
@@ -24,10 +25,12 @@ class remote_netCDF:
     
     def close(self):
         try:
-            self.Dataset.cose()
+            if isinstance(self.Dataset,netCDF4.Dataset):
+                self.Dataset.cose()
         except:
             pass
         del self.Dataset
+        self.Dataset=None
         self.release_semaphore()
         return
 
