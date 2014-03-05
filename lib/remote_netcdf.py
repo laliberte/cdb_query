@@ -50,13 +50,12 @@ The url {0} could not be opened.
 Copy and paste this url in a browser and try downloading the file.
 If it works, you can stop the download and retry using cdb_query. If
 it still does not work it is likely that your certificates are either
-not available or out of date. This is a common error and is not
-fatal. It could however affect how many datasets are kept.
+not available or out of date.
             '''.splitlines()).format(self.file_name.replace('dodsC','fileServer'))
         try:
             self.Dataset=netCDF4.Dataset(self.file_name)
         except:
-            raise dodsError(error)
+            raise dodsError(error_statement)
 
     def is_available(self):
         try:
@@ -65,7 +64,8 @@ fatal. It could however affect how many datasets are kept.
             self.close()
             return True
         except dodsError as e:
-            print e
+            e_mod=" This is a common error and is not fatal. It could however affect how many datasets are kept."
+            print e+e_mod
             return False
 
     def check_if_available_and_find_alternative(self,paths_list,checksums_list):
