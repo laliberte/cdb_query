@@ -13,7 +13,6 @@ import remote_archive
 import cdb_query_archive_parsers
 import cdb_query_archive_class
 
-import retrieve_soft_links
 import netcdf_utils
 
 def main_CMIP5():
