@@ -142,7 +142,7 @@ def get_diag_months_list(diagnostic):
 def optimset_distributed(database,options,semaphores):
     return optimset(database,options,semaphores=semaphores)
 
-def optimset(database,options,semaphores=dict()):
+def optimset(database,options,semaphores=None):
     database.load_database(options,find_time)
     #Find the list of institute / model with all the months for all the years / experiments and variables requested:
     intersection(database,options)

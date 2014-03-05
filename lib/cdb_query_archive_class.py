@@ -108,7 +108,7 @@ class SimpleTree:
             semaphores=dict()
             for data_node in  self.header['data_node_list']:
                 semaphores[data_node]=manager.Semaphore()
-            semaphores=[]
+            #semaphores=[]
             output=distributed_recovery(optimset.optimset_distributed,self,options,simulations_list,manager,args=(semaphores,))
             #Close datasets:
             output.close()
@@ -167,7 +167,7 @@ class SimpleTree:
             number_of_trials=10
             try:
                 import_string='import cdb_query.remote_netcdf;import time;'
-                load_string='remote_data=cdb_query.remote_netcdf.remote_netCDF(\''+url+'\',[]);remote_data.is_available();time.sleep(1);'
+                load_string='remote_data=cdb_query.remote_netcdf.remote_netCDF(\''+url+'\',[]);remote_data.is_available();time.sleep(2);'
                 timing=timeit.timeit(import_string+load_string,number=number_of_trials)
                 data_node_timing.append(timing)
                 data_node_list_timed.append(data_node)

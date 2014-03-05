@@ -106,7 +106,7 @@ class nc_Database:
         subset=tuple([File_Expt.path,]+[getattr(File_Expt,item) for item in self.drs.official_drs])
         return sorted(list(set(self.list_subset(subset))))
 
-    def write_database(self,header,options,record_function_handle,semaphores=dict()):
+    def write_database(self,header,options,record_function_handle,semaphores=None):
         #List all the trees:
         drs_list=copy.copy(self.drs.base_drs)
 

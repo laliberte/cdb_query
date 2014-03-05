@@ -19,7 +19,7 @@ import retrieval_utils
 import copy
 
 class create_netCDF_pointers:
-    def __init__(self,file_type_list,data_node_list,semaphores=[]):
+    def __init__(self,file_type_list,data_node_list,semaphores=None):
         self.file_type_list=file_type_list
         self.data_node_list=data_node_list
         self.semaphores=semaphores
@@ -116,7 +116,7 @@ class read_netCDF_pointers:
                 time_restriction=np.logical_and(time_restriction,month_axis== month)
         return time_axis,time_restriction
 
-    def retrieve(self,output,retrieval_function,year=None,month=None,min_year=None,source_dir=None,semaphores=dict()):
+    def retrieve(self,output,retrieval_function,year=None,month=None,min_year=None,source_dir=None,semaphores=[]):
         #First find time axis, time restriction and which variables to retrieve:
         time_axis, time_restriction=self.retrieve_time_axis(year=year,month=month,min_year=min_year)
         vars_to_retrieve=[var for var in self.data_root.variables.keys() 
@@ -153,7 +153,7 @@ class read_netCDF_pointers:
 
     def retrieve_variables(self,retrieval_function,var_to_retrieve,time_restriction,
                                 paths_list,file_type_list,paths_id_list,checksums_list,version_list,
-                                            output,semaphores=dict()):
+                                            output,semaphores=None):
         paths_link=self.data_root.groups['soft_links'].variables[var_to_retrieve][time_restriction,0]
         indices_link=self.data_root.groups['soft_links'].variables[var_to_retrieve][time_restriction,1]
 

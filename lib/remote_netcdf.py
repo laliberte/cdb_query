@@ -42,6 +42,8 @@ class remote_netCDF:
     def release_semaphore(self):
         if self.in_semaphores:
             self.semaphores[self.remote_data_node].release()
+            #Wait a little bit before releasing:
+            time.sleep(1)
         return
 
     def open_with_error(self):
@@ -63,6 +65,7 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
             self.close()
             return True
         except dodsError as e:
+            self.close()
             e_mod=" This is a common error and is not fatal. It could however affect the number of datasets that are kept."
             print e.value+e_mod
             return False

@@ -29,7 +29,7 @@ import random
 
 
 class soft_links:
-    def __init__(self,paths_list,file_type_list,data_node_list,semaphores=[]):
+    def __init__(self,paths_list,file_type_list,data_node_list,semaphores=None):
         self.sorts_list=['version','file_type_id','data_node_id','path_id']
         self.id_list=['data_node','file_type','path','checksum','search']
         self.file_type_list=file_type_list

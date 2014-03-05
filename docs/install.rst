@@ -21,7 +21,7 @@ Core requirements
 
 To check whether you have those installed, you should ask yourself the following questions:
 
-* Do you have a `myproxy` manager? Our experience suggests the best and easiest way to obtain a
+* Do you have a `myproxy` manager? Our experience suggests that the best and easiest way to obtain a
   `myproxy` manager is through the ``myproxy`` package available on most Linux distributions.
 
     * It is easily installed by a system administrator with::
@@ -49,11 +49,25 @@ To check whether you have those installed, you should ask yourself the following
     Python 2.7.6
 
   If your version is 2.6.x or older, this package will NOT work. Ask your system administrator
-  to install a Python 2.7.x. Alternatively, you can install bundled python distributions
-  like Enthough Python Distribution (EPD) or their more recent version, Enthought Canopy.
-  These distirbutions are free of charge for academic use.
-  If you decide to use Enthought Canopy, you can skip to section :ref:`Enthought`.
-  If you are not a Linux user, this will likely be the easiest way to get started with this package.
+  to install a Python 2.7.x. If this is not possible, you can try to compile it yourself::
+
+    $ wget http://www.python.org/ftp/python/2.7.6/Python-2.7.6.tgz
+    $ tar xvfz Python-2.7.6.tgz
+    $ cd Python-2.7.6
+    $ ./configure --prefix=$HOME/local/Python-2.7.6
+    $ make
+    $ make test
+    $ make install
+
+  The ``make`` is likely to mention missing libraries but as long it is completes without errors,
+  it should be OK for this package. This installs python in ``$HOME/local/Python-2.7.6``::
+
+    $ $HOME/local/Python-2.7.6/bin/python --version
+    Python 2.7.6
+ 
+.. warning:: Enthought Python Distributions (EPD), including Enthought Canopy will NOT
+             work with this package. This may change in the future but as of March 3, 2014
+             they do not appear to be working.
 
 * Do you have netCDF4 installed?
     * First, check whether you have ``nc-config`` and find its version::
@@ -88,8 +102,8 @@ To check whether you have those installed, you should ask yourself the following
           Please visit http://www.unidata.ucar.edu/software/netcdf/docs/netcdf-install/Quick-Instructions.html#Quick-Instructions
           for instructions on how to build these libraries.
 
-You are NOT using an Enthought distribution of Python
------------------------------------------------------
+Python Packages
+---------------
 
 Packages installable from PyPI
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -183,27 +197,6 @@ Run the tests::
     $ cd test; python run_all.py; cd ..
 
 If all tests were passed, the installation was successful!
-
-.. _Enthought:
-
-You are using an Enthought distribution of Python
--------------------------------------------------
-* If you are using Enthought Python Distribution (EPD), it should provide you
-  with a command line ``python`` with the right version and all the requirements.
-
-* If you are using the more recent Enthough Canopy, you need to run the following
-  command::
-
-    $ canopy_cli setup
-
-  This will "construct a full, user-accessible Python environment". See 
-  http://docs.enthought.com/canopy/configure/canopy-cli.html#canopy-cli-setup
-  for more information. This installs a python environment in a pre-specified
-  location, depending on your OS. A complete list can be found here in
-  http://docs.enthought.com/canopy/configure/canopy-cli.html#canopy-cli-s-default-location-in-the-canopy-user-python-environment.
-  On Linux, it tends to be easier to simply activate the command-line interface::
-
-    $ source /path/canopy/location/bin/activate
 
 Installing this package: `cdb_query`
 -------------------------------------
