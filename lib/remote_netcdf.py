@@ -12,7 +12,7 @@ class remote_netCDF:
             self.in_semaphores=(self.remote_data_node in  self.semaphores.keys())
         else:
             self.in_semaphores=False
-        self.Dataset=none
+        self.Dataset=None
         return
 
     def open(self):
