@@ -64,8 +64,8 @@ not available or out of date.
             self.close()
             return True
         except dodsError as e:
-            e_mod=" This is a common error and is not fatal. It could however affect how many datasets are kept."
-            print e+e_mod
+            e_mod=" This is a common error and is not fatal. It could however affect the number of datasets that are kept."
+            print e.value+e_mod
             return False
 
     def check_if_available_and_find_alternative(self,paths_list,checksums_list):
