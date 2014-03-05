@@ -104,10 +104,11 @@ class SimpleTree:
             #Find the atomic simulations:
             simulations_list=self.list_fields_local(options,self.drs.simulations_desc)
 
-            manager=multiprocessing.Manager()
-            semaphores=dict()
-            for data_node in  self.header['data_node_list']:
-                semaphores[data_node]=manager.Semaphore()
+            #manager=multiprocessing.Manager()
+            #semaphores=dict()
+            #for data_node in  self.header['data_node_list']:
+            #    semaphores[data_node]=manager.Semaphore()
+            semaphores=[]
             output=distributed_recovery(optimset.optimset_distributed,self,options,simulations_list,manager,args=(semaphores,))
             #Close datasets:
             output.close()
