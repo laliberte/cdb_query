@@ -59,7 +59,8 @@ not available or out of date.
             self.open()
             self.close()
             return True
-        except:
+        except dodsError as e:
+            print e
             return False
 
     def check_if_available_and_find_alternative(self,paths_list,checksums_list):
