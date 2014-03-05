@@ -50,7 +50,8 @@ The url {0} could not be opened.
 Copy and paste this url in a browser and try downloading the file.
 If it works, you can stop the download and retry using cdb_query. If
 it still does not work it is likely that your certificates are either
-not available or out of date.
+not available or out of date. This is a common error and is not
+fatal. It could however affect how many datasets are kept.
             '''.splitlines()).format(self.file_name.replace('dodsC','fileServer'))
         try:
             self.Dataset=netCDF4.Dataset(self.file_name)
