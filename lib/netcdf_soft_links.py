@@ -47,7 +47,6 @@ class create_netCDF_pointers:
 
         #Check if data in available:
         remote_data=remote_netcdf.remote_netCDF(path['path'],self.semaphores)
-        print paths_list
         alt_path_name=remote_data.check_if_available_and_find_alternative([item['path'].split('|')[0] for item in paths_list],
                                                                  [item['path'].split('|')[1] for item in paths_list])
 
