@@ -60,7 +60,8 @@ fatal. It could however affect how many datasets are kept.
 
     def is_available(self):
         try:
-            self.open()
+            #self.open()
+            self.open_with_error()
             self.close()
             return True
         except dodsError as e:
