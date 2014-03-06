@@ -167,10 +167,10 @@ class SimpleTree:
         for data_node in data_node_list:
             url=self.nc_Database.list_paths_by_data_node(data_node)[0].split('|')[0].replace('fileServer','dodsC')
             #Try opening a link on the data node. If it does not work do not use this data_node
-            number_of_trials=10
+            number_of_trials=5
             try:
                 import_string='import cdb_query.remote_netcdf;import time;'
-                load_string='remote_data=cdb_query.remote_netcdf.remote_netCDF(\''+url+'\',[]);remote_data.is_available();time.sleep(2);'
+                load_string='remote_data=cdb_query.remote_netcdf.remote_netCDF(\''+url+'\',[]);remote_data.is_available();time.sleep(2)'
                 timing=timeit.timeit(import_string+load_string,number=number_of_trials)
                 data_node_timing.append(timing)
                 data_node_list_timed.append(data_node)

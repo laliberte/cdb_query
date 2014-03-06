@@ -87,10 +87,7 @@ class soft_links:
     def _recover_time(self,path):
         path_name=str(path['path']).replace('fileServer','dodsC').split('|')[0]
         remote_data=remote_netcdf.remote_netCDF(path_name,self.semaphores)
-        if remote_data.is_available():
-            time_axis=remote_data.get_time()
-        else:
-            time_axis=np.zeros((0,))
+        time_axis=remote_data.get_time()
         table_desc=[
                    ('paths','a255'),
                    ('indices','uint32')
@@ -163,20 +160,24 @@ class soft_links:
 
         #Open the first file and use its metadata to populate container file:
         remote_data=remote_netcdf.remote_netCDF(self.table['paths'][0],self.semaphores)
-        remote_data.open()
-        data=remote_data.Dataset
-        netcdf_utils.replicate_netcdf_file(output,data)
+        try:
+            remote_data.open_with_error()
+            netcdf_utils.replicate_netcdf_file(output,remote_data.Dataset)
 
-        #Convert time axis to numbers and find the unique time axis:
-        self.unique_time_axis(data,years,months)
+            #Convert time axis to numbers and find the unique time axis:
+            self.unique_time_axis(remote_data.Dataset,years,months)
 
-        self.reduce_paths_ordering()
-        #Create time axis in ouptut:
-        netcdf_utils.create_time_axis(output,data,self.time_axis_unique)
+            self.reduce_paths_ordering()
+            #Create time axis in ouptut:
+            netcdf_utils.create_time_axis(output,remote_data.Dataset,self.time_axis_unique)
 
-        self.create(output)
-        self.record_indices(output,data,var)
-        remote_data.close()
+            self.create(output)
+            self.record_indices(output,remote_data.Dataset,var)
+        except dodsError as e:
+            e_mod=" This is an uncommon error. It is likely to be FATAL."
+            print e.value+e_mod
+        finally:
+            remote_data.close()
         return
 
     def record_indices(self,output,data,var):

@@ -60,12 +60,18 @@ class create_netCDF_pointers:
         output.setncattr('checksum',path['path'].split('|')[1])
 
         remote_data=remote_netcdf.remote_netCDF(path['path'].split('|')[0].replace('fileServer','dodsC'),self.semaphores)
-        remote_data.open()
-        remote_data=remote_data.Dataset
-        for var_name in remote_data.variables.keys():
-            netcdf_utils.replicate_netcdf_var(output,remote_data,var_name)
-            output.variables[var_name][:]=remote_data.variables[var_name][:]
-        remote_data.close()
+        #open and record:
+        try:
+            remote_data.open_with_error()
+            remote_data=remote_data.Dataset
+            for var_name in remote_data.variables.keys():
+                netcdf_utils.replicate_netcdf_var(output,remote_data,var_name)
+                output.variables[var_name][:]=remote_data.variables[var_name][:]
+        except dodsError as e:
+            e_mod=" This is an uncommon error. It is likely to be FATAL."
+            print e.value+e_mod
+        finally:
+            remote_data.close()
         return
 
 

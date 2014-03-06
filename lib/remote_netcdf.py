@@ -37,13 +37,12 @@ class remote_netCDF:
     def acquire_semaphore(self):
         if self.in_semaphores:
             self.semaphores[self.remote_data_node].acquire()
+            time.sleep(1)
         return
 
     def release_semaphore(self):
         if self.in_semaphores:
             self.semaphores[self.remote_data_node].release()
-            #Wait a little bit before releasing:
-            time.sleep(1)
         return
 
     def open_with_error(self):
@@ -53,14 +52,19 @@ Copy and paste this url in a browser and try downloading the file.
 If it works, you can stop the download and retry using cdb_query. If
 it still does not work it is likely that your certificates are either
 not available or out of date.'''.splitlines()).format(self.file_name.replace('dodsC','fileServer'))
+        self.acquire_semaphore()
         try:
-            self.Dataset=netCDF4.Dataset(self.file_name)
+            try:
+                self.Dataset=netCDF4.Dataset(self.file_name)
+            except:
+                time.sleep(10)
+                self.Dataset=netCDF4.Dataset(self.file_name)
         except:
             raise dodsError(error_statement)
+        return
 
     def is_available(self):
         try:
-            #self.open()
             self.open_with_error()
             self.close()
             return True
@@ -71,20 +75,20 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
             return False
 
     def check_if_available_and_find_alternative(self,paths_list,checksums_list):
-        if not self.is_available:
+        if not self.is_available():
             checksum=checksums_list[paths_list.index(self.file_name)]
             for cs_id, cs in enumerate(checksums_list):
                 if cs==checksum and paths_list[id]!=path:
                     remote_data=remote_netCDF(paths_list[id],self.semaphores)
-                    if remote_data.isavailable():
+                    if remote_data.is_available():
                         return paths_list[id]
             return self.file_name
         else:
             return self.file_name
 
     def get_time(self):
-        self.open()
-        try:
+        try :
+            self.open_with_error()
             if 'calendar' in dir(self.Dataset.variables['time']):
                 calendar=self.Dataset.variables['time'].calendar
             else:
@@ -93,9 +97,13 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
                                          units=self.Dataset.variables['time'].units,
                                          calendar=calendar)
                             )
-        except:
+
+        except dodsError as e:
             time_axis=np.empty((0,))
-        self.close()
+            e_mod=" This is a common error and is not fatal. It could however affect the number of datasets that are kept."
+            print e.value+e_mod
+        finally:
+            self.close()
         return time_axis
 
 class dodsError(Exception):
