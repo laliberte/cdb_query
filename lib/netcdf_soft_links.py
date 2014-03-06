@@ -68,16 +68,6 @@ class create_netCDF_pointers:
         remote_data.close()
         return
 
-def record_to_file(output_root,output):
-    netcdf_utils.replicate_netcdf_file(output_root,output)
-    netcdf_utils.replicate_full_netcdf_recursive(output_root,output)
-    filepath=output.filepath()
-    output.close()
-    try:
-        os.remove(filepath)
-    except OSError:
-        pass
-    return
 
 class read_netCDF_pointers:
     def __init__(self,data_root,data_node=None,queues=dict()):

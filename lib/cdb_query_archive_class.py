@@ -103,6 +103,9 @@ class SimpleTree:
         else:
             #Find the atomic simulations:
             simulations_list=self.list_fields_local(options,self.drs.simulations_desc)
+            #Randomize the list:
+            import random
+            random.shuffle(simulations_list)
 
             manager=multiprocessing.Manager()
             semaphores=dict()
@@ -258,7 +261,7 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
     result=pool.map_async(worker_query,args_list,chunksize=1)
     for arg in args_list:
         filename=queue.get()
-        netcdf_soft_links.record_to_file(output_root,netCDF4.Dataset(filename,'r'))
+        nc_Database.record_to_file(output_root,netCDF4.Dataset(filename,'r'))
         output_root.sync()
     pool.close()
     pool.join()

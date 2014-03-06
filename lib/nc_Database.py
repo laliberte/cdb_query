@@ -128,6 +128,14 @@ class nc_Database:
                                                           header['data_node_list'],
                                                           semaphores=semaphores)
         self.record_header(output_root,header)
+        temp_string=''
+        for att in self.drs.simulations_desc:
+            if ( att in dir(options) and
+                 getattr(options,att)!=None):
+                temp_string+=att+': '+str(getattr(options,att))
+        if len(temp_string)>0:
+            output_root.setncattr('cdb_query_temp',temp_string)
+                    
 
         #Define time subset:
         if 'months_list' in header.keys():
@@ -293,6 +301,16 @@ def is_level_name_included_and_not_excluded(level_name,options,group):
                 (getattr(options,'X'+level_name)!=group)) 
     return included and not_excluded
 
+def record_to_file(output_root,output):
+    netcdf_utils.replicate_netcdf_file(output_root,output)
+    netcdf_utils.replicate_full_netcdf_recursive(output_root,output)
+    filepath=output.filepath()
+    output.close()
+    try:
+        os.remove(filepath)
+    except OSError:
+        pass
+    return
 
 class File_Expt(object):
     #Create a class that can be used with sqlachemy:

@@ -111,8 +111,9 @@ def replicate_netcdf_file(output,data):
         att_val=data.getncattr(att)
         if 'encode' in dir(att_val):
             att_val=att_val.encode('ascii','replace')
-        if not att in output.ncattrs():
-            output.setncattr(att,att_val)
+        if (not att in output.ncattrs() and
+            att != 'cdb_query_temp'):
+                output.setncattr(att,att_val)
     return output
 
 def replicate_netcdf_var_dimensions(output,data,var):

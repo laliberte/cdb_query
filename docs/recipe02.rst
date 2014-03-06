@@ -15,3 +15,9 @@ The `discover` and `optimset` commands provides a basic multi-threaded implement
                              tas_ONDJF_pointers.optimset.nc
 
 This command uses 5 processes and queries the archive simulation per simulation.
+
+.. warning:: The asynchronous optimset might not work on your system. This is will
+             depend on whether your certificates are detected within the asynchronous
+             threads. To verify this, it is suggested that to perform a test with and
+             without asynchronous discovery and make sure that the results are the same.
+             Note that the output files sizes may differ significantly.
