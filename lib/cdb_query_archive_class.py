@@ -25,6 +25,8 @@ import time
 
 import netcdf_utils
 
+import sys
+from StringIO import StringIO
 
 class SimpleTree:
     def __init__(self,options,project_drs):
@@ -247,29 +249,46 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
     simulations_list_no_fx=[simulation for simulation in simulations_list if 
                                 simulation[database.drs.simulations_desc.index('ensemble')]!='r0i0p0']
 
-    queue=manager.Queue()
+    queue_result=manager.Queue()
+    queue_output=manager.Queue()
     #Set up the discovery simulation per simulation:
     args_list=[]
     for simulation_id,simulation in enumerate(simulations_list_no_fx):
         options_copy=copy.copy(options)
         for desc_id, desc in enumerate(database.drs.simulations_desc):
             setattr(options_copy,desc,simulation[desc_id])
-        args_list.append((function_handle,copy.copy(database),options_copy)+args+(queue,))
+        args_list.append((function_handle,copy.copy(database),options_copy)+args+(queue_result,))
     
     #Span up to options.num_procs processes and each child process analyzes only one simulation
-    pool=multiprocessing.Pool(processes=options.num_procs,maxtasksperchild=1)
+    pool=multiprocessing.Pool(processes=options.num_procs,initializer,[queue_output],maxtasksperchild=1)
     result=pool.map_async(worker_query,args_list,chunksize=1)
     for arg in args_list:
-        filename=queue.get()
+        filename=queue_result.get()
         nc_Database.record_to_file(output_root,netCDF4.Dataset(filename,'r'))
         output_root.sync()
+        print queue_output.get()
     pool.close()
     pool.join()
 
     return output_root
 
 def worker_query(tuple):
-    return tuple[-1].put(tuple[0](*tuple[1:-1]))
+    result=tuple[0](*tuple[1:-1])
+    sys.stdout.flush()
+    sys.stderr.flush()
+    tuple[-1].put(result)
+    return
+
+class MyStringIO(StringIO):
+    def __init__(self, queue, *args, **kwargs):
+        StringIO.__init__(self, *args, **kwargs)
+        self.queue = queue
+    def flush(self):
+        self.queue.put((multiprocessing.current_process().name, self.getvalue()))
+        self.truncate(0)
+
+def initializer(queue):
+     sys.stderr = sys.stdout = MyStringIO(queue)
 
 def worker_retrieve(input, output):
     for tuple in iter(input.get, 'STOP'):

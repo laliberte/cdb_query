@@ -129,8 +129,9 @@ def optimset(subparsers,epilog,project_drs):
     output_arguments(parser)
     proc_group = parser.add_argument_group('These arguments set threading options')
     proc_group.add_argument('--num_procs',
-                                 default=1, type=int,
-                                 help='Use num_procs processes to perform the computation. This function might not work with your installation.')
+                                 default=1, type=int,choices=xrange(1,6),
+                                 help=textwrap.dedent('Use num_procs processes to perform the computation. This function might not work with your installation.\n\
+                                       Has been found to be rather unstable with more than 5 processses.'))
 
     inc_group = parser.add_argument_group('Inclusions')
     slicing_arguments(inc_group,project_drs)

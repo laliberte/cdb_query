@@ -2,6 +2,7 @@ import netCDF4
 import numpy as np
 import retrieval_utils
 import time
+import sys
 
 class remote_netCDF:
     def __init__(self,netcdf_file_name,semaphores):
@@ -37,7 +38,6 @@ class remote_netCDF:
     def acquire_semaphore(self):
         if self.in_semaphores:
             self.semaphores[self.remote_data_node].acquire()
-            time.sleep(1)
         return
 
     def release_semaphore(self):
@@ -57,7 +57,7 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
             try:
                 self.Dataset=netCDF4.Dataset(self.file_name)
             except:
-                time.sleep(10)
+                time.sleep(30)
                 self.Dataset=netCDF4.Dataset(self.file_name)
         except:
             raise dodsError(error_statement)
@@ -86,29 +86,58 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
         else:
             return self.file_name
 
-    def get_time(self):
-        try :
-            self.open_with_error()
-            if 'calendar' in dir(self.Dataset.variables['time']):
-                calendar=self.Dataset.variables['time'].calendar
-            else:
-                calendar='standard'
-            time_axis=(netCDF4.num2date(self.Dataset.variables['time'][:],
-                                         units=self.Dataset.variables['time'].units,
-                                         calendar=calendar)
-                            )
+    def retrieve_time(self):
+        error_statement=' '.join('''
+The url {0} could not be opened. 
+Copy and paste this url in a browser and try downloading the file.
+If it works, you can stop the download and retry using cdb_query. If
+it still does not work it is likely that your certificates are either
+not available or out of date.'''.splitlines()).format(self.file_name.replace('dodsC','fileServer'))
+        try:
+            try:
+                if 'calendar' in self.Dataset.variables['time'].ncattrs():
+                    calendar=self.Dataset.variables['time'].calendar
+                else:
+                    calendar='standard'
+                units=self.Dataset.variables['time'].units
+                native_time_axis=self.Dataset.variables['time'][:]
+            except:
+                time.sleep(30)
+                if 'calendar' in self.Dataset.variables['time'].ncattrs():
+                    calendar=self.Dataset.variables['time'].calendar
+                else:
+                    calendar='standard'
+                units=self.Dataset.variables['time'].units
+                native_time_axis=self.Dataset.variables['time'][:]
+        except:
+            raise dodsError(error_statement)
+        time_axis=netCDF4.num2date(native_time_axis,units=units,calendar=calendar)
+        return time_axis
 
+    def get_time(self):
+        time_axis=np.zeros((0,))
+        try:
+            #temp = sys.stdout
+            #sys.stdout = NullDevice()
+            self.open_with_error()
+            #if '/'.join(self.file_name.split('/')[0:3]).split('.')[-1]=='de':
+            #    print "opened "+self.file_name
+            time_axis=self.retrieve_time()
+            #sys.stdout=temp
         except dodsError as e:
-            time_axis=np.empty((0,))
             e_mod=" This is a common error and is not fatal. It could however affect the number of datasets that are kept."
             print e.value+e_mod
         finally:
+            #if '/'.join(self.file_name.split('/')[0:3]).split('.')[-1]=='de':
+            #    print "closing "+self.file_name
             self.close()
         return time_axis
 
 class dodsError(Exception):
-     def __init__(self, value):
-         self.value = value
-     def __str__(self):
-         return repr(self.value)
-
+    def __init__(self, value):
+        self.value = value
+    def __str__(self):
+        return repr(self.value)
+class NullDevice():
+    def write(self, s):
+        pass
