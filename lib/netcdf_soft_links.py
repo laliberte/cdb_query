@@ -182,18 +182,19 @@ class read_netCDF_pointers:
         max_request=450 #maximum request in Mb
         max_time_steps=np.floor(max_request*1024*1024/(32*np.prod(dims_length)))
         for path_id in unique_paths_list_id:
-            path=paths_list[paths_id_list[path_id]]
+            path_to_retrieve=paths_list[paths_id_list[path_id]]
 
             #Next, we check if the file is available. If it is not we replace it
             #with another file with the same checksum, if there is one!
-            remote_data=remote_netcdf.remote_netCDF(path,semaphores)
-            path=remote_data.check_if_available_and_find_alternative(paths_list,checksums_list)
-            file_type=file_type_list[list(paths_list).index(path)]
-            version='v'+str(version_list[list(paths_list).index(path)])
-            checksum=checksums_list[list(paths_list).index(path)]
+            #remote_data=remote_netcdf.remote_netCDF(path_to_retrieve.replace('fileServer','dodsC'),semaphores)
+            #path_to_retrieve=remote_data.check_if_available_and_find_alternative([path.replace('fileServer','dodsC') for path in paths_list],
+            #                                                          checksums_list).replace('dodsC','fileServer')
+            file_type=file_type_list[list(paths_list).index(path_to_retrieve)]
+            version='v'+str(version_list[list(paths_list).index(path_to_retrieve)])
+            checksum=checksums_list[list(paths_list).index(path_to_retrieve)]
 
             #Append the checksum:
-            path+='|'+checksum
+            path_to_retrieve+='|'+checksum
 
             time_indices=sorted_indices_link[sorted_paths_link==path_id]
             num_time_chunk=int(np.ceil(len(time_indices)/float(max_time_steps)))
@@ -202,7 +203,7 @@ class read_netCDF_pointers:
                 
                 #Get the file tree:
                 tree=self.data_root.path.split('/')[1:]+[var_to_retrieve]
-                args = (path,
+                args = (path_to_retrieve,
                         var_to_retrieve,
                         dimensions,
                         unsort_dimensions,
@@ -212,8 +213,8 @@ class read_netCDF_pointers:
                         tree)
 
                 #Retrieve only if it is from the requested data node:
-                data_node=retrieval_utils.get_data_node(path,file_type)
+                data_node=retrieval_utils.get_data_node(path_to_retrieve,file_type)
                 if (self.data_node==None or data_node==self.data_node):
-                    self.queues[retrieval_utils.get_data_node(path,file_type)].put((retrieval_function,)+copy.deepcopy(args))
+                    self.queues[retrieval_utils.get_data_node(path_to_retrieve,file_type)].put((retrieval_function,)+copy.deepcopy(args))
         return 
 

@@ -168,11 +168,12 @@ def retrieve_path_data(in_tuple,pointer_var):
     version=in_tuple[5]
     remote_data=remote_netcdf.remote_netCDF(path,[])
     remote_data.open_with_error()
-    for dim in remote_data.Dataset.variables[var].dimensions:
+    dimensions=remote_data.Dataset.variables[var].dimensions
+    for dim in dimensions:
         if dim != 'time':
+            remote_dim=remote_data.Dataset.variables[dim][:]
             indices[dim], unsort_indices[dim] = indices_utils.prepare_indices(
-                                                            indices_utils.get_indices_from_dim(remote_data.Dataset.variables[dim][:],
-                                                                            indices[dim]))
+                                                            indices_utils.get_indices_from_dim(remote_dim,indices[dim]))
         
     retrieved_data=grab_remote_indices(remote_data.Dataset.variables[var],indices,unsort_indices)
     #if len(indices)==1:
