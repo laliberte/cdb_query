@@ -106,8 +106,8 @@ class SimpleTree:
             #Find the atomic simulations:
             simulations_list=self.list_fields_local(options,self.drs.simulations_desc)
             #Randomize the list:
-            import random
-            random.shuffle(simulations_list)
+            #import random
+            #random.shuffle(simulations_list)
 
             manager=multiprocessing.Manager()
             semaphores=dict()
