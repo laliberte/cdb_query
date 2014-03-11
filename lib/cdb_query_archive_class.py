@@ -332,6 +332,7 @@ def launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_f
     open_queues_list=copy.copy(data_node_list_not_empty)
     #Third step: Close the queues:
     if retrieval_function=='retrieve_path':
+        print 'Progress: '
         for i in range(num_files):
             print '\t', queues['end'].get()
             elapsed_time = datetime.datetime.now() - start_time

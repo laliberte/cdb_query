@@ -189,9 +189,9 @@ class read_netCDF_pointers:
 
             #Next, we check if the file is available. If it is not we replace it
             #with another file with the same checksum, if there is one!
-            #remote_data=remote_netcdf.remote_netCDF(path_to_retrieve.replace('fileServer','dodsC'),semaphores)
-            #path_to_retrieve=remote_data.check_if_available_and_find_alternative([path.replace('fileServer','dodsC') for path in paths_list],
-            #                                                          checksums_list).replace('dodsC','fileServer')
+            remote_data=remote_netcdf.remote_netCDF(path_to_retrieve.replace('fileServer','dodsC'),semaphores)
+            path_to_retrieve=remote_data.check_if_available_and_find_alternative([path.replace('fileServer','dodsC') for path in paths_list],
+                                                                      checksums_list).replace('dodsC','fileServer')
             file_type=file_type_list[list(paths_list).index(path_to_retrieve)]
             version='v'+str(version_list[list(paths_list).index(path_to_retrieve)])
             checksum=checksums_list[list(paths_list).index(path_to_retrieve)]
