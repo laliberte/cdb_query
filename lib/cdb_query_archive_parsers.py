@@ -105,6 +105,11 @@ def list_fields(subparsers,epilog,project_drs):
     select_group = parser.add_argument_group('These arguments specify the structure of the output')
     select_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.base_drs,
                                        help='List the field (or fields if repeated) found in the file' )
+
+    data_node_group = parser.add_argument_group('Restrict search to specific data nodes')
+    data_node_group.add_argument('--data_node',type=str,action='append',help='Consider only the specified data nodes')
+    data_node_group.add_argument('--Xdata_node',type=str,action='append',help='Do not consider the specified data nodes')
+
     inc_group = parser.add_argument_group('Inclusions')
     slicing_arguments(inc_group,project_drs,action_type='append')
     exc_group = parser.add_argument_group('Exclusions')
@@ -132,6 +137,10 @@ def optimset(subparsers,epilog,project_drs):
                                  default=1, type=int,choices=xrange(1,6),
                                  help=textwrap.dedent('Use num_procs processes to perform the computation. This function might not work with your installation.\n\
                                        Has been found to be rather unstable with more than 5 processses.'))
+
+    data_node_group = parser.add_argument_group('Restrict search to specific data nodes')
+    data_node_group.add_argument('--data_node',type=str,action='append',help='Consider only the specified data nodes')
+    data_node_group.add_argument('--Xdata_node',type=str,action='append',help='Do not consider the specified data nodes')
 
     #inc_group = parser.add_argument_group('Inclusions')
     #slicing_arguments(inc_group,project_drs)
@@ -188,7 +197,8 @@ def download(subparsers,epilog,project_drs):
     source_group.add_argument('--source_dir',default=None,help='local cache of data retrieved using \'download\'')
 
     data_node_group = parser.add_argument_group('Limit download from specific data nodes')
-    source_group.add_argument('--data_node',default=None,help='Retrieve only from the specified data node')
+    data_node_group.add_argument('--data_node',type=str,action='append',help='Retrieve only from the specified data nodes')
+    data_node_group.add_argument('--Xdata_node',type=str,action='append',help='Do not retrieve from the specified data nodes')
 
     inc_group = parser.add_argument_group('Inclusions')
     inc_group.add_argument('--year',

@@ -194,10 +194,16 @@ def populate_database_recursive(nc_Database,data,options,find_function):
             id_list=['file_type','search']
             for id in id_list:
                 setattr(nc_Database.file_expt,id,soft_links.variables[id][path_id])
-            setattr(nc_Database.file_expt,'path','|'.join([soft_links.variables['path'][path_id],
-                                                   soft_links.variables['checksum'][path_id]]))
-            setattr(nc_Database.file_expt,'version','v'+str(soft_links.variables['version'][path_id]))
-            find_function(nc_Database,copy.deepcopy(nc_Database.file_expt))
+
+            #Check if data_node was included:
+            data_node=retrieval_utils.get_data_node(soft_links.variables['path'][path_id],
+                                                    soft_links.variables['file_type'][path_id])
+
+            if is_level_name_included_and_not_excluded('data_node',options,data_node):
+                setattr(nc_Database.file_expt,'path','|'.join([soft_links.variables['path'][path_id],
+                                                       soft_links.variables['checksum'][path_id]]))
+                setattr(nc_Database.file_expt,'version','v'+str(soft_links.variables['version'][path_id]))
+                find_function(nc_Database,copy.deepcopy(nc_Database.file_expt))
     elif len(data.groups.keys())>0:
         for group in data.groups.keys():
             level_name=data.groups[group].getncattr('level_name')

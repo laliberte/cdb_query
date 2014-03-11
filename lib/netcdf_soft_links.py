@@ -214,7 +214,7 @@ class read_netCDF_pointers:
 
                 #Retrieve only if it is from the requested data node:
                 data_node=retrieval_utils.get_data_node(path_to_retrieve,file_type)
-                if (self.data_node==None or data_node==self.data_node):
+                if nc_Database.is_level_name_included_and_not_excluded('data_node',options,data_node):
                     self.queues[retrieval_utils.get_data_node(path_to_retrieve,file_type)].put((retrieval_function,)+copy.deepcopy(args))
         return 
 

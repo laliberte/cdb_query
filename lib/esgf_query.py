@@ -47,8 +47,7 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
         try:
             return ctx.facet_counts[list_level].keys()
         except socket.error as e:
-            print e.value
-            print search_path+' is not responding.'
+            print search_path+' is not responding. '+e.strerror
             return []
     else:
         file_list_remote=[]
