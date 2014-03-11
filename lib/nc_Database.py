@@ -292,22 +292,26 @@ def retrieve_tree_recursive_check_not_empty(options,data):
         else:
             return False
 
-#def is_level_name_included_and_not_excluded(level_name,options,group):
-#    included=((not level_name in dir(options)) or 
-#                (getattr(options,level_name)==[]) or 
-#                (group in getattr(options,level_name))) 
-#    not_excluded=((not 'X'+level_name in dir(options)) or 
-#                (getattr(options,'X'+level_name)==[]) or 
-#                (not group in getattr(options,'X'+level_name))) 
-#    return included and not_excluded
-
 def is_level_name_included_and_not_excluded(level_name,options,group):
-    included=((not level_name in dir(options)) or 
-                (getattr(options,level_name)==None) or 
-               (getattr(options,level_name)==group)) 
-    not_excluded=((not 'X'+level_name in dir(options)) or 
-                (getattr(options,'X'+level_name)==None) or 
-                (getattr(options,'X'+level_name)!=group)) 
+    if level_name in dir(options):
+        if isinstance(getattr(options,level_name),list):
+            included=((getattr(options,level_name)==[]) or
+                     (group in getattr(options,level_name)))
+        else:
+            included=((getattr(options,level_name)==None) or 
+                       (getattr(options,level_name)==group)) 
+    else:
+        included=True
+
+    if 'X'+level_name in dir(options):
+        if isinstance(getattr(options,'X'+level_name),list):
+            not_excluded=((getattr(options,'X'+level_name)==[]) or
+                     (not group in getattr(options,'X'+level_name)))
+        else:
+            not_excluded=((getattr(options,'X'+level_name)==None) or 
+                           (getattr(options,'X'+level_name)!=group)) 
+    else:
+        not_excluded=True
     return included and not_excluded
 
 def record_to_file(output_root,output):

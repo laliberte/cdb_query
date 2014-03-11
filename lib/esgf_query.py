@@ -43,7 +43,13 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
         setattr(nc_Database.file_expt,field,var_desc[field_id])
 
     if list_level!=None:
-        return ctx.facet_counts[list_level].keys()
+        import socket
+        try:
+            return ctx.facet_counts[list_level].keys()
+        except socket.error as e:
+            print e.value
+            print search_path+' is not responding.'
+            return []
     else:
         file_list_remote=[]
         file_list_found=[]

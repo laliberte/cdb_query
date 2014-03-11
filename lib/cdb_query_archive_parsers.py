@@ -22,20 +22,20 @@ def output_arguments(parser):
                                  help='NETCDF Diagnostic paths file (output)')
     return
 
-def slicing_arguments(parser,project_drs,exclude_args=[]):
+def slicing_arguments(parser,project_drs,exclude_args=[],action_type='store'):
     #Define the data slicing arguments in a dictionnary:
     for arg in project_drs.slicing_args.keys():
         if not arg in exclude_args:
-            parser.add_argument('--'+arg,
+            parser.add_argument('--'+arg,action=action_type,
                                 type=project_drs.slicing_args[arg][0],
                                 help=project_drs.slicing_args[arg][1]
                                 )
     return
-def excluded_slicing_arguments(parser,project_drs,exclude_args=[]):
+def excluded_slicing_arguments(parser,project_drs,exclude_args=[],action_type='store'):
     #Define the data slicing arguments in a dictionnary:
     for arg in project_drs.slicing_args.keys():
         if not arg in exclude_args:
-            parser.add_argument('--'+'X'+arg,
+            parser.add_argument('--'+'X'+arg,action=action_type,
                                 type=project_drs.slicing_args[arg][0],
                                 help='Exclude '+project_drs.slicing_args[arg][1]
                                 )
@@ -106,9 +106,9 @@ def list_fields(subparsers,epilog,project_drs):
     select_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.base_drs,
                                        help='List the field (or fields if repeated) found in the file' )
     inc_group = parser.add_argument_group('Inclusions')
-    slicing_arguments(inc_group,project_drs)
+    slicing_arguments(inc_group,project_drs,action_type='append')
     exc_group = parser.add_argument_group('Exclusions')
-    excluded_slicing_arguments(exc_group,project_drs)
+    excluded_slicing_arguments(exc_group,project_drs,action_type='append')
     return
 
 def optimset(subparsers,epilog,project_drs):
@@ -133,10 +133,14 @@ def optimset(subparsers,epilog,project_drs):
                                  help=textwrap.dedent('Use num_procs processes to perform the computation. This function might not work with your installation.\n\
                                        Has been found to be rather unstable with more than 5 processses.'))
 
+    #inc_group = parser.add_argument_group('Inclusions')
+    #slicing_arguments(inc_group,project_drs)
+    #exc_group = parser.add_argument_group('Exclusions')
+    #excluded_slicing_arguments(exc_group,project_drs)
     inc_group = parser.add_argument_group('Inclusions')
-    slicing_arguments(inc_group,project_drs)
+    slicing_arguments(inc_group,project_drs,action_type='append')
     exc_group = parser.add_argument_group('Exclusions')
-    excluded_slicing_arguments(exc_group,project_drs)
+    excluded_slicing_arguments(exc_group,project_drs,action_type='append')
     return
 
 def remote_retrieve(subparsers,epilog,project_drs):
@@ -158,9 +162,12 @@ def remote_retrieve(subparsers,epilog,project_drs):
     inc_group.add_argument('--month',
                                  default=None, type=int,
                                  help='Retrieve only this month (1 to 12).')
-    slicing_arguments(inc_group,project_drs)
+    #slicing_arguments(inc_group,project_drs)
+    #exc_group = parser.add_argument_group('Exclusions')
+    #excluded_slicing_arguments(exc_group,project_drs)
+    slicing_arguments(inc_group,project_drs,action_type='append')
     exc_group = parser.add_argument_group('Exclusions')
-    excluded_slicing_arguments(exc_group,project_drs)
+    excluded_slicing_arguments(exc_group,project_drs,action_type='append')
     return
 
 def download(subparsers,epilog,project_drs):
@@ -190,9 +197,12 @@ def download(subparsers,epilog,project_drs):
     inc_group.add_argument('--month',
                                  default=None, type=int,
                                  help='Retrieve only this month (1 to 12).')
-    slicing_arguments(inc_group,project_drs)
+    #slicing_arguments(inc_group,project_drs)
+    #exc_group = parser.add_argument_group('Exclusions')
+    #excluded_slicing_arguments(exc_group,project_drs)
+    slicing_arguments(inc_group,project_drs,action_type='append')
     exc_group = parser.add_argument_group('Exclusions')
-    excluded_slicing_arguments(exc_group,project_drs)
+    excluded_slicing_arguments(exc_group,project_drs,action_type='append')
     return
 
 def convert(subparsers,epilog,project_drs):
@@ -239,8 +249,11 @@ def apply(subparsers,epilog,project_drs):
                                  help='Use num_procs processes to perform the computation.')
 
     inc_group = parser.add_argument_group('Inclusions')
-    slicing_arguments(inc_group,project_drs)
+    #slicing_arguments(inc_group,project_drs)
+    #exc_group = parser.add_argument_group('Exclusions')
+    #excluded_slicing_arguments(exc_group,project_drs)
+    slicing_arguments(inc_group,project_drs,action_type='append')
     exc_group = parser.add_argument_group('Exclusions')
-    excluded_slicing_arguments(exc_group,project_drs)
+    excluded_slicing_arguments(exc_group,project_drs,action_type='append')
     return
     
