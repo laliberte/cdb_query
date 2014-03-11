@@ -110,10 +110,10 @@ class SimpleTree:
             #random.shuffle(simulations_list)
 
             manager=multiprocessing.Manager()
-            semaphores=dict()
-            for data_node in  self.header['data_node_list']:
-                semaphores[data_node]=manager.Semaphore()
-            #semaphores=[]
+            #semaphores=dict()
+            #for data_node in  self.header['data_node_list']:
+            #    semaphores[data_node]=manager.Semaphore()
+            semaphores=[]
             #original_stderr = sys.stderr
             #sys.stderr = NullDevice()
             output=distributed_recovery(optimset.optimset_distributed,self,options,simulations_list,manager,args=(semaphores,))
@@ -257,7 +257,7 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
                                 simulation[database.drs.simulations_desc.index('ensemble')]!='r0i0p0']
 
     queue_result=manager.Queue()
-    queue_output=manager.Queue()
+    #queue_output=manager.Queue()
     #Set up the discovery simulation per simulation:
     args_list=[]
     for simulation_id,simulation in enumerate(simulations_list_no_fx):
@@ -267,15 +267,16 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
         args_list.append((function_handle,copy.copy(database),options_copy)+args+(queue_result,))
     
     #Span up to options.num_procs processes and each child process analyzes only one simulation
-    pool=multiprocessing.Pool(processes=options.num_procs,initializer=initializer,initargs=[queue_output],maxtasksperchild=1)
+    #pool=multiprocessing.Pool(processes=options.num_procs,initializer=initializer,initargs=[queue_output],maxtasksperchild=1)
+    pool=multiprocessing.Pool(processes=options.num_procs,maxtasksperchild=1)
     result=pool.map_async(worker_query,args_list,chunksize=1)
     for arg in args_list:
         filename=queue_result.get()
         nc_Database.record_to_file(output_root,netCDF4.Dataset(filename,'r'))
         output_root.sync()
-        output_string=queue_output.get()[1]
-        if len(output_string)>0:
-            print output_string
+        #output_string=queue_output.get()[1]
+        #if len(output_string)>0:
+        #    print output_string
     pool.close()
     pool.join()
 

@@ -18,6 +18,8 @@ import retrieval_utils
 
 import copy
 
+import nc_Database
+
 class create_netCDF_pointers:
     def __init__(self,file_type_list,data_node_list,semaphores=None):
         self.file_type_list=file_type_list
@@ -46,12 +48,12 @@ class create_netCDF_pointers:
         path=paths_list[[item['version'] for item in paths_list].index(most_recent_version)]
 
         #Check if data in available:
-        remote_data=remote_netcdf.remote_netCDF(path['path'],self.semaphores)
-        alt_path_name=remote_data.check_if_available_and_find_alternative([item['path'].split('|')[0] for item in paths_list],
-                                                                 [item['path'].split('|')[1] for item in paths_list])
+        remote_data=remote_netcdf.remote_netCDF(path['path'].split('|')[0].replace('fileServer','dodsC'),self.semaphores)
+        alt_path_name=remote_data.check_if_available_and_find_alternative([item['path'].split('|')[0].replace('fileServer','dodsC') for item in paths_list],
+                                                                 [item['path'].split('|')[1] for item in paths_list]).replace('dodsC','fileServer')
 
         #Use aternative path:
-        path=paths_list[[item['path'] for item in paths_list].index(alt_path_name)]
+        path=paths_list[[item['path'].split('|')[0] for item in paths_list].index(alt_path_name)]
 
         for att in path.keys():
             if att!='path':      
@@ -76,10 +78,11 @@ class create_netCDF_pointers:
 
 
 class read_netCDF_pointers:
-    def __init__(self,data_root,data_node=None,queues=dict()):
+    def __init__(self,data_root,Xdata_node=None,data_node=None,queues=dict()):
         self.data_root=data_root
         self.queues=queues
         self.data_node=data_node
+        self.Xdata_node=Xdata_node
         return
 
     def replicate(self,output):
@@ -214,7 +217,7 @@ class read_netCDF_pointers:
 
                 #Retrieve only if it is from the requested data node:
                 data_node=retrieval_utils.get_data_node(path_to_retrieve,file_type)
-                if nc_Database.is_level_name_included_and_not_excluded('data_node',options,data_node):
+                if nc_Database.is_level_name_included_and_not_excluded('data_node',self,data_node):
                     self.queues[retrieval_utils.get_data_node(path_to_retrieve,file_type)].put((retrieval_function,)+copy.deepcopy(args))
         return 
 

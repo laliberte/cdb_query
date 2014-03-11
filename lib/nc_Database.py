@@ -244,8 +244,16 @@ def create_tree_recursive(output_top,tree):
 
 def retrieve_tree_recursive(options,data,output,queues,retrieval_function):
     if 'soft_links' in data.groups.keys():
-        if 'data_node' in dir(options):
-            netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data,queues=queues,data_node=options.data_node)
+        if 'data_node' in dir(options) and 'Xdata_node' in dir(options):
+            netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data,queues=queues,
+                                                                    data_node=options.data_node,
+                                                                    Xdata_node=options.Xdata_node)
+        elif 'data_node' in dir(options):
+            netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data,queues=queues,
+                                                                    data_node=options.data_node)
+        elif 'Xdata_node' in dir(options):
+            netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data,queues=queues,
+                                                                    Xdata_node=options.Xdata_node)
         else:
             netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data,queues=queues)
         netcdf_pointers.retrieve(output,

@@ -25,8 +25,11 @@ class remote_netCDF:
         return
     
     def close(self):
-        if isinstance(self.Dataset,netCDF4.Dataset):
-            self.Dataset.close()
+        try:
+            if isinstance(self.Dataset,netCDF4.Dataset):
+                self.Dataset.close()
+        except:
+            pass
         del self.Dataset
         self.Dataset=None
         self.release_semaphore()
