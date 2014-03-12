@@ -29,13 +29,13 @@ class nc_Database:
 
         self.time_db = sqlalchemy.Table('time_db',self.metadata,
                 sqlalchemy.Column('case_id',sqlalchemy.Integer,primary_key=True),
-                *(sqlalchemy.Column(level_name, sqlalchemy.String(255)) for level_name in self.drs.discovered_drs)
+                *(sqlalchemy.Column(level_name, sqlalchemy.String(255)) for level_name in self.drs.base_drs)
                 )
         self.metadata.create_all()
         sqlalchemy.orm.clear_mappers()
         sqlalchemy.orm.mapper(File_Expt,self.time_db)
 
-        self.file_expt = File_Expt(self.drs.discovered_drs)
+        self.file_expt = File_Expt(self.drs.base_drs)
         self.session = sqlalchemy.orm.create_session(bind=self.engine, autocommit=False, autoflush=True)
         return
 
@@ -88,8 +88,8 @@ class nc_Database:
         fields_list=sorted(list(set(self.list_subset((getattr(File_Expt,field) for field in fields_to_list)))))
         return fields_list
 
-    def list_data_nodes(self):
-        return sorted(
+    def list_data_nodes(self,options):
+        data_node_list=sorted(
                     list(
                         set(
                             [retrieval_utils.get_data_node(*path) for 
@@ -98,6 +98,9 @@ class nc_Database:
                             )
                          )
                       )
+        return  [data_node for data_node in data_node_list  
+                if is_level_name_included_and_not_excluded('data_node',options,data_node)]
+
     def list_paths_by_data_node(self,data_node):
         return [ path[0] for path in self.list_subset((File_Expt.path,File_Expt.file_type)) if retrieval_utils.get_data_node(*path) == data_node]
 
@@ -106,7 +109,7 @@ class nc_Database:
         subset=tuple([File_Expt.path,]+[getattr(File_Expt,item) for item in self.drs.official_drs])
         return sorted(list(set(self.list_subset(subset))))
 
-    def write_database(self,header,options,record_function_handle,semaphores=None):
+    def write_database(self,header,options,record_function_handle,semaphores=[]):
         #List all the trees:
         drs_list=copy.copy(self.drs.base_drs)
 

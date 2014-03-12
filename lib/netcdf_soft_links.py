@@ -65,15 +65,13 @@ class create_netCDF_pointers:
         #open and record:
         try:
             remote_data.open_with_error()
-            remote_data=remote_data.Dataset
-            for var_name in remote_data.variables.keys():
-                netcdf_utils.replicate_netcdf_var(output,remote_data,var_name)
-                output.variables[var_name][:]=remote_data.variables[var_name][:]
+            for var_name in remote_data.Dataset.variables.keys():
+                netcdf_utils.replicate_netcdf_var(output,remote_data.Dataset,var_name)
+                output.variables[var_name][:]=remote_data.Dataset.variables[var_name][:]
         except dodsError as e:
             e_mod=" This is an uncommon error. It is likely to be FATAL."
             print e.value+e_mod
-        finally:
-            remote_data.close()
+        remote_data.close()
         return
 
 
@@ -218,6 +216,7 @@ class read_netCDF_pointers:
                 #Retrieve only if it is from the requested data node:
                 data_node=retrieval_utils.get_data_node(path_to_retrieve,file_type)
                 if nc_Database.is_level_name_included_and_not_excluded('data_node',self,data_node):
+                    print 'Recovering '+'/'.join(tree)
                     self.queues[retrieval_utils.get_data_node(path_to_retrieve,file_type)].put((retrieval_function,)+copy.deepcopy(args))
         return 
 

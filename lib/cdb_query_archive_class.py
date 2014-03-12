@@ -110,16 +110,18 @@ class SimpleTree:
             #random.shuffle(simulations_list)
 
             manager=multiprocessing.Manager()
-            #semaphores=dict()
-            #for data_node in  self.header['data_node_list']:
-            #    semaphores[data_node]=manager.Semaphore()
-            semaphores=[]
+            semaphores=dict()
+            for data_node in  self.header['data_node_list']:
+                semaphores[data_node]=manager.Semaphore()
+            #manager.start()
+            #semaphores=[]
             #original_stderr = sys.stderr
             #sys.stderr = NullDevice()
             output=distributed_recovery(optimset.optimset_distributed,self,options,simulations_list,manager,args=(semaphores,))
             #sys.stderr = original_stderr
             #Close datasets:
             output.close()
+            #manager.shutdown()
         return
 
     def remote_retrieve(self,options):
@@ -140,7 +142,7 @@ class SimpleTree:
         self.load_database(options,find_simple)
 
         #Find data node list:
-        data_node_list=self.nc_Database.list_data_nodes()
+        data_node_list=self.nc_Database.list_data_nodes(options)
         paths_list=self.nc_Database.list_paths()
         self.close_database()
 
@@ -166,7 +168,7 @@ class SimpleTree:
     def find_and_rank_data_nodes(self,options):
         #We have to time the response of the data node.
         self.load_database(options,find_simple)
-        data_node_list=self.nc_Database.list_data_nodes()
+        data_node_list=self.nc_Database.list_data_nodes(options)
         data_node_timing=[]
         data_node_list_timed=[]
         for data_node in data_node_list:
@@ -190,7 +192,11 @@ class SimpleTree:
 
     def list_fields(self,options):
         #slice with options:
-        fields_list=self.list_fields_local(options,options.field)
+
+        if 'data_nodes' in dir(options) and getattr(options,'data_nodes'):
+            fields_list=self.list_data_nodes(options)
+        else:
+            fields_list=self.list_fields_local(options,options.field)
         for field in fields_list:
             print ','.join(field)
         return
@@ -203,9 +209,9 @@ class SimpleTree:
 
     def list_data_nodes(self,options):
         self.load_database(options,find_simple)
-        data_nodes_list=self.nc_Database.list_data_nodes()
+        data_nodes_list=self.nc_Database.list_data_nodes(options)
         self.close_database()
-        return data_nodes_list
+        return [ (data_node,) for data_node in data_nodes_list ]
 
     def define_database(self,options):
         if 'in_diagnostic_netcdf_file' in dir(options):
@@ -257,7 +263,7 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
                                 simulation[database.drs.simulations_desc.index('ensemble')]!='r0i0p0']
 
     queue_result=manager.Queue()
-    #queue_output=manager.Queue()
+    queue_output=manager.Queue()
     #Set up the discovery simulation per simulation:
     args_list=[]
     for simulation_id,simulation in enumerate(simulations_list_no_fx):
@@ -267,16 +273,16 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
         args_list.append((function_handle,copy.copy(database),options_copy)+args+(queue_result,))
     
     #Span up to options.num_procs processes and each child process analyzes only one simulation
-    #pool=multiprocessing.Pool(processes=options.num_procs,initializer=initializer,initargs=[queue_output],maxtasksperchild=1)
-    pool=multiprocessing.Pool(processes=options.num_procs,maxtasksperchild=1)
+    pool=multiprocessing.Pool(processes=options.num_procs,initializer=initializer,initargs=[queue_output],maxtasksperchild=1)
+    #pool=multiprocessing.Pool(processes=options.num_procs,maxtasksperchild=1)
     result=pool.map_async(worker_query,args_list,chunksize=1)
     for arg in args_list:
         filename=queue_result.get()
         nc_Database.record_to_file(output_root,netCDF4.Dataset(filename,'r'))
         output_root.sync()
-        #output_string=queue_output.get()[1]
-        #if len(output_string)>0:
-        #    print output_string
+        output_string=queue_output.get()[1]
+        if len(output_string)>0:
+            print output_string
     pool.close()
     pool.join()
 

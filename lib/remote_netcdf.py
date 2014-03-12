@@ -21,7 +21,7 @@ class remote_netCDF:
         try:
             self.Dataset=netCDF4.Dataset(self.file_name)
         except:
-            self.release_semaphore()
+            self.close()
         return
     
     def close(self):
@@ -60,6 +60,7 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
                 time.sleep(30)
                 self.Dataset=netCDF4.Dataset(self.file_name)
         except:
+            self.close()
             raise dodsError(error_statement)
         return
 
@@ -123,14 +124,12 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
             #if '/'.join(self.file_name.split('/')[0:3]).split('.')[-1]=='de':
             #    print "opened "+self.file_name
             time_axis=self.retrieve_time()
+            self.close()
             #sys.stdout=temp
         except dodsError as e:
+            self.close()
             e_mod=" This is a common error and is not fatal. It could however affect the number of datasets that are kept."
             print e.value+e_mod
-        finally:
-            #if '/'.join(self.file_name.split('/')[0:3]).split('.')[-1]=='de':
-            #    print "closing "+self.file_name
-            self.close()
         return time_axis
 
 class dodsError(Exception):

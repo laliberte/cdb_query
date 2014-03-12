@@ -29,7 +29,7 @@ import random
 
 
 class soft_links:
-    def __init__(self,paths_list,file_type_list,data_node_list,semaphores=None):
+    def __init__(self,paths_list,file_type_list,data_node_list,semaphores=[]):
         self.sorts_list=['version','file_type_id','data_node_id','path_id']
         self.id_list=['data_node','file_type','path','checksum','search']
         self.file_type_list=file_type_list
@@ -176,8 +176,7 @@ class soft_links:
         except dodsError as e:
             e_mod=" This is an uncommon error. It is likely to be FATAL."
             print e.value+e_mod
-        finally:
-            remote_data.close()
+        remote_data.close()
         return
 
     def record_indices(self,output,data,var):

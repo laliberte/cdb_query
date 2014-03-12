@@ -50,21 +50,6 @@ class DRS:
 
         self.remote_fields=['institute','model','ensemble','driving_model','domain','file_type','version']
         self.known_fields=['experiment','var'] + self.var_specs
-        self.discovered_drs=[
-                  'domain',
-                  'institute',
-                  'driving_model',
-                  'experiment',
-                  'ensemble',
-                  'model',
-                  'time_frequency',
-                  'var',
-                  'version',
-                  'search',
-                  'file_type',
-                  'time',
-                  'path'
-                  ]
         return
 
     def CMIP5(self):
@@ -80,8 +65,8 @@ class DRS:
                             'realm',
                             'cmor_table',
                             'ensemble',
-                            'version',
-                            'var']
+                            'var',
+                            'version']
         self.official_drs_no_version=copy.copy(self.official_drs)
         self.official_drs_no_version.remove('version')
 
@@ -113,9 +98,5 @@ class DRS:
 
         self.known_fields=['experiment','var'] + self.var_specs
 
-        self.discovered_drs=[
-                        'experiment','institute','model','ensemble','time_frequency','realm','cmor_table',
-                        'var','time','version','file_type','search','path'
-                     ]
         return
 

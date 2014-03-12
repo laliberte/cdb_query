@@ -105,6 +105,8 @@ def list_fields(subparsers,epilog,project_drs):
     select_group = parser.add_argument_group('These arguments specify the structure of the output')
     select_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.base_drs,
                                        help='List the field (or fields if repeated) found in the file' )
+    select_group.add_argument('--data_nodes',default=False,action='store_true',
+                                       help='List the data nodes found in the file. Disables the --field options.' )
 
     data_node_group = parser.add_argument_group('Restrict search to specific data nodes')
     data_node_group.add_argument('--data_node',type=str,action='append',help='Consider only the specified data nodes')
@@ -134,9 +136,10 @@ def optimset(subparsers,epilog,project_drs):
     output_arguments(parser)
     proc_group = parser.add_argument_group('These arguments set threading options')
     proc_group.add_argument('--num_procs',
-                                 default=1, type=int,choices=xrange(1,6),
-                                 help=textwrap.dedent('Use num_procs processes to perform the computation. This function might not work with your installation.\n\
-                                       Has been found to be rather unstable with more than 5 processses.'))
+                                 default=1, type=int,#choices=xrange(1,6),
+                                 help=textwrap.dedent('Use num_procs processes to perform the computation. This function might not work with your installation.'))
+                                 #\n\
+                                 #      Has been found to be rather unstable with more than 5 processses.'))
 
     data_node_group = parser.add_argument_group('Restrict search to specific data nodes')
     data_node_group.add_argument('--data_node',type=str,action='append',help='Consider only the specified data nodes')

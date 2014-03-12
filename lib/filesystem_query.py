@@ -20,7 +20,7 @@ def descend_tree(database,search_path,options,list_level=None):
             setattr(file_expt_copy,att,description[att])
 
         only_list.append(descend_tree_recursive(database,file_expt_copy,
-                                [item for item in database.drs.discovered_drs if not item in description.keys()],
+                                [item for item in database.drs.base_drs if not item in description.keys()],
                                 os.path.abspath(os.path.expanduser(os.path.expandvars(search_path))),
                                 options,list_level=list_level))
     return [item for sublist in only_list for item in sublist]
@@ -41,6 +41,7 @@ def descend_tree_recursive(database,file_expt,tree_desc,top_path,options,list_le
 
     local_tree_desc=tree_desc[0]
     next_tree_desc=tree_desc[1:]
+
 
     subdir_list=[]
     #Loop through subdirectories:
