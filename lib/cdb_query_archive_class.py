@@ -106,14 +106,13 @@ class SimpleTree:
             #Find the atomic simulations:
             simulations_list=self.list_fields_local(options,self.drs.simulations_desc)
             #Randomize the list:
-            #import random
-            #random.shuffle(simulations_list)
+            import random
+            random.shuffle(simulations_list)
 
             manager=multiprocessing.Manager()
             semaphores=dict()
             for data_node in  self.header['data_node_list']:
                 semaphores[data_node]=manager.Semaphore()
-            #manager.start()
             #semaphores=[]
             #original_stderr = sys.stderr
             #sys.stderr = NullDevice()
@@ -121,7 +120,6 @@ class SimpleTree:
             #sys.stderr = original_stderr
             #Close datasets:
             output.close()
-            #manager.shutdown()
         return
 
     def remote_retrieve(self,options):
@@ -132,6 +130,13 @@ class SimpleTree:
 
     def download(self,options):
         output=options.out_destination
+
+        #Describe the tree pattern:
+        if self.drs.official_drs.index('var')>self.drs.official_drs.index('version'):
+            output+='/tree/version/var/'
+        else:
+            output+='/tree/var/version/'
+            
         retrieval_function='retrieve_path'
         self.remote_retrieve_and_download(options,output,retrieval_function)
         return
@@ -173,6 +178,7 @@ class SimpleTree:
         data_node_list_timed=[]
         for data_node in data_node_list:
             url=self.nc_Database.list_paths_by_data_node(data_node)[0].split('|')[0].replace('fileServer','dodsC')
+            print 'Querying '+url+' to measure response time of data node'
             #Try opening a link on the data node. If it does not work do not use this data_node
             number_of_trials=5
             try:
@@ -263,7 +269,7 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
                                 simulation[database.drs.simulations_desc.index('ensemble')]!='r0i0p0']
 
     queue_result=manager.Queue()
-    queue_output=manager.Queue()
+    #queue_output=manager.Queue()
     #Set up the discovery simulation per simulation:
     args_list=[]
     for simulation_id,simulation in enumerate(simulations_list_no_fx):
@@ -273,16 +279,16 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
         args_list.append((function_handle,copy.copy(database),options_copy)+args+(queue_result,))
     
     #Span up to options.num_procs processes and each child process analyzes only one simulation
-    pool=multiprocessing.Pool(processes=options.num_procs,initializer=initializer,initargs=[queue_output],maxtasksperchild=1)
-    #pool=multiprocessing.Pool(processes=options.num_procs,maxtasksperchild=1)
+    #pool=multiprocessing.Pool(processes=options.num_procs,initializer=initializer,initargs=[queue_output],maxtasksperchild=1)
+    pool=multiprocessing.Pool(processes=options.num_procs,maxtasksperchild=1)
     result=pool.map_async(worker_query,args_list,chunksize=1)
     for arg in args_list:
         filename=queue_result.get()
         nc_Database.record_to_file(output_root,netCDF4.Dataset(filename,'r'))
         output_root.sync()
-        output_string=queue_output.get()[1]
-        if len(output_string)>0:
-            print output_string
+        #output_string=queue_output.get()[1]
+        #if len(output_string)>0:
+        #    print output_string
     pool.close()
     pool.join()
 
@@ -308,7 +314,7 @@ def initializer(queue):
 
 def worker_retrieve(input, output):
     for tuple in iter(input.get, 'STOP'):
-        result = tuple[0](tuple[1:-1],tuple[-1])
+        result = tuple[0](tuple[1],tuple[2])
         output.put(result)
     return
 

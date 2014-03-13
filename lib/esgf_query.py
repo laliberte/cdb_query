@@ -125,13 +125,16 @@ def get_url_remote(item,file_type_list,drs):
                     #this is a temporary fix to a poor design decision.
                     #to really fix this, will have to change names 'var' to variables.
                     file_info[val]=item.json['variable']
-                else:
-                    file_info[val]=item.json[val]
-                if val=='version':
+                elif val=='version':
                     #Version is poorly implemented... Try a fix:
                     version=item.json['id'].split('.')[9]
                     if version[0]=='v':
                         file_info[val]=version
+                elif val=='model_version':
+                    file_info[val]='v'+item.json['version']
+                else:
+                    file_info[val]=item.json[val]
+
                 if isinstance(file_info[val],list): file_info[val]=str(file_info[val][0])
             except:
                 file_info[val]=None

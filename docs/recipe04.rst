@@ -1,7 +1,7 @@
 Retrieve precipitation and remap to a fixed grid
 ----------------------------------------------------
 
-THe following is an example script for finding, retrieving and remapping data::
+The following is an example script for finding, retrieving and remapping data::
 
     #!/bin/bash
     cat > pr_historical_rcp85.hdr <<EndOfHDR
@@ -14,22 +14,23 @@ THe following is an example script for finding, retrieving and remapping data::
         },
     "variable_list":
         {
-        "pr":["mon","atmos","Amon"]
+        "pr":["mon","atmos","Amon"],
+        "tas":["mon","atmos","Amon"]
         },
     "search_list":
         [
         "./in/CMIP5",
         "http://esgf-index1.ceda.ac.uk/esg-search/",
-        "http://pcmdi9.llnl.gov/esg-search/",
         "http://esgf-data.dkrz.de/esg-search/",
+        "http://pcmdi9.llnl.gov/esg-search/",
         "http://esgdata.gfdl.noaa.gov/esg-search/",
         "http://esgf-node.ipsl.fr/esg-search/",
         "http://esg-datanode.jpl.nasa.gov/esg-search/"
         ],
     "file_type_list":
         [
-        "local_file",
-        "HTTPServer"
+        "HTTPServer",
+        "local_file"
         ]
     }
     }
@@ -37,31 +38,49 @@ THe following is an example script for finding, retrieving and remapping data::
     #Make search dir otherwise result in error:
     mkdir -p ./in/CMIP5
     #Discover data:
-    echo -n "Discovering data: "
-    date
-    cdb_query_CMIP5 discover --num_procs=5 \
-                            pr_historical_rcp85.hdr \
-                            pr_historical_rcp85.hdr.pointers.nc
-
-    #List simulations:
-    cdb_query_CMIP5 list_fields -f institute \
-                                -f model \
-                                -f ensemble \
+    if [ ! -f pr_historical_rcp85.hdr.pointers.nc ]; then
+        echo -n "Discovering data: "
+        date
+        cdb_query_CMIP5 discover --num_procs=5 \
+                                pr_historical_rcp85.hdr \
                                 pr_historical_rcp85.hdr.pointers.nc
+
+        #List simulations:
+        cdb_query_CMIP5 list_fields -f institute \
+                                    -f model \
+                                    -f ensemble \
+                                    pr_historical_rcp85.hdr.pointers.nc
+    fi 
 
 
     #Find optimal set of simulations:
-    echo -n "Finding optimal set: "
-    date
-    cdb_query_CMIP5 optimset --num_procs=5\
-                             pr_historical_rcp85.hdr.pointers.nc \
-                             pr_historical_rcp85.hdr.pointers.optimset.nc
+    if [ ! -f pr_historical_rcp85.hdr.pointers.optimset.nc ]; then
+        echo -n "Finding optimal set: "
+        date
+        # On March 12, 2014, 7 data nodes were down or not
+        # working properly. We excluded them from the
+        # optimal set analysis. This is likely to change
+        # in the future and it might be worth it
+        # to try including some of the excluded nodes: 
+        cdb_query_CMIP5 optimset \
+                                 --Xdata_node=http://bmbf-ipcc-ar5.dkrz.de \
+                                 --Xdata_node=http://cmip-dn1.badc.rl.ac.uk \
+                                 --Xdata_node=http://esg.bnu.edu.cn \
+                                 --Xdata_node=http://albedo2.dkrz.de \
+                                 --Xdata_node=http://esg2.e-inis.ie \
+                                 --Xdata_node=http://pcmdi7.llnl.gov \
+                                 --Xdata_node=http://pcmdi9.llnl.gov \
+                                 --num_procs=5\
+                                 pr_historical_rcp85.hdr.pointers.nc \
+                                 pr_historical_rcp85.hdr.pointers.optimset.nc
 
-    #List simulations:
-    cdb_query_CMIP5 list_fields -f institute \
-                                -f model \
-                                -f ensemble \
-                                pr_historical_rcp85.hdr.pointers.optimset.nc
+        #List simulations:
+        cdb_query_CMIP5 list_fields -f institute \
+                                    -f model \
+                                    -f ensemble \
+                                    pr_historical_rcp85.hdr.pointers.optimset.nc
+        date
+    fi
 
     #REMAPPING HISTORICAL DATA
     cat >> newgrid_atmos.cdo <<EndOfGrid
@@ -86,51 +105,56 @@ THe following is an example script for finding, retrieving and remapping data::
     YEAR_START=1970
     YEAR_END=2005
     #Retrieve first month:
-    cdb_query_CMIP5 remote_retrieve --experiment=$EXPERIMENT \
-                                    --year=$YEAR_START \
-                                    --month=1 \
-                                    $FILE_NAME.nc \
-                                    $FILE_NAME.0-0.retrieved.nc
+    if [ ! -f $FILE_NAME.197001.retrieved.nc ]; then
+        cdb_query_CMIP5 remote_retrieve --experiment=$EXPERIMENT \
+                                        --year=$YEAR_START \
+                                        --month=1 \
+                                        $FILE_NAME.nc \
+                                        $FILE_NAME.197001.retrieved.nc
+    fi
 
 
     #Compute the remapping weigths:
-    #Next is a loop over variables in $FILE_NAME.0-0.retrieved.nc. It is equivalent to:
+    #Next is a loop over variables in $FILE_NAME.197001.retrieved.nc. It is equivalent to:
     #
-    # cdo gendis,newgrid_atmos.cdo $FILE_NAME.0-0.retrieved.nc $FILE_NAME.0-0.retrieved.weigths.nc
+    # cdo gendis,newgrid_atmos.cdo $FILE_NAME.197001.retrieved.nc $FILE_NAME.197001.retrieved.weigths.nc
     #
     # if the the files were not hierarchical netcdf4 files.
     #
     # This is is accomplished with 10 simultaneous processes
     #
-    cdb_query_CMIP5 apply --num_procs=10 \
-                            -s 'cdo gendis,newgrid_atmos.cdo' \
-                            $FILE_NAME.0-0.retrieved.nc \
-                            $FILE_NAME.0-0.retrieved.weigths.nc
-
+    if [ ! -f $FILE_NAME.197001.retrieved.weigths.nc ]; then
+        cdb_query_CMIP5 apply --num_procs=10 \
+                                'cdo gendis,newgrid_atmos.cdo' \
+                                $FILE_NAME.197001.retrieved.nc \
+                                $FILE_NAME.197001.retrieved.weigths.nc
+    fi
 
     echo -n "Starting remapping "
     date
-    for YEAR in $(seq $YEAR_START $YEAR_END); do 
-        cdb_query_CMIP5 remote_retrieve \
+    for YEAR in $(seq $YEAR_START $YEAR_END); do
+        if [ ! -f $FILE_NAME.$YEAR.retrieved.remap.nc ]; then
+            cdb_query_CMIP5 remote_retrieve \
+                                --experiment=$EXPERIMENT \
+                                --year=$YEAR \
+                                $FILE_NAME.nc \
+                                $FILE_NAME.$YEAR.retrieved.nc
+            #Next is a loop over variables in $FILE_NAME.197001.retrieved.nc. It is equivalent to:
+            #
+            # cdo cdo remap,newgrid_atmos.cdo,$FILE_NAME.197001.retrieved.weigths.nc $FILE_NAME.$YEAR.retrieved.nc \
+            #                                  $FILE_NAME.$YEAR.retrieved.remap.nc
+            #
+            # if the the files were not hierarchical netcdf4 files.
+            #
+            cdb_query_CMIP5 apply \
                             --experiment=$EXPERIMENT \
-                            --year=$YEAR \
-                            $FILE_NAME.nc \
-                            $FILE_NAME.$YEAR.retrieved.nc
-        #Next is a loop over variables in $FILE_NAME.0-0.retrieved.nc. It is equivalent to:
-        #
-        # cdo cdo remap,newgrid_atmos.cdo,$FILE_NAME.0-0.retrieved.weigths.nc $FILE_NAME.$YEAR.retrieved.nc \
-        #                                  $FILE_NAME.$YEAR.retrieved.remap.nc 
-        #
-        # if the the files were not hierarchical netcdf4 files.
-        #
-        cdb_query_CMIP5 apply \
-                        --experiment=$EXPERIMENT \
-                        --num_procs=5 \
-                        -s 'cdo -s remap,newgrid_atmos.cdo,{1}' \
-                        $FILE_NAME.$YEAR.retrieved.nc \
-                        $FILE_NAME.0-0.retrieved.weigths.nc \
-                        $FILE_NAME.$YEAR.retrieved.remap.nc
-        rm $FILE_NAME.$YEAR.retrieved.nc
+                            --num_procs=5 \
+                            'cdo -s remap,newgrid_atmos.cdo,{1}' \
+                            $FILE_NAME.$YEAR.retrieved.nc \
+                            $FILE_NAME.197001.retrieved.weigths.nc \
+                            $FILE_NAME.$YEAR.retrieved.remap.nc
+            rm $FILE_NAME.$YEAR.retrieved.nc
+        fi
     done
 
     echo -n "Done remapping "
@@ -138,12 +162,15 @@ THe following is an example script for finding, retrieving and remapping data::
 
     #Concatenate the results:
 
-    #First list the files:
-    FILE_LIST=$(for YEAR in $(seq 1970 2005); do 
-                    echo pr_historical_rcp85.hdr.pointers.optimset.$YEAR.retrieved.remap.nc; 
-                done)
+    if [ ! -f pr_historical_rcp85.hdr.pointers.optimset.1970-2005.retrieved.remap.nc ]; then
+        #First list the files:
+        FILE_LIST=$(for YEAR in $(seq 1970 2005); do
+                        echo pr_historical_rcp85.hdr.pointers.optimset.$YEAR.retrieved.remap.nc;
+                    done)
 
-    #Then apply a mergetime operator:
-    cdb_query_CMIP5 apply -s 'cdo mergetime' \
-                    $FILE_LIST \
-                    pr_historical_rcp85.hdr.pointers.optimset.1970-2005.retrieved.remap.nc
+        #Then apply a mergetime operator:
+        cdb_query_CMIP5 apply 'cdo mergetime' \
+                        $FILE_LIST \
+                        pr_historical_rcp85.hdr.pointers.optimset.1970-2005.retrieved.remap.nc
+    fi
+

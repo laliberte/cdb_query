@@ -98,17 +98,21 @@ def md5_for_file(f, block_size=2**20):
     return md5.hexdigest()
 
 #def retrieve_path(path,out_destination):
-def retrieve_path(in_tuple,pointer_var):
-    path=in_tuple[0]
-    tree=pointer_var[:-1]+[in_tuple[5],]
-    out_destination=in_tuple[6]
+def retrieve_path(in_dict,pointer_var):
+    path=in_dict['path']
+    out_destination=in_dict['file_path']
+    version=in_dict['version']
+    var=in_dict['var']
+    dest_name=out_destination.replace('tree','/'.join(pointer_var[:-1]))
+    dest_name=dest_name.replace('var',var)
+    dest_name=dest_name.replace('version',version)
 
     decomposition=path.split('|')
     if not (isinstance(decomposition,list) and len(decomposition)>1):
         return
 
     root_path=decomposition[0]
-    dest_name=out_destination+'/'+'/'.join(tree)+'/'+root_path.split('/')[-1]
+    dest_name+=root_path.split('/')[-1]
     try: 
         md5sum=md5_for_file(open(dest_name,'r'))
     except:
@@ -158,14 +162,13 @@ def find_local_file(source_dir,data):
             new_file_type_list.append(file_type_list[path_id])
     return new_paths_list, new_file_type_list
 
-def retrieve_path_data(in_tuple,pointer_var):
-    path=in_tuple[0].replace('fileServer','dodsC').split('|')[0]
-    var=in_tuple[1]
-    indices=in_tuple[2]
-    unsort_indices=in_tuple[3]
+def retrieve_path_data(in_dict,pointer_var):
+    path=in_dict['path'].replace('fileServer','dodsC').split('|')[0]
+    var=in_dict['var']
+    indices=in_dict['indices']
+    unsort_indices=in_dict['unsort_indices']
+    sort_table=in_dict['sort_table']
 
-    sort_table=in_tuple[4]
-    version=in_tuple[5]
     remote_data=remote_netcdf.remote_netCDF(path,[])
     remote_data.open_with_error()
     dimensions=remote_data.Dataset.variables[var].dimensions
@@ -176,12 +179,8 @@ def retrieve_path_data(in_tuple,pointer_var):
                                                             indices_utils.get_indices_from_dim(remote_dim,indices[dim]))
         
     retrieved_data=grab_remote_indices(remote_data.Dataset.variables[var],indices,unsort_indices)
-    #if len(indices)==1:
-    #    retrieved_data=add_axis(grab_remote_indices(remote_data.variables[var],indices,other_indices))
-    #else:
-    #    retrieved_data=grab_remote_indices(remote_data.variables[var],indices,other_indices)
     remote_data.close()
-    return (retrieved_data, sort_table,pointer_var)
+    return (retrieved_data, sort_table,pointer_var+[var])
 
 def get_data_node(path,file_type):
     if file_type=='HTTPServer':

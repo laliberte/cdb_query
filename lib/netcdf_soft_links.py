@@ -203,14 +203,14 @@ class read_netCDF_pointers:
                 dimensions['time'], unsort_dimensions['time'] = indices_utils.prepare_indices(time_indices[time_chunk*max_time_steps:(time_chunk+1)*max_time_steps])
                 
                 #Get the file tree:
-                tree=self.data_root.path.split('/')[1:]+[var_to_retrieve]
-                args = (path_to_retrieve,
-                        var_to_retrieve,
-                        dimensions,
-                        unsort_dimensions,
-                        np.argsort(sorting_paths)[sorted_paths_link==path_id],
-                        version,
-                        file_path,
+                tree=self.data_root.path.split('/')[1:]
+                args = ({'path':path_to_retrieve,
+                        'var':var_to_retrieve,
+                        'indices':dimensions,
+                        'unsort_indices':unsort_dimensions,
+                        'sort_table':np.argsort(sorting_paths)[sorted_paths_link==path_id],
+                        'file_path':file_path,
+                        'version':version},
                         tree)
 
                 #Retrieve only if it is from the requested data node:

@@ -23,6 +23,7 @@ class DRS:
               'experiment',
               'ensemble',
               'model',
+              'model_version',
               'time_frequency',
               'var',
               'version'
@@ -48,7 +49,7 @@ class DRS:
               #'file_type': [str,'File type: '+','.join(self.file_types)]
         self.discover_exclude_args=['experiment','var','time_frequency','year','month','file_type']
 
-        self.remote_fields=['institute','model','ensemble','driving_model','domain','file_type','version']
+        self.remote_fields=['institute','model','model_version','ensemble','driving_model','domain','file_type','version']
         self.known_fields=['experiment','var'] + self.var_specs
         return
 
