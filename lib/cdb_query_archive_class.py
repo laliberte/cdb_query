@@ -178,7 +178,7 @@ class SimpleTree:
         data_node_list_timed=[]
         for data_node in data_node_list:
             url=self.nc_Database.list_paths_by_data_node(data_node)[0].split('|')[0].replace('fileServer','dodsC')
-            print 'Querying '+url+' to measure response time of data node'
+            print 'Querying '+url+' to measure response time of data node... ',
             #Try opening a link on the data node. If it does not work do not use this data_node
             number_of_trials=5
             try:
@@ -189,6 +189,7 @@ class SimpleTree:
                 data_node_list_timed.append(data_node)
             except:
                 pass
+            print 'Done!'
         self.close_database()
         #print data_node_list
         #print data_node_list_timed
