@@ -66,8 +66,8 @@ class DRS:
                             'realm',
                             'cmor_table',
                             'ensemble',
-                            'var',
-                            'version']
+                            'version',
+                            'var']
         self.official_drs_no_version=copy.copy(self.official_drs)
         self.official_drs_no_version.remove('version')
 
