@@ -164,6 +164,9 @@ def remote_retrieve(subparsers,epilog,project_drs):
                                          )
     input_arguments(parser)
     output_arguments(parser)
+    serial_group = parser.add_argument_group('Specify asynchronous behavior')
+    serial_group.add_argument('--serial',default=False,action='store_true',help='Downloads the files serially.')
+
     source_group = parser.add_argument_group('Specify sources')
     source_group.add_argument('--source_dir',default=None,help='local cache of data retrieved using \'download\'')
 
@@ -195,6 +198,8 @@ def download(subparsers,epilog,project_drs):
     #proc_group.add_argument('--num_procs',
     #                             default=1, type=int,
     #                             help='Use num_procs processes to perform the computation.')
+    serial_group = parser.add_argument_group('Specify asynchronous behavior')
+    serial_group.add_argument('--serial',default=False,action='store_true',help='Downloads the files serially.')
 
     source_group = parser.add_argument_group('Specify sources')
     source_group.add_argument('--source_dir',default=None,help='local cache of data retrieved using \'download\'')

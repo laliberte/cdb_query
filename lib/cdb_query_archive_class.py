@@ -167,7 +167,7 @@ class SimpleTree:
         self.define_database(options)
         self.nc_Database.retrieve_database(options,output,queues,getattr(retrieval_utils,retrieval_function))
         self.close_database()
-        launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_function)
+        launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_function,options)
         return
 
     def find_and_rank_data_nodes(self,options):
@@ -318,7 +318,7 @@ def worker_retrieve(input, output):
         output.put(result)
     return
 
-def launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_function):
+def launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_function,options):
     #Second step: Process the queues:
     #print datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     start_time = datetime.datetime.now()
@@ -331,39 +331,49 @@ def launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_f
     string_to_print=['0'.zfill(len(str(queues_size[data_node])))+'/'+str(queues_size[data_node])+' paths from "'+data_node+'"' for
                         data_node in data_node_list_not_empty]
     print ' | '.join(string_to_print)
+    print 'Progress: '
 
+    if 'serial' in dir(options) and options.serial:
+        for data_node in data_node_list_not_empty:
+            num_files=queues[data_node].qsize()
+            queues[data_node].put('STOP')
+            worker_retrieve(queues[data_node], queues['end'])
+            for i in range(num_files):
+                progress_report(retrieval_function,output,queues,queues_size,data_node_list_not_empty,start_time)
+        
+    else:
+        num_files=0
+        processes=dict()
+        for data_node in data_node_list_not_empty:
+            num_files+=queues[data_node].qsize()
+            queues[data_node].put('STOP')
+            processes[data_node]=multiprocessing.Process(target=worker_retrieve, args=(queues[data_node], queues['end']))
+            processes[data_node].start()
 
-    num_files=0
-    processes=dict()
-    for data_node in data_node_list_not_empty:
-        num_files+=queues[data_node].qsize()
-        processes[data_node]=multiprocessing.Process(target=worker_retrieve, args=(queues[data_node], queues['end']))
-        queues[data_node].put('STOP')
-        processes[data_node].start()
-
-    open_queues_list=copy.copy(data_node_list_not_empty)
-    #Third step: Close the queues:
-    if retrieval_function=='retrieve_path':
-        print 'Progress: '
         for i in range(num_files):
-            print '\t', queues['end'].get()
-            elapsed_time = datetime.datetime.now() - start_time
-            print str(elapsed_time)
-    elif retrieval_function=='retrieve_path_data':
-        print 'Progress: '
-        for i in range(num_files):
-            netcdf_utils.assign_tree(output,*queues['end'].get())
-            output.sync()
-            string_to_print=[str(queues_size[data_node]-queues[data_node].qsize()).zfill(len(str(queues_size[data_node])))+
-                             '/'+str(queues_size[data_node]) for
-                                data_node in data_node_list_not_empty]
-            elapsed_time = datetime.datetime.now() - start_time
-            print str(elapsed_time)+', '+' | '.join(string_to_print)+'\r',
+            progress_report(retrieval_function,output,queues,queues_size,data_node_list_not_empty,start_time)
+
+    if retrieval_function=='retrieve_path_data':
         output.close()
 
     print
     print('Done!')
     #print datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    return
+
+def progress_report(retrieval_function,output,queues,queues_size,data_node_list_not_empty,start_time):
+    if retrieval_function=='retrieve_path':
+        print '\t', queues['end'].get()
+        elapsed_time = datetime.datetime.now() - start_time
+        print str(elapsed_time)
+    elif retrieval_function=='retrieve_path_data':
+        netcdf_utils.assign_tree(output,*queues['end'].get())
+        output.sync()
+        string_to_print=[str(queues_size[data_node]-queues[data_node].qsize()).zfill(len(str(queues_size[data_node])))+
+                         '/'+str(queues_size[data_node]) for
+                            data_node in data_node_list_not_empty]
+        elapsed_time = datetime.datetime.now() - start_time
+        print str(elapsed_time)+', '+' | '.join(string_to_print)+'\r',
     return
         
 def find_simple(pointers,file_expt):
