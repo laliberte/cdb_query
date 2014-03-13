@@ -81,10 +81,7 @@ def intersection(database):
                 for field_id, field in enumerate(database.drs.var_specs):
                     conditions.append(getattr(nc_Database.File_Expt,field)==database.header['variable_list'][var_name][field_id])
 
-                model_list_var=database.nc_Database.session.query(
-                                         nc_Database.File_Expt.institute,
-                                         nc_Database.File_Expt.model,
-                                         nc_Database.File_Expt.ensemble
+                model_list_var=database.nc_Database.session.query(*[getattr(nc_Database.File_Expt,desc) for desc in database.drs.simulations_desc]
                                         ).filter(sqlalchemy.and_(*conditions)).distinct().all()
                 model_list=set(model_list).intersection(set(model_list_var))
 
@@ -100,8 +97,7 @@ def intersection(database):
                 for field_id, field in enumerate(database.drs.var_specs):
                     conditions.append(getattr(nc_Database.File_Expt,field)==database.header['variable_list'][var_name][field_id])
                 model_list_var=database.nc_Database.session.query(
-                                         nc_Database.File_Expt.institute,
-                                         nc_Database.File_Expt.model,
+                                        *[getattr(nc_Database.File_Expt,desc) for desc in database.drs.simulations_desc if desc!='ensemble']
                                            ).filter(sqlalchemy.and_(*conditions)).distinct().all()
                 model_list_fx=set(model_list_fx).intersection(set(model_list_var))
 
