@@ -158,7 +158,7 @@ class read_netCDF_pointers:
         paths_link=np.array([list(paths_id_list).index(path_id) for path_id in paths_link])
 
         #Sort the paths so that we query each only once:
-        sorting_paths=np.argsort(paths_link)
+        sorting_paths=np.argsort(paths_link,kind='mergesort')
         unique_paths_list_id=np.unique(paths_link[sorting_paths])
         sorted_paths_link=paths_link[sorting_paths]
         sorted_indices_link=indices_link[sorting_paths]
@@ -200,7 +200,8 @@ class read_netCDF_pointers:
             time_indices=sorted_indices_link[sorted_paths_link==path_id]
             num_time_chunk=int(np.ceil(len(time_indices)/float(max_time_steps)))
             for time_chunk in range(num_time_chunk):
-                dimensions['time'], unsort_dimensions['time'] = indices_utils.prepare_indices(time_indices[time_chunk*max_time_steps:(time_chunk+1)*max_time_steps])
+                time_slice=slice(time_chunk*max_time_steps,(time_chunk+1)*max_time_steps,1)
+                dimensions['time'], unsort_dimensions['time'] = indices_utils.prepare_indices(time_indices[time_slice])
                 
                 #Get the file tree:
                 tree=self.data_root.path.split('/')[1:]
@@ -208,7 +209,7 @@ class read_netCDF_pointers:
                         'var':var_to_retrieve,
                         'indices':dimensions,
                         'unsort_indices':unsort_dimensions,
-                        'sort_table':np.argsort(sorting_paths)[sorted_paths_link==path_id],
+                        'sort_table':np.argsort(sorting_paths)[sorted_paths_link==path_id][time_slice],
                         'file_path':file_path,
                         'version':version},
                         tree)
