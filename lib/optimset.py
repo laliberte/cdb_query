@@ -72,12 +72,11 @@ def find_time_file(pointers,file_expt):#session,file_expt,path_name):
 
 def obtain_time_list(diagnostic,project_drs,var_name,experiment,model):
     #Do this without fx variables:
-    conditions=[
-                 nc_Database.File_Expt.var==var_name,
-                 nc_Database.File_Expt.institute==model[0],
-                 nc_Database.File_Expt.model==model[1],
-                 nc_Database.File_Expt.ensemble==model[2]
-               ]
+    conditions=([
+                 nc_Database.File_Expt.var==var_name,] +
+               [ getattr(nc_Database.File_Expt,desc)==model[desc_id]
+                 for desc_id,desc in enumerate(project_drs.simulations_desc)]
+               )
     for field_id, field in enumerate(project_drs.var_specs):
         conditions.append(getattr(nc_Database.File_Expt,field)==diagnostic.header['variable_list'][var_name][field_id])
     time_list_var=[x[0] for x in diagnostic.nc_Database.session.query(

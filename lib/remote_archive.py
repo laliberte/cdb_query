@@ -11,7 +11,7 @@ class DRS:
         self.remote_file_types=['HTTPServer','GridFTP']
 
         self.var_specs=['time_frequency']
-        self.simulations_desc=['domain','institute','model','ensemble']
+        self.simulations_desc=['domain','institute','driving_model','model_version','model','ensemble']
 
         self.header_desc=['search_list','file_type_list','months_list','data_node_list','experiment_list','variable_list']
 
