@@ -45,10 +45,7 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
     if list_level!=None:
         import socket
         try:
-            if list_level=='model_version':
-                return ctx.facet_counts['version'].keys()
-            else:
-                return ctx.facet_counts[list_level].keys()
+            return ctx.facet_counts[list_level].keys()
         except socket.error as e:
             print search_path+' is not responding. '+e.strerror
             return []
