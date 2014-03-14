@@ -75,5 +75,5 @@ def descend_tree_recursive(database,file_expt,tree_desc,top_path,options,list_le
             if nc_Database.is_level_name_included_and_not_excluded(local_tree_desc,options,subdir):
                 only_list.append(descend_tree_recursive(database,file_expt_copy,
                                             next_tree_desc,top_path+'/'+subdir,
-                                            options,list_level=list_level))
+                                            options,list_level=list_level,alt=alt))
         return [item for sublist in only_list for item in sublist]
