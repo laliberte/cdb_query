@@ -23,9 +23,15 @@ def descend_tree(database,search_path,options,list_level=None):
                                 [item for item in database.drs.base_drs if not item in description.keys()],
                                 os.path.abspath(os.path.expanduser(os.path.expandvars(search_path))),
                                 options,list_level=list_level))
+
+        if 'alt_base_drs' in dir(database.drs):
+            only_list.append(descend_tree_recursive(database,file_expt_copy,
+                                    [item for item in database.drs.alt_base_drs if not item in description.keys()],
+                                    os.path.abspath(os.path.expanduser(os.path.expandvars(search_path))),
+                                    options,list_level=list_level,alt=True))
     return [item for sublist in only_list for item in sublist]
 
-def descend_tree_recursive(database,file_expt,tree_desc,top_path,options,list_level=None):
+def descend_tree_recursive(database,file_expt,tree_desc,top_path,options,list_level=None,alt=False):
     if not isinstance(tree_desc,list):
         return
 
@@ -35,6 +41,9 @@ def descend_tree_recursive(database,file_expt,tree_desc,top_path,options,list_le
             for file in file_list:
                 file_expt_copy=copy.deepcopy(file_expt)
                 file_expt_copy.path='|'.join([file,retrieval_utils.md5_for_file(open(file,'r'))])
+                if alt: 
+                    file_expt_copy.model_version=file_expt_copy.model.split('-')[1]
+                    file_expt_copy.model='-'.join([file_expt_copy.institute,file_expt_copy.model.split('-')[0]])
                 database.nc_Database.session.add(file_expt_copy)
                 database.nc_Database.session.commit()
         return file_list
@@ -64,12 +73,6 @@ def descend_tree_recursive(database,file_expt,tree_desc,top_path,options,list_le
             setattr(file_expt_copy,local_tree_desc,subdir)
             #Include only subdirectories that were specified if this level was specified:
             if nc_Database.is_level_name_included_and_not_excluded(local_tree_desc,options,subdir):
-            #if (  not local_tree_desc in dir(options) or 
-            #      (  getattr(options,local_tree_desc)!=None or 
-            #         ( local_tree_desc in database.drs.official_drs and 
-            #            getattr(options,local_tree_desc)==subdir)
-            #         )
-            #      ):
                 only_list.append(descend_tree_recursive(database,file_expt_copy,
                                             next_tree_desc,top_path+'/'+subdir,
                                             options,list_level=list_level))

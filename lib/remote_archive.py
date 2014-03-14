@@ -36,6 +36,7 @@ class DRS:
                   'time',
                   'path'
               ]
+        
         self.slicing_args={
               'domain': [str,'Modelling domain'],
               'institute': [str,'Modelling institute name'],
@@ -51,6 +52,22 @@ class DRS:
 
         self.remote_fields=['institute','model','model_version','ensemble','driving_model','domain','file_type','version']
         self.known_fields=['experiment','var'] + self.var_specs
+
+        self.alt_base_drs=[
+              'domain',
+              'institute',
+              'driving_model',
+              'experiment',
+              'ensemble',
+              'model',
+              'time_frequency',
+              'var',
+              'version',
+              'search',
+              'file_type',
+              'time',
+              'path'
+              ]
         return
 
     def CMIP5(self):
