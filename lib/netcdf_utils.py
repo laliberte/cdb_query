@@ -91,10 +91,15 @@ def replicate_full_netcdf_recursive(output,data):
 def replicate_and_copy_variable(output,data,var_name):
     replicate_netcdf_var(output,data,var_name)
     if len(data.variables[var_name].shape)>0 and max(data.variables[var_name].shape)>0:
-        temp=data.variables[var_name][:]
-        output.variables[var_name][:]=temp
+        max_request=450 #maximum request in Mb
+        max_time_steps=np.floor(max_request*1024*1024/(32*np.prod(data.variables[var_name].shape)))
+        num_time_chunk=int(np.ceil(data.variables[var_name].shape[0]/float(max_time_steps)))
+        for time_chunk in range(num_time_chunk):
+            time_slice=slice(time_chunk*max_time_steps,
+                             (time_chunk+1)*max_time_steps,1)
+                             #min((time_chunk+1)*max_time_steps,data.variables[var_name].shape[0])
+            output.variables[var_name][time_slice,...]=data.variables[var_name][time_slice,...]
         output.sync()
-        del temp
     return
 
 def replicate_group(output,data,group_name):
