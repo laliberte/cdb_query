@@ -178,7 +178,7 @@ class SimpleTree:
         data_node_list_timed=[]
         for data_node in data_node_list:
             url=self.nc_Database.list_paths_by_data_node(data_node)[0].split('|')[0].replace('fileServer','dodsC')
-            print 'Querying '+url+' to measure response time of data node... ',
+            print 'Querying '+url+' to measure response time of data node... '
             #Try opening a link on the data node. If it does not work do not use this data_node
             number_of_trials=5
             try:
@@ -285,7 +285,9 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
     result=pool.map_async(worker_query,args_list,chunksize=1)
     for arg in args_list:
         filename=queue_result.get()
-        nc_Database.record_to_file(output_root,netCDF4.Dataset(filename,'r'))
+        source_data=netCDF4.Dataset(filename,'r')
+        nc_Database.record_to_file(output_root,source_data)
+        source_data.close()
         output_root.sync()
         #output_string=queue_output.get()[1]
         #if len(output_string)>0:
