@@ -287,7 +287,6 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
         filename=queue_result.get()
         source_data=netCDF4.Dataset(filename,'r')
         nc_Database.record_to_file(output_root,source_data)
-        source_data.close()
         output_root.sync()
         #output_string=queue_output.get()[1]
         #if len(output_string)>0:

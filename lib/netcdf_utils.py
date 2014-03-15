@@ -91,7 +91,10 @@ def replicate_full_netcdf_recursive(output,data):
 def replicate_and_copy_variable(output,data,var_name):
     replicate_netcdf_var(output,data,var_name)
     if len(data.variables[var_name].shape)>0 and max(data.variables[var_name].shape)>0:
-        output.variables[var_name][:]=data.variables[var_name][:]
+        temp=data.variables[var_name][:]
+        output.variables[var_name][:]=temp
+        output.sync()
+        del temp
     return
 
 def replicate_group(output,data,group_name):
