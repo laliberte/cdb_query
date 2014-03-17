@@ -131,7 +131,7 @@ class read_netCDF_pointers:
             #Replicate all the other variables:
             for var in set(self.data_root.variables.keys()).difference(vars_to_retrieve):
                 if not var in output.variables.keys():
-                    output=netcdf_utils.replicate_and_copy(output,self.data_root,var)
+                    output=netcdf_utils.replicate_and_copy_variable(output,self.data_root,var)
                     #output=netcdf_utils.replicate_netcdf_var(output,self.data_root,var)
                     #output.variables[var][:]=self.data_root.variables[var][:]
 
