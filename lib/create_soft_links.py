@@ -173,6 +173,7 @@ class soft_links:
 
             self.create(output)
             self.record_indices(output,remote_data.Dataset,var)
+            output.sync()
         except dodsError as e:
             e_mod=" This is an uncommon error. It is likely to be FATAL."
             print e.value+e_mod
@@ -180,12 +181,13 @@ class soft_links:
         return
 
     def record_indices(self,output,data,var):
-        netcdf_utils.replicate_netcdf_var(output,data,var,zlib=True)
+        netcdf_utils.replicate_netcdf_var(output,data,var,chunksize=-1,zlib=True)
+        #netcdf_utils.replicate_netcdf_var(output,data,var)
 
         for other_var in data.variables.keys():
-            if not 'time' in data.variables[other_var].dimensions:
-                output=netcdf_utils.replicate_netcdf_var(output,data,other_var)
-                output.variables[other_var][:]=data.variables[other_var][:]
+            if ( (not 'time' in data.variables[other_var].dimensions) and 
+                 (not other_var in output.variables.keys()) ):
+                netcdf_utils.replicate_and_copy_variable(output,data,other_var)
 
         #CREATE LOOK-UP TABLE:
         output_grp=output.groups['soft_links']

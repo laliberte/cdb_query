@@ -79,28 +79,51 @@ def convert_to_date_absolute(absolute_time):
     return datetime.datetime(year,month,day,hour,minute,seconds)
 
 #def replicate_full_netcdf_recursive(output,data,options=None):
-def replicate_full_netcdf_recursive(output,data):
+def replicate_full_netcdf_recursive(output,data,check_empty=False):
     for var_name in data.variables.keys():
-        replicate_and_copy_variable(output,data,var_name)
+        replicate_and_copy_variable(output,data,var_name,check_empty=check_empty)
     if len(data.groups.keys())>0:
         for group in data.groups.keys():
             output_grp=replicate_group(output,data,group)
-            replicate_full_netcdf_recursive(output_grp,data.groups[group])
+            replicate_full_netcdf_recursive(output_grp,data.groups[group],check_empty=check_empty)
     return
 
-def replicate_and_copy_variable(output,data,var_name):
-    replicate_netcdf_var(output,data,var_name)
-    if len(data.variables[var_name].shape)>0 and max(data.variables[var_name].shape)>0:
-        max_request=450 #maximum request in Mb
-        max_time_steps=np.floor(max_request*1024*1024/(32*np.prod(data.variables[var_name].shape)))
+def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=None,add_dim=None,chunksize=None,zlib=None,check_empty=False):
+    replicate_netcdf_var(output,data,var_name,datatype=datatype,fill_value=fill_value,add_dim=add_dim,chunksize=chunksize,zlib=zlib)
+    if len(data.variables[var_name].shape)>0 and min(data.variables[var_name].shape)>0:
+        max_request=4500 #maximum request in Mb
+        max_time_steps=max(
+                        int(np.floor(max_request*1024*1024/(32*np.prod(data.variables[var_name].shape)))),
+                        1)
+
         num_time_chunk=int(np.ceil(data.variables[var_name].shape[0]/float(max_time_steps)))
-        for time_chunk in range(num_time_chunk):
-            time_slice=slice(time_chunk*max_time_steps,
-                             (time_chunk+1)*max_time_steps,1)
-                             #min((time_chunk+1)*max_time_steps,data.variables[var_name].shape[0])
-            output.variables[var_name][time_slice,...]=data.variables[var_name][time_slice,...]
-        output.sync()
-    return
+
+        if (len(data.variables[var_name].shape)>1 and
+            num_time_chunk>1):
+            for time_chunk in range(num_time_chunk):
+                time_slice=slice(time_chunk*max_time_steps,
+                                 (time_chunk+1)*max_time_steps,1)
+                                 #min((time_chunk+1)*max_time_steps,data.variables[var_name].shape[0])
+                #output.variables[var_name][time_slice,...]=data.variables[var_name][time_slice,...]
+                temp=data.variables[var_name][time_slice,...]
+                #Assign only if not masked everywhere:
+                #if not ('mask' in dir(temp) and temp.mask.all()):
+                #output.variables[var_name][time_slice,...]=temp
+                if not 'mask' in dir(temp) or not check_empty:
+                    output.variables[var_name][time_slice,...]=temp
+                else: 
+                    if not temp.mask.all():
+                        output.variables[var_name][time_slice,...]=temp
+                output.sync()
+        else:
+            #output.variables[var_name][:]=data.variables[var_name][:]
+            temp=data.variables[var_name][:]
+            if not 'mask' in dir(temp) or not check_empty:
+                output.variables[var_name][:]=temp
+            else: 
+                if not temp.mask.all():
+                    output.variables[var_name][:]=temp
+    return output
 
 def replicate_group(output,data,group_name):
     output_grp=create_group(output,data,group_name)
@@ -159,19 +182,20 @@ def replicate_netcdf_var(output,data,var,datatype=None,fill_value=None,add_dim=N
         dimensions=data.variables[var].dimensions
         if add_dim:
             dimensions+=(add_dim,)
-        if chunksize:
+        if chunksize!=None:
             if chunksize==-1:
-                chunksizes=tuple([1 if dim=='time' else len(output.dimensions[dim]) for dim in dimensions])
+                chunksizes=tuple([1 if dim=='time' else data.variables[var].shape[dim_id] for dim_id,dim in enumerate(dimensions)])
             else:
                 #chunksizes=tuple([1 if output.dimensions[dim].isunlimited() else 10 for dim in dimensions])
-                chunksizes=tuple([1 if dim=='time' else chunksize for dim in dimensions])
-            output.createVariable(var,datatype,dimensions,chunksizes=chunksizes,**kwargs)
+                #chunksizes=tuple([1 if dim=='time' else chunksize for dim in dimensions])
+                chunksizes=tuple([1 if dim=='time' else chunksize for dim_id,dim in enumerate(dimensions)])
+            kwargs['chunksizes']=chunksizes
         else:
             if data.variables[var].chunking()=='contiguous':
                 kwargs['contiguous']=True
             else:
                 kwargs['chunksizes']=data.variables[var].chunking()
-            output.createVariable(var,datatype,dimensions,**kwargs)
+        output.createVariable(var,datatype,dimensions,**kwargs)
     output = replicate_netcdf_var_att(output,data,var)
     return output
 

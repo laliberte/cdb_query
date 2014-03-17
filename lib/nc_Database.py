@@ -158,6 +158,7 @@ class nc_Database:
 
             output=create_tree(output_root,zip(drs_list,tree))
             #Record data:
+            #print output_root.filepath(), tree
             if (time_frequency in ['fx','clim'] and record_function_handle!='record_paths'):
                 netcdf_pointers.record_fx(output,paths_list,var)
             else:
@@ -286,8 +287,9 @@ def retrieve_tree_recursive(options,data,output,queues,retrieval_function):
             isinstance(output,netCDF4.Group)):
             if len(data.variables.keys())>0:
                 for var in data.variables.keys():
-                    output_fx=netcdf_utils.replicate_netcdf_var(output,data,var)
-                    output_fx.variables[var][:]=data.variables[var][:]
+                    #output_fx=netcdf_utils.replicate_netcdf_var(output,data,var,chunksize=-1,zlib=True)
+                    #output_fx.variables[var][:]=data.variables[var][:]
+                    output_fx=netcdf_utils.replicate_and_copy_variable(output,data,var,chunksize=-1,zlib=True)
                 output_fx.sync()
     return
 
@@ -331,7 +333,7 @@ def is_level_name_included_and_not_excluded(level_name,options,group):
 
 def record_to_file(output_root,output):
     netcdf_utils.replicate_netcdf_file(output_root,output)
-    netcdf_utils.replicate_full_netcdf_recursive(output_root,output)
+    netcdf_utils.replicate_full_netcdf_recursive(output_root,output,check_empty=True)
     filepath=output.filepath()
     output.close()
     try:

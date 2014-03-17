@@ -66,8 +66,10 @@ class create_netCDF_pointers:
         try:
             remote_data.open_with_error()
             for var_name in remote_data.Dataset.variables.keys():
-                netcdf_utils.replicate_netcdf_var(output,remote_data.Dataset,var_name)
-                output.variables[var_name][:]=remote_data.Dataset.variables[var_name][:]
+                netcdf_utils.replicate_and_copy_variable(output,remote_data.Dataset,var_name,zlib=True)
+                #netcdf_utils.replicate_netcdf_var(output,remote_data.Dataset,var_name)
+                #output.variables[var_name][:]=remote_data.Dataset.variables[var_name][:]
+            output.sync()
         except dodsError as e:
             e_mod=" This is an uncommon error. It is likely to be FATAL."
             print e.value+e_mod
@@ -129,8 +131,9 @@ class read_netCDF_pointers:
             #Replicate all the other variables:
             for var in set(self.data_root.variables.keys()).difference(vars_to_retrieve):
                 if not var in output.variables.keys():
-                    output=netcdf_utils.replicate_netcdf_var(output,self.data_root,var)
-                    output.variables[var][:]=self.data_root.variables[var][:]
+                    output=netcdf_utils.replicate_and_copy(output,self.data_root,var)
+                    #output=netcdf_utils.replicate_netcdf_var(output,self.data_root,var)
+                    #output.variables[var][:]=self.data_root.variables[var][:]
 
         #Get list of paths:
         paths_list=self.data_root.groups['soft_links'].variables['path'][:]
@@ -181,7 +184,7 @@ class read_netCDF_pointers:
                 dims_length.append(len(dimensions[dim]))
         #Maximum number of time step per request:
         max_request=450 #maximum request in Mb
-        max_time_steps=np.floor(max_request*1024*1024/(32*np.prod(dims_length)))
+        max_time_steps=int(np.floor(max_request*1024*1024/(32*np.prod(dims_length))))
         for path_id in unique_paths_list_id:
             path_to_retrieve=paths_list[paths_id_list[path_id]]
 
