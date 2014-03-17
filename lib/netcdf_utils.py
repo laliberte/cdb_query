@@ -150,7 +150,10 @@ def replicate_netcdf_file(output,data):
 def replicate_netcdf_var_dimensions(output,data,var):
     for dims in data.variables[var].dimensions:
         if dims not in output.dimensions.keys() and dims in data.dimensions.keys():
-            output.createDimension(dims,len(data.dimensions[dims]))
+            if data.dimensions[dims].isunlimited():
+                output.createDimension(dims,None)
+            else:
+                output.createDimension(dims,len(data.dimensions[dims]))
             if dims in data.variables.keys():
                 dim_var = output.createVariable(dims,data.variables[dims].dtype,(dims,))
                 dim_var[:] = data.variables[dims][:]
@@ -209,7 +212,8 @@ def replicate_netcdf_var_att(output,data,var):
     return output
 
 def create_time_axis(output,data,time_axis):
-    output.createDimension('time',len(time_axis))
+    #output.createDimension('time',len(time_axis))
+    output.createDimension('time',None)
     time = output.createVariable('time','d',('time',))
     time.calendar=str(data.variables['time'].calendar)
     time.units=str(data.variables['time'].units)
@@ -457,7 +461,7 @@ def replace_netcdf_variable_recursive(output,data,level_desc,tree):
                     replace_netcdf_variable_recursive(output_grp,data.groups[group],tree[0],tree[1:])
             else:
                 netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data.groups[group])
-                netcdf_pointers.replicate(output_grp)
+                netcdf_pointers.replicate(output_grp,check_empty=True)
     else:
         output_grp=create_group(output,data,group_name)
         output_grp.setncattr('level_name',level_name)
@@ -465,7 +469,7 @@ def replace_netcdf_variable_recursive(output,data,level_desc,tree):
             replace_netcdf_variable_recursive(output_grp,data,tree[0],tree[1:])
         else:
             netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data)
-            netcdf_pointers.replicate(output_grp)
+            netcdf_pointers.replicate(output_grp,check_empty=True)
     return
 
     

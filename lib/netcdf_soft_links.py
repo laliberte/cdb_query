@@ -85,12 +85,12 @@ class read_netCDF_pointers:
         self.Xdata_node=Xdata_node
         return
 
-    def replicate(self,output):
+    def replicate(self,output,check_empty=False):
         #replicate attributes
         netcdf_utils.replicate_netcdf_file(output,self.data_root)
         #replicate and copy variables:
         for var_name in self.data_root.variables.keys():
-            netcdf_utils.replicate_and_copy_variable(output,self.data_root,var_name)
+            netcdf_utils.replicate_and_copy_variable(output,self.data_root,var_name,check_empty=check_empty)
         if 'soft_links' in self.data_root.groups.keys():
             output_grp=netcdf_utils.replicate_group(output,self.data_root,'soft_links')
             netcdf_utils.replicate_netcdf_file(output_grp,self.data_root.groups['soft_links'])
