@@ -102,8 +102,9 @@ def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=No
             num_time_chunk>1):
             for time_chunk in range(num_time_chunk):
                 time_slice=slice(time_chunk*max_time_steps,
-                                 (time_chunk+1)*max_time_steps,1)
-                                 #min((time_chunk+1)*max_time_steps,data.variables[var_name].shape[0])
+                                 min((time_chunk+1)*max_time_steps,data.variables[var_name].shape[0])
+                                 ,1)
+                                 #(time_chunk+1)*max_time_steps,1)
                 #output.variables[var_name][time_slice,...]=data.variables[var_name][time_slice,...]
                 temp=data.variables[var_name][time_slice,...]
                 #Assign only if not masked everywhere:
@@ -337,7 +338,7 @@ def apply_to_variable(database,options):
         data=netCDF4.Dataset(file,'r')
         temp_file=file+'.pid'+str(os.getpid())
         output_tmp=netCDF4.Dataset(temp_file,'w',format='NETCDF4',diskless=True,persist=True)
-        extract_netcdf_variable_recursive(output_tmp,data,tree[0],tree[1:],options)
+        extract_netcdf_variable_recursive(output_tmp,data,tree[0],tree[1:],options,check_empty=True)
         temp_files_list.append(temp_file)
         output_tmp.close()
         data.close()
@@ -368,7 +369,7 @@ def apply_to_variable(database,options):
         pass
     return (temp_output_file_name, var)
 
-def extract_netcdf_variable_recursive(output,data,level_desc,tree,options):
+def extract_netcdf_variable_recursive(output,data,level_desc,tree,options,check_empty=False):
     level_name=level_desc[0]
     group_name=level_desc[1]
     if group_name==None:
@@ -377,16 +378,16 @@ def extract_netcdf_variable_recursive(output,data,level_desc,tree,options):
                  nc_Database.retrieve_tree_recursive_check_not_empty(options,data.groups[group])):
                 output_grp=replicate_group(output,data,group)
                 if len(tree)>0:
-                    extract_netcdf_variable_recursive(output_grp,data.groups[group],tree[0],tree[1:],options)
+                    extract_netcdf_variable_recursive(output_grp,data.groups[group],tree[0],tree[1:],options,check_empty=check_empty)
                 else:
                     netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data.groups[group])
-                    netcdf_pointers.replicate(output_grp)
+                    netcdf_pointers.replicate(output_grp,check_empty=check_empty)
     else:
         if len(tree)>0:
-            extract_netcdf_variable_recursive(output,data.groups[group_name],tree[0],tree[1:],options)
+            extract_netcdf_variable_recursive(output,data.groups[group_name],tree[0],tree[1:],options,check_empty=check_empty)
         else:
             netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data.groups[group_name])
-            netcdf_pointers.replicate(output)
+            netcdf_pointers.replicate(output,check_empty=check_empty)
     return
 
 
@@ -423,7 +424,7 @@ def distributed_apply(function_handle,database,options,vars_list,args=tuple()):
                 var=description[1]
                 data=netCDF4.Dataset(temp_file_name,'r')
                 tree=zip(database.drs.official_drs_no_version,var)
-                replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:])
+                replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:],check_empty=True)
                 data.close()
                 try:
                     os.remove(temp_file_name)
@@ -439,7 +440,7 @@ def distributed_apply(function_handle,database,options,vars_list,args=tuple()):
                 temp_file_name, var=queue.get()
                 data=netCDF4.Dataset(temp_file_name,'r')
                 tree=zip(database.drs.official_drs_no_version,var)
-                replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:])
+                replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:],check_empty=True)
                 data.close()
                 try:
                     os.remove(temp_file_name)
@@ -450,7 +451,7 @@ def distributed_apply(function_handle,database,options,vars_list,args=tuple()):
 
         return output_root
 
-def replace_netcdf_variable_recursive(output,data,level_desc,tree):
+def replace_netcdf_variable_recursive(output,data,level_desc,tree,check_empty=False):
     level_name=level_desc[0]
     group_name=level_desc[1]
     if group_name==None:
@@ -458,18 +459,18 @@ def replace_netcdf_variable_recursive(output,data,level_desc,tree):
             output_grp=create_group(output,data,group)
             output_grp.setncattr('level_name',level_name)
             if len(tree)>0:
-                    replace_netcdf_variable_recursive(output_grp,data.groups[group],tree[0],tree[1:])
+                    replace_netcdf_variable_recursive(output_grp,data.groups[group],tree[0],tree[1:],check_empty=check_empty)
             else:
                 netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data.groups[group])
-                netcdf_pointers.replicate(output_grp,check_empty=True)
+                netcdf_pointers.replicate(output_grp,check_empty=check_empty)
     else:
         output_grp=create_group(output,data,group_name)
         output_grp.setncattr('level_name',level_name)
         if len(tree)>0:
-            replace_netcdf_variable_recursive(output_grp,data,tree[0],tree[1:])
+            replace_netcdf_variable_recursive(output_grp,data,tree[0],tree[1:],check_empty=check_empty)
         else:
             netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data)
-            netcdf_pointers.replicate(output_grp,check_empty=True)
+            netcdf_pointers.replicate(output_grp,check_empty=check_empty)
     return
 
     
