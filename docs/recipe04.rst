@@ -63,8 +63,6 @@ The following is an example script for finding, retrieving and remapping data::
         # in the future and it might be worth it
         # to try including some of the excluded nodes: 
         cdb_query_CMIP5 optimset \
-                                 --Xdata_node=http://bmbf-ipcc-ar5.dkrz.de \
-                                 --Xdata_node=http://cmip-dn1.badc.rl.ac.uk \
                                  --Xdata_node=http://esg.bnu.edu.cn \
                                  --Xdata_node=http://albedo2.dkrz.de \
                                  --Xdata_node=http://esg2.e-inis.ie \

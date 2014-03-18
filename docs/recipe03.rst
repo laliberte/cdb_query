@@ -165,7 +165,7 @@ We retrieve the first month::
 
 This step took about 4 minutes from the University of Toronto. Next, we extract precipitation for the simulation with the EUR-11 domain::
 
-    $ ncks -G : -g /EUR-11/IPSL-INERIS/IPSL-IPSL-CM5A-MR/historical/r1i1p1/IPSL-INERIS-WRF331F/mon/pr \
+    $ ncks -G : -g /EUR-11/IPSL-INERIS/IPSL-IPSL-CM5A-MR/historical/r1i1p1/IPSL-INERIS-WRF331F/v1/mon/pr \
                     pr_JJAS_France_pointers.optimset.197906.retrieved.nc \
                     pr_JJAS_France_pointers.optimset.197906.retrieved.EUR-11.nc
     $ ncview pr_JJAS_France_pointers.optimset.197906.retrieved.EUR-11.nc
@@ -268,7 +268,7 @@ This recipe is summarized in the following BASH script::
                                     pr_JJAS_France_pointers.optimset.nc \
                                     pr_JJAS_France_pointers.optimset.197906.retrieved.nc
             #Extract first domain:
-            ncks -G : -g /EUR-11/IPSL-INERIS/IPSL-IPSL-CM5A-MR/historical/r1i1p1/IPSL-INERIS-WRF331F/mon/pr \
+            ncks -G : -g /EUR-11/IPSL-INERIS/IPSL-IPSL-CM5A-MR/historical/r1i1p1/IPSL-INERIS-WRF331F/v1/mon/pr \
                             pr_JJAS_France_pointers.optimset.197906.retrieved.nc \
                             pr_JJAS_France_pointers.optimset.197906.retrieved.EUR-11.nc
 
