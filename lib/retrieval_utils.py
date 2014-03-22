@@ -174,7 +174,10 @@ def retrieve_path_data(in_dict,pointer_var):
     dimensions=remote_data.Dataset.variables[var].dimensions
     for dim in dimensions:
         if dim != 'time':
-            remote_dim=remote_data.Dataset.variables[dim][:]
+            if dim in remote_data.Dataset.variables.keys():
+                remote_dim = remote_data.Dataset.variables[dim][:]
+            else:
+                remote_dim = np.arange(len(remote_data.Dataset.dimensions[dim]))
             indices[dim], unsort_indices[dim] = indices_utils.prepare_indices(
                                                             indices_utils.get_indices_from_dim(remote_dim,indices[dim]))
         

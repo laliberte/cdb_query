@@ -179,7 +179,10 @@ class read_netCDF_pointers:
         dims_length=[]
         for dim in self.data_root.variables[var_to_retrieve].dimensions:
             if dim != 'time':
-                dimensions[dim] = self.data_root.variables[dim][:]
+                if dim in self.data_root.variables.keys():
+                    dimensions[dim] = self.data_root.variables[dim][:]
+                else:
+                    dimensions[dim] = np.arange(len(self.data_root.dimensions[dim]))
                 unsort_dimensions[dim] = None
                 dims_length.append(len(dimensions[dim]))
         #Maximum number of time step per request:
