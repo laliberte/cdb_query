@@ -162,6 +162,10 @@ def replicate_netcdf_var_dimensions(output,data,var):
                 if 'bounds' in output.variables[dims].ncattrs():
                     output=replicate_netcdf_var(output,data,output.variables[dims].getncattr('bounds'))
                     output.variables[output.variables[dims].getncattr('bounds')][:]=data.variables[output.variables[dims].getncattr('bounds')][:]
+            else:
+                #Create a dummy dimension variable:
+                dim_var = output.createVariable(dims,np.unit32,(dims,))
+                dim_var[:]=np.arange(len(data.dimensions[dims]))
     return output
 
 def replicate_netcdf_var(output,data,var,datatype=None,fill_value=None,add_dim=None,chunksize=None,zlib=None):

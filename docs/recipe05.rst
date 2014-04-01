@@ -152,7 +152,7 @@ THe following is an example script for finding, retrieving and remapping data::
                 done)
 
     #Then apply a mergetime operator:
-    cdb_query_CMIP5 apply -s 'cdo mergetime' \
+    cdb_query_CMIP5 apply 'cdo mergetime' \
                     $FILE_LIST \
                     $FILE_NAME.0001-0499.retrieved.remap.nc
     
