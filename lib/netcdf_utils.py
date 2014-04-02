@@ -347,12 +347,14 @@ def apply_to_variable(database,options):
         output_tmp.close()
         data.close()
 
+    temp_files_list.append(temp_output_file_name)
+
     script_to_call=options.script
     for file_id, file in enumerate(temp_files_list):
         if not '{'+str(file_id)+'}' in options.script:
             script_to_call+=' {'+str(file_id)+'}'
 
-    script_to_call+=' '+temp_output_file_name
+    #script_to_call+=' '+temp_output_file_name
 
     #print '/'.join(var)
     #print script_to_call.format(*temp_files_list)
@@ -367,7 +369,7 @@ def apply_to_variable(database,options):
     #out.wait()
 
     try:
-        for file in temp_files_list:
+        for file in temp_files_list[:-1]:
             os.remove(file)
     except OSError:
         pass
@@ -458,8 +460,8 @@ def distributed_apply(function_handle,database,options,vars_list,args=tuple()):
 
 def replace_netcdf_variable_recursive(output,data,level_desc,tree,check_empty=False):
     level_name=level_desc[0]
-    group_name=level_desc[1]
-    if group_name==None:
+    group_names=level_desc[1]
+    if group_names==None:
         for group in data.groups.keys():
             output_grp=create_group(output,data,group)
             output_grp.setncattr('level_name',level_name)
@@ -469,10 +471,11 @@ def replace_netcdf_variable_recursive(output,data,level_desc,tree,check_empty=Fa
                 netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data.groups[group])
                 netcdf_pointers.replicate(output_grp,check_empty=check_empty)
     else:
-        output_grp=create_group(output,data,group_name)
-        output_grp.setncattr('level_name',level_name)
         if len(tree)>0:
-            replace_netcdf_variable_recursive(output_grp,data,tree[0],tree[1:],check_empty=check_empty)
+            for group_name in data.groups.keys():
+                output_grp=create_group(output,data,group_name)
+                output_grp.setncattr('level_name',level_name)
+                replace_netcdf_variable_recursive(output_grp,data.groups[group_name],tree[0],tree[1:],check_empty=check_empty)
         else:
             netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data)
             netcdf_pointers.replicate(output_grp,check_empty=check_empty)
