@@ -172,10 +172,10 @@ def remote_retrieve(subparsers,epilog,project_drs):
 
     inc_group = parser.add_argument_group('Inclusions')
     inc_group.add_argument('--year',
-                                 default=None, type=int,
+                                 default=None, type=int, nargs='*',
                                  help='Retrieve only this year.')
     inc_group.add_argument('--month',
-                                 default=None, type=int,
+                                 default=None, type=int, nargs='*',
                                  help='Retrieve only this month (1 to 12).')
     #slicing_arguments(inc_group,project_drs)
     #exc_group = parser.add_argument_group('Exclusions')
@@ -210,10 +210,10 @@ def download(subparsers,epilog,project_drs):
 
     inc_group = parser.add_argument_group('Inclusions')
     inc_group.add_argument('--year',
-                                 default=None, type=int,
+                                 default=None, type=int, nargs='*',
                                  help='Retrieve only this year.')
     inc_group.add_argument('--month',
-                                 default=None, type=int,
+                                 default=None, type=int, nargs='*',
                                  help='Retrieve only this month (1 to 12).')
     #slicing_arguments(inc_group,project_drs)
     #exc_group = parser.add_argument_group('Exclusions')

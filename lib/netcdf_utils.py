@@ -164,7 +164,7 @@ def replicate_netcdf_var_dimensions(output,data,var):
                     output.variables[output.variables[dims].getncattr('bounds')][:]=data.variables[output.variables[dims].getncattr('bounds')][:]
             else:
                 #Create a dummy dimension variable:
-                dim_var = output.createVariable(dims,np.unit32,(dims,))
+                dim_var = output.createVariable(dims,np.uint32,(dims,))
                 dim_var[:]=np.arange(len(data.dimensions[dims]))
     return output
 
@@ -376,7 +376,7 @@ def apply_to_variable(database,options):
 def extract_netcdf_variable_recursive(output,data,level_desc,tree,options,check_empty=False):
     level_name=level_desc[0]
     group_name=level_desc[1]
-    if group_name==None:
+    if group_name==None or isinstance(group_name,list):
         for group in data.groups.keys():
             if ( nc_Database.is_level_name_included_and_not_excluded(level_name,options,group) and
                  nc_Database.retrieve_tree_recursive_check_not_empty(options,data.groups[group])):
@@ -414,7 +414,8 @@ def distributed_apply(function_handle,database,options,vars_list,args=tuple()):
         for var_id,var in enumerate(vars_list):
             options_copy=copy.copy(options)
             for opt_id, opt in enumerate(database.drs.official_drs_no_version):
-                setattr(options_copy,opt,var[opt_id])
+                if var[opt_id]!=None:
+                    setattr(options_copy,opt,var[opt_id])
             args_list.append((function_handle,copy.copy(database),options_copy)+args+(queue,))
         
         #Span up to options.num_procs processes and each child process analyzes only one simulation

@@ -98,26 +98,29 @@ class read_netCDF_pointers:
                 netcdf_utils.replicate_and_copy_variable(output_grp,self.data_root.groups['soft_links'],var_name)
         return
 
-    def retrieve_time_axis(self,year=None,month=None,min_year=None):
+    def retrieve_time_axis(self,years=None,months=None,min_year=None):
         time_axis=self.data_root.variables['time'][:]
         time_restriction=np.ones(time_axis.shape,dtype=np.bool)
-        if year!=None or month!=None:
+        if years!=None or months!=None:
             date_axis=netcdf_utils.get_date_axis(self.data_root.variables['time'])
-            if year!=None:
-                year_axis=np.array([date.year for date in date_axis])
+            if years!=None:
+                years_axis=np.array([date.year for date in date_axis])
                 if min_year!=None:
                     #Important for piControl:
-                    time_restriction=np.logical_and(time_restriction,year_axis-year_axis.min()+min_year== year)
+                    #time_restriction=np.logical_and(time_restriction,years_axis-years_axis.min()+min_year== years)
+                    time_restriction=np.logical_and(time_restriction,[True if year in years else False for year in years_axis-years_axis.min()+min_year])
                 else:
-                    time_restriction=np.logical_and(time_restriction,year_axis== year)
-            if month!=None:
-                month_axis=np.array([date.month for date in date_axis])
-                time_restriction=np.logical_and(time_restriction,month_axis== month)
+                    #time_restriction=np.logical_and(time_restriction,years_axis== years)
+                    time_restriction=np.logical_and(time_restriction,[True if year in years else False for year in years_axis])
+            if months!=None:
+                months_axis=np.array([date.month for date in date_axis])
+                #time_restriction=np.logical_and(time_restriction,months_axis==month)
+                time_restriction=np.logical_and(time_restriction,[True if month in months else False for month in months_axis])
         return time_axis,time_restriction
 
     def retrieve(self,output,retrieval_function,year=None,month=None,min_year=None,source_dir=None,semaphores=[]):
         #First find time axis, time restriction and which variables to retrieve:
-        time_axis, time_restriction=self.retrieve_time_axis(year=year,month=month,min_year=min_year)
+        time_axis, time_restriction=self.retrieve_time_axis(years=year,months=month,min_year=min_year)
         vars_to_retrieve=[var for var in self.data_root.variables.keys() 
                                 if  var in self.data_root.groups['soft_links'].variables.keys()]
 
