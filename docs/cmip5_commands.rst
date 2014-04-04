@@ -70,3 +70,10 @@ This command reads the output from `remote_retrieve` and applies a command-line
 operator. This is a glorified for-loop.
 
 .. command-output:: cdb_query_CMIP5 apply --help
+
+`convert`
+^^^^^^^^^
+This command reads the output from `remote_retrieve` and converts the output
+to the CMIP5 DRS.
+
+.. command-output:: cdb_query_CMIP5 convert --help

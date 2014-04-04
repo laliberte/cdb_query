@@ -70,3 +70,10 @@ This command reads the output from `remote_retrieve` and applies a command-line
 operator. This is a glorified for-loop.
 
 .. command-output:: cdb_query_CORDEX apply --help
+
+`convert`
+^^^^^^^^^
+This command reads the output from `remote_retrieve` and converts the output
+to the CORDEX DRS.
+
+.. command-output:: cdb_query_CORDEX convert --help

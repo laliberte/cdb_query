@@ -17,6 +17,6 @@ The standard workflow for both packages is similar:
 4. The data retrieved from `download` is structured in a way that can be accessed by subsequent `discover` and
    other commands.
 5. The data retrieved from `remote_retrieve` keep the same structure as `optimset`. It can then be processed
-   using the command `apply`.
+   using the commands `apply` and `convert`.
 
 The source code for this project is available on github: https://github.com/laliberte/cdb_query

@@ -460,8 +460,8 @@ def distributed_apply(function_handle,database,options,vars_list,args=tuple()):
 
 def replace_netcdf_variable_recursive(output,data,level_desc,tree,check_empty=False):
     level_name=level_desc[0]
-    group_names=level_desc[1]
-    if group_names==None:
+    group_name=level_desc[1]
+    if group_name==None or isinstance(group_name,list):
         for group in data.groups.keys():
             output_grp=create_group(output,data,group)
             output_grp.setncattr('level_name',level_name)
@@ -472,10 +472,9 @@ def replace_netcdf_variable_recursive(output,data,level_desc,tree,check_empty=Fa
                 netcdf_pointers.replicate(output_grp,check_empty=check_empty)
     else:
         if len(tree)>0:
-            for group_name in data.groups.keys():
-                output_grp=create_group(output,data,group_name)
-                output_grp.setncattr('level_name',level_name)
-                replace_netcdf_variable_recursive(output_grp,data.groups[group_name],tree[0],tree[1:],check_empty=check_empty)
+            output_grp=create_group(output,data,group_name)
+            output_grp.setncattr('level_name',level_name)
+            replace_netcdf_variable_recursive(output_grp,data,tree[0],tree[1:],check_empty=check_empty)
         else:
             netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data)
             netcdf_pointers.replicate(output_grp,check_empty=check_empty)
