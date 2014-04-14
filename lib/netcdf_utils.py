@@ -45,21 +45,29 @@ def get_year_axis(path_name):
     return year_axis, month_axis
 
 def get_date_axis(time_var):
-    if time_var.units=='day as %Y%m%d.%f':
-        date_axis=get_date_axis_absolute(time_var)
-    else:
-        date_axis=get_date_axis_relative(time_var)
-    return date_axis
-
-def get_date_axis_relative(time_var):
+    units=time_var.units
     if 'calendar' in dir(time_var):
-        date_axis = netCDF4.num2date(time_var[:],units=time_var.units,calendar=time_var.calendar)
+        calendar=time_var.calendar
     else:
-        date_axis = netCDF4.num2date(time_var[:],units=time_var.units)
+        calendar=None
+    return get_date_axis_units(time_var[:],units,calendar)
+
+def get_date_axis_units(time_axis,units,calendar):
+    if units=='day as %Y%m%d.%f':
+        date_axis=get_date_axis_absolute(time_axis)
+    else:
+        date_axis=get_date_axis_relative(time_axis,units,calendar)
     return date_axis
 
-def get_date_axis_absolute(time_var):
-    return map(convert_to_date_absolute,time_var[:])
+def get_date_axis_relative(time_axis,units,calendar):
+    if calendar!=None:
+        date_axis = netCDF4.num2date(time_axis,units=units,calendar=calendar)
+    else:
+        date_axis = netCDF4.num2date(time_axis,units=units)
+    return date_axis
+
+def get_date_axis_absolute(time_axis):
+    return map(convert_to_date_absolute,time_axis)
 
 def convert_to_date_absolute(absolute_time):
     year=int(math.floor(absolute_time/1e4))

@@ -134,10 +134,12 @@ class soft_links:
         return
 
     def unique_time_axis(self,data,years,months):
-        time_axis = netCDF4.date2num(self.time_axis,units=data.variables['time'].units,calendar=data.variables['time'].calendar)
+        units=data.variables['time'].units
+        calendar=data.variables['time'].calendar
+        time_axis = netCDF4.date2num(self.time_axis,units,calendar=calendar)
         time_axis_unique = np.unique(time_axis)
 
-        time_axis_unique_date=netCDF4.num2date(time_axis_unique,units=data.variables['time'].units,calendar=data.variables['time'].calendar)
+        time_axis_unique_date=netCDF4.num2date(time_axis_unique,units,calendar=calendar)
 
         #Include a filter on years: 
         time_desc={}
@@ -160,23 +162,23 @@ class soft_links:
 
         #Open the first file and use its metadata to populate container file:
         remote_data=remote_netcdf.remote_netCDF(self.table['paths'][0],self.semaphores)
-        try:
-            remote_data.open_with_error()
-            netcdf_utils.replicate_netcdf_file(output,remote_data.Dataset)
+        #try:
+        remote_data.open_with_error()
+        netcdf_utils.replicate_netcdf_file(output,remote_data.Dataset)
 
-            #Convert time axis to numbers and find the unique time axis:
-            self.unique_time_axis(remote_data.Dataset,years,months)
+        #Convert time axis to numbers and find the unique time axis:
+        self.unique_time_axis(remote_data.Dataset,years,months)
 
-            self.reduce_paths_ordering()
-            #Create time axis in ouptut:
-            netcdf_utils.create_time_axis(output,remote_data.Dataset,self.time_axis_unique)
+        self.reduce_paths_ordering()
+        #Create time axis in ouptut:
+        netcdf_utils.create_time_axis(output,remote_data.Dataset,self.time_axis_unique)
 
-            self.create(output)
-            self.record_indices(output,remote_data.Dataset,var)
-            output.sync()
-        except dodsError as e:
-            e_mod=" This is an uncommon error. It is likely to be FATAL."
-            print e.value+e_mod
+        self.create(output)
+        self.record_indices(output,remote_data.Dataset,var)
+        output.sync()
+        #except dodsError as e:
+        #    e_mod=" This is an uncommon error. It is likely to be FATAL."
+        #    print e.value+e_mod
         remote_data.close()
         return
 

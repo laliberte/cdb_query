@@ -176,21 +176,26 @@ class SimpleTree:
         data_node_list=self.nc_Database.list_data_nodes(options)
         data_node_timing=[]
         data_node_list_timed=[]
-        for data_node in data_node_list:
-            url=self.nc_Database.list_paths_by_data_node(data_node)[0].split('|')[0].replace('fileServer','dodsC')
+        url_list=[self.nc_Database.list_paths_by_data_node(data_node)[0].split('|')[0].replace('fileServer','dodsC') 
+                  for data_node in data_node_list]
+        self.close_database()
+        for data_node_id, data_node in enumerate(data_node_list):
+            url=url_list[data_node_id]
+            #url=self.nc_Database.list_paths_by_data_node(data_node)[0].split('|')[0].replace('fileServer','dodsC')
             print 'Querying '+url+' to measure response time of data node... '
-            #Try opening a link on the data node. If it does not work do not use this data_node
+            #Try opening a link on the data node. If it does not work put this data node at the end.
             number_of_trials=5
             try:
                 import_string='import cdb_query.remote_netcdf;import time;'
-                load_string='remote_data=cdb_query.remote_netcdf.remote_netCDF(\''+url+'\',[]);remote_data.is_available();time.sleep(2)'
+                #load_string='remote_data=cdb_query.remote_netcdf.remote_netCDF(\''+url+'\',[]);remote_data.is_available();time.sleep(2);print(\''+url+'\');'
+                load_string='remote_data=cdb_query.remote_netcdf.remote_netCDF(\''+url+'\',[]);remote_data.is_available();time.sleep(2);'
                 timing=timeit.timeit(import_string+load_string,number=number_of_trials)
                 data_node_timing.append(timing)
                 data_node_list_timed.append(data_node)
             except:
                 pass
             print 'Done!'
-        self.close_database()
+        #self.close_database()
         #print data_node_list
         #print data_node_list_timed
         #print data_node_timing
@@ -281,18 +286,19 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
     
     #Span up to options.num_procs processes and each child process analyzes only one simulation
     #pool=multiprocessing.Pool(processes=options.num_procs,initializer=initializer,initargs=[queue_output],maxtasksperchild=1)
-    pool=multiprocessing.Pool(processes=options.num_procs,maxtasksperchild=1)
-    result=pool.map_async(worker_query,args_list,chunksize=1)
+    if options.num_procs>1:
+        pool=multiprocessing.Pool(processes=options.num_procs,maxtasksperchild=1)
+        result=pool.map_async(worker_query,args_list,chunksize=1)
     for arg in args_list:
+        if options.num_procs==1:
+            result=worker_query(arg)
         filename=queue_result.get()
         source_data=netCDF4.Dataset(filename,'r')
         nc_Database.record_to_file(output_root,source_data)
         output_root.sync()
-        #output_string=queue_output.get()[1]
-        #if len(output_string)>0:
-        #    print output_string
-    pool.close()
-    pool.join()
+    if options.num_procs>1:
+        pool.close()
+        pool.join()
 
     return output_root
 

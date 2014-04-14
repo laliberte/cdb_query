@@ -52,17 +52,13 @@ def find_time_file(pointers,file_expt):#session,file_expt,path_name):
 
     #Record in the database:
     if file_expt.file_type in ['local_file']:
-        file_checked=True
         file_available=True
     else:
-        file_checked=False
+        file_available = retrieval_utils.check_file_availability(file_expt.path.split('|')[0])
     for year in years_list:
         for month in range(1,13):
             if not ( (year==years_range[0] and month<months_range[0]) or
                      (year==years_range[1] and month>months_range[1])   ):
-                if not file_checked:
-                    file_available = retrieval_utils.check_file_availability(file_expt.path.split('|')[0])
-                    file_checked=True
                 if file_available:
                     file_expt_copy = copy.deepcopy(file_expt)
                     setattr(file_expt_copy,'time',str(year)+str(month).zfill(2))
@@ -145,7 +141,6 @@ def optimset(database,options,semaphores=None):
     database.load_database(options,find_time)
     #Find the list of institute / model with all the months for all the years / experiments and variables requested:
     intersection(database,options)
-    #print json.dumps(database.pointers.tree,sort_keys=True, indent=4)
     
     dataset=database.nc_Database.write_database(database.header,options,'record_meta_data',semaphores=semaphores)
     database.close_database()
