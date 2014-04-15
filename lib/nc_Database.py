@@ -113,7 +113,8 @@ class nc_Database:
         #List all the trees:
         drs_list=copy.copy(self.drs.base_drs)
 
-        drs_to_remove=['search','path','file_type','version','time']
+        #drs_to_remove=['search','path','file_type','version','time']
+        drs_to_remove=['path','file_type','version','time']
         for drs in drs_to_remove: drs_list.remove(drs)
         #Remove the time:
         drs_to_remove.remove('time')
@@ -195,7 +196,8 @@ def populate_database_recursive(nc_Database,data,options,find_function):
         soft_links=data.groups['soft_links']
         paths=soft_links.variables['path'][:]
         for path_id, path in enumerate(paths):
-            id_list=['file_type','search']
+            #id_list=['file_type','search']
+            id_list=['file_type']
             for id in id_list:
                 setattr(nc_Database.file_expt,id,soft_links.variables[id][path_id])
 
@@ -216,7 +218,8 @@ def populate_database_recursive(nc_Database,data,options,find_function):
                 populate_database_recursive(nc_Database,data.groups[group],options,find_function)
     elif 'path' in data.ncattrs():
         #for fx variables:
-        id_list=['file_type','search']
+        #id_list=['file_type','search']
+        id_list=['file_type']
         for id in id_list:
             setattr(nc_Database.file_expt,id,data.getncattr(id))
         setattr(nc_Database.file_expt,'path','|'.join([data.getncattr('path'),
@@ -225,7 +228,8 @@ def populate_database_recursive(nc_Database,data,options,find_function):
         find_function(nc_Database,copy.deepcopy(nc_Database.file_expt))
     else:
         #for retrieved datasets:
-        id_list=['file_type','search','path','version']
+        #id_list=['file_type','search','path','version']
+        id_list=['file_type','path','version']
         for id in id_list:
             setattr(nc_Database.file_expt,id,'')
         if len(data.variables.keys())>0:

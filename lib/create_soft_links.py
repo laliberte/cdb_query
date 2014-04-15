@@ -31,7 +31,7 @@ import random
 class soft_links:
     def __init__(self,paths_list,file_type_list,data_node_list,semaphores=[]):
         self.sorts_list=['version','file_type_id','data_node_id','path_id']
-        self.id_list=['data_node','file_type','path','checksum','search']
+        self.id_list=['data_node','file_type','path','checksum']
         self.file_type_list=file_type_list
         self.data_node_list=data_node_list
         self.semaphores=semaphores
@@ -67,7 +67,6 @@ class soft_links:
             paths_ordering['path'][file_id]=file['path'].split('|')[0]
             paths_ordering['path_id'][file_id]=file_id
             paths_ordering['checksum'][file_id]=file['path'].split('|')[1]
-            paths_ordering['search'][file_id]=file['search']
             paths_ordering['version'][file_id]=np.uint32(file['version'][1:])
             paths_ordering['file_type'][file_id]=file['file_type']
             paths_ordering['data_node'][file_id]=retrieval_utils.get_data_node(file['path'],paths_ordering['file_type'][file_id])

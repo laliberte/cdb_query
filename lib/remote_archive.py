@@ -32,7 +32,6 @@ class DRS:
         self.official_drs_no_version=copy.copy(self.official_drs)
         self.official_drs_no_version.remove('version')
         self.base_drs=self.official_drs+[
-                  'search',
                   'file_type',
                   'time',
                   'path'
@@ -64,7 +63,6 @@ class DRS:
               'time_frequency',
               'var',
               'version',
-              'search',
               'file_type',
               'time',
               'path'
@@ -93,7 +91,6 @@ class DRS:
 
         self.header_desc=['search_list','file_type_list','months_list','data_node_list','experiment_list','variable_list']
         self.base_drs=self.official_drs+[
-                  'search',
                   'file_type',
                   'time',
                   'path'

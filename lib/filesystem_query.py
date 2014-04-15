@@ -12,7 +12,7 @@ def descend_tree(database,search_path,options,list_level=None):
     filesystem_file_type='local_file'
     only_list=[]
     if filesystem_file_type in database.header['file_type_list']:
-        description={'search':search_path,
+        description={
                    'file_type':filesystem_file_type,
                    'time':'0'}
         file_expt_copy=copy.deepcopy(database.nc_Database.file_expt)

@@ -37,7 +37,6 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
 
     nc_Database.file_expt.experiment=experiment
     nc_Database.file_expt.var=var_name
-    nc_Database.file_expt.search=search_path
     nc_Database.file_expt.time=0
     for field_id, field in enumerate(nc_Database.drs.var_specs):
         setattr(nc_Database.file_expt,field,var_desc[field_id])
