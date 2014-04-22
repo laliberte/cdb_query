@@ -105,7 +105,8 @@ def find_model_list(diagnostic,project_drs,model_list,experiment,min_time):
             for var_name in diagnostic.header['variable_list'].keys():
                 if not diagnostic.header['variable_list'][var_name][0] in ['fx','clim']:
                     time_list_var=obtain_time_list(diagnostic,project_drs,var_name,experiment,model)
-                    min_time_list.append(int(np.floor(np.min([int(time) for time in time_list_var])/100.0)*100))
+                    if len(time_list_var)>0:
+                        min_time_list.append(int(np.floor(np.min([int(time) for time in time_list_var])/100.0)*100))
             min_time['_'.join(model)+'_'+experiment]=np.min(min_time_list)
         else:
             min_time['_'.join(model)+'_'+experiment]=0
