@@ -135,7 +135,10 @@ def get_diag_months_list(diagnostic):
     return diag_months_list
 
 def optimset_distributed(database,options,semaphores):
-    return optimset(database,options,semaphores=semaphores)
+    print 'Starting ',options.institute,options.model,options.ensemble
+    filepath=optimset(database,options,semaphores=semaphores)
+    print 'Finished ',options.institute,options.model,options.ensemble
+    return filepath
 
 def optimset(database,options,semaphores=None):
     database.load_database(options,find_time)

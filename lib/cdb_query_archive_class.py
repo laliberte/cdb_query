@@ -105,6 +105,10 @@ class SimpleTree:
         else:
             #Find the atomic simulations:
             simulations_list=self.list_fields_local(options,self.drs.simulations_desc)
+            for simulation in simulations_list:
+                if simulation[-1]!='r0i0p0':
+                    print '_'.join(simulation)
+
             #Randomize the list:
             import random
             random.shuffle(simulations_list)
@@ -112,7 +116,7 @@ class SimpleTree:
             manager=multiprocessing.Manager()
             semaphores=dict()
             for data_node in  self.header['data_node_list']:
-                semaphores[data_node]=manager.Semaphore()
+                semaphores[data_node]=manager.Semaphore(5)
             #semaphores=[]
             #original_stderr = sys.stderr
             #sys.stderr = NullDevice()

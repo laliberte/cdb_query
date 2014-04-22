@@ -26,11 +26,11 @@ class remote_netCDF:
         return
     
     def close(self):
-        #try:
-        if isinstance(self.Dataset,netCDF4.Dataset):
-            self.Dataset.close()
-        #except:
-        #    pass
+        try:
+            if isinstance(self.Dataset,netCDF4.Dataset):
+                self.Dataset.close()
+        except:
+            pass
         #del self.Dataset
         self.Dataset=None
         self.release_semaphore()
@@ -116,7 +116,10 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
         if units=='day as %Y%m%d.%f':
             time_axis=np.array(map(netcdf_utils.convert_to_date_absolute,native_time_axis))
         else:
-            time_axis=netCDF4.num2date(native_time_axis,units=units,calendar=calendar)
+            try:
+                time_axis=netCDF4.num2date(native_time_axis,units=units,calendar=calendar)
+            except TypeError:
+                time_axis=np.array([]) 
         return time_axis
 
     def get_time(self):

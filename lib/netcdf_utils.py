@@ -479,13 +479,15 @@ def replace_netcdf_variable_recursive(output,data,level_desc,tree,check_empty=Fa
                 netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data.groups[group])
                 netcdf_pointers.replicate(output_grp,check_empty=check_empty)
     else:
+        output_grp=create_group(output,data,group_name)
+        output_grp.setncattr('level_name',level_name)
         if len(tree)>0:
-            output_grp=create_group(output,data,group_name)
-            output_grp.setncattr('level_name',level_name)
             replace_netcdf_variable_recursive(output_grp,data,tree[0],tree[1:],check_empty=check_empty)
         else:
             netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data)
             netcdf_pointers.replicate(output_grp,check_empty=check_empty)
+        #    netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data)
+        #    netcdf_pointers.replicate(output,check_empty=check_empty)
     return
 
     
