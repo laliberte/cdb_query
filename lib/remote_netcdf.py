@@ -130,6 +130,7 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
             self.open_with_error()
             #if '/'.join(self.file_name.split('/')[0:3]).split('.')[-1]=='de':
             #    print "opened "+self.file_name
+            print self.file_name
             time_axis=self.retrieve_time()
             self.close()
             #sys.stdout=temp

@@ -54,6 +54,7 @@ def find_time_file(pointers,file_expt):#session,file_expt,path_name):
     if file_expt.file_type in ['local_file']:
         file_available=True
     else:
+        print file_expt.path
         file_available = retrieval_utils.check_file_availability(file_expt.path.split('|')[0])
     for year in years_list:
         for month in range(1,13):
@@ -135,9 +136,9 @@ def get_diag_months_list(diagnostic):
     return diag_months_list
 
 def optimset_distributed(database,options,semaphores):
-    print 'Starting ',options.institute,options.model,options.ensemble
+    #print 'Starting ',options.institute,options.model,options.ensemble
     filepath=optimset(database,options,semaphores=semaphores)
-    print 'Finished ',options.institute,options.model,options.ensemble
+    #print 'Finished ',options.institute,options.model,options.ensemble
     return filepath
 
 def optimset(database,options,semaphores=None):

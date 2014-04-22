@@ -159,26 +159,27 @@ class soft_links:
         #Recover time axis for all files:
         self.obtain_table()
 
-        #Open the first file and use its metadata to populate container file:
-        remote_data=remote_netcdf.remote_netCDF(self.table['paths'][0],self.semaphores)
-        #try:
-        remote_data.open_with_error()
-        netcdf_utils.replicate_netcdf_file(output,remote_data.Dataset)
+        if len(self.table['paths'])>0:
+            #Open the first file and use its metadata to populate container file:
+            remote_data=remote_netcdf.remote_netCDF(self.table['paths'][0],self.semaphores)
+            #try:
+            remote_data.open_with_error()
+            netcdf_utils.replicate_netcdf_file(output,remote_data.Dataset)
 
-        #Convert time axis to numbers and find the unique time axis:
-        self.unique_time_axis(remote_data.Dataset,years,months)
+            #Convert time axis to numbers and find the unique time axis:
+            self.unique_time_axis(remote_data.Dataset,years,months)
 
-        self.reduce_paths_ordering()
-        #Create time axis in ouptut:
-        netcdf_utils.create_time_axis(output,remote_data.Dataset,self.time_axis_unique)
+            self.reduce_paths_ordering()
+            #Create time axis in ouptut:
+            netcdf_utils.create_time_axis(output,remote_data.Dataset,self.time_axis_unique)
 
-        self.create(output)
-        self.record_indices(output,remote_data.Dataset,var)
-        output.sync()
-        #except dodsError as e:
-        #    e_mod=" This is an uncommon error. It is likely to be FATAL."
-        #    print e.value+e_mod
-        remote_data.close()
+            self.create(output)
+            self.record_indices(output,remote_data.Dataset,var)
+            output.sync()
+            #except dodsError as e:
+            #    e_mod=" This is an uncommon error. It is likely to be FATAL."
+            #    print e.value+e_mod
+            remote_data.close()
         return
 
     def record_indices(self,output,data,var):
