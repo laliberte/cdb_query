@@ -54,7 +54,6 @@ def find_time_file(pointers,file_expt):#session,file_expt,path_name):
     if file_expt.file_type in ['local_file']:
         file_available=True
     else:
-        print file_expt.path
         file_available = retrieval_utils.check_file_availability(file_expt.path.split('|')[0])
     for year in years_list:
         for month in range(1,13):

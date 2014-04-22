@@ -36,7 +36,7 @@ def main(project):
 
     '''.format(project))
     epilog='Frederic Laliberte, Paul Kushner 02/2014'
-    version_num='0.9.5-rc5.dev1'
+    version_num='0.9.6'
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
                             description=description,
                             version='%(prog)s '+version_num,
