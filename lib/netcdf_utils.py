@@ -184,7 +184,13 @@ def replicate_netcdf_var(output,data,var,datatype=None,fill_value=None,add_dim=N
         datatype=output.createCompoundType(datatype.dtype,datatype.name)
 
     kwargs=dict()
-    kwargs['fill_value']=fill_value
+    if fill_value==None:
+        if '_FillValue' in dir(data.variables[var]):
+            kwargs['fill_value']=data.variables[var]._FillValue
+        else:
+            kwargs['fill_value']=False
+    else:
+        kwargs['fill_value']=fill_value
     if zlib==None:
         if data.variables[var].filters()==None:
             kwargs['zlib']=False
@@ -446,7 +452,7 @@ def distributed_apply(function_handle,database,options,vars_list,args=tuple()):
                 except OSError:
                     pass
                 output_root.sync()
-
+    
             pool.close()
             pool.join()
         else:
