@@ -339,6 +339,9 @@ def apply(options,project_drs):
                         for field in database.drs.official_drs_no_version] for var in 
                         database.list_fields_local(options,drs_to_eliminate) ]
 
+    #Always add the fixed variables to apply:
+    #vars_list=[ var for var in vars_list if var[database.drs.official_drs_no_version.index('ensemble')] !='r0i0p0' ]
+
     output_root=distributed_apply(apply_to_variable,database,options,vars_list)
     database.record_header(options,output_root)
     output_root.close()
@@ -354,12 +357,29 @@ def apply_to_variable(database,options):
     var=[getattr(options,opt) for opt in database.drs.official_drs_no_version]
     tree=zip(database.drs.official_drs_no_version,var)
 
+    if options.add_fixed:
+        #Specification for fixed vars:
+        var_fx=[ getattr(options,opt) if not opt in database.drs.var_specs+['var',] else None for opt in database.drs.official_drs_no_version]
+        var_fx=copy.copy(var)
+        var_fx[database.drs.official_drs_no_version.index('ensemble')]='r0i0p0'
+        var_fx[database.drs.official_drs_no_version.index('var')]=None
+        for opt  in database.drs.var_specs+['var',]:
+            if opt in ['time_frequency','cmor_table']:
+                var_fx[database.drs.official_drs_no_version.index(opt)]='fx'
+        tree_fx=zip(database.drs.official_drs_no_version,var_fx)
+        options_fx=copy.copy(options)
+        for opt_id,opt in enumerate(tree_fx):
+            if opt!=tree[opt_id]:
+                setattr(options_fx,opt[0],opt[1])
+
     temp_files_list=[]
     for file in files_list:
         data=netCDF4.Dataset(file,'r')
         temp_file=file+'.pid'+str(os.getpid())
         output_tmp=netCDF4.Dataset(temp_file,'w',format='NETCDF4',diskless=True,persist=True)
         extract_netcdf_variable_recursive(output_tmp,data,tree[0],tree[1:],options,check_empty=True)
+        if options.add_fixed:
+            extract_netcdf_variable_recursive(output_tmp,data,tree_fx[0],tree_fx[1:],options_fx,check_empty=True)
         temp_files_list.append(temp_file)
         output_tmp.close()
         data.close()

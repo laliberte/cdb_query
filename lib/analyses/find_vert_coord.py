@@ -16,6 +16,9 @@ def check_file_consistency(data,var_list):
 
 def convert_hybrid(options):
     data=Dataset(options.in_file)
+    print data
+    import time
+    time.sleep(1000)
 
     var_list={
                 'ta':('time','lev','lat','lon'),
@@ -57,7 +60,6 @@ def convert_hybrid(options):
         second_target+='};'
         second_target+='lnp_bnds(:,$lev.size-1,:,:,1)=lnp_bnds(:,$lev.size-1,:,:,0)+dlnp(:,$lev.size-1,:,:);'
         second_target+='dp=dlnp; dp=exp(lnp_bnds(:,:,:,:,1))-exp(lnp_bnds(:,:,:,:,0));'
-    #print first_target+second_target
 
     for var in var_list.keys():
         script_to_call='ncrcat -3 -G : -g '+ var + ' -A ' +' '.join([options.in_file,options.out_file])

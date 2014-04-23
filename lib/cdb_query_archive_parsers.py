@@ -259,6 +259,7 @@ def apply(subparsers,epilog,project_drs):
                                  help='NETCDF file (output)')
 
     select_group = parser.add_argument_group('These arguments specify the structure of the output')
+    select_group.add_argument('--add_fixed',default=False, action='store_true',help='include fixed variables')
     select_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.official_drs_no_version,
                                        help='Keep these fields in the applied file.' )
     proc_group = parser.add_argument_group('These arguments set threading options')
