@@ -184,13 +184,13 @@ def replicate_netcdf_var(output,data,var,datatype=None,fill_value=None,add_dim=N
         datatype=output.createCompoundType(datatype.dtype,datatype.name)
 
     kwargs=dict()
-    if fill_value==None:
-        if '_FillValue' in dir(data.variables[var]):
+    if (fill_value==None and 
+        '_FillValue' in dir(data.variables[var]) and 
+        datatype==data.variables[var].datatype):
             kwargs['fill_value']=data.variables[var]._FillValue
-        else:
-            kwargs['fill_value']=False
     else:
         kwargs['fill_value']=fill_value
+
     if zlib==None:
         if data.variables[var].filters()==None:
             kwargs['zlib']=False
