@@ -132,6 +132,9 @@ def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=No
             else: 
                 if not temp.mask.all():
                     output.variables[var_name][:]=temp
+    elif len(data.variables[var_name].dimensions)==0:
+        #scalar variable:
+        output.variables[var_name][:]=data.variables[var_name][:]
     return output
 
 def replicate_group(output,data,group_name):
