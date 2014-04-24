@@ -116,7 +116,7 @@ class SimpleTree:
             manager=multiprocessing.Manager()
             semaphores=dict()
             for data_node in  self.header['data_node_list']:
-                semaphores[data_node]=manager.Semaphore(5)
+                semaphores[data_node]=manager.Semaphore(2)
             #semaphores=[]
             #original_stderr = sys.stderr
             #sys.stderr = NullDevice()

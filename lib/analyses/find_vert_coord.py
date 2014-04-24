@@ -2,6 +2,7 @@ from netCDF4 import Dataset
 import numpy as np
 import re
 import subprocess
+import shutil
 
 def check_file_consistency(data,var_list):
     if not set(data.groups.keys()).issuperset(var_list.keys()):
@@ -16,14 +17,12 @@ def check_file_consistency(data,var_list):
 
 def convert_hybrid(options):
     data=Dataset(options.in_file)
-    print data
-    import time
-    time.sleep(1000)
 
     var_list={
                 'ta':('time','lev','lat','lon'),
                 'hus':('time','lev','lat','lon'),
-                'ps':('time','lat','lon')
+                'ps':('time','lat','lon'),
+                'orog':('lat','lon')
                 }
 
     check_file_consistency(data,var_list)
@@ -51,31 +50,49 @@ def convert_hybrid(options):
                     'd'+target+'[$time,$lev,$lat,$lon]='+target+'_bnds(:,:,:,:,1)-'+target+'_bnds(:,:,:,:,0);'])
 
     if target=='p':
-        second_target='dz=287.04*(1+0.61)*ta*dp/p'
+        second_target='dz=287.04*(1+0.61)*ta*dp/p;'
+        second_target+='*z_bnds=p_bnds;z_bnds=0.0;'
+        second_target+='for(*it=0;it<$time.size-1;it++){z_bnds(it,0,:,:,0)=orog;};for(*iz=0;iz<$lev.size-2;iz++){'
+        second_target+='z_bnds(:,iz,:,:,1)=z_bnds(:,iz,:,:,0)+dz(:,iz,:,:);'
+        second_target+='z_bnds(:,iz+1,:,:,0)=z_bnds(:,iz,:,:,1);'
+        second_target+='};'
+        second_target+='z_bnds(:,$lev.size-1,:,:,1)=z_bnds(:,$lev.size-1,:,:,0)+dz(:,$lev.size-1,:,:);'
+        second_target+='z=p;z=0.5*(z_bnds(:,:,:,:,1)+z_bnds(:,:,:,:,0));'
+
     elif target=='z':
-        second_target='*dlnp=dz/(287.04*(1+0.61)*ta);*lnp_bnds=z_bnds;lnp_bnds=0.0;'
+        second_target='*dlnp=dz/(287.04*(1+0.61)*ta);'
+        second_target+='*lnp_bnds=z_bnds;lnp_bnds=0.0;'
         second_target+='lnp_bnds(:,0,:,:,0)=log(ps);for(*iz=0;iz<$lev.size-2;iz++){'
         second_target+='lnp_bnds(:,iz,:,:,1)=lnp_bnds(:,iz,:,:,0)+dlnp(:,iz,:,:);'
         second_target+='lnp_bnds(:,iz+1,:,:,0)=lnp_bnds(:,iz,:,:,1);'
         second_target+='};'
         second_target+='lnp_bnds(:,$lev.size-1,:,:,1)=lnp_bnds(:,$lev.size-1,:,:,0)+dlnp(:,$lev.size-1,:,:);'
         second_target+='dp=dlnp; dp=exp(lnp_bnds(:,:,:,:,1))-exp(lnp_bnds(:,:,:,:,0));'
+        second_target+='p=dp; p=0.5*(exp(lnp_bnds(:,:,:,:,1))+exp(lnp_bnds(:,:,:,:,0)));'
 
+    import time
     for var in var_list.keys():
-        script_to_call='ncrcat -3 -G : -g '+ var + ' -A ' +' '.join([options.in_file,options.out_file])
+        script_to_call='ncks -3 -G : -g '+ var + ' -A ' +' '.join([options.in_file,options.out_file])
         out=subprocess.call(script_to_call,shell=True)
 
-    #script_to_call='ncap2 -O -s \''+first_target+second_target+'\' '+options.out_file+' '+options.out_file
     script_to_call='ncap2 -O -s \''+'bnds=bnds.double();'+'\' '+options.out_file+' '+options.out_file
     out=subprocess.call(script_to_call,shell=True)
-    script_to_call='ncap2 -3 -O -s \''+first_target+'\' '+options.out_file+' '+options.out_file
-    print script_to_call
+    #script_to_call='ncap2 -3 -O -s \''+first_target+'\' '+options.out_file+' '+options.out_file
+    script_to_call='ncap2 -O -s \''+first_target+second_target+'\' '+options.out_file+' '+options.out_file
+    #print script_to_call
     out=subprocess.call(script_to_call,shell=True)
-    import time
-    time.sleep(1000)
 
-    output=Dataset(options.out_file)
-    output.close()
+    out_var_list=['dz','dp','z','p']
+    for var in out_var_list:
+        script_to_call='ncks -4 -L 1 -G '+ var + ' -v '+var+' -g / -A ' +' '.join([options.out_file,options.out_file+'.tmp'])
+        out=subprocess.call(script_to_call,shell=True)
+    
+    try:
+        shutil.move(options.out_file+'.tmp',options.out_file)
+    except OSError:
+        pass
+    #output=Dataset(options.out_file)
+    #output.close()
     return
 
 
