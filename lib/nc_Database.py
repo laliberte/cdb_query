@@ -100,6 +100,10 @@ class nc_Database:
                       )
         return  [data_node for data_node in data_node_list  
                 if is_level_name_included_and_not_excluded('data_node',options,data_node)]
+                
+    def list_data_nodes2(self,options):
+        paths_list=self.list_subset((File_Expt.path,File_Expt.file_type))
+        return []
 
     def list_paths_by_data_node(self,data_node):
         return [ path[0] for path in self.list_subset((File_Expt.path,File_Expt.file_type)) if retrieval_utils.get_data_node(*path) == data_node]

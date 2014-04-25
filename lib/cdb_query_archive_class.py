@@ -94,7 +94,12 @@ class SimpleTree:
         #    self.header['data_node_list']=options.data_nodes
 
         if not 'data_node_list' in self.header.keys():
-            self.header['data_node_list']=self.find_and_rank_data_nodes(options)
+            data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
+            data_node_list=[u'http://albedo2.dkrz.de', u'http://cmip-dn1.badc.rl.ac.uk', u'http://esgf-data1.ceda.ac.uk', u'http://pcmdi9.llnl.gov', u'http://vesg.ipsl.fr']
+            url_list=[u'http://albedo2.dkrz.de/thredds/dodsC/cmip5/output1/LASG-CESS/FGOALS-g2/rcp45/6hr/atmos/6hrLev/r1i1p1/v1/va/va_6hrLev_FGOALS-g2_rcp45_r1i1p1_2006010106-2007010100.nc', u'http://cmip-dn1.badc.rl.ac.uk/thredds/dodsC/esg_dataroot/cmip5/output1/MOHC/HadGEM2-ES/rcp45/6hr/atmos/6hrLev/r2i1p1/v20121017/va/va_6hrLev_HadGEM2-ES_rcp45_r2i1p1_2005122106-2006122100.nc', u'http://esgf-data1.ceda.ac.uk/thredds/dodsC/esg_dataroot/cmip5/output1/IPSL/IPSL-CM5A-LR/rcp45/6hr/atmos/6hrLev/r2i1p1/v20110726/va/va_6hrLev_IPSL-CM5A-LR_rcp45_r2i1p1_200601010300-201512312100.nc', u'http://pcmdi9.llnl.gov/thredds/dodsC/cmip5_css02_data/cmip5/output1/CSIRO-BOM/ACCESS1-0/rcp45/6hr/atmos/6hrPlev/r1i1p1/psl/1/psl_6hrPlev_ACCESS1-0_rcp45_r1i1p1_2006010106-2016010100.nc', u'http://vesg.ipsl.fr/thredds/dodsC/esg_dataroot/CMIP5/output1/IPSL/IPSL-CM5A-LR/rcp45/fx/atmos/fx/r0i0p0/v20110726/orog/orog_fx_IPSL-CM5A-LR_rcp45_r0i0p0.nc']
+            self.header['data_node_list']=self.rank_data_nodes(options,data_node_list,url_list)
+        else:
+            simulations_list=[]
 
         if options.num_procs==1:
             filepath=optimset.optimset(self,options)
@@ -104,7 +109,8 @@ class SimpleTree:
                 pass
         else:
             #Find the atomic simulations:
-            simulations_list=self.list_fields_local(options,self.drs.simulations_desc)
+            if simulations_list==[]:
+                simulations_list=self.list_fields_local(options,self.drs.simulations_desc)
             for simulation in simulations_list:
                 if simulation[-1]!='r0i0p0':
                     print '_'.join(simulation)
@@ -174,24 +180,29 @@ class SimpleTree:
         launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_function,options)
         return
 
-    def find_and_rank_data_nodes(self,options):
+    def find_data_nodes_and_simulations(self,options):
         #We have to time the response of the data node.
         self.load_database(options,find_simple)
-        data_node_list=self.nc_Database.list_data_nodes(options)
-        data_node_timing=[]
-        data_node_list_timed=[]
-        url_list=[self.nc_Database.list_paths_by_data_node(data_node)[0].split('|')[0].replace('fileServer','dodsC') 
-                  for data_node in data_node_list]
+        simulations_list=self.nc_Database.list_fields(self.drs.simulations_desc)
+
+        #data_node_list=self.nc_Database.list_data_nodes2(options)
+        data_node_list=[]
+        #url_list=[self.nc_Database.list_paths_by_data_node(data_node)[0].split('|')[0].replace('fileServer','dodsC') 
+        #          for data_node in data_node_list]
+        url_list=[]
         self.close_database()
+        return data_node_list,url_list, simulations_list
+
+    def rank_data_nodes(self,options,data_node_list,url_list):
+        data_node_list_timed=[]
+        data_node_timing=[]
         for data_node_id, data_node in enumerate(data_node_list):
             url=url_list[data_node_id]
-            #url=self.nc_Database.list_paths_by_data_node(data_node)[0].split('|')[0].replace('fileServer','dodsC')
             print 'Querying '+url+' to measure response time of data node... '
             #Try opening a link on the data node. If it does not work put this data node at the end.
             number_of_trials=5
             try:
                 import_string='import cdb_query.remote_netcdf;import time;'
-                #load_string='remote_data=cdb_query.remote_netcdf.remote_netCDF(\''+url+'\',[]);remote_data.is_available();time.sleep(2);print(\''+url+'\');'
                 load_string='remote_data=cdb_query.remote_netcdf.remote_netCDF(\''+url+'\',[]);remote_data.is_available();time.sleep(2);'
                 timing=timeit.timeit(import_string+load_string,number=number_of_trials)
                 data_node_timing.append(timing)
@@ -199,11 +210,6 @@ class SimpleTree:
             except:
                 pass
             print 'Done!'
-        #self.close_database()
-        #print data_node_list
-        #print data_node_list_timed
-        #print data_node_timing
-        #print list(np.array(data_node_list_timed)[np.argsort(data_node_timing)])+list(set(data_node_list).difference(data_node_list_timed))
         return list(np.array(data_node_list_timed)[np.argsort(data_node_timing)])+list(set(data_node_list).difference(data_node_list_timed))
 
     def list_fields(self,options):

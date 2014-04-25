@@ -9,6 +9,7 @@ class DRS:
     def CORDEX(self):
         self.file_types=['local_file', 'HTTPServer', 'GridFTP']
         self.remote_file_types=['HTTPServer','GridFTP']
+        self.required_file_types=['HTTPServer']
 
         self.var_specs=['time_frequency']
         #self.simulations_desc=['domain','institute','driving_model','model_version','model','ensemble']
@@ -72,6 +73,7 @@ class DRS:
     def CMIP5(self):
         self.file_types=['local_file', 'HTTPServer', 'GridFTP']
         self.remote_file_types=['HTTPServer','GridFTP']
+        self.required_file_types=['HTTPServer','OPENDAP']
 
         self.var_specs=['time_frequency','realm','cmor_table']
 

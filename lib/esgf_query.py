@@ -24,7 +24,7 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
     ctx = conn.new_context(project=nc_Database.drs.project,
                         experiment=experiment)
     ctx=ctx.constrain(**{field:var_desc[field_id] for field_id, field in enumerate(nc_Database.drs.var_specs)})
-
+    
     for field in nc_Database.drs.slicing_args:
         if field in dir(options) and getattr(options,field)!=None:
             ctx=ctx.constrain(**{field:getattr(options,field)})
@@ -126,7 +126,9 @@ def get_url_remote(item,file_type_list,drs):
                     file_info[val]=item.json['variable']
                 elif val=='version':
                     #Version is poorly implemented... Try a fix:
-                    version=item.json['id'].split('.')[9]
+                    version=item.json['instance_id'].split('.')[-3]
+                    #Previous fix. Does not work for CORDEX
+                    #version=item.json['id'].split('.')[9]
                     if version[0]=='v':
                         file_info[val]=version
                 elif val=='model_version':
@@ -137,6 +139,7 @@ def get_url_remote(item,file_type_list,drs):
                 if isinstance(file_info[val],list): file_info[val]=str(file_info[val][0])
             except:
                 file_info[val]=None
-        if file_info['checksum']!=None and 'OPENDAP' in item.urls.keys():
+        if (file_info['checksum']!=None and 
+            set(item.urls.keys()).issuperset(drs.required_file_types)):
             url_name.append(file_info)
     return url_name
