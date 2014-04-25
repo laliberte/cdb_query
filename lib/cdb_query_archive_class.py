@@ -216,12 +216,7 @@ class SimpleTree:
         return list(np.array(data_node_list_timed)[np.argsort(data_node_timing)])+list(set(data_node_list).difference(data_node_list_timed))
 
     def list_fields(self,options):
-        #slice with options:
-
-        if 'data_nodes' in dir(options) and getattr(options,'data_nodes'):
-            fields_list=self.list_data_nodes(options)
-        else:
-            fields_list=self.list_fields_local(options,options.field)
+        fields_list=self.list_fields_local(options,options.field)
         for field in fields_list:
             print ','.join(field)
         return
@@ -231,12 +226,6 @@ class SimpleTree:
         fields_list=self.nc_Database.list_fields(fields_to_list)
         self.close_database()
         return fields_list
-
-    def list_data_nodes(self,options):
-        self.load_database(options,find_simple)
-        data_nodes_list=self.nc_Database.list_data_nodes(options)
-        self.close_database()
-        return [ (data_node,) for data_node in data_nodes_list ]
 
     def define_database(self,options):
         if 'in_diagnostic_netcdf_file' in dir(options):

@@ -63,6 +63,7 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
 
 def record_url(remote_file_desc,nc_Database):
     nc_Database.file_expt.path=remote_file_desc['url']
+    nc_Database.file_expt.data_node=retrieval_utils.get_data_node(remote_file_desc['url'],remote_file_desc['file_type'])
     if remote_file_desc['file_type'] in nc_Database.drs.remote_file_types and remote_file_desc['checksum']:
         nc_Database.file_expt.path+='|'+remote_file_desc['checksum']
 

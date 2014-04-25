@@ -105,8 +105,8 @@ def list_fields(subparsers,epilog,project_drs):
     select_group = parser.add_argument_group('These arguments specify the structure of the output')
     select_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.base_drs,
                                        help='List the field (or fields if repeated) found in the file' )
-    select_group.add_argument('--data_nodes',default=False,action='store_true',
-                                       help='List the data nodes found in the file. Disables the --field options.' )
+    #select_group.add_argument('--data_nodes',default=False,action='store_true',
+    #                                   help='List the data nodes found in the file. Disables the --field options.' )
 
     data_node_group = parser.add_argument_group('Restrict search to specific data nodes')
     data_node_group.add_argument('--data_node',type=str,action='append',help='Consider only the specified data nodes')

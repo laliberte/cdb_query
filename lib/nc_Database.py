@@ -89,20 +89,12 @@ class nc_Database:
         return fields_list
 
     def list_data_nodes(self,options):
-        data_node_list=sorted(
-                    list(
-                        set(
-                            [retrieval_utils.get_data_node(*path) for 
-                                path in self.list_subset((File_Expt.path,File_Expt.file_type))
-                              ]
-                            )
-                         )
-                      )
-        return  [data_node for data_node in data_node_list  
+        data_node_list=self.list_subset((File_Expt.data_node,))
+        return  [data_node[0] for data_node in data_node_list  
                 if is_level_name_included_and_not_excluded('data_node',options,data_node)]
                 
     def list_paths_by_data_node(self,data_node):
-        return [ path[0] for path in self.list_subset((File_Expt.path,File_Expt.file_type)) if retrieval_utils.get_data_node(*path) == data_node]
+        return [ path[0] for path in self.session.query(File_Expt.path).filter(File_Expt.data_node==data_node).distinct().all() ]
 
     def list_paths(self):
         #subset=tuple([File_Expt.path,File_Expt.file_type]+[getattr(File_Expt,item) for item in self.drs.official_drs])
@@ -114,7 +106,7 @@ class nc_Database:
         drs_list=copy.copy(self.drs.base_drs)
 
         #drs_to_remove=['search','path','file_type','version','time']
-        drs_to_remove=['path','file_type','version','time']
+        drs_to_remove=['path','data_node','file_type','version','time']
         for drs in drs_to_remove: drs_list.remove(drs)
         #Remove the time:
         drs_to_remove.remove('time')
@@ -209,6 +201,7 @@ def populate_database_recursive(nc_Database,data,options,find_function):
                 setattr(nc_Database.file_expt,'path','|'.join([soft_links.variables['path'][path_id],
                                                        soft_links.variables['checksum'][path_id]]))
                 setattr(nc_Database.file_expt,'version','v'+str(soft_links.variables['version'][path_id]))
+                setattr(nc_Database.file_expt,'data_node',data_node)
                 find_function(nc_Database,copy.deepcopy(nc_Database.file_expt))
     elif len(data.groups.keys())>0:
         for group in data.groups.keys():
@@ -225,6 +218,10 @@ def populate_database_recursive(nc_Database,data,options,find_function):
         setattr(nc_Database.file_expt,'path','|'.join([data.getncattr('path'),
                                                data.getncattr('checksum')]))
         setattr(nc_Database.file_expt,'version',str(data.getncattr('version')))
+
+        setattr(nc_Database.file_expt,'data_node',
+                    retrieval_utils.get_data_node(nc_Database.file_expt.path,
+                                                  nc_Database.file_expt.file_type))
         find_function(nc_Database,copy.deepcopy(nc_Database.file_expt))
     else:
         #for retrieved datasets:
@@ -233,6 +230,9 @@ def populate_database_recursive(nc_Database,data,options,find_function):
         for id in id_list:
             setattr(nc_Database.file_expt,id,'')
         if len(data.variables.keys())>0:
+            setattr(nc_Database.file_expt,'data_node',
+                        retrieval_utils.get_data_node(nc_Database.file_expt.path,
+                                                      nc_Database.file_expt.file_type))
             find_function(nc_Database,copy.deepcopy(nc_Database.file_expt))
     return
 

@@ -97,6 +97,7 @@ class DRS:
         self.base_drs=self.official_drs+[
                   'file_type',
                   'time',
+                  'data_node',
                   'path'
                   ]
         self.simulations_desc=['institute','model','ensemble']
