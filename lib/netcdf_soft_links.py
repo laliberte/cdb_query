@@ -98,10 +98,10 @@ class read_netCDF_pointers:
                 netcdf_utils.replicate_and_copy_variable(output_grp,self.data_root.groups['soft_links'],var_name)
         return
 
-    def retrieve_time_axis(self,years=None,months=None,min_year=None):
+    def retrieve_time_axis(self,years=None,months=None,days=None,min_year=None):
         time_axis=self.data_root.variables['time'][:]
         time_restriction=np.ones(time_axis.shape,dtype=np.bool)
-        if years!=None or months!=None:
+        if years!=None or months!=None or days!=None:
             date_axis=netcdf_utils.get_date_axis(self.data_root.variables['time'])
             if years!=None:
                 years_axis=np.array([date.year for date in date_axis])
@@ -116,11 +116,14 @@ class read_netCDF_pointers:
                 months_axis=np.array([date.month for date in date_axis])
                 #time_restriction=np.logical_and(time_restriction,months_axis==month)
                 time_restriction=np.logical_and(time_restriction,[True if month in months else False for month in months_axis])
+            if days!=None:
+                days_axis=np.array([date.day for date in date_axis])
+                time_restriction=np.logical_and(time_restriction,[True if month in days else False for month in days_axis])
         return time_axis,time_restriction
 
-    def retrieve(self,output,retrieval_function,year=None,month=None,min_year=None,source_dir=None,semaphores=[]):
+    def retrieve(self,output,retrieval_function,year=None,month=None,day=None,min_year=None,source_dir=None,semaphores=[]):
         #First find time axis, time restriction and which variables to retrieve:
-        time_axis, time_restriction=self.retrieve_time_axis(years=year,months=month,min_year=min_year)
+        time_axis, time_restriction=self.retrieve_time_axis(years=year,months=month,days=day,min_year=min_year)
         vars_to_retrieve=[var for var in self.data_root.variables.keys() 
                                 if  var in self.data_root.groups['soft_links'].variables.keys()]
 

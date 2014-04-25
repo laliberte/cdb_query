@@ -177,6 +177,9 @@ def remote_retrieve(subparsers,epilog,project_drs):
     inc_group.add_argument('--month',
                                  default=None, type=int, nargs='*',
                                  help='Retrieve only this month (1 to 12).')
+    inc_group.add_argument('--day',
+                                 default=None, type=int, nargs='*',
+                                 help='Retrieve only this calendar day.')
     #slicing_arguments(inc_group,project_drs)
     #exc_group = parser.add_argument_group('Exclusions')
     #excluded_slicing_arguments(exc_group,project_drs)
