@@ -14,6 +14,7 @@ def descend_tree(database,search_path,options,list_level=None):
     if filesystem_file_type in database.header['file_type_list']:
         description={
                    'file_type':filesystem_file_type,
+                   'data_node':search_path,
                    'time':'0'}
         file_expt_copy=copy.deepcopy(database.nc_Database.file_expt)
         for att in description.keys():

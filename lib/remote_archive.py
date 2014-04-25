@@ -35,6 +35,7 @@ class DRS:
         self.base_drs=self.official_drs+[
                   'file_type',
                   'time',
+                  'data_node',
                   'path'
               ]
         
@@ -66,6 +67,7 @@ class DRS:
               'version',
               'file_type',
               'time',
+              'data_node',
               'path'
               ]
         return
