@@ -1,1 +1,2 @@
 #Initialization arguments
+from netcdf_soft_links import read_netCDF_pointers

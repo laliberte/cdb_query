@@ -11,10 +11,11 @@ def get_immediate_subdirectories(path):
 def descend_tree(database,search_path,options,list_level=None):
     filesystem_file_type='local_file'
     only_list=[]
+    expanded_search_path=os.path.abspath(os.path.expanduser(os.path.expandvars(search_path)))
     if filesystem_file_type in database.header['file_type_list']:
         description={
                    'file_type':filesystem_file_type,
-                   'data_node':search_path,
+                   'data_node':retrieval_utils.get_data_node(expanded_search_path,filesystem_file_type),
                    'time':'0'}
         file_expt_copy=copy.deepcopy(database.nc_Database.file_expt)
         for att in description.keys():
@@ -22,13 +23,13 @@ def descend_tree(database,search_path,options,list_level=None):
 
         only_list.append(descend_tree_recursive(database,file_expt_copy,
                                 [item for item in database.drs.base_drs if not item in description.keys()],
-                                os.path.abspath(os.path.expanduser(os.path.expandvars(search_path))),
+                                expanded_search_path,
                                 options,list_level=list_level))
 
         if 'alt_base_drs' in dir(database.drs):
             only_list.append(descend_tree_recursive(database,file_expt_copy,
                                     [item for item in database.drs.alt_base_drs if not item in description.keys()],
-                                    os.path.abspath(os.path.expanduser(os.path.expandvars(search_path))),
+                                    expanded_search_path,
                                     options,list_level=list_level,alt=True))
     return [item for sublist in only_list for item in sublist]
 

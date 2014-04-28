@@ -4,6 +4,8 @@ import subprocess
 import urllib2, httplib
 from cookielib import CookieJar
 
+import copy
+
 import indices_utils
 import remote_netcdf
 
@@ -165,8 +167,8 @@ def find_local_file(source_dir,data):
 def retrieve_path_data(in_dict,pointer_var):
     path=in_dict['path'].replace('fileServer','dodsC').split('|')[0]
     var=in_dict['var']
-    indices=in_dict['indices']
-    unsort_indices=in_dict['unsort_indices']
+    indices=copy.copy(in_dict['indices'])
+    unsort_indices=copy.copy(in_dict['unsort_indices'])
     sort_table=in_dict['sort_table']
 
     remote_data=remote_netcdf.remote_netCDF(path,[])
