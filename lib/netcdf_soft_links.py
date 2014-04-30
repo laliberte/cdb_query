@@ -168,19 +168,21 @@ class read_netCDF_pointers:
                                         #paths_list,file_type_list,paths_id_list,checksums_list,version_list,
         return
 
-    def assign(self,var_to_retrieve,time_restriction):
+    def open(self):
         self.initialize_retrieval()
         self.tree=[]
-
-        time_axis, time_bool=self.retrieve_time_axis()
-
         self.output_root=netCDF4.Dataset('temp_file.pid'+str(os.getpid()),
                                       'w',format='NETCDF4',diskless=True,persist=False)
-        self.output_root.createGroup(var_to_retrieve)
+        return
 
+    def assign(self,var_to_retrieve,time_restriction):
+        time_axis, time_bool=self.retrieve_time_axis()
+
+        self.output_root.createGroup(var_to_retrieve)
         netcdf_utils.create_time_axis(self.output_root.groups[var_to_retrieve],self.data_root,time_axis[np.array(time_restriction)])
         self.retrieve_variables('retrieve_path_data',var_to_retrieve,np.array(time_restriction),self.output_root.groups[var_to_retrieve])
-        self.variables[var_to_retrieve]=self.output_root.groups[var_to_retrieve].variables[var_to_retrieve]
+        for var in self.output_root.groups[var_to_retrieve].variables.keys():
+            self.variables[var]=self.output_root.groups[var_to_retrieve].variables[var]
         return
 
     def close(self):

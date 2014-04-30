@@ -225,8 +225,7 @@ This recipe is summarized in the following BASH script::
     "months_list": [6,7,8,9],
     "variable_list":
         {
-        "pr":["mon"],
-        "orog":["fx"]
+        "pr":["mon"]
         },
     "search_list":
         [
@@ -234,7 +233,6 @@ This recipe is summarized in the following BASH script::
         ],
     "file_type_list":
         [
-        "local_file",
         "HTTPServer"
         ]
     }
@@ -252,7 +250,6 @@ This recipe is summarized in the following BASH script::
                                 -f model \
                                 -f ensemble \
                                 pr_JJAS_France_pointers.nc
-
     #Find optimal set of simulations:
     cdb_query_CORDEX optimset pr_JJAS_France_pointers.nc \
                              pr_JJAS_France_pointers.optimset.nc
@@ -268,7 +265,7 @@ This recipe is summarized in the following BASH script::
                                     pr_JJAS_France_pointers.optimset.nc \
                                     pr_JJAS_France_pointers.optimset.197906.retrieved.nc
             #Extract first domain:
-            ncks -G : -g /EUR-11/IPSL-INERIS/IPSL-IPSL-CM5A-MR/historical/r1i1p1/IPSL-INERIS-WRF331F/v1/mon/pr \
+            ncks -G : -g /EUR-11/IPSL-INERIS/IPSL-IPSL-CM5A-MR/historical/r1i1p1/WRF331F/v1/mon/pr/ \
                             pr_JJAS_France_pointers.optimset.197906.retrieved.nc \
                             pr_JJAS_France_pointers.optimset.197906.retrieved.EUR-11.nc
 
@@ -295,3 +292,4 @@ This recipe is summarized in the following BASH script::
             #Finally, convert back to a CMIP5 file tree:
             cdb_query_CORDEX convert pr_JJAS_France_pointers.optimset.France.retrieved.nc \
                                      out/CORDEX/
+

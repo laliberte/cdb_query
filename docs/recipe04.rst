@@ -57,14 +57,13 @@ The following is an example script for finding, retrieving and remapping data::
     if [ ! -f pr_historical_rcp85.hdr.pointers.optimset.nc ]; then
         echo -n "Finding optimal set: "
         date
-        # On March 12, 2014, 7 data nodes were down or not
+        # On April 30, 2014, 4 data nodes were down or not
         # working properly. We excluded them from the
         # optimal set analysis. This is likely to change
         # in the future and it might be worth it
         # to try including some of the excluded nodes: 
         cdb_query_CMIP5 optimset \
                                  --Xdata_node=http://esg.bnu.edu.cn \
-                                 --Xdata_node=http://albedo2.dkrz.de \
                                  --Xdata_node=http://esg2.e-inis.ie \
                                  --Xdata_node=http://pcmdi7.llnl.gov \
                                  --Xdata_node=http://pcmdi9.llnl.gov \
