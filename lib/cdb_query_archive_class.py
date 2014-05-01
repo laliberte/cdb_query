@@ -332,6 +332,7 @@ def worker_retrieve(input, output):
     for tuple in iter(input.get, 'STOP'):
         result = tuple[0](tuple[1],tuple[2])
         output.put(result)
+    output.put('STOP')
     return
 
 def launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_function,options):
@@ -339,8 +340,6 @@ def launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_f
     #print datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     start_time = datetime.datetime.now()
     print('Retrieving from data nodes:')
-    #data_node_list_not_empty=[ data_node for data_node in data_node_list
-    #                                if queues[data_node].qsize()>0]
     queues_size=dict()
     for data_node in data_node_list:
         queues_size[data_node]=queues[data_node].qsize()
@@ -351,23 +350,20 @@ def launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_f
 
     if 'serial' in dir(options) and options.serial:
         for data_node in data_node_list:
-            num_files=queues[data_node].qsize()
+            num_files=queues_size[data_node]
             queues[data_node].put('STOP')
             worker_retrieve(queues[data_node], queues['end'])
-            for i in range(num_files):
-                progress_report(retrieval_function,output,queues,queues_size,data_node_list,start_time)
+            for tuple in iter(queues['end'].get, 'STOP'):
+                progress_report(retrieval_function,output,tuple,queues,queues_size,data_node_list,start_time)
         
     else:
         num_files=0
-        #processes=dict()
         for data_node in data_node_list:
-            num_files+=queues[data_node].qsize()
             queues[data_node].put('STOP')
-            #processes[data_node]=multiprocessing.Process(target=worker_retrieve, args=(queues[data_node], queues['end']))
-            #processes[data_node].start()
 
-        for i in range(num_files+queues['end'].qsize()):
-            progress_report(retrieval_function,output,queues,queues_size,data_node_list,start_time)
+        for data_node in data_node_list:
+            for tuple in iter(queues['end'].get, 'STOP'):
+                progress_report(retrieval_function,output,tuple,queues,queues_size,data_node_list,start_time)
 
     if retrieval_function=='retrieve_path_data':
         output.close()
@@ -377,17 +373,19 @@ def launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_f
     #print datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     return
 
-def progress_report(retrieval_function,output,queues,queues_size,data_node_list_not_empty,start_time):
+def progress_report(retrieval_function,output,tuple,queues,queues_size,data_node_list,start_time):
     if retrieval_function=='retrieve_path':
-        print '\t', queues['end'].get()
+        #print '\t', queues['end'].get()
+        print '\t', tuple
         elapsed_time = datetime.datetime.now() - start_time
         print str(elapsed_time)
     elif retrieval_function=='retrieve_path_data':
-        netcdf_utils.assign_tree(output,*queues['end'].get())
+        #netcdf_utils.assign_tree(output,*queues['end'].get())
+        netcdf_utils.assign_tree(output,*tuple)
         output.sync()
         string_to_print=[str(queues_size[data_node]-queues[data_node].qsize()).zfill(len(str(queues_size[data_node])))+
                          '/'+str(queues_size[data_node]) for
-                            data_node in data_node_list_not_empty]
+                            data_node in data_node_list]
         elapsed_time = datetime.datetime.now() - start_time
         print str(elapsed_time)+', '+' | '.join(string_to_print)+'\r',
     return
