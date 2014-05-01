@@ -339,35 +339,35 @@ def launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_f
     #print datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     start_time = datetime.datetime.now()
     print('Retrieving from data nodes:')
-    data_node_list_not_empty=[ data_node for data_node in data_node_list
-                                    if queues[data_node].qsize()>0]
+    #data_node_list_not_empty=[ data_node for data_node in data_node_list
+    #                                if queues[data_node].qsize()>0]
     queues_size=dict()
-    for data_node in data_node_list_not_empty:
+    for data_node in data_node_list:
         queues_size[data_node]=queues[data_node].qsize()
     string_to_print=['0'.zfill(len(str(queues_size[data_node])))+'/'+str(queues_size[data_node])+' paths from "'+data_node+'"' for
-                        data_node in data_node_list_not_empty]
+                        data_node in data_node_list]
     print ' | '.join(string_to_print)
     print 'Progress: '
 
     if 'serial' in dir(options) and options.serial:
-        for data_node in data_node_list_not_empty:
+        for data_node in data_node_list:
             num_files=queues[data_node].qsize()
             queues[data_node].put('STOP')
             worker_retrieve(queues[data_node], queues['end'])
             for i in range(num_files):
-                progress_report(retrieval_function,output,queues,queues_size,data_node_list_not_empty,start_time)
+                progress_report(retrieval_function,output,queues,queues_size,data_node_list,start_time)
         
     else:
         num_files=0
         #processes=dict()
-        for data_node in data_node_list_not_empty:
+        for data_node in data_node_list:
             num_files+=queues[data_node].qsize()
             queues[data_node].put('STOP')
             #processes[data_node]=multiprocessing.Process(target=worker_retrieve, args=(queues[data_node], queues['end']))
             #processes[data_node].start()
 
         for i in range(num_files+queues['end'].qsize()):
-            progress_report(retrieval_function,output,queues,queues_size,data_node_list_not_empty,start_time)
+            progress_report(retrieval_function,output,queues,queues_size,data_node_list,start_time)
 
     if retrieval_function=='retrieve_path_data':
         output.close()
