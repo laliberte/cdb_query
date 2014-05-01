@@ -366,7 +366,7 @@ def launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_f
             #processes[data_node]=multiprocessing.Process(target=worker_retrieve, args=(queues[data_node], queues['end']))
             #processes[data_node].start()
 
-        for i in range(num_files):
+        for i in range(num_files+queues['end'].qsize()):
             progress_report(retrieval_function,output,queues,queues_size,data_node_list_not_empty,start_time)
 
     if retrieval_function=='retrieve_path_data':
