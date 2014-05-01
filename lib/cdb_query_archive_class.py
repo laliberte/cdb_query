@@ -364,6 +364,8 @@ def launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_f
         for data_node in data_node_list:
             for tuple in iter(queues['end'].get, 'STOP'):
                 progress_report(retrieval_function,output,tuple,queues,queues_size,data_node_list,start_time)
+            #print data_node
+            #print queues['end'].qsize()
 
     if retrieval_function=='retrieve_path_data':
         output.close()
