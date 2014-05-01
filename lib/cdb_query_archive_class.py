@@ -178,7 +178,7 @@ class SimpleTree:
         #Start the retrieval workers:
         if not ('serial' in dir(options) and options.serial):
             processes=dict()
-            for data_node in data_node_list_not_empty:
+            for data_node in data_node_list:
                 processes[data_node]=multiprocessing.Process(target=worker_retrieve, args=(queues[data_node], queues['end']))
                 processes[data_node].start()
 
