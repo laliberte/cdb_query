@@ -270,7 +270,6 @@ class read_netCDF_pointers:
                     else:
                         if (isinstance(output,netCDF4.Dataset) or
                             isinstance(output,netCDF4.Group)):
-                            print args[0]['path'],args[0]['sort_table']
                             netcdf_utils.assign_tree(output,*getattr(retrieval_utils,retrieval_function)(args[0],args[1]))
         return 
 
