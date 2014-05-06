@@ -176,11 +176,11 @@ class SimpleTree:
                 print 'Using min year {0} for experiment {1}'.format(str(min_year),experiment)
 
         #Start the retrieval workers:
-        if not ('serial' in dir(options) and options.serial):
-            processes=dict()
-            for data_node in data_node_list:
-                processes[data_node]=multiprocessing.Process(target=worker_retrieve, args=(queues[data_node], queues['end']))
-                processes[data_node].start()
+        #if not ('serial' in dir(options) and options.serial):
+        #    processes=dict()
+        #    for data_node in data_node_list:
+        #        processes[data_node]=multiprocessing.Process(target=worker_retrieve, args=(queues[data_node], queues['end']))
+        #        processes[data_node].start()
 
         #Find the data that needs to be recovered:
         self.define_database(options)
@@ -350,22 +350,23 @@ def launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_f
 
     if 'serial' in dir(options) and options.serial:
         for data_node in data_node_list:
-            num_files=queues_size[data_node]
             queues[data_node].put('STOP')
             worker_retrieve(queues[data_node], queues['end'])
             for tuple in iter(queues['end'].get, 'STOP'):
                 progress_report(retrieval_function,output,tuple,queues,queues_size,data_node_list,start_time)
         
     else:
-        num_files=0
+        #for data_node in data_node_list:
+        #    queues[data_node].put('STOP')
+        processes=dict()
         for data_node in data_node_list:
             queues[data_node].put('STOP')
+            processes[data_node]=multiprocessing.Process(target=worker_retrieve, args=(queues[data_node], queues['end']))
+            processes[data_node].start()
 
         for data_node in data_node_list:
             for tuple in iter(queues['end'].get, 'STOP'):
                 progress_report(retrieval_function,output,tuple,queues,queues_size,data_node_list,start_time)
-            #print data_node
-            #print queues['end'].qsize()
 
     if retrieval_function=='retrieve_path_data':
         output.close()
@@ -390,6 +391,8 @@ def progress_report(retrieval_function,output,tuple,queues,queues_size,data_node
                             data_node in data_node_list]
         elapsed_time = datetime.datetime.now() - start_time
         print str(elapsed_time)+', '+' | '.join(string_to_print)+'\r',
+        #for data_node in data_node_list:
+        #    print data_node, queues[data_node].qsize()
     return
         
 def find_simple(pointers,file_expt):

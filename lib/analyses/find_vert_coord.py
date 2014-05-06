@@ -29,10 +29,17 @@ def convert_hybrid(options):
 
     data_grp=data.groups['ta']
 
+    undesired_strings=['(n,k,j,i)','(k)','(n,j,i)']
+
     formulas=dict()
     for lev_id in ['','_bnds']: 
         level='lev'+lev_id
-        formulas[level]=re.sub(r'\(.*?\)', '',data_grp.variables[level].formula)
+        #formulas[level]=re.sub(r'\(.*?\)', '',data_grp.variables[level].formula)
+        formulas[level]=data_grp.variables[level].formula
+        #print data_grp.model_id
+        #print formulas[level]
+        for string in undesired_strings:
+            formulas[level]=formulas[level].replace(string,'')
         terms=[item.replace(":","") for item in data_grp.variables[level].formula_terms.split(" ")]
         target=formulas[level].split('=')[0].replace(' ','')
         terms.append(target)
@@ -50,7 +57,7 @@ def convert_hybrid(options):
                     'd'+target+'[$time,$lev,$lat,$lon]='+target+'_bnds(:,:,:,:,1)-'+target+'_bnds(:,:,:,:,0);'])
 
     if target=='p':
-        second_target='dz=287.04*(1+0.61)*ta*dp/p;'
+        second_target='dz=-287.04*(1+0.61)*ta*dp/p/9.8;'
         second_target+='*z_bnds=p_bnds;z_bnds=0.0;'
         second_target+='for(*it=0;it<$time.size-1;it++){z_bnds(it,0,:,:,0)=orog;};for(*iz=0;iz<$lev.size-2;iz++){'
         second_target+='z_bnds(:,iz,:,:,1)=z_bnds(:,iz,:,:,0)+dz(:,iz,:,:);'
@@ -60,7 +67,7 @@ def convert_hybrid(options):
         second_target+='z=p;z=0.5*(z_bnds(:,:,:,:,1)+z_bnds(:,:,:,:,0));'
 
     elif target=='z':
-        second_target='*dlnp=dz/(287.04*(1+0.61)*ta);'
+        second_target='*dlnp=-9.8*dz/(287.04*(1+0.61)*ta);'
         second_target+='*lnp_bnds=z_bnds;lnp_bnds=0.0;'
         second_target+='lnp_bnds(:,0,:,:,0)=log(ps);for(*iz=0;iz<$lev.size-2;iz++){'
         second_target+='lnp_bnds(:,iz,:,:,1)=lnp_bnds(:,iz,:,:,0)+dlnp(:,iz,:,:);'

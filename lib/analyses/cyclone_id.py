@@ -4,6 +4,7 @@ Cyclones are identified as minima in a 2D field
 
 Frederic Laliberte 07/2011
 """
+import cdb_query.netcdf_utils as netcdf_utils
 
 def local_min(nc_input_file,nc_output_file,nc_comp,pres_level_list,num_procs):
     #LOAD THE DATA:
@@ -11,7 +12,7 @@ def local_min(nc_input_file,nc_output_file,nc_comp,pres_level_list,num_procs):
 
     #CREATE THE OUTPUT FILE
     output = Dataset(nc_output_file,'w',format='NETCDF4')
-    output = replicate_netcdf_file(output,data)
+    output = netcdf_utils.replicate_netcdf_file(output,data)
 
     #ADD DISTRIBUTION WEIGHT
     var_list = data.variables.keys()
@@ -23,33 +24,17 @@ def local_min(nc_input_file,nc_output_file,nc_comp,pres_level_list,num_procs):
         #CREATE OUTPUT VAR:
         #FIND WHICH DIMENSIONS TO INCLUDE
         var_dims = list(data.variables[var].dimensions)
-        var_dims.append('lev') #Add level
 
         if set(var_dims).issuperset({'lon','lat'}):
             print(var)
-            #CHECK IF THE NEW VAR DIMENSIONS EXIST. IF NOT, ADD THEM
-            for dims in var_dims:
-                if dims not in output.dimensions.keys():
-                    if dims == 'lev':
-                        output.createDimension(dims,len(pres_level_list))
-                        dim_var = output.createVariable(dims,'d',(dims,))
-                        dim_var[:] = np.array(pres_level_list)
-                    else:
-                        output.createDimension(dims,len(data.dimensions[dims]))
-                        dim_var = output.createVariable(dims,'d',(dims,))
-                        dim_var[:] = data.variables[dims][:]
-                        output = replicate_netcdf_var(output,data,dims)
-
+            output=netcdf_utils.replicate_netcdf_var_dimensions(output,data,var)
             #CREATE OUTPUT VARIABLE
-            #final_min = output.createVariable(var,'f',tuple(var_dims),zlib=nc_comp)
-            #output = replicate_netcdf_var(output,data,var)
-            var_dims.remove('lev')
-            final_mask = output.createVariable(var+'_MASK','f',tuple(var_dims),zlib=nc_comp)
-            #output = replicate_netcdf_var(output,data,var)
+            final_mask = output.createVariable(var+'_mask','f',tuple(var_dims),zlib=nc_comp)
 
-            c_to_float=np.vectorize(np.float)
-            slp = c_to_float(data.variables[var][:])
-            #slp = np.copy(data.variables[var][:])
+            #c_to_float=np.vectorize(np.float)
+            #slp = c_to_float(data.variables[var][:])
+            slp = data.variables[var][:]
+
             #Add a random machine-precision perturbation:
             slp*=(1.0+np.random.normal(size=slp.shape)*1e-10)
             lat = data.variables['lat'][:]
@@ -63,13 +48,17 @@ def local_min(nc_input_file,nc_output_file,nc_comp,pres_level_list,num_procs):
             pool=mproc.Pool(processes=int(num_procs))
 
             time_split=slp.shape[0]
-            final_mask[:]=np.concatenate(pool.map(local_min_one_dt,
+            #final_mask[:]=np.concatenate(pool.map(local_min_one_dt,
+            temp=np.concatenate(pool.map(local_min_one_dt,
                                                   zip(np.vsplit(slp,time_split),
                                                       [pres_level_list for x in range(time_split)],
                                                       [(2*np.pi/slp.shape[lon_ind])*(np.pi/slp.shape[lat_ind]) for x in range(time_split)]),
                                                   chunksize=1),axis=0)
+            final_mask[:]=np.where(temp>0.0,1,0)
+
             pool.close()
             output.sync()
+    data.close()
     output.close()
 
 def local_min_one_dt(passed_tuple):

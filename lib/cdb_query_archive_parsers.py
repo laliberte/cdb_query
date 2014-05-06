@@ -186,6 +186,11 @@ def remote_retrieve(subparsers,epilog,project_drs):
     slicing_arguments(inc_group,project_drs,action_type='append')
     exc_group = parser.add_argument_group('Exclusions')
     excluded_slicing_arguments(exc_group,project_drs,action_type='append')
+
+    data_node_group = parser.add_argument_group('Limit download from specific data nodes')
+    data_node_group.add_argument('--data_node',type=str,action='append',help='Retrieve only from the specified data nodes')
+    data_node_group.add_argument('--Xdata_node',type=str,action='append',help='Do not retrieve from the specified data nodes')
+
     return
 
 def download(subparsers,epilog,project_drs):

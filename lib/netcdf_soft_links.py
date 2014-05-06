@@ -199,10 +199,12 @@ class read_netCDF_pointers:
         paths_link=np.array([list(self.paths_id_list).index(path_id) for path_id in paths_link])
 
         #Sort the paths so that we query each only once:
-        sorting_paths=np.argsort(paths_link,kind='mergesort')
-        unique_paths_list_id=np.unique(paths_link[sorting_paths])
-        sorted_paths_link=paths_link[sorting_paths]
-        sorted_indices_link=indices_link[sorting_paths]
+        unique_paths_list_id, sorting_paths=np.unique(paths_link,return_inverse=True)
+        #sorting_paths=np.argsort(paths_link,kind='mergesort')
+        #sorting_paths=np.argsort(paths_link,kind='heapsort')
+        #unique_paths_list_id=np.unique(paths_link[sorting_paths])
+        #sorted_paths_link=paths_link[sorting_paths]
+        #sorted_indices_link=indices_link[sorting_paths]
         
         #Replicate variable to output:
         if (isinstance(output,netCDF4.Dataset) or
@@ -226,7 +228,7 @@ class read_netCDF_pointers:
         #Maximum number of time step per request:
         max_request=450 #maximum request in Mb
         max_time_steps=int(np.floor(max_request*1024*1024/(32*np.prod(dims_length))))
-        for path_id in unique_paths_list_id:
+        for unique_path_id, path_id in enumerate(unique_paths_list_id):
             path_to_retrieve=self.paths_list[self.paths_id_list[path_id]]
 
             #Next, we check if the file is available. If it is not we replace it
@@ -241,7 +243,8 @@ class read_netCDF_pointers:
             #Append the checksum:
             path_to_retrieve+='|'+checksum
 
-            time_indices=sorted_indices_link[sorted_paths_link==path_id]
+            #time_indices=sorted_indices_link[sorted_paths_link==path_id]
+            time_indices=indices_link[sorting_paths==unique_path_id]
             num_time_chunk=int(np.ceil(len(time_indices)/float(max_time_steps)))
             for time_chunk in range(num_time_chunk):
                 time_slice=slice(time_chunk*max_time_steps,(time_chunk+1)*max_time_steps,1)
@@ -252,10 +255,11 @@ class read_netCDF_pointers:
                         'var':var_to_retrieve,
                         'indices':dimensions,
                         'unsort_indices':unsort_dimensions,
-                        'sort_table':np.argsort(sorting_paths)[sorted_paths_link==path_id][time_slice],
+                        'sort_table':np.arange(len(sorting_paths))[sorting_paths==unique_path_id][time_slice],
                         'file_path':file_path,
                         'version':version},
                         copy.deepcopy(self.tree))
+                        #'sort_table':np.argsort(sorting_paths)[sorted_paths_link==path_id][time_slice],
 
                 #Retrieve only if it is from the requested data node:
                 data_node=retrieval_utils.get_data_node(path_to_retrieve,file_type)
@@ -266,6 +270,7 @@ class read_netCDF_pointers:
                     else:
                         if (isinstance(output,netCDF4.Dataset) or
                             isinstance(output,netCDF4.Group)):
+                            print args[0]['path'],args[0]['sort_table']
                             netcdf_utils.assign_tree(output,*getattr(retrieval_utils,retrieval_function)(args[0],args[1]))
         return 
 
