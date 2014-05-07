@@ -8,18 +8,22 @@ import cdb_query.netcdf_utils as netcdf_utils
 
 def local_min(nc_input_file,nc_output_file,nc_comp,pres_level_list,num_procs):
     #LOAD THE DATA:
-    data = Dataset(nc_input_file,'r')
+    data_root = Dataset(nc_input_file,'r')
 
     #CREATE THE OUTPUT FILE
-    output = Dataset(nc_output_file,'w',format='NETCDF4')
-    output = netcdf_utils.replicate_netcdf_file(output,data)
+    output_root = Dataset(nc_output_file,'w',format='NETCDF4')
+    output_root = netcdf_utils.replicate_netcdf_file(output_root,data_root)
 
     #ADD DISTRIBUTION WEIGHT
-    var_list = data.variables.keys()
+    #var_list = data.variables.keys()
+    var_list = data_root.groups.keys()
 
 
     #DETERMINE WHICH VARIABLES TO DISTRIBUTE
     for var in var_list:
+        output=output_root.createGroup(var+'_mask')
+        data=data_root.groups[var]
+        output = netcdf_utils.replicate_netcdf_file(output,data)
 
         #CREATE OUTPUT VAR:
         #FIND WHICH DIMENSIONS TO INCLUDE
@@ -58,8 +62,8 @@ def local_min(nc_input_file,nc_output_file,nc_comp,pres_level_list,num_procs):
 
             pool.close()
             output.sync()
-    data.close()
-    output.close()
+    data_root.close()
+    output_root.close()
 
 def local_min_one_dt(passed_tuple):
     #Use this 
