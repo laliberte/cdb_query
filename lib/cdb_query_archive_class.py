@@ -62,7 +62,12 @@ class SimpleTree:
 
     def discover(self,options):
         #Load header:
-        self.header=json.load(open(options.in_diagnostic_headers_file,'r'))['header']
+        try:
+            self.header=json.load(open(options.in_diagnostic_headers_file,'r'))['header']
+        except ValueError as e:
+            print 'The input diagnostic file '+options.in_diagnostic_headers_file+' does not conform to JSON standard. Make sure to check its syntax'
+            raise
+
         #Simplify the header:
         self.union_header()
 
