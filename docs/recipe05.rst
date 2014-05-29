@@ -47,7 +47,7 @@ THe following is an example script for finding, retrieving and remapping data::
     #Discover data:
     echo -n "Discovering data: "
     date
-    cdb_query_CMIP5 discover --num_procs=5 \
+    cdb_query_CMIP5 ask --num_procs=5 \
                             tos_slp_picontrol.hdr \
                             tos_slp_picontrol.hdr.pointers.nc
 
@@ -61,15 +61,15 @@ THe following is an example script for finding, retrieving and remapping data::
     #Find optimal set of simulations:
     echo -n "Finding optimal set: "
     date
-    cdb_query_CMIP5 optimset --num_procs=5\
+    cdb_query_CMIP5 validate --num_procs=5\
                              tos_slp_picontrol.hdr.pointers.nc \
-                             tos_slp_picontrol.hdr.pointers.optimset.nc
+                             tos_slp_picontrol.hdr.pointers.validate.nc
 
     #List simulations:
     cdb_query_CMIP5 list_fields -f institute \
                                 -f model \
                                 -f ensemble \
-                                tos_slp_picontrol.hdr.pointers.optimset.nc
+                                tos_slp_picontrol.hdr.pointers.validate.nc
 
     #REMAPPING HISTORICAL DATA
     cat >> newgrid_atmos.cdo <<EndOfGrid
@@ -89,12 +89,12 @@ THe following is an example script for finding, retrieving and remapping data::
     yinc      = 0.94240837696
     EndOfGrid
 
-    FILE_NAME="tos_slp_picontrol.hdr.pointers.optimset"
+    FILE_NAME="tos_slp_picontrol.hdr.pointers.validate"
     EXPERIMENT=piControl
     YEAR_START=1
     YEAR_END=499
     #Retrieve first month:
-    cdb_query_CMIP5 remote_retrieve --experiment=$EXPERIMENT \
+    cdb_query_CMIP5 download --experiment=$EXPERIMENT \
                                     --year=$YEAR_START \
                                     --month=1 \
                                     $FILE_NAME.nc \
@@ -119,7 +119,7 @@ THe following is an example script for finding, retrieving and remapping data::
     echo -n "Starting remapping "
     date
     for YEAR in $(seq $YEAR_START $YEAR_END); do 
-        cdb_query_CMIP5 remote_retrieve \
+        cdb_query_CMIP5 download \
                             --experiment=$EXPERIMENT \
                             --year=$YEAR \
                             $FILE_NAME.nc \

@@ -41,7 +41,7 @@ The following is an example script for finding, retrieving and remapping data::
     if [ ! -f pr_historical_rcp85.hdr.pointers.nc ]; then
         echo -n "Discovering data: "
         date
-        cdb_query_CMIP5 discover --num_procs=5 \
+        cdb_query_CMIP5 ask --num_procs=5 \
                                 pr_historical_rcp85.hdr \
                                 pr_historical_rcp85.hdr.pointers.nc
 
@@ -54,7 +54,7 @@ The following is an example script for finding, retrieving and remapping data::
 
 
     #Find optimal set of simulations:
-    if [ ! -f pr_historical_rcp85.hdr.pointers.optimset.nc ]; then
+    if [ ! -f pr_historical_rcp85.hdr.pointers.validate.nc ]; then
         echo -n "Finding optimal set: "
         date
         # On April 30, 2014, 4 data nodes were down or not
@@ -62,20 +62,20 @@ The following is an example script for finding, retrieving and remapping data::
         # optimal set analysis. This is likely to change
         # in the future and it might be worth it
         # to try including some of the excluded nodes: 
-        cdb_query_CMIP5 optimset \
+        cdb_query_CMIP5 validate \
                                  --Xdata_node=http://esg.bnu.edu.cn \
                                  --Xdata_node=http://esg2.e-inis.ie \
                                  --Xdata_node=http://pcmdi7.llnl.gov \
                                  --Xdata_node=http://pcmdi9.llnl.gov \
                                  --num_procs=5\
                                  pr_historical_rcp85.hdr.pointers.nc \
-                                 pr_historical_rcp85.hdr.pointers.optimset.nc
+                                 pr_historical_rcp85.hdr.pointers.validate.nc
 
         #List simulations:
         cdb_query_CMIP5 list_fields -f institute \
                                     -f model \
                                     -f ensemble \
-                                    pr_historical_rcp85.hdr.pointers.optimset.nc
+                                    pr_historical_rcp85.hdr.pointers.validate.nc
         date
     fi
 
@@ -97,13 +97,13 @@ The following is an example script for finding, retrieving and remapping data::
     yinc      = 0.94240837696
     EndOfGrid
 
-    FILE_NAME="pr_historical_rcp85.hdr.pointers.optimset"
+    FILE_NAME="pr_historical_rcp85.hdr.pointers.validate"
     EXPERIMENT=historical
     YEAR_START=1970
     YEAR_END=2005
     #Retrieve first month:
     if [ ! -f $FILE_NAME.197001.retrieved.nc ]; then
-        cdb_query_CMIP5 remote_retrieve --experiment=$EXPERIMENT \
+        cdb_query_CMIP5 download --experiment=$EXPERIMENT \
                                         --year=$YEAR_START \
                                         --month=1 \
                                         $FILE_NAME.nc \
@@ -131,7 +131,7 @@ The following is an example script for finding, retrieving and remapping data::
     date
     for YEAR in $(seq $YEAR_START $YEAR_END); do
         if [ ! -f $FILE_NAME.$YEAR.retrieved.remap.nc ]; then
-            cdb_query_CMIP5 remote_retrieve \
+            cdb_query_CMIP5 download \
                                 --experiment=$EXPERIMENT \
                                 --year=$YEAR \
                                 $FILE_NAME.nc \
@@ -159,15 +159,15 @@ The following is an example script for finding, retrieving and remapping data::
 
     #Concatenate the results:
 
-    if [ ! -f pr_historical_rcp85.hdr.pointers.optimset.1970-2005.retrieved.remap.nc ]; then
+    if [ ! -f pr_historical_rcp85.hdr.pointers.validate.1970-2005.retrieved.remap.nc ]; then
         #First list the files:
         FILE_LIST=$(for YEAR in $(seq 1970 2005); do
-                        echo pr_historical_rcp85.hdr.pointers.optimset.$YEAR.retrieved.remap.nc;
+                        echo pr_historical_rcp85.hdr.pointers.validate.$YEAR.retrieved.remap.nc;
                     done)
 
         #Then apply a mergetime operator:
         cdb_query_CMIP5 apply 'cdo mergetime' \
                         $FILE_LIST \
-                        pr_historical_rcp85.hdr.pointers.optimset.1970-2005.retrieved.remap.nc
+                        pr_historical_rcp85.hdr.pointers.validate.1970-2005.retrieved.remap.nc
     fi
 

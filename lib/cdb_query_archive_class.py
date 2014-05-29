@@ -60,7 +60,7 @@ class SimpleTree:
         for list_name in self.header_simple.keys(): self.header_simple[list_name]=list(set(self.header_simple[list_name]))
         return
 
-    def discover(self,options):
+    def ask(self,options):
         #Load header:
         try:
             self.header=json.load(open(options.in_diagnostic_headers_file,'r'))['header']
@@ -93,7 +93,7 @@ class SimpleTree:
                 output.close()
         return
 
-    def optimset(self,options):
+    def validate(self,options):
         self.load_header(options)
         #if options.data_nodes!=None:
         #    self.header['data_node_list']=options.data_nodes
@@ -138,13 +138,13 @@ class SimpleTree:
             output.close()
         return
 
-    def remote_retrieve(self,options):
+    def download(self,options):
         output=netCDF4.Dataset(options.out_diagnostic_netcdf_file,'w')
         retrieval_function='retrieve_path_data'
         self.remote_retrieve_and_download(options,output,retrieval_function)
         return
 
-    def download(self,options):
+    def download_raw(self,options):
         output=options.out_destination
 
         #Describe the tree pattern:

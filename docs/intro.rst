@@ -8,15 +8,15 @@ This code is intended to provide an interface between the CMIP5/CORDEX Data Refe
 The cdb_query package contains separate command sets for CMIP5 and CORDEX archives. 
 The standard workflow for both packages is similar:
 
-1. A `discover` command searches the archive for specific variables and user specified date information. 
-   Its output is used by the "optimset" command.
-2. The `optimset` command refines the "discover" step to check on full availability of 
-   specified data over the specified date information. Its output feeds is used by the `remote_retrieve` command.
-3. The `remote_retrieve` or `download` commands then retrieves the data using the OPeNDAP protocol
+1. A `ask` command searches the archive for specific variables and user specified date information. 
+   Its output is used by the "validate" command.
+2. The `validate` command refines the "ask" step to check on full availability of 
+   specified data over the specified date information. Its output feeds is used by the `download` command.
+3. The `download` or `download_raw` commands then retrieves the data using the OPeNDAP protocol
    or a wget command, respectively. 
-4. The data retrieved from `download` is structured in a way that can be accessed by subsequent `discover` and
+4. The data retrieved from `download_raw` is structured in a way that can be accessed by subsequent `ask` and
    other commands.
-5. The data retrieved from `remote_retrieve` keep the same structure as `optimset`. It can then be processed
+5. The data retrieved from `download` keep the same structure as `validate`. It can then be processed
    using the commands `apply` and `convert`.
 
 The source code for this project is available on github: https://github.com/laliberte/cdb_query

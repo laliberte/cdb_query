@@ -5,14 +5,14 @@ This can be sped up by querying the archive institute per institute AND do it as
 
 Asynchronous discovery
 ^^^^^^^^^^^^^^^^^^^^^^
-The `discover` and `optimset` commands provides a basic multi-threaded implementation::
+The `ask` and `validate` commands provides a basic multi-threaded implementation::
 
-    $ cdb_query_CMIP5 discover --num_procs=5 \
+    $ cdb_query_CMIP5 ask --num_procs=5 \
                              tas_ONDJF.hdr \
                              tas_ONDJF_pointers.{}.nc \
-    $ cdb_query_CMIP5 optimset --num_procs=5 \
+    $ cdb_query_CMIP5 validate --num_procs=5 \
                              tas_ONDJF_pointers.nc \
-                             tas_ONDJF_pointers.optimset.nc
+                             tas_ONDJF_pointers.validate.nc
 
 This command uses 5 processes and queries the archive simulation per simulation.
 

@@ -45,37 +45,37 @@ def excluded_slicing_arguments(parser,project_drs,exclude_args=[],action_type='s
 def generate_subparsers(parser,epilog,project_drs):
     #Discover tree
     subparsers = parser.add_subparsers(help='Commands to discover available data on the archive',dest='command')
-    discover(subparsers,epilog,project_drs)
+    ask(subparsers,epilog,project_drs)
     list_fields(subparsers,epilog,project_drs)
 
     #Optimset tree
-    optimset(subparsers,epilog,project_drs)
-    remote_retrieve(subparsers,epilog,project_drs)
+    validate(subparsers,epilog,project_drs)
     download(subparsers,epilog,project_drs)
+    download_raw(subparsers,epilog,project_drs)
     apply(subparsers,epilog,project_drs)
     convert(subparsers,epilog,project_drs)
     return
 
-def discover(subparsers,epilog,project_drs):
+def ask(subparsers,epilog,project_drs):
     #Find data
-    epilog_discover=epilog
-    parser=subparsers.add_parser('discover',
+    epilog_ask=epilog
+    parser=subparsers.add_parser('ask',
                                            description=textwrap.dedent(
                                                 '''Returns pointers to models that have as a subset the requested experiments and variables.\n\
                                                  It is good practice to check the results with \'list_fields\' before
-                                                 proceeding with \'optimset\'.
-                                                 The output of \'optimset\' might depend on the order of the header attribute
-                                                 \'data_node_list\' in the output file of \'discover\'. It is good practice to
-                                                 reorder this attribute before proceeding with \'optimset\'.
+                                                 proceeding with \'validate\'.
+                                                 The output of \'validate\' might depend on the order of the header attribute
+                                                 \'data_node_list\' in the output file of \'ask\'. It is good practice to
+                                                 reorder this attribute before proceeding with \'validate\'.
                                                  
-                                                 Unlike \'optimset\' this function should NOT require appropriate certificates
+                                                 Unlike \'validate\' this function should NOT require appropriate certificates
                                                  to function properly. If it fails it is possible the servers are down.'''),
-                                           epilog=epilog_discover
+                                           epilog=epilog_ask
                                          )
     input_arguments_json(parser)
     output_arguments(parser)
     parser.add_argument('--list_only_field',default=None, choices=project_drs.remote_fields,
-                          help='When this option is used, the discovery function prints only the specified field \n\
+                          help='When this option is used, the asky function prints only the specified field \n\
                               for which published data COULD match the query. Does nothing to the output file.\n\
                                   Listing separate fields is usually much quicker than the discovery step.')
     parser.add_argument('--distrib',
@@ -118,11 +118,11 @@ def list_fields(subparsers,epilog,project_drs):
     excluded_slicing_arguments(exc_group,project_drs,action_type='append')
     return
 
-def optimset(subparsers,epilog,project_drs):
+def validate(subparsers,epilog,project_drs):
     #Find Optimset Months
-    epilog_optimset=textwrap.dedent(epilog)
-    parser=subparsers.add_parser('optimset',
-                                   description=textwrap.dedent('Take as an input the results from \'discover\'.\n\
+    epilog_validate=textwrap.dedent(epilog)
+    parser=subparsers.add_parser('validate',
+                                   description=textwrap.dedent('Take as an input the results from \'ask\'.\n\
                                          Returns pointers to models that have ALL the\n\
                                          requested experiments and variables for ALL requested years.\n\
                                          \n\
@@ -130,7 +130,7 @@ def optimset(subparsers,epilog,project_drs):
                                          \n\
                                          Note that if this function fails it is likely that approriate\n\
                                          certificates have not been installed on this machine.'),
-                                   epilog=epilog_optimset,
+                                   epilog=epilog_validate,
                                  )
     input_arguments(parser)
     output_arguments(parser)
@@ -155,12 +155,12 @@ def optimset(subparsers,epilog,project_drs):
     excluded_slicing_arguments(exc_group,project_drs,action_type='append')
     return
 
-def remote_retrieve(subparsers,epilog,project_drs):
-    epilog_optimset=textwrap.dedent(epilog)
-    parser=subparsers.add_parser('remote_retrieve',
-                                           description=textwrap.dedent('Take as an input the results from \'optimset\' and returns a\n\
+def download(subparsers,epilog,project_drs):
+    epilog_validate=textwrap.dedent(epilog)
+    parser=subparsers.add_parser('download',
+                                           description=textwrap.dedent('Take as an input the results from \'validate\' and returns a\n\
                                                  netcdf file with the data retrieved.'),
-                                           epilog=epilog_optimset,
+                                           epilog=epilog_validate,
                                          )
     input_arguments(parser)
     output_arguments(parser)
@@ -168,7 +168,7 @@ def remote_retrieve(subparsers,epilog,project_drs):
     serial_group.add_argument('--serial',default=False,action='store_true',help='Downloads the files serially.')
 
     source_group = parser.add_argument_group('Specify sources')
-    source_group.add_argument('--source_dir',default=None,help='local cache of data retrieved using \'download\'')
+    source_group.add_argument('--source_dir',default=None,help='local cache of data retrieved using \'download_raw\'')
 
     inc_group = parser.add_argument_group('Inclusions')
     inc_group.add_argument('--year',
@@ -193,11 +193,11 @@ def remote_retrieve(subparsers,epilog,project_drs):
 
     return
 
-def download(subparsers,epilog,project_drs):
-    epilog_download=textwrap.dedent(epilog)
-    parser=subparsers.add_parser('download',
-                                           description=textwrap.dedent('Take as an input the results from \'optimset\' and downloads the data.'),
-                                           epilog=epilog_download,
+def download_raw(subparsers,epilog,project_drs):
+    epilog_download_raw=textwrap.dedent(epilog)
+    parser=subparsers.add_parser('download_raw',
+                                           description=textwrap.dedent('Take as an input the results from \'validate\' and downloads the data.'),
+                                           epilog=epilog_download_raw,
                                          )
     input_arguments(parser)
     parser.add_argument('out_destination',
@@ -210,7 +210,7 @@ def download(subparsers,epilog,project_drs):
     serial_group.add_argument('--serial',default=False,action='store_true',help='Downloads the files serially.')
 
     source_group = parser.add_argument_group('Specify sources')
-    source_group.add_argument('--source_dir',default=None,help='local cache of data retrieved using \'download\'')
+    source_group.add_argument('--source_dir',default=None,help='local cache of data retrieved using \'download_raw\'')
 
     data_node_group = parser.add_argument_group('Limit download from specific data nodes')
     data_node_group.add_argument('--data_node',type=str,action='append',help='Retrieve only from the specified data nodes')
@@ -237,7 +237,7 @@ def download(subparsers,epilog,project_drs):
 def convert(subparsers,epilog,project_drs):
     epilog_convert=textwrap.dedent(epilog)
     parser=subparsers.add_parser('convert',
-                                           description=textwrap.dedent('Take as an input the results from \'remote_retrieve\' and converts the data.'),
+                                           description=textwrap.dedent('Take as an input the results from \'download\' and converts the data.'),
                                            epilog=epilog_convert,
                                          )
     input_arguments(parser)

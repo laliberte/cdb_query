@@ -63,7 +63,7 @@ First, make sure that the directory ``./in/CMIP5`` exists by creating it ::
 
 The script is run using::
 
-    $ cdb_query_CMIP5 discover tas_ONDJF.hdr tas_ONDJF_pointers.nc
+    $ cdb_query_CMIP5 ask tas_ONDJF.hdr tas_ONDJF_pointers.nc
 
 This should take a few minutes, depending on your connection to the ESGF BADC node. It returns a self-descriptive netCDF file 
 with pointers to the data. Try looking at the resulting netCDF file using ``ncdump``: ::
@@ -104,12 +104,12 @@ were initialized and parametrized using the same method (all six are i1p1). In t
 (all p1) but they differ in their initializations: one uses i1, two use i2 and three use i3.
 
 This is a small subset of what is available in the CMIP5 archive. To have access to the whole archive, you can either include more ESGF 
-nodes in the search path or use ``cdb_query_CMIP5 discover --distrib`` for a distributed search. This last method is the preferred
+nodes in the search path or use ``cdb_query_CMIP5 ask --distrib`` for a distributed search. This last method is the preferred
 method. It however tends to generate harmless warning messages that can be safely ignored. These warning messages come about because some nodes
 in the ESGF are unresponsive. This is likely to be fixed as the ESGF infrastructure improves.
 
 .. attention::
-    The command ``cdb_query_CMIP5 discover --distrib`` can take a very long time to complete, espcially is many files are found. This means
+    The command ``cdb_query_CMIP5 ask --distrib`` can take a very long time to complete, espcially is many files are found. This means
     that querying for daily or 6hr data is generally slow.
 
 If this list of models in satisfying, we next check the paths  ::
@@ -138,7 +138,7 @@ and ``http://esg2.e-inis.ie``. Those are the adresses of the data node. Retrievi
 therefore not hinder the transfer of one another.
 
 .. hint::
-    The command ``cdb_query_CMIP5 discover`` does not guarantee that the simulations found satisfy ALL the requested criteria.
+    The command ``cdb_query_CMIP5 ask`` does not guarantee that the simulations found satisfy ALL the requested criteria.
 
 Finding the optimal set of simulations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -148,16 +148,16 @@ Finding the optimal set of simulations
     
 To narrow down our results to the simulations that satisfy ALL the requested criteria, we can use  ::
 
-    $ cdb_query_CMIP5 optimset tas_ONDJF_pointers.nc tas_ONDJF_pointers.optimset.nc
+    $ cdb_query_CMIP5 validate tas_ONDJF_pointers.nc tas_ONDJF_pointers.validate.nc
 
 To output now has a time axis for each variable (except fx). It links every time index to a time index in a UNIQUE file (remote or local).
 Try looking at the resulting netCDF file using ``ncdump``: ::
 
-    $ ncdump -h tas_ONDJF_pointers.optimset.nc
+    $ ncdump -h tas_ONDJF_pointers.validate.nc
 
 Again, this file can be queried for simulations::
 
-    $ cdb_query_CMIP5 list_fields -f institute -f model -f ensemble tas_ONDJF_pointers.optimset.nc
+    $ cdb_query_CMIP5 list_fields -f institute -f model -f ensemble tas_ONDJF_pointers.validate.nc
     CNRM-CERFACS,CNRM-CM5,r0i0p0
     CNRM-CERFACS,CNRM-CM5,r1i1p1
     INM,INM-CM4,r0i0p0
@@ -185,19 +185,19 @@ Retrieving the data: `wget`
 
 `cdb_query_CMIP5` includes built-in functionality for retrieving the paths. It is used as follows ::
 
-    $ cdb_query_CMIP5 download tas_ONDJF_pointers.optimset.nc ./in/CMIP5/
+    $ cdb_query_CMIP5 download_raw tas_ONDJF_pointers.validate.nc ./in/CMIP5/
 
-It downloads the paths listed in ``tas_ONDJF_pointers.optimset.nc``.
+It downloads the paths listed in ``tas_ONDJF_pointers.validate.nc``.
 
 .. hint:: It is good practice to run this command at least twice. It will not retrieve already retrieved files that match the MD5 checksum
           and will redownload partially downloaded files. It is only when this command only returns ``File found.MD5 OK! Not retrieving.`` output for
           every file that we can be sure that all the files are properly retrieved.
 
 .. warning:: The retrieved files are structure with the CMIP5 DRS. It is good practice not to change this directory structure.
-             If the structure is kept then ``cdb_query_CMIP5 discover`` will recognized the retrieved files as local if they were
+             If the structure is kept then ``cdb_query_CMIP5 ask`` will recognized the retrieved files as local if they were
              retrieved to a directory listed in the ``search_list`` of the header file.
 
-The downloaded paths are now discoverable by ``cdb_query_CMIP5 discover``.
+The downloaded paths are now discoverable by ``cdb_query_CMIP5 ask``.
 
 Retrieving the data: `OPeNDAP`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -206,18 +206,18 @@ Retrieving the data: `OPeNDAP`
 
 To retrieve the first month of daily data::
     
-    $ cdb_query_CMIP5 remote_retrieve --year=1979 \
+    $ cdb_query_CMIP5 download --year=1979 \
                                       --month=1 \
-                            tas_ONDJF_pointers.optimset.197901.nc \
-                            tas_ONDJF_pointers.optimset.197901.retrieved.nc 
+                            tas_ONDJF_pointers.validate.197901.nc \
+                            tas_ONDJF_pointers.validate.197901.retrieved.nc 
 
-The file ``tas_ONDJF_pointers.optimset.197901.retrieved.nc`` should now contain the first thirty days for all experiments! To check the daily
+The file ``tas_ONDJF_pointers.validate.197901.retrieved.nc`` should now contain the first thirty days for all experiments! To check the daily
 surface temperature in the amip experiment from simulation CNRM-CERFACS,CNRM-CM5,r1i1p1 `ncview` (if installed)::
 
     $ ncks -G : -g /CNRM-CERFACS/CNRM-CM5/amip/day/atmos/day/r1i1p1/tas \
-                    tas_ONDJF_pointers.optimset.197901.retrieved.nc \
-                    tas_ONDJF_pointers.optimset.197901.retrieved.CNRM-CERFACS_CNRM-CM5_r1i1p1.nc
-    $ ncview tas_ONDJF_pointers.optimset.197901.retrieved.CNRM-CERFACS_CNRM-CM5_r1i1p1.nc
+                    tas_ONDJF_pointers.validate.197901.retrieved.nc \
+                    tas_ONDJF_pointers.validate.197901.retrieved.CNRM-CERFACS_CNRM-CM5_r1i1p1.nc
+    $ ncview tas_ONDJF_pointers.validate.197901.retrieved.CNRM-CERFACS_CNRM-CM5_r1i1p1.nc
 
 BASH script
 ^^^^^^^^^^^
@@ -254,7 +254,7 @@ This recipe is summarized in the following BASH script::
     mkdir -p ./in/CMIP5
 
     #Discover data:
-    cdb_query_CMIP5 discover tas_ONDJF.hdr tas_ONDJF_pointers.nc
+    cdb_query_CMIP5 ask tas_ONDJF.hdr tas_ONDJF_pointers.nc
 
     #List simulations:
     cdb_query_CMIP5 list_fields -f institute \
@@ -263,32 +263,32 @@ This recipe is summarized in the following BASH script::
                                 tas_ONDJF_pointers.nc
 
     #Find optimal set of simulations:
-    cdb_query_CMIP5 optimset tas_ONDJF_pointers.nc \
-                             tas_ONDJF_pointers.optimset.nc
+    cdb_query_CMIP5 validate tas_ONDJF_pointers.nc \
+                             tas_ONDJF_pointers.validate.nc
 
     #List simulations:
     cdb_query_CMIP5 list_fields -f institute \
                                 -f model \
                                 -f ensemble \
-                                tas_ONDJF_pointers.optimset.nc
+                                tas_ONDJF_pointers.validate.nc
 
     #CHOOSE:
         # *1* Retrieve files:
-            #cdb_query_CMIP5 download \
-            #                    tas_ONDJF_pointers.optimset.nc \
+            #cdb_query_CMIP5 download_raw \
+            #                    tas_ONDJF_pointers.validate.nc \
             #                    ./in/CMIP5/
 
         # *2* Retrieve to netCDF:
             #Retrieve the first month:
-            cdb_query_CMIP5 remote_retrieve --year=1979 --month=1 \
-                                tas_ONDJF_pointers.optimset.nc \
-                                tas_ONDJF_pointers.optimset.197901.retrieved.nc
+            cdb_query_CMIP5 download --year=1979 --month=1 \
+                                tas_ONDJF_pointers.validate.nc \
+                                tas_ONDJF_pointers.validate.197901.retrieved.nc
 
             #Pick one simulation:
             ncks -G : -g /CNRM-CERFACS/CNRM-CM5/amip/day/atmos/day/r1i1p1/tas \
-               tas_ONDJF_pointers.optimset.197901.retrieved.nc \
-               tas_ONDJF_pointers.optimset.197901.retrieved.CNRM-CERFACS_CNRM-CM5_r1i1p1.nc
+               tas_ONDJF_pointers.validate.197901.retrieved.nc \
+               tas_ONDJF_pointers.validate.197901.retrieved.CNRM-CERFACS_CNRM-CM5_r1i1p1.nc
             
             #Look at it:
             #When done, look at it. A good tool for that is ncview:
-            #   ncview tas_ONDJF_pointers.optimset.197901.retrieved.CNRM-CERFACS_CNRM-CM5_r1i1p1.nc
+            #   ncview tas_ONDJF_pointers.validate.197901.retrieved.CNRM-CERFACS_CNRM-CM5_r1i1p1.nc
