@@ -18,7 +18,7 @@ a script found on http://idolinux.blogspot.ca/2011/02/nco-netcdf-operators-build
     ######################################
     # You MUST modify the following lines:
     ######################################
-    INSTALL_PATH=$HOME/local/nco-4.4.0
+    INSTALL_PATH=$HOME/local/nco-4.4.3
 
     #set these to 0 if you have to re-run this
     #script and some of these libraries
@@ -63,7 +63,7 @@ a script found on http://idolinux.blogspot.ca/2011/02/nco-netcdf-operators-build
     # UDUNITS
     # Here, you can try to change the version number if
     # a newer version if avaiable.
-        APP=udunits-2.1.24
+        APP=udunits-2.2.11
         UDUNITS_PATH=$INSTALL_PATH/$APP
         if [ "$INSTALL_UDUNITS" -eq "1" ]; then
             rm -rf $UDUNITS_PATH
@@ -102,7 +102,7 @@ a script found on http://idolinux.blogspot.ca/2011/02/nco-netcdf-operators-build
     # NCO
     # Here, you can try to change the version number if
     # a newer version if available.
-        APP=nco-4.4.0
+        APP=nco-4.4.3
         NCO_PATH=$INSTALL_PATH/$APP
         rm -rf $NCO_PATH
         cd $INSTALL_PATH/src

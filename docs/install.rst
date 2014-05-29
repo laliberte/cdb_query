@@ -36,8 +36,9 @@ To check whether you have those installed, you should ask yourself the following
       you best bet is to compile only a section of the Globus Toolkit. This is a difficult 
       package to install but we have been successful with the following procedure::
 
-          $ wget http://www.globus.org/ftppub/gt5/5.0/5.0.0/installers/src/gt5.0.0-all-source-installer.tar.bz2
-          $ tar xvfz gt5.0.0-all-source-installer.tar.bz2
+          $ wget --no-check-certificate http://www.globus.org/ftppub/gt5/5.0/5.0.0/installers/src/gt5.0.0-all-source-installer.tar.bz2
+          $ tar xvfj gt5.0.0-all-source-installer.tar.bz2
+          $ cd gt5.0.0-all-source-installer
           $ ./configure --prefix=$HOME/local/gt-5.0.0
           $ make install myproxy
       
@@ -102,6 +103,8 @@ To check whether you have those installed, you should ask yourself the following
           Please visit http://www.unidata.ucar.edu/software/netcdf/docs/netcdf-install/Quick-Instructions.html#Quick-Instructions
           for instructions on how to build these libraries.
 
+    * If you are recompiling netCDF4, make sure that ``which nc-config`` points to the new netCDF4.
+
 Python Packages
 ---------------
 
@@ -151,20 +154,21 @@ Finally, install the python packages you require::
     $ pip install Cython
     $ pip install python-dateutil
 
+Then try::
+
+    $ export USE_NCCONFIG=1;pip install netcdf4
+
+The package netcdf4-python does not always compile nicely using ``pip``. If it does you can skip the next section.
+
 
 Packages not installable from PyPI
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-The package netcdf4-python does not always compile nicely using ``pip``. This is likely to change in the
-future (so before continuing try ``pip install netcdf4-python``).
+To install netcdf4-python from source, go to the project page https://code.google.com/p/netcdf4-python/downloads/list and
+choose the file that fits your system. Here, we use ``netCDF4-1.1.0.tar.gz``::
 
-To install netcdf4-python, go to the project page https://code.google.com/p/netcdf4-python/downloads/list and
-choose the file that fits your system. Here, we use ``netCDF4-1.0.7.tar.gz``::
-
-    $ wget https://netcdf4-python.googlecode.com/files/netCDF4-1.0.7.tar.gz
-    $ tar xvfz netCDF4-1.0.7.tar.gz
-    $ cd netCDF4-1.0.7
-
-It is a good idea to read the instructions ``cat README | more``.
+    $ wget --no-check-certificate https://pypi.python.org/packages/source/n/netCDF4/netCDF4-1.1.0.tar.gz#md5=8e2958160c8cccfc80f61ae0427e067f
+    $ tar xvfz netCDF4-1.1.0.tar.gz
+    $ cd netCDF4-1.1.0
 
 .. warning:: These steps are crucial:
             
@@ -184,7 +188,7 @@ It is a good idea to read the instructions ``cat README | more``.
                     # will be used to determine the locations of required libraries.
                     use_ncconfig=True
                     # path to nc-config script.
-                    ncconfig=/usr/local/packages/netcdf-c-4.3.1-rc2/bin/nc-config
+                    ncconfig=/usr/local/packages/netcdf-c-4.3.2/bin/nc-config
                and left everything else untouched. 
 
 Once ``setup.cfg`` is properly edited::
@@ -203,7 +207,6 @@ Installing this package: `cdb_query`
 This package can be installed with ``pip``::
 
     $ pip install cdb_query
-    $ pip install esgf-pyclient
 
 .. warning:: If you are using a virtual environment, you must always ``source $HOME/python/bin/activate`` BEFORE
              using ``cdb_query``
@@ -325,19 +328,6 @@ With all the libraries properly installed, `NcView` is now easy to install::
     $ make install
 
 This installation installs `NcView` in ``$HOME/local/ncview-2.1.2/bin`` and this directory should be added to your path.
-
-GNU-parallel
-^^^^^^^^^^^^
-`GNU-parallel` can be used to speed up part of the discovery process. It can be installed this way::
-
-    $ wget http://ftp.gnu.org/gnu/parallel/parallel-latest.tar.bz2
-    $ tar xfvb parallel-latest.tar.bz2
-    $ cd parallel-20140122
-    $ ./configure --prefix=$HOME/local/parallel-20140122
-    $ make
-    $ make install
-
-This installation installs `GNU-parallel` in ``$HOME/local/parallel-20140122/bin`` and this directory should be added to your path.
 
 Climate Data Operators (CDO)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
