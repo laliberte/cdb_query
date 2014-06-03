@@ -55,25 +55,32 @@ def find_time_file(pointers,file_expt,semaphores=None):#session,file_expt,path_n
     #Record in the database:
     if file_expt.file_type in ['local_file']:
         file_available=True
+        file_queryable=True
     else:
         file_available = retrieval_utils.check_file_availability(file_expt.path.split('|')[0])
         if file_available:
             remote_data=remote_netcdf.remote_netCDF(file_expt.path.split('|')[0].replace('fileServer','dodsC'),semaphores)
-            file_available=remote_data.is_available()
-            if not file_available:
-                print 'Path {0} is available but does not have OPeNDAP services enabled.'.format(file_expt.path)
+            file_queryable=remote_data.is_available()
     for year in years_list:
         for month in range(1,13):
             if not ( (year==years_range[0] and month<months_range[0]) or
                      (year==years_range[1] and month>months_range[1])   ):
+                #Record checksum of local files:
                 if file_expt.file_type in ['local_file'] and len(file_expt.path.split('|')[1])==0:
                     #Record checksum
                     file_expt.path+=retrieval_utils.md5_for_file(open(file_expt.path.split('|')[0],'r'))
-                if file_available:
+
+                if file_available and file_queryable:
+                    #If file is avaible and queryable, keep it:
                     file_expt_copy = copy.deepcopy(file_expt)
                     setattr(file_expt_copy,'time',str(year)+str(month).zfill(2))
                     pointers.session.add(file_expt_copy)
                     pointers.session.commit()
+                elif file_available:
+                    #If file is avaible but queryable, broadcast it:
+                    print 'Path {0} is available but does not have OPeNDAP services enabled.'.format(file_expt.path)
+                    #Do not broadcast it later:
+                    file_available=False
     return
 
 def obtain_time_list(diagnostic,project_drs,var_name,experiment,model):
