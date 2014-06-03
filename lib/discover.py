@@ -59,6 +59,39 @@ def discover_database(database,options):
         only_list.append(esgf_query.descend_tree(database,search_path,options,list_level=options.list_only_field))
     return [item for sublist in only_list for item in sublist]
 
+def find_model_list(diagnostic,project_drs,model_list,experiment):
+        for var_name in diagnostic.header['variable_list'].keys():
+            time_frequency=diagnostic.header['variable_list'][var_name][project_drs.var_specs.index('time_frequency')]
+            if not time_frequency in ['fx','en']:
+                #Do this without fx variables:
+                conditions=[
+                             nc_Database.File_Expt.var==var_name,
+                             nc_Database.File_Expt.experiment==experiment
+                           ]
+                for field_id, field in enumerate(project_drs.var_specs):
+                    conditions.append(getattr(nc_Database.File_Expt,field)==diagnostic.header['variable_list'][var_name][field_id])
+
+                model_list_var=diagnostic.nc_Database.session.query(*[getattr(nc_Database.File_Expt,desc) for desc in project_drs.simulations_desc]
+                                        ).filter(sqlalchemy.and_(*conditions)).distinct().all()
+                model_list=set(model_list).intersection(set(model_list_var))
+
+        #Do it for fx variables:
+        model_list_fx=[model[:-1] for model in model_list]
+        for var_name in diagnostic.header['variable_list'].keys():
+            time_frequency=diagnostic.header['variable_list'][var_name][project_drs.var_specs.index('time_frequency')]
+            if time_frequency in ['fx','en']:
+                conditions=[
+                             nc_Database.File_Expt.var==var_name,
+                             nc_Database.File_Expt.experiment==experiment
+                           ]
+                for field_id, field in enumerate(project_drs.var_specs):
+                    conditions.append(getattr(nc_Database.File_Expt,field)==diagnostic.header['variable_list'][var_name][field_id])
+                model_list_var=diagnostic.nc_Database.session.query(
+                                        *[getattr(nc_Database.File_Expt,desc) for desc in project_drs.simulations_desc if desc!='ensemble']
+                                           ).filter(sqlalchemy.and_(*conditions)).distinct().all()
+                model_list_fx=set(model_list_fx).intersection(set(model_list_var))
+        return model_list, model_list_fx
+
 def intersection(database):
     #Step one: find all the institute / model tuples with all the requested variables
     simulations_list=database.nc_Database.simulations_list()
@@ -69,37 +102,7 @@ def intersection(database):
     model_list=copy.copy(simulations_list_no_fx)
 
     for experiment in database.header['experiment_list'].keys():
-        for var_name in database.header['variable_list'].keys():
-            time_frequency=database.header['variable_list'][var_name][database.drs.var_specs.index('time_frequency')]
-            if not time_frequency in ['fx','en']:
-                #Do this without fx variables:
-                conditions=[
-                             nc_Database.File_Expt.var==var_name,
-                             nc_Database.File_Expt.experiment==experiment
-                           ]
-                for field_id, field in enumerate(database.drs.var_specs):
-                    conditions.append(getattr(nc_Database.File_Expt,field)==database.header['variable_list'][var_name][field_id])
-
-                model_list_var=database.nc_Database.session.query(*[getattr(nc_Database.File_Expt,desc) for desc in database.drs.simulations_desc]
-                                        ).filter(sqlalchemy.and_(*conditions)).distinct().all()
-                model_list=set(model_list).intersection(set(model_list_var))
-
-        #Do it for fx variables:
-        model_list_fx=[model[:-1] for model in model_list]
-        for var_name in database.header['variable_list'].keys():
-            time_frequency=database.header['variable_list'][var_name][database.drs.var_specs.index('time_frequency')]
-            if time_frequency in ['fx','en']:
-                conditions=[
-                             nc_Database.File_Expt.var==var_name,
-                             nc_Database.File_Expt.experiment==experiment
-                           ]
-                for field_id, field in enumerate(database.drs.var_specs):
-                    conditions.append(getattr(nc_Database.File_Expt,field)==database.header['variable_list'][var_name][field_id])
-                model_list_var=database.nc_Database.session.query(
-                                        *[getattr(nc_Database.File_Expt,desc) for desc in database.drs.simulations_desc if desc!='ensemble']
-                                           ).filter(sqlalchemy.and_(*conditions)).distinct().all()
-                model_list_fx=set(model_list_fx).intersection(set(model_list_var))
-
+        model_list, model_list_fx = find_model_list(database,database.drs,model_list,experiment)
 
     #Step two: find the models to remove:
     model_list_combined=[model for model in model_list if remove_ensemble(model,database.drs) in model_list_fx]

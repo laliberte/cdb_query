@@ -50,7 +50,6 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
     if list_level!=None:
         import socket
         try:
-            print ctx.facet_counts
             return ctx.facet_counts[list_level].keys()
         except socket.error as e:
             print search_path+' is not responding. '+e.strerror
@@ -126,6 +125,7 @@ def get_url_remote(item,file_type_list,drs):
             file_info['url']=item.urls[key][0][0]
         except:
             file_info['url']=None
+        print item.json
         for val in drs.official_drs+['checksum']:
             try:
                 if val=='var':
@@ -149,5 +149,6 @@ def get_url_remote(item,file_type_list,drs):
                 file_info[val]=None
         if (file_info['checksum']!=None and 
             set(item.urls.keys()).issuperset(drs.required_file_types)):
+        #if file_info['checksum']!=None:
             url_name.append(file_info)
     return url_name
