@@ -76,6 +76,13 @@ class SimpleTree:
                 print field_name
             return
         else:
+            simulations_list=discover.discover_simulations_recursive(self,options,self.drs.simulations_desc)
+            print "This is a list of simulations that COULD satisfy the query:"
+            for simulation in simulations_list:
+                print ','.join(simulation)
+            print "cdb_query will now attempt to confirm that these simulations have all the requested variables."
+            print "This can take some time. Please abort if there are not enough simulations for your needs."
+
             if options.num_procs==1:
                 filepath=discover.discover(self,options)
                 try:

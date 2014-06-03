@@ -14,6 +14,10 @@ def descend_tree(database,search_path,options,list_level=None):
             only_list.append(experiment_variable_search(database.nc_Database,search_path,database.header['file_type_list'],options,
                                         experiment,var_name,database.header['variable_list'][var_name],list_level=list_level))
     return [item for sublist in only_list for item in sublist]
+    #if len(only_list)>0:
+    #    return set(only_list[0]).intersection(*only_list)
+    #else:
+    #    return []
 
 def experiment_variable_search(nc_Database,search_path,file_type_list,options,
                                 experiment,var_name,var_desc,list_level=None):

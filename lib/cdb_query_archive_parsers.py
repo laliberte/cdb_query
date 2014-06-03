@@ -45,6 +45,7 @@ def excluded_slicing_arguments(parser,project_drs,exclude_args=[],action_type='s
 def generate_subparsers(parser,epilog,project_drs):
     #Discover tree
     subparsers = parser.add_subparsers(help='Commands to discover available data on the archive',dest='command')
+    #quick_ask(subparsers,epilog,project_drs)
     ask(subparsers,epilog,project_drs)
     list_fields(subparsers,epilog,project_drs)
 
@@ -55,6 +56,28 @@ def generate_subparsers(parser,epilog,project_drs):
     apply(subparsers,epilog,project_drs)
     convert(subparsers,epilog,project_drs)
     return
+
+#def quick_ask(subparsers,epilog,project_drs):
+#    #Find data
+#    epilog_ask=epilog
+#    parser=subparsers.add_parser('quick_ask',
+#                                           description=textwrap.dedent(
+#                                                '''
+#                                                 Returns a list of simulations that COULD satisfy the query.
+#                                                 Note using \'ask\' might significantly reduce this list.
+#                                                 
+#                                                 This function should NOT require appropriate certificates
+#                                                 to function properly. If it fails it is possible the servers are down.'''),
+#                                           epilog=epilog_ask
+#                                         )
+#    input_arguments_json(parser)
+#    parser.add_argument('--distrib',
+#                                 default=False, action='store_true',
+#                                 help='Distribute the search. Will likely result in a pointers originating from one node.')
+#    proc_group = parser.add_argument_group('These arguments set threading options')
+#    inc_group = parser.add_argument_group('Inclusions')
+#    slicing_arguments(inc_group,project_drs)
+#    return parser
 
 def ask(subparsers,epilog,project_drs):
     #Find data
@@ -75,8 +98,8 @@ def ask(subparsers,epilog,project_drs):
     input_arguments_json(parser)
     output_arguments(parser)
     parser.add_argument('--list_only_field',default=None, choices=project_drs.remote_fields,
-                          help='When this option is used, the asky function prints only the specified field \n\
-                              for which published data COULD match the query. Does nothing to the output file.\n\
+                              help='When this option is used, the ask function prints only the specified field \n\
+                                  for which published data COULD match the query. Does nothing to the output file.\n\
                                   Listing separate fields is usually much quicker than the discovery step.')
     parser.add_argument('--distrib',
                                  default=False, action='store_true',

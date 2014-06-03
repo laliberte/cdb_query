@@ -63,8 +63,14 @@ First, make sure that the directory ``./in/CORDEX`` exists by creating it ::
 The script is run using::
 
     $ cdb_query_CORDEX ask pr_JJAS_France.hdr pr_JJAS_France_pointers.nc
+    This is a tentative list of simulations that COULD satisfy the query:
+    EUR-11,IPSL-INERIS,IPSL-IPSL-CM5A-MR,WRF331F,r1i1p1
+    EUR-44,IPSL-INERIS,IPSL-IPSL-CM5A-MR,WRF331F,r1i1p1
+    cdb_query will now attempt to confirm that these simulations have all the requested variables.
+    This can take some time. Please abort if there are not enough simulations for your needs.
 
-This should take a few minutes, depending on your connection to the ESGF BADC node. It returns a self-descriptive netCDF file 
+Obtaining the tentative list of simulations should be very quick (seconds) but confirming that these simulations have all the requested
+variables should take a few minutes, depending on your connection to the ESGF IPSL node. It returns a self-descriptive netCDF file 
 with pointers to the data. Try looking at the resulting netCDF file using ``ncdump``: ::
 
     $ ncdump -h pr_JJAS_France_pointers.nc

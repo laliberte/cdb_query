@@ -32,6 +32,10 @@ def descend_tree(database,search_path,options,list_level=None):
                                     expanded_search_path,
                                     options,list_level=list_level,alt=True))
     return [item for sublist in only_list for item in sublist]
+    #if len(only_list)>0:
+    #    return set(only_list[0]).intersection(*only_list)
+    #else:
+    #    return []
 
 def descend_tree_recursive(database,file_expt,tree_desc,top_path,options,list_level=None,alt=False):
     if not isinstance(tree_desc,list):

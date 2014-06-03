@@ -64,8 +64,31 @@ First, make sure that the directory ``./in/CMIP5`` exists by creating it ::
 The script is run using::
 
     $ cdb_query_CMIP5 ask tas_ONDJF.hdr tas_ONDJF_pointers.nc
+    This is a tentative list of simulations that COULD satisfy the query:
+    INM,INM-CM4,r1i1p1
+    INM,INM-CM4,r0i0p0
+    CNRM-CERFACS,CNRM-CM5,r1i1p1
+    CNRM-CERFACS,CNRM-CM5,r0i0p0
+    ICHEC,EC-EARTH,r1i1p1
+    IPSL,IPSL-CM5A-LR,r2i1p1
+    IPSL,IPSL-CM5A-LR,r1i1p1
+    IPSL,IPSL-CM5A-LR,r0i0p0
+    IPSL,IPSL-CM5A-LR,r4i1p1
+    IPSL,IPSL-CM5A-LR,r3i1p1
+    IPSL,IPSL-CM5A-LR,r6i1p1
+    IPSL,IPSL-CM5A-LR,r5i1p1
+    MOHC,HadGEM2-A,r3i2p1
+    MOHC,HadGEM2-A,r4i3p1
+    MOHC,HadGEM2-A,r1i1p1
+    MOHC,HadGEM2-A,r5i3p1
+    MOHC,HadGEM2-A,r0i0p0
+    MOHC,HadGEM2-A,r1i2p1
+    MOHC,HadGEM2-A,r2i3p1
+    cdb_query will now attempt to confirm that these simulations have all the requested variables.
+    This can take some time. Please abort if there are not enough simulations for your needs.
 
-This should take a few minutes, depending on your connection to the ESGF BADC node. It returns a self-descriptive netCDF file 
+Obtaining the tentative list of simulations should be very quick (seconds) but confirming that these simulations have all the requested
+variables should take a few minutes, depending on your connection to the ESGF BADC node. It returns a self-descriptive netCDF file 
 with pointers to the data. Try looking at the resulting netCDF file using ``ncdump``: ::
 
     $ ncdump -h tas_ONDJF_pointers.nc
@@ -102,6 +125,9 @@ with fixed (time_frequency=fx) variables and its presence suggests that these th
 These results also indicate that IPSL and MOHC have both provided six simulations. In the case of the IPSL, it is six simulations that
 were initialized and parametrized using the same method (all six are i1p1). In the case of the MOHC, all six have the same parametrizations
 (all p1) but they differ in their initializations: one uses i1, two use i2 and three use i3.
+
+Note that EC-EARTH was identified as a potential model for our query but was not confirmed by ``ask``. This is most likely because
+the r0i0p0 ensemble name was not identified as a potential ensemble member for EC-EARTH.
 
 This is a small subset of what is available in the CMIP5 archive. To have access to the whole archive, you can either include more ESGF 
 nodes in the search path or use ``cdb_query_CMIP5 ask --distrib`` for a distributed search. This last method is the preferred

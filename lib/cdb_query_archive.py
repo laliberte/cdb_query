@@ -35,8 +35,8 @@ def main(project):
     2. the ESGF {0} archive.
 
     '''.format(project))
-    epilog='Frederic Laliberte, Paul Kushner 02/2014'
-    version_num='0.9.6'
+    epilog='Frederic Laliberte, Paul Kushner 06/2014'
+    version_num='1.0.0'
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
                             description=description,
                             version='%(prog)s '+version_num,
