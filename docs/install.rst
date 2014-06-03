@@ -31,7 +31,7 @@ This package can be installed with ``pip``::
     $ pip install cdb_query
 
 .. warning:: If you are using a virtual environment, you must always ``source $HOME/python/bin/activate`` BEFORE
-             using ``cdb_query``. If you are using Anaconda or Canopy, you must activate it as explained in :ref:`install-distro` 
+             using ``cdb_query``. If you are using Anaconda, you must activate it (see :ref:`install-distro`).
 
 `myproxy` manager
 -----------------

@@ -265,14 +265,14 @@ class SimpleTree:
         self.close_database()
         return
 
-    def load_database(self,options,find_function):
+    def load_database(self,options,find_function,semaphores=None):
         self.define_database(options)
-        self.nc_Database.populate_database(options,find_function)
+        self.nc_Database.populate_database(options,find_function,semaphores=semaphores)
         if 'ensemble' in dir(options) and options.ensemble!=None:
             #Always include r0i0p0 when ensemble was sliced:
             options_copy=copy.copy(options)
             options_copy.ensemble='r0i0p0'
-            self.nc_Database.populate_database(options_copy,find_function)
+            self.nc_Database.populate_database(options_copy,find_function,semaphores=semaphores)
         return
 
     def close_database(self):
@@ -412,7 +412,7 @@ def progress_report(retrieval_function,output,tuple,queues,queues_size,data_node
         #    print data_node, queues[data_node].qsize()
     return
         
-def find_simple(pointers,file_expt):
+def find_simple(pointers,file_expt,semaphores=None):
     #for item in dir(file_expt):
     #    if item[0]!='_':
     #        print getattr(file_expt,item)

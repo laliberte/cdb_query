@@ -68,10 +68,10 @@ class nc_Database:
             output_root.setncattr(value,json.dumps(header[value]))
         return
 
-    def populate_database(self,options,find_function):
+    def populate_database(self,options,find_function,semaphores=None):
         self.load_nc_file()
         self.file_expt.time='0'
-        populate_database_recursive(self,self.Dataset,options,find_function)
+        populate_database_recursive(self,self.Dataset,options,find_function,semaphores=semaphores)
         self.close_nc_file()
         return
 
@@ -183,7 +183,7 @@ class nc_Database:
 #####################################################################
 #####################################################################
 
-def populate_database_recursive(nc_Database,data,options,find_function):
+def populate_database_recursive(nc_Database,data,options,find_function,semaphores=None):
     if 'soft_links' in data.groups.keys():
         soft_links=data.groups['soft_links']
         paths=soft_links.variables['path'][:]
@@ -202,13 +202,13 @@ def populate_database_recursive(nc_Database,data,options,find_function):
                                                        soft_links.variables['checksum'][path_id]]))
                 setattr(nc_Database.file_expt,'version','v'+str(soft_links.variables['version'][path_id]))
                 setattr(nc_Database.file_expt,'data_node',data_node)
-                find_function(nc_Database,copy.deepcopy(nc_Database.file_expt))
+                find_function(nc_Database,copy.deepcopy(nc_Database.file_expt),semaphores=semaphores)
     elif len(data.groups.keys())>0:
         for group in data.groups.keys():
             level_name=data.groups[group].getncattr('level_name')
             if is_level_name_included_and_not_excluded(level_name,options,group):
                 setattr(nc_Database.file_expt,data.groups[group].getncattr('level_name'),group)
-                populate_database_recursive(nc_Database,data.groups[group],options,find_function)
+                populate_database_recursive(nc_Database,data.groups[group],options,find_function,semaphores=semaphores)
     elif 'path' in data.ncattrs():
         #for fx variables:
         #id_list=['file_type','search']

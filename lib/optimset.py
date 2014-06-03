@@ -13,21 +13,23 @@ import sqlalchemy
 
 import numpy as np
 
+import remote_netcdf
+
 
 queryable_file_types=['HTTPServer','local_file']
 
-def find_time(pointers,file_expt):
+def find_time(pointers,file_expt,semaphores=None):
     #session,file_expt,path_name,file_type,propagated_values):
     #Top function to define how the time axis is created:
     if file_expt.file_type in queryable_file_types:
-        find_time_file(pointers,file_expt)
+        find_time_file(pointers,file_expt,semaphores=semaphores)
     #elif file_expt.file_type in ['GridFTP']:
     #    find_time_file(pointers,file_expt)
     #elif file_expt.file_type in ['local_file','OPeNDAP']:
     #    find_time_opendap(pointers,file_expt)
     return
         
-def find_time_file(pointers,file_expt):#session,file_expt,path_name):
+def find_time_file(pointers,file_expt,semaphores=None):#session,file_expt,path_name):
     #If the path is a remote file, we must use the time stamp
     filename=os.path.basename(file_expt.path)
     
@@ -55,6 +57,9 @@ def find_time_file(pointers,file_expt):#session,file_expt,path_name):
         file_available=True
     else:
         file_available = retrieval_utils.check_file_availability(file_expt.path.split('|')[0])
+        if file_available:
+            remote_data=remote_netcdf.remote_netCDF(file_expt.path.split('|')[0].replace('fileServer','dodsC'),semaphores)
+            file_available=remote_data.is_available()
     for year in years_list:
         for month in range(1,13):
             if not ( (year==years_range[0] and month<months_range[0]) or
@@ -131,8 +136,13 @@ def find_model_list(diagnostic,project_drs,model_list,experiment):
                                        )
         if len(missing_vars)>0:
            #print('\nThe reasons why some simulations were excluded:')
-           print('_'.join(model)+' excluded because experiment '+experiment+' is missing variables:\n'),
-           for item in missing_vars: print(item)
+           if 'experiment' in project_drs.simulations_desc:
+               if experiment==model[project_drs.simulations_desc.index('experiment')]:
+                   print('_'.join(model)+' excluded because it is missing variables:\n'),
+                   for item in missing_vars: print(item)
+           else:
+               print('_'.join(model)+' excluded because experiment '+experiment+' is missing variables:\n'),
+               for item in missing_vars: print(item)
            model_list.remove(model)
     #return model_list, min_time
     return model_list
@@ -151,7 +161,7 @@ def optimset_distributed(database,options,semaphores):
     return filepath
 
 def optimset(database,options,semaphores=None):
-    database.load_database(options,find_time)
+    database.load_database(options,find_time,semaphores=semaphores)
     #Find the list of institute / model with all the months for all the years / experiments and variables requested:
     intersection(database,options)
     

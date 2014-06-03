@@ -9,7 +9,7 @@ import esgf_query
 import sqlalchemy
 
 ##### PATH #####
-def find_path(nc_Database,file_expt):
+def find_path(nc_Database,file_expt,semaphores=None):
     for val in dir(file_expt):
         if val[0]!='_' and val!='case_id':
             getattr(file_expt,val)
