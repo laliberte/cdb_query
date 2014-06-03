@@ -115,7 +115,8 @@ class nc_Database:
         trees_list=self.list_subset([getattr(File_Expt,level) for level in drs_list])
 
         #Create output:
-        output_root=netCDF4.Dataset(options.out_diagnostic_netcdf_file+'.pid'+str(os.getpid()),
+        filepath=options.out_diagnostic_netcdf_file+'.pid'+str(os.getpid())
+        output_root=netCDF4.Dataset(filepath,
                                       'w',format='NETCDF4',diskless=True,persist=True)
         #output_root=netCDF4.Dataset(options.out_diagnostic_netcdf_file+'.pid'+str(os.getpid()),
         #                              'w',format='NETCDF4')
@@ -151,7 +152,6 @@ class nc_Database:
 
             output=create_tree(output_root,zip(drs_list,tree))
             #Record data:
-            #print output_root.filepath(), tree
             if (time_frequency in ['fx','clim'] and record_function_handle!='record_paths'):
                 netcdf_pointers.record_fx(output,paths_list,var)
             else:
@@ -163,7 +163,7 @@ class nc_Database:
             #Remove recorded data from database:
             self.session.query(*out_tuples).filter(sqlalchemy.and_(*conditions)).delete()
 
-        return output_root
+        return output_root, filepath
 
     def retrieve_database(self,options,output,queues,retrieval_function):
         self.load_nc_file()
@@ -339,12 +339,6 @@ def is_level_name_included_and_not_excluded(level_name,options,group):
 def record_to_file(output_root,output):
     netcdf_utils.replicate_netcdf_file(output_root,output)
     netcdf_utils.replicate_full_netcdf_recursive(output_root,output,check_empty=True)
-    filepath=output.filepath()
-    output.close()
-    try:
-        os.remove(filepath)
-    except OSError:
-        pass
     return
 
 class File_Expt(object):

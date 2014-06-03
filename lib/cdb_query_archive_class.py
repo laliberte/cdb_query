@@ -315,6 +315,11 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
         filename=queue_result.get()
         source_data=netCDF4.Dataset(filename,'r')
         nc_Database.record_to_file(output_root,source_data)
+        source_data.close()
+        try:
+            os.remove(filename)
+        except OSError:
+            pass
         output_root.sync()
     if options.num_procs>1:
         pool.close()

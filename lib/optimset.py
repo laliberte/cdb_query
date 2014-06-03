@@ -146,9 +146,8 @@ def optimset(database,options,semaphores=None):
     #Find the list of institute / model with all the months for all the years / experiments and variables requested:
     intersection(database,options)
     
-    dataset=database.nc_Database.write_database(database.header,options,'record_meta_data',semaphores=semaphores)
+    dataset, output=database.nc_Database.write_database(database.header,options,'record_meta_data',semaphores=semaphores)
     database.close_database()
-    output=dataset.filepath()
     dataset.close()
     return output
 

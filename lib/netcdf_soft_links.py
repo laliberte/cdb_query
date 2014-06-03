@@ -200,17 +200,13 @@ class read_netCDF_pointers:
 
         #Sort the paths so that we query each only once:
         unique_paths_list_id, sorting_paths=np.unique(paths_link,return_inverse=True)
-        #sorting_paths=np.argsort(paths_link,kind='mergesort')
-        #sorting_paths=np.argsort(paths_link,kind='heapsort')
-        #unique_paths_list_id=np.unique(paths_link[sorting_paths])
-        #sorted_paths_link=paths_link[sorting_paths]
-        #sorted_indices_link=indices_link[sorting_paths]
         
         #Replicate variable to output:
         if (isinstance(output,netCDF4.Dataset) or
             isinstance(output,netCDF4.Group)):
             output=netcdf_utils.replicate_netcdf_var(output,self.data_root,var_to_retrieve,chunksize=-1,zlib=True)
-            file_path=output.filepath()
+            #file_path=output.filepath()
+            file_path=None
         else:
             file_path=output
 

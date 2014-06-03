@@ -33,10 +33,9 @@ def discover(database,options):
         intersection(database)
         #List data_nodes:
         database.header['data_node_list']=database.nc_Database.list_data_nodes(options)
-        dataset=database.nc_Database.write_database(database.header,options,'record_paths')
+        dataset, output =database.nc_Database.write_database(database.header,options,'record_paths')
         #Remove data_nodes:
         delattr(dataset,'data_node_list')
-        output=dataset.filepath()
         dataset.close()
 
 
