@@ -125,7 +125,6 @@ def get_url_remote(item,file_type_list,drs):
             file_info['url']=item.urls[key][0][0]
         except:
             file_info['url']=None
-        print item.json
         for val in drs.official_drs+['checksum']:
             try:
                 if val=='var':

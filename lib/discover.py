@@ -90,7 +90,8 @@ def find_model_list(diagnostic,project_drs,model_list,experiment):
                                         *[getattr(nc_Database.File_Expt,desc) for desc in project_drs.simulations_desc if desc!='ensemble']
                                            ).filter(sqlalchemy.and_(*conditions)).distinct().all()
                 model_list_fx=set(model_list_fx).intersection(set(model_list_var))
-        return model_list, model_list_fx
+        model_list_combined=[model for model in model_list if remove_ensemble(model,project_drs) in model_list_fx]
+        return model_list_combined
 
 def intersection(database):
     #Step one: find all the institute / model tuples with all the requested variables
@@ -101,12 +102,18 @@ def intersection(database):
                                 simulation[database.drs.simulations_desc.index('ensemble')]!='r0i0p0']
     model_list=copy.copy(simulations_list_no_fx)
 
-    for experiment in database.header['experiment_list'].keys():
-        model_list, model_list_fx = find_model_list(database,database.drs,model_list,experiment)
+    if not experiment in database.drs.simulations_desc:
+        for experiment in database.header['experiment_list'].keys():
+            model_list = find_model_list(database,database.drs,model_list,experiment)
+        model_list_combined=model_list
+    else:
+        model_list_combined=set().union(*[find_model_list(database,database.drs,model_list,experiment) 
+                                           for experiment in database.header['experiment_list'].keys()])
 
     #Step two: find the models to remove:
-    model_list_combined=[model for model in model_list if remove_ensemble(model,database.drs) in model_list_fx]
+    #model_list_combined=[model for model in model_list if remove_ensemble(model,database.drs) in model_list_fx]
     models_to_remove=set(simulations_list_no_fx).difference(model_list_combined)
+    #models_to_remove=set(simulations_list_no_fx).difference(model_list)
 
     #Step three: remove from database:
     for model in models_to_remove:
