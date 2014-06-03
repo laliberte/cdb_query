@@ -71,8 +71,9 @@ def find_time_file(pointers,file_expt):#session,file_expt,path_name):
 
 def obtain_time_list(diagnostic,project_drs,var_name,experiment,model):
     #Do this without fx variables:
-    conditions=([
-                 nc_Database.File_Expt.var==var_name,] +
+    conditions=(
+                 [nc_Database.File_Expt.var==var_name,] +
+                 [nc_Database.File_Expt.experiment==experiment,] +
                [ getattr(nc_Database.File_Expt,desc)==model[desc_id]
                  for desc_id,desc in enumerate(project_drs.simulations_desc)]
                )
@@ -83,7 +84,8 @@ def obtain_time_list(diagnostic,project_drs,var_name,experiment,model):
                             ).filter(sqlalchemy.and_(*conditions)).distinct().all()]
     return time_list_var
 
-def find_model_list(diagnostic,project_drs,model_list,experiment,min_time):
+#def find_model_list(diagnostic,project_drs,model_list,experiment,min_time):
+def find_model_list(diagnostic,project_drs,model_list,experiment):
     period_list = diagnostic.header['experiment_list'][experiment]
     if not isinstance(period_list,list): period_list=[period_list]
     years_list=[]
@@ -109,14 +111,17 @@ def find_model_list(diagnostic,project_drs,model_list,experiment,min_time):
                     time_list_var=obtain_time_list(diagnostic,project_drs,var_name,experiment,model)
                     if len(time_list_var)>0:
                         min_time_list.append(int(np.floor(np.min([int(time) for time in time_list_var])/100.0)*100))
-            min_time['_'.join(model)+'_'+experiment]=np.min(min_time_list)
+            #min_time['_'.join(model)+'_'+experiment]=np.min(min_time_list)
+            min_time=np.min(min_time_list)
         else:
-            min_time['_'.join(model)+'_'+experiment]=0
+            #min_time['_'.join(model)+'_'+experiment]=0
+            min_time=0
 
         for var_name in diagnostic.header['variable_list'].keys():
             if not diagnostic.header['variable_list'][var_name][0] in ['fx','clim']:
                 time_list_var=obtain_time_list(diagnostic,project_drs,var_name,experiment,model)
-                time_list_var=[str(int(time)-int(min_time['_'.join(model)+'_'+experiment])).zfill(6) for time in time_list_var]
+                #time_list_var=[str(int(time)-int(min_time['_'.join(model)+'_'+experiment])).zfill(6) for time in time_list_var]
+                time_list_var=[str(int(time)-int(min_time)).zfill(6) for time in time_list_var]
                 if not set(time_list).issubset(time_list_var):
                     missing_vars.append(var_name+':'+','.join(
                                         diagnostic.header['variable_list'][var_name])+
@@ -129,7 +134,8 @@ def find_model_list(diagnostic,project_drs,model_list,experiment,min_time):
            print('_'.join(model)+' excluded because experiment '+experiment+' is missing variables:\n'),
            for item in missing_vars: print(item)
            model_list.remove(model)
-    return model_list, min_time
+    #return model_list, min_time
+    return model_list
 
 def get_diag_months_list(diagnostic):
     if 'months_list' in diagnostic.header.keys():
@@ -164,10 +170,19 @@ def intersection(database,options):
                                 simulation[database.drs.simulations_desc.index('ensemble')]!='r0i0p0']
     model_list=copy.copy(simulations_list_no_fx)
 
-    min_time=dict()
-        #print experiment,model_list
-    for experiment in database.header['experiment_list'].keys():
-        model_list, min_time = find_model_list(database,database.drs,model_list,experiment,min_time)
+    ##min_time=dict()
+    #    #print experiment,model_list
+    #for experiment in database.header['experiment_list'].keys():
+    #    #model_list, min_time = find_model_list(database,database.drs,model_list,experiment,min_time)
+    #    model_list = find_model_list(database,database.drs,model_list,experiment)
+
+    if not 'experiment' in database.drs.simulations_desc:
+        for experiment in database.header['experiment_list'].keys():
+            model_list = find_model_list(database,database.drs,model_list,experiment)
+        model_list_combined=model_list
+    else:
+        model_list_combined=set().union(*[find_model_list(database,database.drs,model_list,experiment) 
+                                           for experiment in database.header['experiment_list'].keys()])
 
     #Step two: create the new paths dictionary:
     variable_list_requested=[]
@@ -177,7 +192,7 @@ def intersection(database,options):
     #Step three: find the models to remove:
     simulations_desc_indices_without_ensemble=range(0,len(database.drs.simulations_desc))
     simulations_desc_indices_without_ensemble.remove(database.drs.simulations_desc.index('ensemble'))
-    models_to_remove=set(simulations_list_no_fx).difference(model_list)
+    models_to_remove=set(simulations_list_no_fx).difference(model_list_combined)
 
     #Step four: remove from database:
     for model in models_to_remove:

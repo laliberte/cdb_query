@@ -76,7 +76,7 @@ def find_model_list(diagnostic,project_drs,model_list,experiment):
                 model_list=set(model_list).intersection(set(model_list_var))
 
         #Do it for fx variables:
-        model_list_fx=[model[:-1] for model in model_list]
+        model_list_fx=[remove_ensemble(model,project_drs) for model in model_list]
         for var_name in diagnostic.header['variable_list'].keys():
             time_frequency=diagnostic.header['variable_list'][var_name][project_drs.var_specs.index('time_frequency')]
             if time_frequency in ['fx','en']:
@@ -102,13 +102,14 @@ def intersection(database):
                                 simulation[database.drs.simulations_desc.index('ensemble')]!='r0i0p0']
     model_list=copy.copy(simulations_list_no_fx)
 
-    if not experiment in database.drs.simulations_desc:
+    if not 'experiment' in database.drs.simulations_desc:
         for experiment in database.header['experiment_list'].keys():
             model_list = find_model_list(database,database.drs,model_list,experiment)
         model_list_combined=model_list
     else:
-        model_list_combined=set().union(*[find_model_list(database,database.drs,model_list,experiment) 
-                                           for experiment in database.header['experiment_list'].keys()])
+        list_of_model_list=[find_model_list(database,database.drs,model_list,experiment) 
+                                           for experiment in database.header['experiment_list'].keys()]
+        model_list_combined=set().union(*list_of_model_list)
 
     #Step two: find the models to remove:
     #model_list_combined=[model for model in model_list if remove_ensemble(model,database.drs) in model_list_fx]

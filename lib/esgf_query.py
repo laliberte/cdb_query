@@ -27,7 +27,6 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
     #Search the ESGF:
     ctx = conn.new_context(project=nc_Database.drs.project,
                         experiment=experiment)
-    #print ctx.facet_counts
     ctx=ctx.constrain(**{field:var_desc[field_id] for field_id, field in enumerate(nc_Database.drs.var_specs)})
 
     

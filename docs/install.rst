@@ -11,18 +11,32 @@ This package requires:
 Core requirements
 -----------------
 
-* A `myproxy` manager.
 * Python 2.7.x.
 * A recent version of the netCDF4 library. Ideally, it would be of the 4.3.1 vintage.
+* A `myproxy` manager.
 
-.. attention:: If you have a knowledgeable system administrator that can help you with
-               the following steps, it is strongly recommended that you seek help before
-               attempting to compile these libraries yourself.
+Before proceeding further, are you willing to use a 3rd party Linux Distribution (Free for Academic Use)?
 
-To check whether you have those installed, you should ask yourself the following questions:
+* If yes, follow the instructions :ref:`install-distro`
 
-* Do you have a `myproxy` manager? Our experience suggests that the best and easiest way to obtain a
-  `myproxy` manager is through the ``myproxy`` package available on most Linux distributions.
+* If no, follow the instructions :ref:`install-source`
+
+At this point in the installation, it is assumed that you have a working python distribution with
+the netCDF4 python package compiled.
+
+Installing this package: `cdb_query`
+-------------------------------------
+This package can be installed with ``pip``::
+
+    $ pip install cdb_query
+
+.. warning:: If you are using a virtual environment, you must always ``source $HOME/python/bin/activate`` BEFORE
+             using ``cdb_query``. If you are using Anaconda or Canopy, you must activate it as explained in :ref:`install-distro` 
+
+`myproxy` manager
+-----------------
+Our experience suggests that the best and easiest way to obtain a
+`myproxy` manager is through the ``myproxy`` package available on most Linux distributions.
 
     * It is easily installed by a system administrator with::
         
@@ -44,172 +58,6 @@ To check whether you have those installed, you should ask yourself the following
       
       Some warnings may persist but it is likely to work for the purpose of this package.
 
-* Do you have Python 2.7.x? To check this, run::
-
-    $ python --version
-    Python 2.7.6
-
-  If your version is 2.6.x or older, this package will NOT work. Ask your system administrator
-  to install a Python 2.7.x. If this is not possible, you can try to compile it yourself::
-
-    $ wget http://www.python.org/ftp/python/2.7.6/Python-2.7.6.tgz
-    $ tar xvfz Python-2.7.6.tgz
-    $ cd Python-2.7.6
-    $ ./configure --prefix=$HOME/local/Python-2.7.6
-    $ make
-    $ make test
-    $ make install
-
-  The ``make`` is likely to mention missing libraries but as long it is completes without errors,
-  it should be OK for this package. This installs python in ``$HOME/local/Python-2.7.6``::
-
-    $ $HOME/local/Python-2.7.6/bin/python --version
-    Python 2.7.6
- 
-.. warning:: Enthought Python Distributions (EPD), including Enthought Canopy will NOT
-             work with this package. This may change in the future but as of March 3, 2014
-             they do not appear to be working.
-
-* Do you have netCDF4 installed?
-    * First, check whether you have ``nc-config`` and find its version::
-        
-        $ nc-config --version
-        netCDF 4.3.1-rc4
-
-    * If you have a working netCDF4 version that is older than 4.3.0 but more recent than 4.2.0
-      most features in this package should work.
-
-    * It is however strongly recommended that you upgrade to 4.3.1-rc4 or a more recent version.
-      If you have netCDF4 already installed, you should have ZLIB, SZIP and HDF5. Then
-      you only need to install a recent version of netCDF4.
-      We are suggesting version 4.3.1-rc4
-      because version 4.3.1.1 appears to require a recent version of CURL to work properly
-      and most common Linux distributions do not have the adequate version. For the purposes
-      of this package version 4.3.1-rc4 should work just fine. It can be obtained through::
-
-          $ wget ftp://ftp.unidata.ucar.edu/pub/netcdf/netcdf-4.3.1-rc4.tar.gz
-      
-      Please visit http://www.unidata.ucar.edu/software/netcdf/docs/netcdf-install/Quick-Instructions.html#Quick-Instructions
-      for instructions on how to build this library. 
-
-    * If you do not have ``nc-config``, then it is likely that you will need to compile the following libraries,
-      compiled in this order:
-          * ZLIB (tested with zlib-1.2.8)
-          * SZIP compiled using ZLIB (tested with szip-2.1)
-          * HDF5 compiled using SZIP and ZLIB (tested with hdf5-1.8.11)
-          * netCDF4 library compiled with DAP support. DAP support requires CURL (usually installed on 
-            common OS, here tested with curl-7.15.5). The version of netcdf used here is netcdf-4.3.1-rc4
-
-          Please visit http://www.unidata.ucar.edu/software/netcdf/docs/netcdf-install/Quick-Instructions.html#Quick-Instructions
-          for instructions on how to build these libraries.
-
-    * If you are recompiling netCDF4, make sure that ``which nc-config`` points to the new netCDF4.
-
-Python Packages
----------------
-
-Packages installable from PyPI
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-The next step is to install the following python packages:
-
-* numpy
-* sqlalchemy
-* Cython
-* python-dateutil
-
-These should be easy to install::
-
-    $ pip install numpy
-    $ pip install sqlalchemy
-    $ pip install Cython
-    $ pip install python-dateutil
-
-If you do not have root access to your system the best approach is to
-create a virtual python environment. First download and use python package `virtualenv` 
-from https://pypi.python.org/pypi/virtualenv.
-This step was tested using https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.11.2.tar.gz::
-    
-    $ wget --no-check-certificate \
-          https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.11.2.tar.gz
-    $ tar xvfz virtualenv-1.11.2.tar.gz
-    $ cd virtualenv-1.11.2
-
-Then before creating the virtual environment, check that your python is version 2.7.x::
-    
-    $python --version
-    Python 2.7.6
-
-If yes, then create a virtual environment in ``$HOME/python``::
-
-    $ python virtualenv.py $HOME/python
-
-Activate it::
-
-    $ source $HOME/python/bin/activate
-
-Finally, install the python packages you require::
-
-    $ pip install numpy 
-    $ pip install sqlalchemy
-    $ pip install Cython
-    $ pip install python-dateutil
-
-Then try::
-
-    $ export USE_NCCONFIG=1;pip install netcdf4
-
-The package netcdf4-python does not always compile nicely using ``pip``. If it does you can skip the next section.
-
-
-Packages not installable from PyPI
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-To install netcdf4-python from source, go to the project page https://code.google.com/p/netcdf4-python/downloads/list and
-choose the file that fits your system. Here, we use ``netCDF4-1.1.0.tar.gz``::
-
-    $ wget --no-check-certificate https://pypi.python.org/packages/source/n/netCDF4/netCDF4-1.1.0.tar.gz#md5=8e2958160c8cccfc80f61ae0427e067f
-    $ tar xvfz netCDF4-1.1.0.tar.gz
-    $ cd netCDF4-1.1.0
-
-.. warning:: These steps are crucial:
-            
-             * Copy setup.cfg.template to setup.cfg: ``$ cp setup.cfg.template setup.cfg``
-             * Open with a text editor
-             * Follow the instructions in the comments for editing.
-             * Get help from your system administrator if your are trying to locate the path
-               to your netcdf4 and hdf5 libraries (installed at the begining).
-             * Because you should have a recent netCDF4 version, you can use nc-config.
-               In this case, you just have to know where it can be found in your directory tree.
-               Our installation of netcdf4 was in ``/usr/local/packages/netcdf-c-4.3.1-rc2/`` so in
-               the ``setup.cfg`` we set::
-                    # Rename this file to setup.cfg to set build options.
-                    # Follow instructions below for editing.
-                    [options]
-                    # if true, the nc-config script (installed with netcdf 4.1.2 and higher)
-                    # will be used to determine the locations of required libraries.
-                    use_ncconfig=True
-                    # path to nc-config script.
-                    ncconfig=/usr/local/packages/netcdf-c-4.3.2/bin/nc-config
-               and left everything else untouched. 
-
-Once ``setup.cfg`` is properly edited::
-    
-    $ python setup.py build
-    $ python setup.py install
-
-Run the tests::
-
-    $ cd test; python run_all.py; cd ..
-
-If all tests were passed, the installation was successful!
-
-Installing this package: `cdb_query`
--------------------------------------
-This package can be installed with ``pip``::
-
-    $ pip install cdb_query
-
-.. warning:: If you are using a virtual environment, you must always ``source $HOME/python/bin/activate`` BEFORE
-             using ``cdb_query``
 
 ESGF certificates manager
 -------------------------
@@ -305,8 +153,8 @@ Secondary tools used in the recipes
 
 netCDF Operators (NCO)
 ^^^^^^^^^^^^^^^^^^^^^^
-Some of the recipes make use of `NCO`. These recipes were tested using version 4.4.0 linked against the aforementioned
-netcdf libraries. Please consult the project's webpage for information on how to install: http://nco.sourceforge.net/.
+Some of the recipes make use of `NCO`. These recipes were tested using version 4.4.0 linked against the
+netcdf libraries built in :ref:`install-source`. Please consult the project's webpage for information on how to install: http://nco.sourceforge.net/.
 
 These recipes were tested using the `NCO` built using the BASH script found in :ref:`install-nco`
 

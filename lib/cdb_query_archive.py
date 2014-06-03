@@ -49,6 +49,9 @@ def main(project):
 
     options=parser.parse_args()
 
+    if 'related_experiments' in dir(options) and not options.related_experiments:
+        project_drs.simulations_desc.append('experiment')
+
     #Slicing time is peculiar
     for time_opt in ['year','month']:
         if time_opt in dir(options) and getattr(options,time_opt):

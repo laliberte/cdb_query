@@ -95,6 +95,11 @@ def ask(subparsers,epilog,project_drs):
                                                  to function properly. If it fails it is possible the servers are down.'''),
                                            epilog=epilog_ask
                                          )
+    parser.add_argument('--related_experiments',
+                                 default=False, action='store_true',
+                                 help='When this option is activated, queried experiments are assumed to be related.\n\
+                                       In this situation, cdb_query will discard ({0}) tuples that do not have variables for\n\
+                                       ALL of the requested experiments'.format(','.join(project_drs.simulations_desc)))
     input_arguments_json(parser)
     output_arguments(parser)
     parser.add_argument('--list_only_field',default=None, choices=project_drs.remote_fields,
@@ -155,6 +160,11 @@ def validate(subparsers,epilog,project_drs):
                                          certificates have not been installed on this machine.'),
                                    epilog=epilog_validate,
                                  )
+    parser.add_argument('--related_experiments',
+                                 default=False, action='store_true',
+                                 help='When this option is activated, queried experiments are assumed to be related.\n\
+                                       In this situation, cdb_query will discard ({0}) tuples that do not have variables for\n\
+                                       ALL of the requested experiments'.format(','.join(project_drs.simulations_desc)))
     input_arguments(parser)
     output_arguments(parser)
     proc_group = parser.add_argument_group('These arguments set threading options')
