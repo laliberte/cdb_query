@@ -145,8 +145,8 @@ def get_url_remote(item,file_type_list,drs):
                 if isinstance(file_info[val],list): file_info[val]=str(file_info[val][0])
             except:
                 file_info[val]=None
-        if (file_info['checksum']!=None and 
-            set(item.urls.keys()).issuperset(drs.required_file_types)):
-        #if file_info['checksum']!=None:
+        #if (file_info['checksum']!=None and 
+        #    set(item.urls.keys()).issuperset(drs.required_file_types)):
+        if file_info['checksum']!=None:
             url_name.append(file_info)
     return url_name

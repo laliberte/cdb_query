@@ -62,7 +62,8 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
                 self.Dataset=netCDF4.Dataset(self.file_name)
         except:
             self.close()
-            raise dodsError(error_statement)
+            if not retrieval_utils.check_file_availability(self.file_name.replace('dodsC','fileServer')):
+                raise dodsError(error_statement)
         return
 
     def is_available(self):

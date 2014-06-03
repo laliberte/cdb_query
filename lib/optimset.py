@@ -60,6 +60,8 @@ def find_time_file(pointers,file_expt,semaphores=None):#session,file_expt,path_n
         if file_available:
             remote_data=remote_netcdf.remote_netCDF(file_expt.path.split('|')[0].replace('fileServer','dodsC'),semaphores)
             file_available=remote_data.is_available()
+            if not file_available:
+                print 'Path {0} is available but does not have OPeNDAP services enabled.'.format(file_expt.path)
     for year in years_list:
         for month in range(1,13):
             if not ( (year==years_range[0] and month<months_range[0]) or
