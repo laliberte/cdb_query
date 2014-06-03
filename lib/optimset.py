@@ -59,9 +59,9 @@ def find_time_file(pointers,file_expt):#session,file_expt,path_name):
         for month in range(1,13):
             if not ( (year==years_range[0] and month<months_range[0]) or
                      (year==years_range[1] and month>months_range[1])   ):
-                if file_expt.file_type in ['local_file'] and len(file_expt.path.split('|'))==1:
+                if file_expt.file_type in ['local_file'] and len(file_expt.path.split('|')[1])==0:
                     #Record checksum
-                    file_expt.path+='|'+retrieval_utils.md5_for_file(open(file_expt.path,'r'))
+                    file_expt.path+=retrieval_utils.md5_for_file(open(file_expt.path.split('|')[0],'r'))
                 if file_available:
                     file_expt_copy = copy.deepcopy(file_expt)
                     setattr(file_expt_copy,'time',str(year)+str(month).zfill(2))
