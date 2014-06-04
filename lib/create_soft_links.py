@@ -122,10 +122,8 @@ class soft_links:
                     if self.paths_ordering['checksum'][file_id]==self.paths_ordering['checksum'][equivalent_file_id]:
                         paths_id_list.append(file_id)
         #Sort paths_ordering:
-        try:
+        if len(paths_id_list)>0:
             self.paths_ordering=self.paths_ordering[np.sort(paths_id_list)]
-        except IndexError:
-            print paths_id_list
             
         #Finally, set the path_id field to be following the indices in paths_ordering:
         self.paths_ordering['path_id']=range(len(self.paths_ordering))
