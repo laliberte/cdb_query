@@ -121,6 +121,7 @@ def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=No
                 if not 'mask' in dir(temp) or not check_empty:
                     output.variables[var_name][time_slice,...]=temp
                 else: 
+                    #Only write the variable if it is not empty:
                     if not temp.mask.all():
                         output.variables[var_name][time_slice,...]=temp
                 output.sync()
@@ -130,6 +131,7 @@ def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=No
             if not 'mask' in dir(temp) or not check_empty:
                 output.variables[var_name][:]=temp
             else: 
+                #Only write the variable if it is not empty:
                 if not temp.mask.all():
                     output.variables[var_name][:]=temp
     elif len(data.variables[var_name].dimensions)==0:
