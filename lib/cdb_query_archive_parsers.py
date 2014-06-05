@@ -41,6 +41,26 @@ def excluded_slicing_arguments(parser,project_drs,exclude_args=[],action_type='s
                                 )
     return
 
+def complex_slicing(parser,project_drs):
+    complex_def_type=(lambda x: complex_query_validate(x,project_drs.base_drs))
+    parser.add_argument('--complex_query_def',type=complex_def_type,
+                        help='comma-separated list, subset of '+','.join(drs),
+                        default=[])
+    parser.add_argument('--complex_query',action_type='store',
+                        help='Complex inclusion with fields from complex_query_def'
+                        default=[])
+    parser.add_argument('--Xcomplex_query',action_type='store',
+                        help='Complex exclusion with fields from complex_query_def'
+                        default=[])
+    return
+
+def complex_query_validate(complex_query_def,drs):
+    complex_query_list=complex_query_def.split(',')
+    if set(complex_query_list).issubset(drs) and len(complex_query_list)==len(set(','.join(drs))):
+        return complex_query_list
+    else:
+        raise IOerror('complex_query_def must be made of unique elements and be a subset of '+','.join(drs))
+
 
 def generate_subparsers(parser,epilog,project_drs):
     #Discover tree
