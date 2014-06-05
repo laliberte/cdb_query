@@ -73,6 +73,14 @@ class nc_Database:
         self.file_expt.time='0'
         populate_database_recursive(self,self.Dataset,options,find_function,semaphores=semaphores)
         self.close_nc_file()
+
+        #Allow complex queries:
+        if 'complex_query_def' in dir(options) and options.complex_query_def != []:
+            list_query=self.list_subset(options.complex_query_def)
+            for query in list_query:
+                if not query in options.complex_query or query in options.Xcomplex_query:
+                conditions=[ getattr(nc_Database.File_Expt,field)==query[field_id] for field_id, field in enumerate(options.complex_query_def)]
+                self.session.query(nc_Database.File_Expt).filter(*conditions).delete()
         return
 
     def simulations_list(self):
