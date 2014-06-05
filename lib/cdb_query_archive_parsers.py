@@ -41,15 +41,15 @@ def excluded_slicing_arguments(parser,project_drs,exclude_args=[],action_type='s
                                 )
     return
 
-def complex_slicing(parser,project_drs):
+def complex_slicing(parser,project_drs,action_type='store'):
     complex_def_type=(lambda x: complex_query_validate(x,project_drs.base_drs))
     parser.add_argument('--complex_query_def',type=complex_def_type,
                         help='comma-separated list, subset of '+','.join(drs),
                         default=[])
-    parser.add_argument('--complex_query',action_type='store',
+    parser.add_argument('--complex_query',action_type=action_type,
                         help='Complex inclusion with fields from complex_query_def'
                         default=[])
-    parser.add_argument('--Xcomplex_query',action_type='store',
+    parser.add_argument('--Xcomplex_query',action_type=action_type,
                         help='Complex exclusion with fields from complex_query_def'
                         default=[])
     return
@@ -164,6 +164,8 @@ def list_fields(subparsers,epilog,project_drs):
     slicing_arguments(inc_group,project_drs,action_type='append')
     exc_group = parser.add_argument_group('Exclusions')
     excluded_slicing_arguments(exc_group,project_drs,action_type='append')
+    comp_group = parser.add_argument_group('Complex Query')
+    complex_query_slicing(comp_group,project_drs,action_type='append')
     return
 
 def validate(subparsers,epilog,project_drs):
