@@ -14,6 +14,7 @@ import cdb_query_archive_parsers
 import cdb_query_archive_class
 
 import netcdf_utils
+import certificates
 
 def main_CMIP5():
     main('CMIP5')
@@ -70,7 +71,7 @@ def main(project):
         netcdf_utils.convert(options,project_drs)
     elif options.command=='certificates':
         certificates.retrieve_certificates(options.username,options.password,options.registering_service)
-        certificates.test_certificates()
+        #certificates.test_certificates()
     elif 'in_diagnostic_headers_file' in dir(options):
         paths_dict=cdb_query_archive_class.SimpleTree(options,project_drs)
         #Run the command:

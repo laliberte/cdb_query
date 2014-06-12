@@ -1,7 +1,6 @@
 import os, sys, string, subprocess
 
 def retrieve_certificates(username,password,registering_service):
-    help=False
     home=os.getenv('HOME')
     http_proxy=os.getenv('http_proxy')
     https_proxy=os.getenv('https_proxy')
@@ -14,8 +13,8 @@ def retrieve_certificates(username,password,registering_service):
 
     ee = { 'smhi':'esg-dn1.nsc.liu.se', 'pcmdi':'pcmdi9.llnl.gov', 'ipsl':'esgf-node.ipsl.fr', 'badc':'myproxy.ceda.ac.uk',
     'dkrz':'esgf-data.dkrz.de', 'pik':'esg.pik-potsdam.de', 'jpl':'jpl-esg.jpl.nasa.gov' }
-    dodsrc='%s/.dodsrc' % home
-    #dodsrc='.dodsrc'
+    #dodsrc='%s/.dodsrc' % home
+    dodsrc='.dodsrc'
 
     registering_service = ee.get( registering_service, registering_service )
 
@@ -82,6 +81,14 @@ def retrieve_certificates(username,password,registering_service):
       oo.close()
 
 def test_certificates():
+    home=os.getenv('HOME')
+    http_proxy=os.getenv('http_proxy')
+    https_proxy=os.getenv('https_proxy')
+    if http_proxy != None and https_proxy== None:
+      print 'You have http_proxy set but not https_proxy: download tests are likely to fail'
+
+    esgfdir='%s/.esg4' % home
+
     print 'Testing certificate by running wget request in spider mode'
     cmd='wget -c -nH --certificate=%(esgfdir)s/credentials.pem --private-key=%(esgfdir)s/credentials.pem --save-cookies=%(esgfdir)s/cookies --load-cookies=%(esgfdir)s/cookies --ca-directory=%(esgfdir)s/certificates --no-check-certificate --spider   http://vesg.ipsl.fr/thredds/fileServer/esg_dataroot/CMIP5/output1/IPSL/IPSL-CM5A-LR/rcp85/mon/atmos/cfMon/r1i1p1/v20111119/clhcalipso/clhcalipso_cfMon_IPSL-CM5A-LR_rcp85_r1i1p1_200601-230012.nc  1> .wgsp 2> .wgspe' % locals()
     cmd2=['wget', '-c', '-nH', '--certificate=%(esgfdir)s/credentials.pem' %locals(), '--private-key=%(esgfdir)s/credentials.pem' %locals(), '--save-cookies=%(esgfdir)s/cookies' %locals(), '--load-cookies=%(esgfdir)s/cookies' %locals(), '--ca-directory=%(esgfdir)s/certificates' %locals(), '--no-check-certificate', '--spider', 'http://vesg.ipsl.fr/thredds/fileServer/esg_dataroot/CMIP5/output1/IPSL/IPSL-CM5A-LR/rcp85/mon/atmos/cfMon/r1i1p1/v20111119/clhcalipso/clhcalipso_cfMon_IPSL-CM5A-LR_rcp85_r1i1p1_200601-230012.nc' ] 
