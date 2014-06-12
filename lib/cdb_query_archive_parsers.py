@@ -42,25 +42,14 @@ def excluded_slicing_arguments(parser,project_drs,exclude_args=[],action_type='s
     return
 
 def complex_slicing(parser,project_drs,action_type='store'):
-    complex_def_type=(lambda x: complex_query_validate(x,project_drs.base_drs))
-    parser.add_argument('--complex_query_def',type=complex_def_type,
-                        help='comma-separated list, subset of '+','.join(drs),
+    complex_query_type=(lambda x: tuple(x.split(',')))
+    parser.add_argument('--complex_query',action=action_type,type=complex_query_type,
+                        help='Complex inclusion with fields specified by --field',
                         default=[])
-    parser.add_argument('--complex_query',action_type=action_type,
-                        help='Complex inclusion with fields from complex_query_def'
-                        default=[])
-    parser.add_argument('--Xcomplex_query',action_type=action_type,
-                        help='Complex exclusion with fields from complex_query_def'
+    parser.add_argument('--Xcomplex_query',action=action_type, type=complex_query_type,
+                        help='Complex exclusion with fields specified by --field.',
                         default=[])
     return
-
-def complex_query_validate(complex_query_def,drs):
-    complex_query_list=complex_query_def.split(',')
-    if set(complex_query_list).issubset(drs) and len(complex_query_list)==len(set(','.join(drs))):
-        return complex_query_list
-    else:
-        raise IOerror('complex_query_def must be made of unique elements and be a subset of '+','.join(drs))
-
 
 def generate_subparsers(parser,epilog,project_drs):
     #Discover tree
@@ -165,7 +154,7 @@ def list_fields(subparsers,epilog,project_drs):
     exc_group = parser.add_argument_group('Exclusions')
     excluded_slicing_arguments(exc_group,project_drs,action_type='append')
     comp_group = parser.add_argument_group('Complex Query')
-    complex_query_slicing(comp_group,project_drs,action_type='append')
+    complex_slicing(comp_group,project_drs,action_type='append')
     return
 
 def validate(subparsers,epilog,project_drs):
@@ -208,6 +197,10 @@ def validate(subparsers,epilog,project_drs):
     slicing_arguments(inc_group,project_drs,action_type='append')
     exc_group = parser.add_argument_group('Exclusions')
     excluded_slicing_arguments(exc_group,project_drs,action_type='append')
+    comp_group = parser.add_argument_group('Complex Query')
+    comp_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.base_drs,
+                                       help='List the field (or fields if repeated) found in the file' )
+    complex_slicing(comp_group,project_drs,action_type='append')
     return
 
 def download(subparsers,epilog,project_drs):
@@ -241,6 +234,10 @@ def download(subparsers,epilog,project_drs):
     slicing_arguments(inc_group,project_drs,action_type='append')
     exc_group = parser.add_argument_group('Exclusions')
     excluded_slicing_arguments(exc_group,project_drs,action_type='append')
+    comp_group = parser.add_argument_group('Complex Query')
+    comp_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.base_drs,
+                                       help='List the field (or fields if repeated) found in the file' )
+    complex_slicing(comp_group,project_drs,action_type='append')
 
     data_node_group = parser.add_argument_group('Limit download from specific data nodes')
     data_node_group.add_argument('--data_node',type=str,action='append',help='Retrieve only from the specified data nodes')
@@ -287,6 +284,10 @@ def download_raw(subparsers,epilog,project_drs):
     slicing_arguments(inc_group,project_drs,action_type='append')
     exc_group = parser.add_argument_group('Exclusions')
     excluded_slicing_arguments(exc_group,project_drs,action_type='append')
+    comp_group = parser.add_argument_group('Complex Query')
+    comp_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.base_drs,
+                                       help='List the field (or fields if repeated) found in the file' )
+    complex_slicing(comp_group,project_drs,action_type='append')
     return
 
 def convert(subparsers,epilog,project_drs):
@@ -307,6 +308,10 @@ def convert(subparsers,epilog,project_drs):
     slicing_arguments(inc_group,project_drs)
     exc_group = parser.add_argument_group('Exclusions')
     excluded_slicing_arguments(exc_group,project_drs)
+    comp_group = parser.add_argument_group('Complex Query')
+    comp_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.base_drs,
+                                       help='List the field (or fields if repeated) found in the file' )
+    complex_slicing(comp_group,project_drs,action_type='append')
     return
 
 
@@ -340,5 +345,7 @@ def apply(subparsers,epilog,project_drs):
     slicing_arguments(inc_group,project_drs,action_type='append')
     exc_group = parser.add_argument_group('Exclusions')
     excluded_slicing_arguments(exc_group,project_drs,action_type='append')
+    comp_group = parser.add_argument_group('Complex Query')
+    complex_slicing(comp_group,project_drs,action_type='append')
     return
     

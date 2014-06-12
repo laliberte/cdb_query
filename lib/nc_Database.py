@@ -75,12 +75,15 @@ class nc_Database:
         self.close_nc_file()
 
         #Allow complex queries:
-        if 'complex_query_def' in dir(options) and options.complex_query_def != []:
-            list_query=self.list_subset(options.complex_query_def)
-            for query in list_query:
-                if not query in options.complex_query or query in options.Xcomplex_query:
-                conditions=[ getattr(nc_Database.File_Expt,field)==query[field_id] for field_id, field in enumerate(options.complex_query_def)]
-                self.session.query(nc_Database.File_Expt).filter(*conditions).delete()
+        if 'field' in dir(options) and options.field!=[]:
+            if ( 'complex_query' in dir(options) and options.complex_query!=[] or
+                 'Xcomplex_query' in dir(options) and options.Xcomplex_query!=[]  ):
+                list_query=self.list_fields(options.field)
+                for query in list_query:
+                    if ( (options.complex_query!=[] and not query in options.complex_query) or
+                         (options.Xcomplex_query!=[] and query in options.Xcomplex_query) ):
+                        conditions=[ getattr(File_Expt,field)==query[field_id] for field_id, field in enumerate(options.field)]
+                        self.session.query(File_Expt).filter(*conditions).delete()
         return
 
     def simulations_list(self):

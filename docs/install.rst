@@ -13,7 +13,7 @@ Core requirements
 
 * Python 2.7.x.
 * A recent version of the netCDF4 library. Ideally, it would be of the 4.3.1 vintage.
-* A `myproxy` manager.
+* ESGF certificates.
 
 Before proceeding further, are you willing to use a 3rd party Linux Distribution (Free for Academic Use)?
 
@@ -25,7 +25,7 @@ At this point in the installation, it is assumed that you have a working python 
 the netCDF4 python package compiled.
 
 Installing this package: `cdb_query`
--------------------------------------
+------------------------------------
 This package can be installed with ``pip``::
 
     $ pip install cdb_query
@@ -33,120 +33,35 @@ This package can be installed with ``pip``::
 .. warning:: If you are using a virtual environment, you must always ``source $HOME/python/bin/activate`` BEFORE
              using ``cdb_query``. If you are using Anaconda, you must activate it (see :ref:`install-distro`).
 
-`myproxy` manager
------------------
-Our experience suggests that the best and easiest way to obtain a
-`myproxy` manager is through the ``myproxy`` package available on most Linux distributions.
 
-    * It is easily installed by a system administrator with::
-        
-        $ yum install myproxy
+Obtaining ESGF certificates
+---------------------------
 
-    * If you are not a Linux user, you best option is to parse through
-      http://www.unidata.ucar.edu/software/netcdf/docs/esg.html or 
-      http://cmip-pcmdi.llnl.gov/cmip5/data_getting_started.html (points 6,7).
+This package allows you to obtain and manage ESGF certificates transparently. The only
+actions a user should take is 
 
-    * If you are a Linux user and your system administrator cannot install this package,
-      you best bet is to compile only a section of the Globus Toolkit. This is a difficult 
-      package to install but we have been successful with the following procedure::
+1. Register at http://badc.nerc.ac.uk/reg/user_register_info.html or https://esg-datanode.jpl.nasa.gov/esgf-web-fe/createAccount.
+   When registering, you will create a `password` and `username`. You will then receive an `openid`.
 
-          $ wget --no-check-certificate http://www.globus.org/ftppub/gt5/5.0/5.0.0/installers/src/gt5.0.0-all-source-installer.tar.bz2
-          $ tar xvfj gt5.0.0-all-source-installer.tar.bz2
-          $ cd gt5.0.0-all-source-installer
-          $ ./configure --prefix=$HOME/local/gt-5.0.0
-          $ make install myproxy
-      
-      Some warnings may persist but it is likely to work for the purpose of this package.
+2. Click on each of the following links (one after the other) into a browser. You will then be prompted to enter your `openid` followed by
+   your `password`. You should then be asked to register for a user group. Most users will choose `CMIP5 Research`. Once, you've selected a
+   user group, a file should start downloading. You can stop the transfer and repeat these steps for the next link::
 
+   http://esg.bnu.edu.cn/thredds/fileServer/cmip5/BNU/BNU-ESM/1pctCO2/3hr/atmos/clt/r1i1p1/clt_3hr_BNU-ESM_1pctCO2_r1i1p1_196101010000-199012312100.nc
+   http://cmip3.dkrz.de/thredds/dodsC/cmip5/output1/BCC/bcc-csm1-1/rcp45/day/atmos/day/r1i1p1/v20120705/ta/ta_day_bcc-csm1-1_rcp45_r1i1p1_20060101-20251231.nc
+   http://albedo2.dkrz.de/thredds/dodsC/cmip5/output1/LASG-CESS/FGOALS-g2/rcp45/day/atmos/day/r1i1p1/v1/ta/ta_day_FGOALS-g2_rcp45_r1i1p1_20060101-20061231.nc
+   http://esgf-data1.ceda.ac.uk/thredds/dodsC/esg_dataroot/cmip5/output1/IPSL/IPSL-CM5B-LR/rcp45/day/atmos/day/r1i1p1/v20120430/ta/ta_day_IPSL-CM5B-LR_rcp45_r1i1p1_20060101-20151231.nc
+   http://vesg.ipsl.fr/thredds/dodsC/esg_dataroot/CMIP5/output1/IPSL/IPSL-CM5B-LR/rcp45/day/atmos/day/r1i1p1/v20120430/ta/ta_day_IPSL-CM5B-LR_rcp45_r1i1p1_20960101-21001231.nc
+   http://pcmdi9.llnl.gov/thredds/dodsC/cmip5_css02_data/cmip5/output1/CSIRO-BOM/ACCESS1-0/rcp45/fx/atmos/fx/r0i0p0/orog/1/orog_fx_ACCESS1-0_rcp45_r0i0p0.nc
+   http://bmbf-ipcc-ar5.dkrz.de/thredds/dodsC/cmip5/output1/MPI-M/MPI-ESM-MR/rcp45/day/atmos/day/r2i1p1/v20120628/ta/ta_day_MPI-ESM-MR_rcp45_r2i1p1_21000101-21001231.nc
+   http://esg.cnrm-game-meteo.fr/thredds/dodsC/esg_dataroot1/CMIP5/output1/CNRM-CERFACS/CNRM-CM5/rcp45/day/atmos/day/r1i1p1/v20121001/ta/ta_day_CNRM-CM5_rcp45_r1i1p1_20960101-21001231.nc
 
-ESGF certificates manager
--------------------------
+3. Run the following command::
 
-This will likely be the most difficult part of the installation for most users.
-There are several web resources for setting up your certificates but they all
-differ slightly. 
+        $ cdb_query_CMIP5 certificates username password registering_service
 
-Here we assume that the users have accomplished steps 1,2,3 from http://cmip-pcmdi.llnl.gov/cmip5/data_getting_started.html)
-and that they have an account on the ESGF.
+   where the ``registering_service`` is ``badc`` is you used the first link to register and ``jpl`` if you used the second link.
 
-Then there is a three steps procedure to obtain certificates:
-
-Edit your ``.bash_profile``
-^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Add these two lines to your ``.bash_profile``::
-
-    export X509_CERT_DIR=$HOME/.esg/certificates
-    export X509_USER_PROXY=$HOME/.esg/credentials.pem
-
-and source your ``.bash_profile``::
-
-    $ source ~/.bash_profile
-
-Create ``.dodsrc`` file
-^^^^^^^^^^^^^^^^^^^^^^^
-
-In your root directory, create the file ``.dodsrc`` and paste these line into it::
-
-    # OPeNDAP client configuration file. See the OPeNDAP
-    # users guide for information.
-    USE_CACHE=0
-    # Cache and object size are given in megabytes (20 ==> 20Mb).
-    MAX_CACHE_SIZE=20
-    MAX_CACHED_OBJ=5
-    IGNORE_EXPIRES=0
-    CACHE_ROOT=/home/laliberte/.dods_cache/
-    DEFAULT_EXPIRES=86400
-    ALWAYS_VALIDATE=0
-    # Request servers compress responses if possible?
-    # 1 (yes) or 0 (false).
-    DEFLATE=0
-    # Should SSL certificates and hosts be validated? SSL
-    # will only work with signed certificates.
-    VALIDATE_SSL=1
-    # Proxy configuration (optional parts in []s).
-    # You may also use the 'http_proxy' environment variable
-    # but a value in this file will override that env variable.
-    # PROXY_SERVER=[http://][username:password@]host[:port]
-    # NO_PROXY_FOR=<host|domain>
-    # AIS_DATABASE=<file or url>
-    # COOKIE_JAR=.dods_cookies
-    # The cookie jar is a file that holds cookies sent from
-    # servers such as single signon systems. Uncomment this
-    # option and provide a file name to activate this feature.
-    # If the value is a filename, it will be created in this
-    # directory; a full pathname can be used to force a specific
-    CURL.VERBOSE=0
-    CURL.COOKIEJAR=.dods_cookies
-    CURL.SSL.VALIDATE=1
-    CURL.SSL.CERTIFICATE=/home/laliberte/.esg/credentials.pem
-    CURL.SSL.KEY=/home/laliberte/.esg/credentials.pem
-    CURL.SSL.CAPATH=/home/laliberte/.esg/certificates
-
-    HTTP.VERBOSE=0
-    HTTP.COOKIEJAR=.dods_cookies
-    HTTP.SSL.VALIDATE=1
-    HTTP.SSL.CERTIFICATE=/home/laliberte/.esg/credentials.pem
-    HTTP.SSL.KEY=/home/laliberte/.esg/credentials.pem
-    HTTP.SSL.CAPATH=/home/laliberte/.esg/certificates
-
-.. warning:: Replace all occurences of ``laliberte`` with your local username before
-             closing this file!
-
-Obtain the certificate
-^^^^^^^^^^^^^^^^^^^^^^
-
-Running the command::
-
-    $ myproxy-logon -t 24 -T -s pcmdi9.llnl.gov -l laliberte
-
-should then install your certificates. You have to replace ``pcmdi9.llnl.gov`` with the
-server name where you have obtained your ESGF account and replace ``laliberte`` with your
-ESGF username.
-
-.. warning:: The command ``myproxy-logon`` must re-run every day.
-
-Alternatively, users can have a look at http://www.unidata.ucar.edu/software/netcdf/docs/esg.html
-or at http://cmip-pcmdi.llnl.gov/cmip5/data_getting_started.html (points 6,7)
 
 Secondary tools used in the recipes
 -----------------------------------
