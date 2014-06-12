@@ -14,8 +14,8 @@ def retrieve_certificates(username,password,registering_service):
 
     ee = { 'smhi':'esg-dn1.nsc.liu.se', 'pcmdi':'pcmdi9.llnl.gov', 'ipsl':'esgf-node.ipsl.fr', 'badc':'myproxy.ceda.ac.uk',
     'dkrz':'esgf-data.dkrz.de', 'pik':'esg.pik-potsdam.de', 'jpl':'jpl-esg.jpl.nasa.gov' }
-    #dodsrc='%s/.dodsrc' % home
-    dodsrc='.dodsrc'
+    dodsrc='%s/.dodsrc' % home
+    #dodsrc='.dodsrc'
 
     registering_service = ee.get( registering_service, registering_service )
 

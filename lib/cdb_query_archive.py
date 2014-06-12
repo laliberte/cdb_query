@@ -68,6 +68,9 @@ def main(project):
         netcdf_utils.apply(options,project_drs)
     elif options.command=='convert':
         netcdf_utils.convert(options,project_drs)
+    elif options.command=='certificates':
+        certificates.retrieve_certificates(options.username,options.password,options.registering_service)
+        certificates.test_certificates()
     elif 'in_diagnostic_headers_file' in dir(options):
         paths_dict=cdb_query_archive_class.SimpleTree(options,project_drs)
         #Run the command:

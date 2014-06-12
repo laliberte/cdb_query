@@ -64,6 +64,7 @@ def generate_subparsers(parser,epilog,project_drs):
     download_raw(subparsers,epilog,project_drs)
     apply(subparsers,epilog,project_drs)
     convert(subparsers,epilog,project_drs)
+    certificates(subparsers,epilog,project_drs)
     return
 
 #def quick_ask(subparsers,epilog,project_drs):
@@ -348,4 +349,16 @@ def apply(subparsers,epilog,project_drs):
     comp_group = parser.add_argument_group('Complex Query')
     complex_slicing(comp_group,project_drs,action_type='append')
     return
+
+def certificates(subparsers,epilog,project_drs):
+    epilog_certificates=textwrap.dedent(epilog)
+    parser=subparsers.add_parser('certificates',
+                                           description=textwrap.dedent('Recovers ESGF certificates'),
+                                           epilog=epilog_certificates
+                                         )
+    parser.add_argument('username',help="Username")
+    parser.add_argument('password',help="Password")
+    parser.add_argument('registering_service',help="Registering service",choices=['badc','jpl'])
+    return
+
     

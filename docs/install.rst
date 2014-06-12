@@ -63,6 +63,9 @@ actions a user should take is
    where the ``registering_service`` is ``badc`` is you used the first link to register and ``jpl`` if you used the second link.
 
 
+Alternatively, if you would like to use another registering service, please follow the instructions on how to install the :ref:`install-certs`
+
+
 Secondary tools used in the recipes
 -----------------------------------
 
