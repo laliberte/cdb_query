@@ -27,8 +27,8 @@ a script found on http://idolinux.blogspot.ca/2011/02/nco-netcdf-operators-build
     INSTALL_UDUNITS=1
     INSTALL_GSL=1
 
-    NETCDF4_DIR="/usr/local/packages/netcdf"
-    HDF5_DIR="/usr/local/packages/hdf5"
+    NETCDF4_DIR="$HOME/anaconda"
+    HDF5_DIR="$HOME/anaconda"
     ##############################################
     # Please do not modify anything past this line
     # before trying the script!
@@ -63,7 +63,7 @@ a script found on http://idolinux.blogspot.ca/2011/02/nco-netcdf-operators-build
     # UDUNITS
     # Here, you can try to change the version number if
     # a newer version if avaiable.
-        APP=udunits-2.2.11
+        APP=udunits-2.2.13
         UDUNITS_PATH=$INSTALL_PATH/$APP
         if [ "$INSTALL_UDUNITS" -eq "1" ]; then
             rm -rf $UDUNITS_PATH

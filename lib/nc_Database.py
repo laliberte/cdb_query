@@ -347,10 +347,10 @@ def is_level_name_included_and_not_excluded(level_name,options,group):
         not_excluded=True
     return included and not_excluded
 
-def record_to_file(output_root,output):
+def record_to_file(output_root,output,output_hdf5):
     netcdf_utils.replicate_netcdf_file(output_root,output)
     #netcdf_utils.replicate_full_netcdf_recursive(output_root,output,check_empty=True)
-    netcdf_utils.replicate_full_netcdf_recursive(output_root,output,check_empty=False)
+    netcdf_utils.replicate_full_netcdf_recursive(output_root,output,check_empty=False,hdf5=output_hdf5)
     return
 
 class File_Expt(object):

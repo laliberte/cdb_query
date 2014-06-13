@@ -3,6 +3,7 @@ import numpy as np
 import math
 
 import netCDF4
+import h5py
 import datetime
 
 import hashlib
@@ -87,18 +88,23 @@ def convert_to_date_absolute(absolute_time):
     return datetime.datetime(year,month,day,hour,minute,seconds)
 
 #def replicate_full_netcdf_recursive(output,data,options=None):
-def replicate_full_netcdf_recursive(output,data,check_empty=False):
+def replicate_full_netcdf_recursive(output,data,hdf5=hdf5,check_empty=False):
     for var_name in data.variables.keys():
-        replicate_and_copy_variable(output,data,var_name,check_empty=check_empty)
+        replicate_and_copy_variable(output,data,var_name,hdf5=hdf5,check_empty=check_empty)
     if len(data.groups.keys())>0:
         for group in data.groups.keys():
             output_grp=replicate_group(output,data,group)
-            replicate_full_netcdf_recursive(output_grp,data.groups[group],check_empty=check_empty)
+            replicate_full_netcdf_recursive(output_grp,data.groups[group],hdf5=hdf5[group],check_empty=check_empty)
     return
 
-def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=None,add_dim=None,chunksize=None,zlib=None,check_empty=False):
+def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=None,add_dim=None,chunksize=None,zlib=None,hdf5=None,check_empty=False):
     replicate_netcdf_var(output,data,var_name,datatype=datatype,fill_value=fill_value,add_dim=add_dim,chunksize=chunksize,zlib=zlib)
-    if len(data.variables[var_name].shape)>0 and min(data.variables[var_name].shape)>0:
+
+    variable_size=min(data.variables[var_name].shape)
+    #Use the low-level hdf5 library to find the real size of the stored array:
+    if hdf5!=None:
+        variable_size=hdf5[var_name].size
+    if len(data.variables[var_name].shape)>0 and variable_size>0:
         max_request=4500 #maximum request in Mb
         #max_request=9000 #maximum request in Mb
         max_time_steps=max(
@@ -470,9 +476,11 @@ def distributed_apply(function_handle,database,options,vars_list,args=tuple()):
                 temp_file_name=description[0]
                 var=description[1]
                 data=netCDF4.Dataset(temp_file_name,'r')
+                data_hdf5=h5py.File(temp_file_name,'r')
                 tree=zip(database.drs.official_drs_no_version,var)
-                replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:],check_empty=True)
+                replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=True)
                 data.close()
+                data_hdf5.close()
                 try:
                     os.remove(temp_file_name)
                 except OSError:
@@ -486,9 +494,11 @@ def distributed_apply(function_handle,database,options,vars_list,args=tuple()):
                 worker(arg)
                 temp_file_name, var=queue.get()
                 data=netCDF4.Dataset(temp_file_name,'r')
+                data_hdf5=h5py.File(temp_file_name,'r')
                 tree=zip(database.drs.official_drs_no_version,var)
-                replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:],check_empty=True)
+                replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=True)
                 data.close()
+                data_hdf5.close()
                 try:
                     os.remove(temp_file_name)
                 except OSError:
@@ -498,7 +508,7 @@ def distributed_apply(function_handle,database,options,vars_list,args=tuple()):
 
         return output_root
 
-def replace_netcdf_variable_recursive(output,data,level_desc,tree,check_empty=False):
+def replace_netcdf_variable_recursive(output,data,level_desc,tree,hdf5=None,check_empty=False):
     level_name=level_desc[0]
     group_name=level_desc[1]
     if group_name==None or isinstance(group_name,list):
@@ -506,20 +516,20 @@ def replace_netcdf_variable_recursive(output,data,level_desc,tree,check_empty=Fa
             output_grp=create_group(output,data,group)
             output_grp.setncattr('level_name',level_name)
             if len(tree)>0:
-                    replace_netcdf_variable_recursive(output_grp,data.groups[group],tree[0],tree[1:],check_empty=check_empty)
+                    replace_netcdf_variable_recursive(output_grp,data.groups[group],tree[0],tree[1:],hdf5=hdf5[group],check_empty=check_empty)
             else:
                 netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data.groups[group])
-                netcdf_pointers.replicate(output_grp,check_empty=check_empty)
+                netcdf_pointers.replicate(output_grp,hdf5=hdf5[group],check_empty=check_empty)
     else:
         output_grp=create_group(output,data,group_name)
         output_grp.setncattr('level_name',level_name)
         if len(tree)>0:
-            replace_netcdf_variable_recursive(output_grp,data,tree[0],tree[1:],check_empty=check_empty)
+            replace_netcdf_variable_recursive(output_grp,data,tree[0],tree[1:],hdf5=hdf5[group_name],check_empty=check_empty)
         else:
             netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data)
-            netcdf_pointers.replicate(output_grp,check_empty=check_empty)
+            netcdf_pointers.replicate(output_grp,hdf5=hdf5,check_empty=check_empty)
         #    netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data)
-        #    netcdf_pointers.replicate(output,check_empty=check_empty)
+        #    netcdf_pointers.replicate(output,hdf5=hdf5,check_empty=check_empty)
     return
 
     

@@ -2,6 +2,7 @@ import discover
 import optimset
 
 import netCDF4
+import h5py
 
 import nc_Database
 import netcdf_soft_links
@@ -314,7 +315,9 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
             result=worker_query(arg)
         filename=queue_result.get()
         source_data=netCDF4.Dataset(filename,'r')
-        nc_Database.record_to_file(output_root,source_data)
+        source_data_hdf5=h5py.File(filename,'r')
+        nc_Database.record_to_file(output_root,source_data,source_data_hdf5)
+        source_data_hdf5.close()
         source_data.close()
         try:
             os.remove(filename)

@@ -40,27 +40,45 @@ Obtaining ESGF certificates
 This package allows you to obtain and manage ESGF certificates transparently. The only
 actions a user should take is 
 
-1. Register at http://badc.nerc.ac.uk/reg/user_register_info.html or https://esg-datanode.jpl.nasa.gov/esgf-web-fe/createAccount.
+1. Register at http://badc.nerc.ac.uk/reg/user_register_info.html. 
    When registering, you will create a `password` and `username`. You will then receive an `openid`.
 
-2. Click on each of the following links (one after the other) into a browser. You will then be prompted to enter your `openid` followed by
+2. You will receive an email that tells you to go to http://badc.nerc.ac.uk/mybadc. Follow this link. Login using your `username` and `password`.
+
+3. Then go to http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__DE_dcaa78b2-4008-11e0-88c9-00e081470265. Read the `Applying for Access` section.
+   Step 2 ensures that the first step in the `Applying for Access` has been accomplished. The second step is to follow the registration link 
+   (https://esgf-data1.ceda.ac.uk/esg-orp/registration-request.htm?resource=http%3A%2F%2Fesgf-data1.ceda.ac.uk%2Fthredds%2FfileServer%2Fesg_testroot%2Fregister%2Fcmip5_research.nc).
+   Your browser will likely ask you to trust some certificates. CLICK `ALWAYS ALLOW` If you don't do this, it won't work.
+
+4. Register for `CMIP5 Research`. Do not download data.
+
+5. Copy and paste each of the following links (one after the other) into a browser. You will then be prompted to enter your `openid` followed by
    your `password`. You should then be asked to register for a user group. Most users will choose `CMIP5 Research`. Once, you've selected a
    user group, a file should start downloading. You can stop the transfer and repeat these steps for the next link::
 
-   http://esg.bnu.edu.cn/thredds/fileServer/cmip5/BNU/BNU-ESM/1pctCO2/3hr/atmos/clt/r1i1p1/clt_3hr_BNU-ESM_1pctCO2_r1i1p1_196101010000-199012312100.nc
-   http://cmip3.dkrz.de/thredds/dodsC/cmip5/output1/BCC/bcc-csm1-1/rcp45/day/atmos/day/r1i1p1/v20120705/ta/ta_day_bcc-csm1-1_rcp45_r1i1p1_20060101-20251231.nc
-   http://albedo2.dkrz.de/thredds/dodsC/cmip5/output1/LASG-CESS/FGOALS-g2/rcp45/day/atmos/day/r1i1p1/v1/ta/ta_day_FGOALS-g2_rcp45_r1i1p1_20060101-20061231.nc
-   http://esgf-data1.ceda.ac.uk/thredds/dodsC/esg_dataroot/cmip5/output1/IPSL/IPSL-CM5B-LR/rcp45/day/atmos/day/r1i1p1/v20120430/ta/ta_day_IPSL-CM5B-LR_rcp45_r1i1p1_20060101-20151231.nc
-   http://vesg.ipsl.fr/thredds/dodsC/esg_dataroot/CMIP5/output1/IPSL/IPSL-CM5B-LR/rcp45/day/atmos/day/r1i1p1/v20120430/ta/ta_day_IPSL-CM5B-LR_rcp45_r1i1p1_20960101-21001231.nc
-   http://pcmdi9.llnl.gov/thredds/dodsC/cmip5_css02_data/cmip5/output1/CSIRO-BOM/ACCESS1-0/rcp45/fx/atmos/fx/r0i0p0/orog/1/orog_fx_ACCESS1-0_rcp45_r0i0p0.nc
-   http://bmbf-ipcc-ar5.dkrz.de/thredds/dodsC/cmip5/output1/MPI-M/MPI-ESM-MR/rcp45/day/atmos/day/r2i1p1/v20120628/ta/ta_day_MPI-ESM-MR_rcp45_r2i1p1_21000101-21001231.nc
-   http://esg.cnrm-game-meteo.fr/thredds/dodsC/esg_dataroot1/CMIP5/output1/CNRM-CERFACS/CNRM-CM5/rcp45/day/atmos/day/r1i1p1/v20121001/ta/ta_day_CNRM-CM5_rcp45_r1i1p1_20960101-21001231.nc
+       http://esg.bnu.edu.cn/thredds/fileServer/cmip5/BNU/BNU-ESM/1pctCO2/3hr/atmos/clt/r1i1p1/clt_3hr_BNU-ESM_1pctCO2_r1i1p1_196101010000-199012312100.nc
+       http://cmip3.dkrz.de/thredds/fileServer/cmip5/output1/BCC/bcc-csm1-1/rcp45/day/atmos/day/r1i1p1/v20120705/ta/ta_day_bcc-csm1-1_rcp45_r1i1p1_20060101-20251231.nc
+       http://albedo2.dkrz.de/thredds/fileServer/cmip5/output1/LASG-CESS/FGOALS-g2/rcp45/day/atmos/day/r1i1p1/v1/ta/ta_day_FGOALS-g2_rcp45_r1i1p1_20060101-20061231.nc
+       http://esgf-data1.ceda.ac.uk/thredds/fileServer/esg_dataroot/cmip5/output1/IPSL/IPSL-CM5B-LR/rcp45/day/atmos/day/r1i1p1/v20120430/ta/ta_day_IPSL-CM5B-LR_rcp45_r1i1p1_20060101-20151231.nc
+       http://vesg.ipsl.fr/thredds/fileServer/esg_dataroot/CMIP5/output1/IPSL/IPSL-CM5B-LR/rcp45/day/atmos/day/r1i1p1/v20120430/ta/ta_day_IPSL-CM5B-LR_rcp45_r1i1p1_20960101-21001231.nc
+       http://pcmdi9.llnl.gov/thredds/fileServer/cmip5_css02_data/cmip5/output1/NCAR/CCSM4/rcp45/day/atmos/day/r6i1p1/hus/1/hus_day_CCSM4_rcp45_r6i1p1_20060101-20091231.nc
+       http://bmbf-ipcc-ar5.dkrz.de/thredds/fileServer/cmip5/output1/MPI-M/MPI-ESM-MR/rcp45/day/atmos/day/r2i1p1/v20120628/ta/ta_day_MPI-ESM-MR_rcp45_r2i1p1_21000101-21001231.nc
+       http://esg.cnrm-game-meteo.fr/thredds/fileServer/esg_dataroot1/CMIP5/output1/CNRM-CERFACS/CNRM-CM5/rcp45/day/atmos/day/r1i1p1/v20121001/ta/ta_day_CNRM-CM5_rcp45_r1i1p1_20960101-21001231.nc
 
-3. Run the following command::
+6. Run the following command::
 
         $ cdb_query_CMIP5 certificates username password registering_service
 
-   where the ``registering_service`` is ``badc`` is you used the first link to register and ``jpl`` if you used the second link.
+   where the ``registering_service`` is ``badc``.
+
+7. Edit your ``.bash_profile``. Add these two lines to your ``.bash_profile``::
+
+    export X509_CERT_DIR=$HOME/.esg4/certificates
+    export X509_USER_PROXY=$HOME/.esg4/credentials.pem
+
+   and source your ``.bash_profile``::
+
+    $ source ~/.bash_profile
 
 
 Alternatively, if you would like to use another registering service, please follow the instructions on how to install the :ref:`install-certs`
@@ -71,8 +89,8 @@ Secondary tools used in the recipes
 
 netCDF Operators (NCO)
 ^^^^^^^^^^^^^^^^^^^^^^
-Some of the recipes make use of `NCO`. These recipes were tested using version 4.4.0 linked against the
-netcdf libraries built in :ref:`install-source`. Please consult the project's webpage for information on how to install: http://nco.sourceforge.net/.
+Some of the recipes make use of `NCO`. These recipes were tested using version 4.4.3 linked against the
+netcdf libraries built from `anaconda` and from :ref:`install-source`. Please consult the project's webpage for information on how to install: http://nco.sourceforge.net/.
 
 These recipes were tested using the `NCO` built using the BASH script found in :ref:`install-nco`
 
@@ -83,13 +101,13 @@ With all the libraries properly installed, `NcView` is now easy to install::
     $ wget ftp://cirrus.ucsd.edu/pub/ncview/ncview-2.1.2.tar.gz
     $ tar xvfz ncview-2.1.2.tar.gz
     $ cd ncview-2.1.2
-    $ ./configure --with-netcdf_incdir=/usr/local/packages/netcdf-c-4.3.1-rc2/include/ \
+    $ ./configure --with-netcdf_incdir=$HOME/anaconda/include/ \
                   --with-netcdf_libname=libnetcdf.so.7 \
-                  --with-netcdf_libdir=/usr/local/packages/netcdf-c-4.3.1-rc2/lib/ \
-                  --with-udunits2_incdir=/home/laliberte/local/nco-4.4.0/udunits-2.1.24/include \
-                  --with-udunits2_libdir=/home/laliberte/local/nco-4.4.0/udunits-2.1.24/lib \
-                  --prefix=$HOME/ncview-2.1.2 \
-                  --with-nc-config=/usr/local/packages/netcdf-c-4.3.1-rc2/bin/nc-config 
+                  --with-netcdf_libdir=$HOME/anaconda/lib/ \
+                  --with-udunits2_incdir=$HOME/local/nco-4.4.3/udunits-2.1.24/include \
+                  --with-udunits2_libdir=$HOME/local/nco-4.4.3/udunits-2.1.24/lib \
+                  --prefix=$HOME/anaconda/ncview-2.1.2 \
+                  --with-nc-config=$HOME/bin/nc-config 
     $ make
     $ make install
 
@@ -125,63 +143,60 @@ Next, you will need `proj`::
     $ make check
     $ make install
 
-GRIB-API
-""""""""
-Then you will need ``grib-api``::
+.. 
+    GRIB-API
+    """"""""
+    Then you will need ``grib-api``::
 
-    $ wget https://software.ecmwf.int/wiki/download/attachments/3473437/grib_api-1.11.0.tar.gz
-    $ tar xvfz grib_api-1.11.0.tar.gz
-    $ cd grib_api-1.11.0
-    $ ./configure --with-netcdf=/usr/local/packages/netcdf-c-4.3.1-rc2/ \
-                  --with-jasper=$HOME/local/jasper-1.900.1/ \
-                  --prefix=$HOME/local/grib_api-1.11.0
-    $ make check
-    $ make install
+        $ wget https://software.ecmwf.int/wiki/download/attachments/3473437/grib_api-1.11.0.tar.gz
+        $ tar xvfz grib_api-1.11.0.tar.gz
+        $ cd grib_api-1.11.0
+        $ ./configure --with-netcdf=$HOME/anaconda/ \
+                      --with-jasper=$HOME/local/jasper-1.900.1/ \
+                      --prefix=$HOME/local/grib_api-1.11.0
+        $ make check
+        $ make install
+
+    It is OK if the test ``tigge.sh`` FAIL. This will not prevent you from having a working `CDO`.
 
 CDO
 """
 
 Finally, you are ready to install `CDO`::
 
-    $ wget --no-check-certificate https://code.zmaw.de/attachments/download/6764/cdo-1.6.2.tar.gz
-    $ tar xvfz cdo-1.6.2.tar.gz
-    $ cd cdo-1.6.2
-    $ ./configure --prefix=$HOME/local/cdo-1.6.2 \
+    $ wget --no-check-certificate https://code.zmaw.de/attachments/download/7220/cdo-1.6.3.tar.gz
+    $ tar xvfz cdo-1.6.3.tar.gz
+    $ cd cdo-1.6.3
+    $ ./configure --prefix=$HOME/local/cdo-1.6.3 \
                   --with-proj=$HOME/local/proj-4.8.0 \
-                  --with-grib_api=$HOME/local/grib_api-1.11.0 \
                   --with-jasper=$HOME/local/jasper-1.900.1 \
-                  --with-netcdf=/usr/local/packages/netcdf-c-4.3.1-rc2/  \
-                  --with-hdf5=/usr/local/packages/hdf5/ \
-                  --with-zlib=/usr/local/packages/zlib/ \
-                  --with-szlib=/usr/local/packages/szip/ \
-                  --with-udunits2=$HOME/local/nco-4.4.0/udunits-2.1.24/ \
+                  --with-netcdf=$HOME/anaconda/  \
+                  --with-hdf5=$HOME/anaconda/ \
+                  --with-zlib=$HOME/anaconda/ \
                   -enable-cgribex=no CFLAGS=-DHAVE_LIBNC_DAP
-    $ make check
+    $ make 
     $ make install
 
-where ``/usr/local/packages/zlib/``, ``/usr/local/packages/szip/``, ``/usr/local/packages/hdf5/`` and ``/usr/local/packages/netcdf-c-4.3.1-rc2/``
-are the location of your ZLIB, SZIP, HDF5 and netCDF4 libraries.
-
-This installation installs `CDO` in ``$HOME/local/cdo-1.6.1/bin`` and this directory should be added to your path.
+This installation installs `CDO` in ``$HOME/local/cdo-1.6.3/bin`` and this directory should be added to your path.
 
 You can check that everything was done ok::
     
     $ cdo -V
-    Climate Data Operators version 1.6.2 (http://code.zmaw.de/projects/cdo)
+    Climate Data Operators version 1.6.3 (http://code.zmaw.de/projects/cdo)
     Compiler: gcc -std=gnu99 -DHAVE_LIBNC_DAP -pthread
     version: gcc (GCC) 4.1.2 20080704 (Red Hat 4.1.2-54)
-    Compiled: (x86_64-unknown-linux-gnu) Feb  6 2014 16:30:19
+    Compiled: (x86_64-unknown-linux-gnu)
     Features: PTHREADS NC4 OPeNDAP SZ Z JASPER UDUNITS2 PROJ.4
     Libraries: proj/4.8
     Filetypes: srv ext ieg grb grb2 nc nc2 nc4 nc4c 
-    CDI library version : 1.6.2 of Feb  6 2014 16:30:13
+    CDI library version : 1.6.3 
     GRIB_API library version : 1.11.0
-    netCDF library version : 4.3.1-rc2 of Feb  4 2014 15:06:12 $
+    netCDF library version : 4.3.1-rc2 
     HDF5 library version : 1.8.11
-    SERVICE library version : 1.3.1 of Feb  6 2014 16:30:08
-    EXTRA library version : 1.3.1 of Feb  6 2014 16:30:05
-    IEG library version : 1.3.1 of Feb  6 2014 16:30:06
-    FILE library version : 1.8.2 of Feb  6 2014 16:30:05
+    SERVICE library version : 1.3.1 
+    EXTRA library version : 1.3.1 
+    IEG library version : 1.3.1 
+    FILE library version : 1.8.2
 
 The `Features` line indicates that netCDF4 files are accepted, OPeNDAP links can be read and that
 compressed variables can be created (SZ, Z).
