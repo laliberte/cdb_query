@@ -91,9 +91,6 @@ class SimpleTree:
                 except OSError:
                     pass
             else:
-                #Find the atomic simulations:
-                simulations_list=discover.discover_simulations_recursive(self,options,self.drs.simulations_desc)
-
                 manager=multiprocessing.Manager()
                 output=distributed_recovery(discover.discover,self,options,simulations_list,manager)
 
