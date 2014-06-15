@@ -8,6 +8,8 @@ import esgf_query
 
 import sqlalchemy
 
+import multiprocessing
+
 ##### PATH #####
 def find_path(nc_Database,file_expt,semaphores=None):
     for val in dir(file_expt):
@@ -144,16 +146,25 @@ def remove_ensemble(simulation,project_drs):
     simulations_desc_indices_without_ensemble.remove(project_drs.simulations_desc.index('ensemble'))
     return itemgetter(*simulations_desc_indices_without_ensemble)(simulation)
 
+def wrapper_discover_simulations_recursive(args):
+    return [(args[-1],)+item for item in discover_simulations_recursive(*args[:-1])]
+
 def discover_simulations_recursive(database,options,simulations_desc):
     if isinstance(simulations_desc,list) and len(simulations_desc)>1:
         options.list_only_field=simulations_desc[0]
         output=discover(database,options)
         options.list_only_field=None
-        simulations_list=[]
+        args_list=[]
         for val in output:
             setattr(options,simulations_desc[0],val)
-            simulations_list.extend([(val,)+item for item in discover_simulations_recursive(database,options,simulations_desc[1:])])
+            args_list.append((copy.copy(database),copy.copy(options),simulations_desc[1:],val))
             setattr(options,simulations_desc[0],None)
+        if 'num_procs' in dir(options) and options.num_procs>1 and len(simulations_desc)==2:
+            pool=multiprocessing.Pool(processes=options.num_procs)
+            simulations_list=[item for sublist in pool.map(wrapper_discover_simulations_recursive,args_list) for item in sublist]
+            pool.close()
+        else:
+            simulations_list=[item for sublist in map(wrapper_discover_simulations_recursive,args_list) for item in sublist]
     else:
         options.list_only_field=simulations_desc[0]
         simulations_list=[(item,) for item in discover(database,options)]
