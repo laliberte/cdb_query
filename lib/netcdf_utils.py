@@ -88,7 +88,7 @@ def convert_to_date_absolute(absolute_time):
     return datetime.datetime(year,month,day,hour,minute,seconds)
 
 #def replicate_full_netcdf_recursive(output,data,options=None):
-def replicate_full_netcdf_recursive(output,data,hdf5=hdf5,check_empty=False):
+def replicate_full_netcdf_recursive(output,data,hdf5=None,check_empty=False):
     for var_name in data.variables.keys():
         replicate_and_copy_variable(output,data,var_name,hdf5=hdf5,check_empty=check_empty)
     if len(data.groups.keys())>0:
@@ -100,47 +100,48 @@ def replicate_full_netcdf_recursive(output,data,hdf5=hdf5,check_empty=False):
 def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=None,add_dim=None,chunksize=None,zlib=None,hdf5=None,check_empty=False):
     replicate_netcdf_var(output,data,var_name,datatype=datatype,fill_value=fill_value,add_dim=add_dim,chunksize=chunksize,zlib=zlib)
 
-    variable_size=min(data.variables[var_name].shape)
-    #Use the low-level hdf5 library to find the real size of the stored array:
-    if hdf5!=None:
-        variable_size=hdf5[var_name].size
-    if len(data.variables[var_name].shape)>0 and variable_size>0:
-        max_request=4500 #maximum request in Mb
-        #max_request=9000 #maximum request in Mb
-        max_time_steps=max(
-                        int(np.floor(max_request*1024*1024/(32*np.prod(data.variables[var_name].shape)))),
-                        1)
+    if len(data.variables[var_name].shape)>0:
+        variable_size=min(data.variables[var_name].shape)
+        #Use the hdf5 library to find the real size of the stored array:
+        if hdf5!=None:
+            variable_size=hdf5[var_name].size
+        if variable_size>0:
+            max_request=4500 #maximum request in Mb
+            #max_request=9000 #maximum request in Mb
+            max_time_steps=max(
+                            int(np.floor(max_request*1024*1024/(32*np.prod(data.variables[var_name].shape)))),
+                            1)
 
-        num_time_chunk=int(np.ceil(data.variables[var_name].shape[0]/float(max_time_steps)))
+            num_time_chunk=int(np.ceil(data.variables[var_name].shape[0]/float(max_time_steps)))
 
-        if (len(data.variables[var_name].shape)>1 and
-            num_time_chunk>1):
-            for time_chunk in range(num_time_chunk):
-                time_slice=slice(time_chunk*max_time_steps,
-                                 min((time_chunk+1)*max_time_steps,data.variables[var_name].shape[0])
-                                 ,1)
-                                 #(time_chunk+1)*max_time_steps,1)
-                #output.variables[var_name][time_slice,...]=data.variables[var_name][time_slice,...]
-                temp=data.variables[var_name][time_slice,...]
-                #Assign only if not masked everywhere:
-                #if not ('mask' in dir(temp) and temp.mask.all()):
-                #output.variables[var_name][time_slice,...]=temp
+            if (len(data.variables[var_name].shape)>1 and
+                num_time_chunk>1):
+                for time_chunk in range(num_time_chunk):
+                    time_slice=slice(time_chunk*max_time_steps,
+                                     min((time_chunk+1)*max_time_steps,data.variables[var_name].shape[0])
+                                     ,1)
+                                     #(time_chunk+1)*max_time_steps,1)
+                    #output.variables[var_name][time_slice,...]=data.variables[var_name][time_slice,...]
+                    temp=data.variables[var_name][time_slice,...]
+                    #Assign only if not masked everywhere:
+                    #if not ('mask' in dir(temp) and temp.mask.all()):
+                    #output.variables[var_name][time_slice,...]=temp
+                    if not 'mask' in dir(temp) or not check_empty:
+                        output.variables[var_name][time_slice,...]=temp
+                    else: 
+                        #Only write the variable if it is not empty:
+                        if not temp.mask.all():
+                            output.variables[var_name][time_slice,...]=temp
+                    output.sync()
+            else:
+                #output.variables[var_name][:]=data.variables[var_name][:]
+                temp=data.variables[var_name][:]
                 if not 'mask' in dir(temp) or not check_empty:
-                    output.variables[var_name][time_slice,...]=temp
+                    output.variables[var_name][:]=temp
                 else: 
                     #Only write the variable if it is not empty:
                     if not temp.mask.all():
-                        output.variables[var_name][time_slice,...]=temp
-                output.sync()
-        else:
-            #output.variables[var_name][:]=data.variables[var_name][:]
-            temp=data.variables[var_name][:]
-            if not 'mask' in dir(temp) or not check_empty:
-                output.variables[var_name][:]=temp
-            else: 
-                #Only write the variable if it is not empty:
-                if not temp.mask.all():
-                    output.variables[var_name][:]=temp
+                        output.variables[var_name][:]=temp
     elif len(data.variables[var_name].dimensions)==0:
         #scalar variable:
         output.variables[var_name][:]=data.variables[var_name][:]
