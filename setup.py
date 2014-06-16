@@ -14,7 +14,7 @@ from setuptools import setup, find_packages
 package_name='cdb_query'
 setup(
        name = package_name,
-       version = "1.0.3-rc1",
+       version = "1.0.3-rc2",
        packages=[package_name],
        package_dir = {package_name: 'lib'},
 #
@@ -36,7 +36,7 @@ setup(
             "Topic :: Scientific/Engineering :: Mathematics"
         ],
         long_description=read('README'),
-        install_requires = ['numpy','netCDF4','sqlalchemy','esgf-pyclient'],
+        install_requires = ['numpy','h5py','netCDF4','sqlalchemy','esgf-pyclient'],
         zip_safe=False,
         # other arguments here...
         entry_points = {

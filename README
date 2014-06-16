@@ -16,3 +16,8 @@ Univerity of Toronto, 2014
 
 The Natural Sciences and Engineering Research Council of Canada (NSERC/CRSNG) funded 
 FBL and PJK during this project.
+
+Version History
+---------------
+
+1.0.3-rc2: Optimized the 'ask' command. Optimized the asynchronous processing for 'ask', 'validate' and 'apply'.

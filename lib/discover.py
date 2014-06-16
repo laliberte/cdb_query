@@ -147,9 +147,9 @@ def remove_ensemble(simulation,project_drs):
     return itemgetter(*simulations_desc_indices_without_ensemble)(simulation)
 
 def wrapper_discover_simulations_recursive(args):
-    return [(args[-1],)+item for item in discover_simulations_recursive(*args[:-1])]
+    return [(args[-1],)+item for item in discover_simulations_recursive(*args[:-1],async=False)]
 
-def discover_simulations_recursive(database,options,simulations_desc):
+def discover_simulations_recursive(database,options,simulations_desc,async=True):
     if isinstance(simulations_desc,list) and len(simulations_desc)>1:
         options.list_only_field=simulations_desc[0]
         output=discover(database,options)
@@ -159,8 +159,8 @@ def discover_simulations_recursive(database,options,simulations_desc):
             setattr(options,simulations_desc[0],val)
             args_list.append((copy.copy(database),copy.copy(options),simulations_desc[1:],val))
             setattr(options,simulations_desc[0],None)
-        if 'num_procs' in dir(options) and options.num_procs>1 and len(simulations_desc)==2:
-            pool=multiprocessing.Pool(processes=options.num_procs)
+        if 'num_procs' in dir(options) and options.num_procs>1 and async==True:
+            pool=multiprocessing.Pool(processes=min(options.num_procs,len(args_list)))
             simulations_list=[item for sublist in pool.map(wrapper_discover_simulations_recursive,args_list) for item in sublist]
             pool.close()
         else:
