@@ -223,7 +223,7 @@ class read_netCDF_pointers:
                 dims_length.append(len(dimensions[dim]))
         #Maximum number of time step per request:
         max_request=450 #maximum request in Mb
-        max_time_steps=int(np.floor(max_request*1024*1024/(32*np.prod(dims_length))))
+        max_time_steps=max(int(np.floor(max_request*1024*1024/(32*np.prod(dims_length)))),1)
         for unique_path_id, path_id in enumerate(unique_paths_list_id):
             path_to_retrieve=self.paths_list[self.paths_id_list[path_id]]
 

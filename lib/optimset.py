@@ -63,8 +63,11 @@ def find_time_file(pointers,file_expt,semaphores=None):#session,file_expt,path_n
             file_queryable=remote_data.is_available()
     for year in years_list:
         for month in range(1,13):
-            if not ( (year==years_range[0] and month<months_range[0]) or
-                     (year==years_range[1] and month>months_range[1])   ):
+            #if not ( (year==years_range[0] and month<months_range[0]) or
+            #         (year==years_range[1] and month>months_range[1])   ):
+            if ((year>=years_range[0] and year<=years_range[1]) and
+                 (not ( (year==years_range[0] and month<months_range[0]) or
+                     (year==years_range[1] and month>months_range[1])   ))):
                 #Record checksum of local files:
                 if file_expt.file_type in ['local_file'] and len(file_expt.path.split('|')[1])==0:
                     #Record checksum

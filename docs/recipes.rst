@@ -14,7 +14,7 @@ The command ``cdb_query_CMIP5`` contains several commands:
   as an input and returns a **single** path to file. This makes it easy to retrieve data from simple scripts.
 
 .. hint:: The variable descriptions (time_frequency, realm, cmor_table, ...) for the CMIP5 can be found
-          in the file http://cmip-pcmdi.llnl.gov/cmip5/docs/standard_output.pdf.
+          in files http://cmip-pcmdi.llnl.gov/cmip5/docs/standard_output.pdf, http://cmip-pcmdi.llnl.gov/cmip5/docs/standard_output.xls.
 
 .. tas ONDJF CMIP5
 .. include:: recipe01.rst
