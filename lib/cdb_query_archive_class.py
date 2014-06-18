@@ -265,6 +265,8 @@ class SimpleTree:
 
     def load_database(self,options,find_function,semaphores=None):
         self.define_database(options)
+        if 'header' in dir(self):
+            self.nc_Database.header=self.header
         self.nc_Database.populate_database(options,find_function,semaphores=semaphores)
         if 'ensemble' in dir(options) and options.ensemble!=None:
             #Always include r0i0p0 when ensemble was sliced:

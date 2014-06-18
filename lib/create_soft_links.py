@@ -36,6 +36,7 @@ class soft_links:
         self.data_node_list=data_node_list
         self.semaphores=semaphores
         self.paths_list=paths_list
+        print paths_list
         self.paths_ordering=self.order_paths_by_preference()
         return
 
@@ -145,7 +146,7 @@ class soft_links:
         #Include a filter on years: 
         time_desc={}
         years_range=range(*years)
-        years_range+=[years_range[-1]+1]
+        years_range.append(years[-1]]
         if years[0]<10:
             #This is important for piControl
             years_range=list(np.array(years_range)+np.min([date.year for date in time_axis_unique_date]))

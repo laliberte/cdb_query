@@ -42,6 +42,10 @@ def find_time_file(pointers,file_expt,semaphores=None):#session,file_expt,path_n
         time_stamp=filename.replace('.nc','').split('_')[-1].split('|')[0]
     #time_stamp[0] == 'r':
 
+    years_requested=[int(year) for year in pointers.header['experiment_list'][file_expt.experiment].split(',')]
+    years_list_requested=range(*years_requested)
+    years_list_requested.append(years_requested[1])
+
     #Recover date range from filename:
     years_range = [int(date[:4]) for date in time_stamp.split('-')]
     #Check for yearly data
@@ -51,6 +55,8 @@ def find_time_file(pointers,file_expt,semaphores=None):#session,file_expt,path_n
         months_range=range(1,13)
     years_list=range(*years_range)
     years_list.append(years_range[1])
+
+    years_list=[ year for year in years_list if year in years_list_requested]
 
     #Record in the database:
     if file_expt.file_type in ['local_file']:
@@ -63,11 +69,8 @@ def find_time_file(pointers,file_expt,semaphores=None):#session,file_expt,path_n
             file_queryable=remote_data.is_available()
     for year in years_list:
         for month in range(1,13):
-            #if not ( (year==years_range[0] and month<months_range[0]) or
-            #         (year==years_range[1] and month>months_range[1])   ):
-            if ((year>=years_range[0] and year<=years_range[1]) and
-                 (not ( (year==years_range[0] and month<months_range[0]) or
-                     (year==years_range[1] and month>months_range[1])   ))):
+            if not ( (year==years_range[0] and month<months_range[0]) or
+                     (year==years_range[1] and month>months_range[1])   ):
                 #Record checksum of local files:
                 if file_expt.file_type in ['local_file'] and len(file_expt.path.split('|')[1])==0:
                     #Record checksum
