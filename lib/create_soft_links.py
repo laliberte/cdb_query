@@ -36,7 +36,6 @@ class soft_links:
         self.data_node_list=data_node_list
         self.semaphores=semaphores
         self.paths_list=paths_list
-        print paths_list
         self.paths_ordering=self.order_paths_by_preference()
         return
 
