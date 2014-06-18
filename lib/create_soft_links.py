@@ -146,7 +146,7 @@ class soft_links:
         #Include a filter on years: 
         time_desc={}
         years_range=range(*years)
-        years_range.append(years[-1]]
+        years_range.append(years[-1])
         if years[0]<10:
             #This is important for piControl
             years_range=list(np.array(years_range)+np.min([date.year for date in time_axis_unique_date]))
