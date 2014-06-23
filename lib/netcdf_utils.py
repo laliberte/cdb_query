@@ -340,9 +340,9 @@ def apply(options,project_drs):
     if options.script=='': return
     database=cdb_query_archive_class.SimpleTree(options,project_drs)
     #Recover the database meta data:
-    if options.field!=None:
+    if options.keep_field!=None:
         drs_to_eliminate=[field for field in database.drs.official_drs_no_version if
-                                             not field in options.field]
+                                             not field in options.keep_field]
     else:
         drs_to_eliminate=database.drs.official_drs_no_version
     vars_list=[[ var[drs_to_eliminate.index(field)] if field in drs_to_eliminate else None

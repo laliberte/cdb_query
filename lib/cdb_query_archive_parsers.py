@@ -332,7 +332,7 @@ def apply(subparsers,epilog,project_drs):
 
     select_group = parser.add_argument_group('These arguments specify the structure of the output')
     select_group.add_argument('--add_fixed',default=False, action='store_true',help='include fixed variables')
-    select_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.official_drs_no_version,
+    select_group.add_argument('-k','--keep_field',action='append', type=str, choices=project_drs.official_drs_no_version,
                                        help='Keep these fields in the applied file.' )
     proc_group = parser.add_argument_group('These arguments set threading options')
     proc_group.add_argument('--num_procs',
@@ -347,6 +347,8 @@ def apply(subparsers,epilog,project_drs):
     exc_group = parser.add_argument_group('Exclusions')
     excluded_slicing_arguments(exc_group,project_drs,action_type='append')
     comp_group = parser.add_argument_group('Complex Query')
+    comp_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.official_drs_no_version,
+                                       help='Complex queyr fields.' )
     complex_slicing(comp_group,project_drs,action_type='append')
     return
 
