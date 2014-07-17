@@ -84,18 +84,18 @@ class SimpleTree:
             print "cdb_query will now attempt to confirm that these simulations have all the requested variables."
             print "This can take some time. Please abort if there are not enough simulations for your needs."
 
-            if options.num_procs==1:
-                filepath=discover.discover(self,options)
-                try:
-                    os.rename(filepath,filepath.replace('.pid'+str(os.getpid()),''))
-                except OSError:
-                    pass
-            else:
-                manager=multiprocessing.Manager()
-                output=distributed_recovery(discover.discover,self,options,simulations_list,manager)
+            #if options.num_procs==1:
+            #    filepath=discover.discover(self,options)
+            #    try:
+            #        os.rename(filepath,filepath.replace('.pid'+str(os.getpid()),''))
+            #    except OSError:
+            #        pass
+            #else:
+            manager=multiprocessing.Manager()
+            output=distributed_recovery(discover.discover,self,options,simulations_list,manager)
 
-                #Close dataset
-                output.close()
+            #Close dataset
+            output.close()
         return
 
     def validate(self,options):

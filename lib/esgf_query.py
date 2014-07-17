@@ -53,6 +53,9 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
         except socket.error as e:
             print search_path+' is not responding. '+e.strerror
             return []
+        except urllib2.HTTPError as e:
+            print search_path+' is not responding. '+e.strerror
+            return []
     else:
         file_list_remote=[]
         file_list_found=[]
