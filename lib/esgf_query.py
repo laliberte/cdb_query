@@ -6,6 +6,8 @@ from pyesgf.search import SearchConnection
 import multiprocessing as mproc
 import retrieval_utils
 
+import urllib2
+
 def descend_tree(database,search_path,options,list_level=None):
     #Create the database:
     only_list=[]
@@ -52,9 +54,13 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
             return ctx.facet_counts[list_level].keys()
         except socket.error as e:
             print search_path+' is not responding. '+e.strerror
+            print 'This is not fatal. Data broadcast by '+search_path+' will simply NOT be considered.'
             return []
         except urllib2.HTTPError as e:
-            print search_path+' is not responding. '+e.strerror
+            print search_path+' is not responding. '
+            print e
+            print 'This is not fatal. Data broadcast by '+search_path+' will simply NOT be considered.'
+            #print search_path+' is not responding. '+e.strerror
             return []
     else:
         file_list_remote=[]
