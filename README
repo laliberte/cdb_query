@@ -20,4 +20,6 @@ FBL and PJK during this project.
 Version History
 ---------------
 
+1.0.3-rc4: Fixed a minor bug in 'validate' command were a model that should have been excluded was not.
+
 1.0.3-rc2: Optimized the 'ask' command. Optimized the asynchronous processing for 'ask', 'validate' and 'apply'.
