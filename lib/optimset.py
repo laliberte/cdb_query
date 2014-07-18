@@ -118,7 +118,6 @@ def find_model_list(diagnostic,project_drs,model_list,experiment):
         for month in get_diag_months_list(diagnostic):
             time_list.append(str(year).zfill(4)+str(month).zfill(2))
 
-    #Remove the fixed variables manually:
     model_list_var=copy.copy(model_list)
 
     for model in model_list_var:
@@ -195,12 +194,6 @@ def intersection(database,options):
                                 simulation[database.drs.simulations_desc.index('ensemble')]!='r0i0p0']
     model_list=copy.copy(simulations_list_no_fx)
 
-    ##min_time=dict()
-    #    #print experiment,model_list
-    #for experiment in database.header['experiment_list'].keys():
-    #    #model_list, min_time = find_model_list(database,database.drs,model_list,experiment,min_time)
-    #    model_list = find_model_list(database,database.drs,model_list,experiment)
-
     if not 'experiment' in database.drs.simulations_desc:
         for experiment in database.header['experiment_list'].keys():
             model_list = find_model_list(database,database.drs,model_list,experiment)
@@ -215,13 +208,29 @@ def intersection(database,options):
         variable_list_requested.append((var_name,)+tuple(database.header['variable_list'][var_name]))
 
     #Step three: find the models to remove:
-    simulations_desc_indices_without_ensemble=range(0,len(database.drs.simulations_desc))
-    simulations_desc_indices_without_ensemble.remove(database.drs.simulations_desc.index('ensemble'))
     models_to_remove=set(simulations_list_no_fx).difference(model_list_combined)
 
     #Step four: remove from database:
     for model in models_to_remove:
-        conditions=[ getattr(nc_Database.File_Expt,field)==model[field_id] for field_id, field in enumerate(itemgetter(*simulations_desc_indices_without_ensemble)(database.drs.simulations_desc))]
+        conditions=[getattr(nc_Database.File_Expt,field)==model[field_id] for field_id, field in enumerate(database.drs.simulations_desc)]
         database.nc_Database.session.query(nc_Database.File_Expt).filter(*conditions).delete()
-                
+    
+    #Remove fixed variables:
+    simulations_list=database.nc_Database.simulations_list()
+    simulations_list_no_fx=[simulation for simulation in simulations_list if 
+                                simulation[database.drs.simulations_desc.index('ensemble')]!='r0i0p0']
+    models_to_remove=set(
+                        [remove_ensemble(simulation,database.drs) for simulation in simulations_list]
+                         ).difference([remove_ensemble(simulation,database.drs) for simulation in simulations_list_no_fx])
+
+    for model in models_to_remove:
+        conditions=[ getattr(nc_Database.File_Expt,field)==model[field_id] for field_id, field in enumerate(remove_ensemble(database.drs.simulations_desc,database.drs))]
+        database.nc_Database.session.query(nc_Database.File_Expt).filter(*conditions).delete()
+
     return 
+
+def remove_ensemble(simulation,project_drs):
+    simulations_desc_indices_without_ensemble=range(0,len(project_drs.simulations_desc))
+    simulations_desc_indices_without_ensemble.remove(project_drs.simulations_desc.index('ensemble'))
+    return itemgetter(*simulations_desc_indices_without_ensemble)(simulation)
+
