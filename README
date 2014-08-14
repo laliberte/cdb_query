@@ -17,8 +17,15 @@ Univerity of Toronto, 2014
 The Natural Sciences and Engineering Research Council of Canada (NSERC/CRSNG) funded 
 FBL and PJK during this project.
 
+
+If using this code to retrieve and process data from the ESGF please cite:
+Efficient, robust and timely analysis of Earth System Models: a database-query approach
+F. Laliberté, Juckes, M., Denvil, S., Kushner, P. J., Bull. Amer. Meteor. Soc., Submitted.
+
 Version History
 ---------------
+
+1.0.3: Minor changes to help.
 
 1.0.3-rc4: Fixed a minor bug in 'validate' command were a model that should have been excluded was not.
 

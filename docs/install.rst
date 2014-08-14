@@ -44,15 +44,18 @@ actions a user should take is
    When registering, you will create a `password` and `username`. You will then receive an `openid`.
 
 2. You will receive an email that tells you to go to http://badc.nerc.ac.uk/mybadc. Follow this link. Login using your `username` and `password`.
+   Your `openid` will be listed here.
 
-3. Then go to http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__DE_dcaa78b2-4008-11e0-88c9-00e081470265. Read the `Applying for Access` section.
+3. Then go to https://esgf-data1.ceda.ac.uk/esg-orp/home.htm and login with your `openid` using your `password`.
+
+4. Then go to http://badc.nerc.ac.uk/view/badc.nerc.ac.uk__ATOM__DE_dcaa78b2-4008-11e0-88c9-00e081470265. Read the `Applying for Access` section.
    Step 2 ensures that the first step in the `Applying for Access` has been accomplished. The second step is to follow the registration link 
    (https://esgf-data1.ceda.ac.uk/esg-orp/registration-request.htm?resource=http%3A%2F%2Fesgf-data1.ceda.ac.uk%2Fthredds%2FfileServer%2Fesg_testroot%2Fregister%2Fcmip5_research.nc).
    Your browser will likely ask you to trust some certificates. CLICK `ALWAYS ALLOW` If you don't do this, it won't work.
 
-4. Register for `CMIP5 Research`. Do not download data.
+5. Register for `CMIP5 Research`. Do not download data.
 
-5. Copy and paste each of the following links (one after the other) into a browser. You will then be prompted to enter your `openid` followed by
+6. Copy and paste each of the following links (one after the other) into a browser. You will then be prompted to enter your `openid` followed by
    your `password`. You should then be asked to register for a user group. Most users will choose `CMIP5 Research`. Once, you've selected a
    user group, a file should start downloading. You can stop the transfer and repeat these steps for the next link::
 
@@ -65,13 +68,13 @@ actions a user should take is
        http://bmbf-ipcc-ar5.dkrz.de/thredds/fileServer/cmip5/output1/MPI-M/MPI-ESM-MR/rcp45/day/atmos/day/r2i1p1/v20120628/ta/ta_day_MPI-ESM-MR_rcp45_r2i1p1_21000101-21001231.nc
        http://esg.cnrm-game-meteo.fr/thredds/fileServer/esg_dataroot1/CMIP5/output1/CNRM-CERFACS/CNRM-CM5/rcp45/day/atmos/day/r1i1p1/v20121001/ta/ta_day_CNRM-CM5_rcp45_r1i1p1_20960101-21001231.nc
 
-6. Run the following command::
+7. Run the following command::
 
         $ cdb_query_CMIP5 certificates username password registering_service
 
    where the ``registering_service`` is ``badc``.
 
-7. Edit your ``.bash_profile``. Add these two lines to your ``.bash_profile``::
+8. Edit your ``.bash_profile``. Add these two lines to your ``.bash_profile``::
 
     export X509_CERT_DIR=$HOME/.esg4/certificates
     export X509_USER_PROXY=$HOME/.esg4/credentials.pem

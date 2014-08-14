@@ -29,6 +29,7 @@ def main(project):
     import textwrap
 
     #Option parser
+    version_num='1.0.3'
     description=textwrap.dedent('''\
     This script queries a {0} archive. It can query:
     1. a local POSIX-based archive that follows the {0} DRS
@@ -36,8 +37,11 @@ def main(project):
     2. the ESGF {0} archive.
 
     '''.format(project))
-    epilog='Frederic Laliberte, Paul Kushner 07/2014'
-    version_num='1.0.3-rc4'
+    epilog='Version {0}: Frederic Laliberte, Paul Kushner 08/2014\n\
+\n\
+If using this code to retrieve and process data from the ESGF please cite:\n\n\
+Efficient, robust and timely analysis of Earth System Models: a database-query approach (2014):\n\
+F. Laliberté, Juckes, M., Denvil, S., Kushner, P. J., Bull. Amer. Meteor. Soc., Submitted.'.format(version_num)
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
                             description=description,
                             version='%(prog)s '+version_num,
