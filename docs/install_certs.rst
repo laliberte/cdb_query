@@ -76,3 +76,16 @@ In your root directory, create the file ``.dodsrc`` and paste these line into it
     # PROXY_SERVER=[http://][username:password@]host[:port]
     # NO_PROXY_FOR=<host|domain>
     # AIS_DATABASE=<file or url>
+    CURL.VERBOSE=0
+    CURL.COOKIEJAR=.dods_cookies
+    CURL.SSL.VALIDATE=1
+    CURL.SSL.CERTIFICATE=/home/laliberte/.esg/credentials.pem
+    CURL.SSL.KEY=/home/laliberte/.esg/credentials.pem
+    CURL.SSL.CAPATH=/home/laliberte/.esg/certificates
+
+    HTTP.VERBOSE=0
+    HTTP.COOKIEJAR=.dods_cookies
+    HTTP.SSL.VALIDATE=1
+    HTTP.SSL.CERTIFICATE=/home/laliberte/.esg/credentials.pem
+    HTTP.SSL.KEY=/home/laliberte/.esg/credentials.pem
+    HTTP.SSL.CAPATH=/home/laliberte/.esg/certificates

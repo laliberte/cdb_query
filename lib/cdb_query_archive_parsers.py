@@ -67,28 +67,6 @@ def generate_subparsers(parser,epilog,project_drs):
     certificates(subparsers,epilog,project_drs)
     return
 
-#def quick_ask(subparsers,epilog,project_drs):
-#    #Find data
-#    epilog_ask=epilog
-#    parser=subparsers.add_parser('quick_ask',
-#                                           description=textwrap.dedent(
-#                                                '''
-#                                                 Returns a list of simulations that COULD satisfy the query.
-#                                                 Note using \'ask\' might significantly reduce this list.
-#                                                 
-#                                                 This function should NOT require appropriate certificates
-#                                                 to function properly. If it fails it is possible the servers are down.'''),
-#                                           epilog=epilog_ask
-#                                         )
-#    input_arguments_json(parser)
-#    parser.add_argument('--distrib',
-#                                 default=False, action='store_true',
-#                                 help='Distribute the search. Will likely result in a pointers originating from one node.')
-#    proc_group = parser.add_argument_group('These arguments set threading options')
-#    inc_group = parser.add_argument_group('Inclusions')
-#    slicing_arguments(inc_group,project_drs)
-#    return parser
-
 def ask(subparsers,epilog,project_drs):
     #Find data
     epilog_ask=epilog
@@ -177,6 +155,7 @@ def validate(subparsers,epilog,project_drs):
                                  help='When this option is activated, queried experiments are assumed to be related.\n\
                                        In this situation, cdb_query will discard ({0}) tuples that do not have variables for\n\
                                        ALL of the requested experiments'.format(','.join(project_drs.simulations_desc)))
+
     input_arguments(parser)
     output_arguments(parser)
     proc_group = parser.add_argument_group('These arguments set threading options')

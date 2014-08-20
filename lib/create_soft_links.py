@@ -200,12 +200,22 @@ class soft_links:
         indices[0]='path'
         indices[1]='time'
 
+        #Create main variable:
         var_out = output_grp.createVariable(var,np.uint32,('time','indices'),zlib=False,fill_value=np.iinfo(np.uint32).max)
-
         #Create soft links:
         for time_id, time in enumerate(self.time_axis_unique):
             var_out[time_id,0]=np.min(self.paths_indices[time==self.time_axis])
             var_out[time_id,1]=self.table['indices'][np.logical_and(self.paths_indices==var_out[time_id,0],time==self.time_axis)][0]
+
+        #Create support variables:
+        for other_var in data.variables.keys():
+            if ( ('time' in data.variables[other_var].dimensions) and 
+                 (not other_var in output.variables.keys()) ):
+                var_out = output_grp.createVariable(other_var,np.uint32,('time','indices'),zlib=False,fill_value=np.iinfo(np.uint32).max)
+                #Create soft links:
+                for time_id, time in enumerate(self.time_axis_unique):
+                    var_out[time_id,0]=np.min(self.paths_indices[time==self.time_axis])
+                    var_out[time_id,1]=self.table['indices'][np.logical_and(self.paths_indices==var_out[time_id,0],time==self.time_axis)][0]
         return
 
 
