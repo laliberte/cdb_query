@@ -68,6 +68,9 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
             print 'This is not fatal. Data broadcast by '+search_path+' will simply NOT be considered.'
             #print search_path+' is not responding. '+e.strerror
             return []
+        except KeyError as e:
+            #list_level is not available. Happens when nodes are not configured to handle data from the MIP.
+            return []
     else:
         file_list_remote=[]
         file_list_found=[]
