@@ -185,9 +185,7 @@ class soft_links:
         return
 
     def record_indices(self,output,data,var):
-        netcdf_utils.replicate_netcdf_var(output,data,var,chunksize=-1,zlib=True)
-        #netcdf_utils.replicate_netcdf_var(output,data,var)
-
+        #Create descriptive vars:
         for other_var in data.variables.keys():
             if ( (not 'time' in data.variables[other_var].dimensions) and 
                  (not other_var in output.variables.keys()) ):
@@ -201,6 +199,7 @@ class soft_links:
         indices[1]='time'
 
         #Create main variable:
+        netcdf_utils.replicate_netcdf_var(output,data,var,chunksize=-1,zlib=True)
         var_out = output_grp.createVariable(var,np.uint32,('time','indices'),zlib=False,fill_value=np.iinfo(np.uint32).max)
         #Create soft links:
         for time_id, time in enumerate(self.time_axis_unique):
@@ -209,8 +208,9 @@ class soft_links:
 
         #Create support variables:
         for other_var in data.variables.keys():
-            if ( ('time' in data.variables[other_var].dimensions) and 
+            if ( ('time' in data.variables[other_var].dimensions) and (other_var!=var) and
                  (not other_var in output.variables.keys()) ):
+                netcdf_utils.replicate_netcdf_var(output,data,other_var,chunksize=-1,zlib=True)
                 var_out = output_grp.createVariable(other_var,np.uint32,('time','indices'),zlib=False,fill_value=np.iinfo(np.uint32).max)
                 #Create soft links:
                 for time_id, time in enumerate(self.time_axis_unique):

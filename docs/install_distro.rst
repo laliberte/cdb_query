@@ -12,15 +12,32 @@ It is free for academic use and includes almost all of the prerequisite for `cdb
 To install it, go to https://store.continuum.io/cshop/anaconda/, choose your operating system
 and follow their instructions. `cdb_query` has only been tested on linux machines. 
 
-On linux, once the installation is complete and if you have used the default installation directories,
-you should activate the distribution::
+- If you have installed the full distribution and if you have used the default installation directories,
+  you should activate the distribution::
 
     $ source $HOME/anaconda/bin/activate $HOME/anaconda
 
-Once it is activated, you have to install netCDF4. This is accomplished through their installation
-application::
+  Recent changes to the distribution have broken some cross linking in the necessary libraries. To
+  prevent these changes from affecting `cdb_query`, revert to version 2.0.1 of Anaconda::
 
-    $ conda install netcdf4
+    $ conda install anaconda=2.0.1
+
+  Once this is done, you have to install netCDF4. This is accomplished through their installation
+  application::
+
+    $ conda install --no-deps libnetcdf=4.2.1.1 netcdf4=1.0.8
+
+- If you have installed the lightweigth Miniconda distribution and you have used the default installation directories,
+  you should activate the distribution::
+
+    $ source $HOME/miniconda/bin/activate $HOME/miniconda
+
+  Once this is done, you have to install netCDF4. This is accomplished through their installation
+  application::
+
+    $ conda install --no-deps curl=7.30.0 h5py=2.3.0 hdf5=1.8.9 jinja2=2.7.3 libnetcdf=4.2.1.1 markupsafe=0.23 netcdf4=1.0.8 numpy=1.8.2 pip=1.5.6 setuptools=5.7 sqlalchemy=0.9.7
+
+.. warning:: Do not use `conda` to install other packages BEFORE you have made sure that `cdb_query` is working properly.
 
 ..
     Canopy Enthought Python Distribution

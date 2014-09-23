@@ -85,9 +85,9 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
 
     def is_available(self):
         try:
-            devnull = open(os.devnull, 'w')
-            with RedirectStdStreams(stdout=devnull, stderr=devnull):
-                self.open_with_error()
+            #devnull = open(os.devnull, 'w')
+            #with RedirectStdStreams(stdout=devnull, stderr=devnull):
+            self.open_with_error()
             self.close()
             return True
         except dodsError as e:

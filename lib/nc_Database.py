@@ -75,7 +75,7 @@ class nc_Database:
         self.close_nc_file()
 
         #Allow complex queries:
-        if 'field' in dir(options) and options.field!=[]:
+        if ('field' in dir(options) and options.field!=[] and options.field!=None):
             if ( 'complex_query' in dir(options) and options.complex_query!=[] or
                  'Xcomplex_query' in dir(options) and options.Xcomplex_query!=[]  ):
                 list_query=self.list_fields(options.field)
