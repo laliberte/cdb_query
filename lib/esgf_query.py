@@ -7,6 +7,7 @@ import multiprocessing as mproc
 import retrieval_utils
 
 import urllib2
+import httplib
 
 def descend_tree(database,search_path,options,list_level=None):
     #Create the database:
@@ -31,10 +32,10 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
                         experiment=experiment)
     ctx=ctx.constrain(**{field:var_desc[field_id] for field_id, field in enumerate(nc_Database.drs.var_specs)})
 
-    
     for field in nc_Database.drs.slicing_args:
         if field in dir(options) and getattr(options,field)!=None:
             ctx=ctx.constrain(**{field:getattr(options,field)})
+
     #if options.model:
     #    ctx=ctx.constrain(model=options.model)
     #if options.institute:
@@ -55,6 +56,8 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
         except socket.error as e:
             print search_path+' is not responding. '+e.strerror
             print 'This is not fatal. Data broadcast by '+search_path+' will simply NOT be considered.'
+            return []
+        except httplib.BadStatusLine as e:
             return []
         except urllib2.HTTPError as e:
             print search_path+' is not responding. '

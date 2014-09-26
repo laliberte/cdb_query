@@ -119,6 +119,7 @@ def find_model_list(diagnostic,project_drs,model_list,experiment):
             time_list.append(str(year).zfill(4)+str(month).zfill(2))
 
     model_list_var=copy.copy(model_list)
+    model_list_copy=copy.copy(model_list)
 
     for model in model_list_var:
         missing_vars=[]
@@ -157,9 +158,8 @@ def find_model_list(diagnostic,project_drs,model_list,experiment):
            else:
                print('_'.join(model)+' excluded because experiment '+experiment+' is missing variables:\n'),
                for item in missing_vars: print(item)
-           model_list.remove(model)
-    #return model_list, min_time
-    return model_list
+           model_list_copy.remove(model)
+    return model_list_copy
 
 def get_diag_months_list(diagnostic):
     if 'months_list' in diagnostic.header.keys():
@@ -199,9 +199,11 @@ def intersection(database,options):
             model_list = find_model_list(database,database.drs,model_list,experiment)
         model_list_combined=model_list
     else:
+        print model_list
         model_list_combined=set().union(*[find_model_list(database,database.drs,model_list,experiment) 
                                            for experiment in database.header['experiment_list'].keys()])
-
+    print model_list
+    
     #Step two: create the new paths dictionary:
     variable_list_requested=[]
     for var_name in database.header['variable_list'].keys():
