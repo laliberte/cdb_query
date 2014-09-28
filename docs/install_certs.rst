@@ -20,7 +20,7 @@ Our experience suggests that the best and easiest way to obtain a
           $ wget --no-check-certificate http://www.globus.org/ftppub/gt5/5.0/5.0.0/installers/src/gt5.0.0-all-source-installer.tar.bz2
           $ tar xvfj gt5.0.0-all-source-installer.tar.bz2
           $ cd gt5.0.0-all-source-installer
-          $ ./configure --prefix=$HOME/local/gt-5.0.0
+          $ ./configure --disable-system-openssl --prefix=$HOME/local/gt-5.0.0
           $ make myproxy
           $ make install myproxy
       
