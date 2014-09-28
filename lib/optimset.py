@@ -199,10 +199,8 @@ def intersection(database,options):
             model_list = find_model_list(database,database.drs,model_list,experiment)
         model_list_combined=model_list
     else:
-        print model_list
         model_list_combined=set().union(*[find_model_list(database,database.drs,model_list,experiment) 
                                            for experiment in database.header['experiment_list'].keys()])
-    print model_list
     
     #Step two: create the new paths dictionary:
     variable_list_requested=[]
