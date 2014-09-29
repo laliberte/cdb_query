@@ -25,6 +25,8 @@ F. Laliberté, Juckes, M., Denvil, S., Kushner, P. J., Bull. Amer. Meteor. Soc.,
 Version History
 ---------------
 
+1.0.4: Fixed handling of CORDEX nodes, fixed validate for more than one experiment.
+
 1.0.3: Minor changes to help.
 
 1.0.3-rc4: Fixed a minor bug in 'validate' command were a model that should have been excluded was not.
