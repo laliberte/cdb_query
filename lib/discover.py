@@ -57,7 +57,10 @@ def discover_database(database,options):
     remote_paths=[search_path for search_path in 
                     database.header['search_list']
                     if not os.path.exists(os.path.abspath(os.path.expanduser(os.path.expandvars(search_path))))]
-    for search_path in remote_paths:
+    remote_paths_copy=copy.copy(remote_paths)
+    import random
+    random.shuffle(remote_paths_copy)
+    for search_path in remote_paths_copy:
         only_list.append(esgf_query.descend_tree(database,search_path,options,list_level=options.list_only_field))
     return [item for sublist in only_list for item in sublist]
 
