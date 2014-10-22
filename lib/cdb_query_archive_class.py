@@ -84,6 +84,9 @@ class SimpleTree:
             print "cdb_query will now attempt to confirm that these simulations have all the requested variables."
             print "This can take some time. Please abort if there are not enough simulations for your needs."
 
+            import random
+            random.shuffle(simulations_list)
+
             #if options.num_procs==1:
             #    filepath=discover.discover(self,options)
             #    try:

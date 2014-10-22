@@ -98,6 +98,7 @@ def replicate_full_netcdf_recursive(output,data,hdf5=None,check_empty=False):
     return
 
 def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=None,add_dim=None,chunksize=None,zlib=None,hdf5=None,check_empty=False):
+
     replicate_netcdf_var(output,data,var_name,datatype=datatype,fill_value=fill_value,add_dim=add_dim,chunksize=chunksize,zlib=zlib)
 
     if len(data.variables[var_name].shape)>0:
@@ -137,6 +138,7 @@ def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=No
                 #output.variables[var_name][:]=data.variables[var_name][:]
                 temp=data.variables[var_name][:]
                 if not 'mask' in dir(temp) or not check_empty:
+                    #print data.variables[var_name].shape,  output.variables[var_name].shape,temp.shape
                     output.variables[var_name][:]=temp
                 else: 
                     #Only write the variable if it is not empty:
