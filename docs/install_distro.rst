@@ -25,7 +25,7 @@ and follow their instructions. `cdb_query` has only been tested on linux machine
   Once this is done, you have to install netCDF4. This is accomplished through their installation
   application::
 
-    $ conda install --no-deps libnetcdf=4.2.1.1 netcdf4=1.0.8
+    $ conda install --no-deps libnetcdf=4.2.1.1 netcdf4=1.0.8 cffi=0.8.6 cryptography=0.5.4
 
 - If you have installed the lightweigth Miniconda distribution and you have used the default installation directories,
   you should activate the distribution::
@@ -35,7 +35,7 @@ and follow their instructions. `cdb_query` has only been tested on linux machine
   Once this is done, you have to install netCDF4. This is accomplished through their installation
   application::
 
-    $ conda install --no-deps curl=7.30.0 h5py=2.3.0 hdf5=1.8.9 jinja2=2.7.3 libnetcdf=4.2.1.1 markupsafe=0.23 netcdf4=1.0.8 numpy=1.8.2 pip=1.5.6 setuptools=5.7 sqlalchemy=0.9.7
+    $ conda install --no-deps curl=7.30.0 h5py=2.3.0 hdf5=1.8.9 jinja2=2.7.3 libnetcdf=4.2.1.1 markupsafe=0.23 netcdf4=1.0.8 numpy=1.8.2 pip=1.5.6 setuptools=5.7 sqlalchemy=0.9.7 cffi=0.8.6 cryptography=0.5.4
 
 .. warning:: Do not use `conda` to install other packages BEFORE you have made sure that `cdb_query` is working properly.
 

@@ -24,7 +24,8 @@ def retrieve_certificates(username,password,registering_service):
 
     gtr = True
     if gtr:
-      cmd = 'curl https://%s/get-trustroots --sslv3 --insecure -w " %%{http_code}" -s -S > .gtr_tmp' % registering_service
+      #cmd = 'curl https://%s/get-trustroots --sslv3 --insecure -w " %%{http_code}" -s -S > .gtr_tmp' % registering_service
+      cmd = 'curl https://%s/get-trustroots --insecure -w " %%{http_code}" -s -S > .gtr_tmp' % registering_service
       print cmd
       rec = os.popen( cmd ).readlines()
     tr = open( '.gtr_tmp' ).readlines()
@@ -51,7 +52,8 @@ def retrieve_certificates(username,password,registering_service):
     sed s/+/%2B/g .cert > .cert_safe
     '''
     os.popen( cmd ).readlines()
-    cmd = 'curl https://%(registering_service)s/logon --sslv3 -u %(username)s:%(password)s --data "certificate_request=`cat .cert_safe`" --cacert %(cfile)s --capath %(esgfdir)s -w " %%{http_code}" -s -S > .cert_tmp' % locals()
+    #cmd = 'curl https://%(registering_service)s/logon --sslv3 -u %(username)s:%(password)s --data "certificate_request=`cat .cert_safe`" --cacert %(cfile)s --capath %(esgfdir)s -w " %%{http_code}" -s -S > .cert_tmp' % locals()
+    cmd = 'curl https://%(registering_service)s/logon -u %(username)s:%(password)s --data "certificate_request=`cat .cert_safe`" --cacert %(cfile)s --capath %(esgfdir)s -w " %%{http_code}" -s -S > .cert_tmp' % locals()
     rec = os.popen( cmd ).readlines()
     cert = open( '.cert_tmp' ).readlines()
     rc = string.strip(cert[-1])
