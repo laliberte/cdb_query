@@ -46,6 +46,18 @@ def find_time_file(pointers,file_expt,semaphores=None):#session,file_expt,path_n
     years_list_requested=range(*years_requested)
     years_list_requested.append(years_requested[1])
 
+    #Flag to check if the time axis is requested as relative:
+    picontrol_min_time=(years_list_requested[0]<=10)
+
+    if file_expt.file_type in ['local_file']:
+        file_available=True
+        file_queryable=True
+    else:
+        file_available = retrieval_utils.check_file_availability(file_expt.path.split('|')[0])
+        if file_available:
+            remote_data=remote_netcdf.remote_netCDF(file_expt.path.split('|')[0].replace('fileServer','dodsC'),semaphores)
+            file_queryable=remote_data.is_available()
+
     #Recover date range from filename:
     years_range = [int(date[:4]) for date in time_stamp.split('-')]
     #Check for yearly data
@@ -56,37 +68,33 @@ def find_time_file(pointers,file_expt,semaphores=None):#session,file_expt,path_n
     years_list=range(*years_range)
     years_list.append(years_range[1])
 
-    years_list=[ year for year in years_list if year in years_list_requested]
+    if not picontrol_min_time: years_list=[ year for year in years_list if year in years_list_requested]
 
     #Record in the database:
-    if file_expt.file_type in ['local_file']:
-        file_available=True
-        file_queryable=True
-    else:
-        file_available = retrieval_utils.check_file_availability(file_expt.path.split('|')[0])
-        if file_available:
-            remote_data=remote_netcdf.remote_netCDF(file_expt.path.split('|')[0].replace('fileServer','dodsC'),semaphores)
-            file_queryable=remote_data.is_available()
     for year in years_list:
         for month in range(1,13):
-            if not ( (year==years_range[0] and month<months_range[0]) or
-                     (year==years_range[1] and month>months_range[1])   ):
-                #Record checksum of local files:
-                if file_expt.file_type in ['local_file'] and len(file_expt.path.split('|')[1])==0:
-                    #Record checksum
-                    file_expt.path+=retrieval_utils.md5_for_file(open(file_expt.path.split('|')[0],'r'))
+            if  ( not ( (year==years_range[0] and month<months_range[0]) or
+                     (year==years_range[1] and month>months_range[1])   ) ):
+                attribute_time(pointers,file_expt,file_available,file_queryable,year,month)
+    return
 
-                if file_available and file_queryable:
-                    #If file is avaible and queryable, keep it:
-                    file_expt_copy = copy.deepcopy(file_expt)
-                    setattr(file_expt_copy,'time',str(year)+str(month).zfill(2))
-                    pointers.session.add(file_expt_copy)
-                    pointers.session.commit()
-                elif file_available:
-                    #If file is avaible but queryable, broadcast it:
-                    print 'Path {0} is available but does not have OPeNDAP services enabled.'.format(file_expt.path)
-                    #Do not broadcast it later:
-                    file_available=False
+def attribute_time(pointers,file_expt,file_available,file_queryable,year,month):
+    #Record checksum of local files:
+    if file_expt.file_type in ['local_file'] and len(file_expt.path.split('|')[1])==0:
+        #Record checksum
+        file_expt.path+=retrieval_utils.md5_for_file(open(file_expt.path.split('|')[0],'r'))
+
+    if file_available and file_queryable:
+        #If file is avaible and queryable, keep it:
+        file_expt_copy = copy.deepcopy(file_expt)
+        setattr(file_expt_copy,'time',str(year).zfill(4)+str(month).zfill(2))
+        pointers.session.add(file_expt_copy)
+        pointers.session.commit()
+    elif file_available:
+        #If file is avaible but queryable, broadcast it:
+        print 'Path {0} is available but does not have OPeNDAP services enabled.'.format(file_expt.path)
+        #Do not broadcast it later:
+        file_available=False
     return
 
 def obtain_time_list(diagnostic,project_drs,var_name,experiment,model):
@@ -104,7 +112,6 @@ def obtain_time_list(diagnostic,project_drs,var_name,experiment,model):
                             ).filter(sqlalchemy.and_(*conditions)).distinct().all()]
     return time_list_var
 
-#def find_model_list(diagnostic,project_drs,model_list,experiment,min_time):
 def find_model_list(diagnostic,project_drs,model_list,experiment):
     period_list = diagnostic.header['experiment_list'][experiment]
     if not isinstance(period_list,list): period_list=[period_list]
@@ -121,9 +128,12 @@ def find_model_list(diagnostic,project_drs,model_list,experiment):
     model_list_var=copy.copy(model_list)
     model_list_copy=copy.copy(model_list)
 
+    #Flag to check if the time axis is requested as relative:
+    picontrol_min_time=(years_list[0]<=10)
+
     for model in model_list_var:
         missing_vars=[]
-        if years_list[0]<=10:
+        if picontrol_min_time:
             #Fix for experiments without a standard time range:
             min_time_list=[]
             for var_name in diagnostic.header['variable_list'].keys():
