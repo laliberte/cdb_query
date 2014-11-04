@@ -439,7 +439,10 @@ def extract_netcdf_variable_recursive(output,data,level_desc,tree,options,check_
                     netcdf_pointers.replicate(output_grp,check_empty=check_empty)
     else:
         if len(tree)>0:
-            extract_netcdf_variable_recursive(output,data.groups[group_name],tree[0],tree[1:],options,check_empty=check_empty)
+            if group_name!='':
+                extract_netcdf_variable_recursive(output,data.groups[group_name],tree[0],tree[1:],options,check_empty=check_empty)
+            else:
+                extract_netcdf_variable_recursive(output,data,tree[0],tree[1:],options,check_empty=check_empty)
         else:
             netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data.groups[group_name])
             netcdf_pointers.replicate(output,check_empty=check_empty)

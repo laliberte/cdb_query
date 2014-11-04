@@ -137,6 +137,7 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
             time_axis=np.array(map(netcdf_utils.convert_to_date_absolute,native_time_axis))
         else:
             try:
+                #Put cmip5_rewrite_time_axis here:
                 time_axis=netCDF4.num2date(native_time_axis,units=units,calendar=calendar)
             except TypeError:
                 time_axis=np.array([]) 

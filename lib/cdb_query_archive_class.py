@@ -126,14 +126,14 @@ class SimpleTree:
             if simulations_list==[]:
                 simulations_list=self.list_fields_local(options,self.drs.simulations_desc)
 
+            #Randomize the list:
+            import random
+            random.shuffle(simulations_list)
+
             #for simulation in simulations_list:
             #    #if simulation[-1]!='r0i0p0':
             #    print '_'.join(simulation)
             #print "Validating"
-
-            #Randomize the list:
-            import random
-            random.shuffle(simulations_list)
 
             manager=multiprocessing.Manager()
             semaphores=dict()
