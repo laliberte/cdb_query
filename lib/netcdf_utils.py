@@ -182,7 +182,8 @@ def replicate_netcdf_var_dimensions(output,data,var):
                 dim_var = output.createVariable(dims,data.variables[dims].dtype,(dims,))
                 dim_var[:] = data.variables[dims][:]
                 output = replicate_netcdf_var(output,data,dims)
-                if 'bounds' in output.variables[dims].ncattrs():
+                if ('bounds' in output.variables[dims].ncattrs() and
+                    output.variables[dims].getncattr('bounds') in data.variables.keys()):
                     output=replicate_netcdf_var(output,data,output.variables[dims].getncattr('bounds'))
                     output.variables[output.variables[dims].getncattr('bounds')][:]=data.variables[output.variables[dims].getncattr('bounds')][:]
             else:
@@ -389,9 +390,11 @@ def apply_to_variable(database,options):
         data=netCDF4.Dataset(file,'r')
         temp_file=file+'.pid'+str(os.getpid())
         output_tmp=netCDF4.Dataset(temp_file,'w',format='NETCDF4',diskless=True,persist=True)
-        extract_netcdf_variable_recursive(output_tmp,data,tree[0],tree[1:],options,check_empty=True)
+        #extract_netcdf_variable_recursive(output_tmp,data,tree[0],tree[1:],options,check_empty=True)
+        extract_netcdf_variable_recursive(output_tmp,data,tree[0],tree[1:],options,check_empty=False)
         if options.add_fixed:
-            extract_netcdf_variable_recursive(output_tmp,data,tree_fx[0],tree_fx[1:],options_fx,check_empty=True)
+            #extract_netcdf_variable_recursive(output_tmp,data,tree_fx[0],tree_fx[1:],options_fx,check_empty=True)
+            extract_netcdf_variable_recursive(output_tmp,data,tree_fx[0],tree_fx[1:],options_fx,check_empty=False)
         temp_files_list.append(temp_file)
         output_tmp.close()
         data.close()

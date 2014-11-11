@@ -191,11 +191,11 @@ class SimpleTree:
                 print 'Using min year {0} for experiment {1}'.format(str(min_year),experiment)
 
         #Start the retrieval workers:
-        #if not ('serial' in dir(options) and options.serial):
-        #    processes=dict()
-        #    for data_node in data_node_list:
-        #        processes[data_node]=multiprocessing.Process(target=worker_retrieve, args=(queues[data_node], queues['end']))
-        #        processes[data_node].start()
+        if not ('serial' in dir(options) and options.serial):
+            processes=dict()
+            for data_node in data_node_list:
+                processes[data_node]=multiprocessing.Process(target=worker_retrieve, args=(queues[data_node], queues['end']))
+                processes[data_node].start()
 
         #Find the data that needs to be recovered:
         self.define_database(options)
@@ -380,13 +380,13 @@ def launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_f
                 progress_report(retrieval_function,output,tuple,queues,queues_size,data_node_list,start_time)
         
     else:
-        #for data_node in data_node_list:
-        #    queues[data_node].put('STOP')
-        processes=dict()
         for data_node in data_node_list:
             queues[data_node].put('STOP')
-            processes[data_node]=multiprocessing.Process(target=worker_retrieve, args=(queues[data_node], queues['end']))
-            processes[data_node].start()
+        #processes=dict()
+        #for data_node in data_node_list:
+        #    queues[data_node].put('STOP')
+        #    processes[data_node]=multiprocessing.Process(target=worker_retrieve, args=(queues[data_node], queues['end']))
+        #    processes[data_node].start()
 
         for data_node in data_node_list:
             for tuple in iter(queues['end'].get, 'STOP'):
