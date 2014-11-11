@@ -200,14 +200,14 @@ def download(subparsers,epilog,project_drs):
 
     inc_group = parser.add_argument_group('Inclusions')
     inc_group.add_argument('--year',
-                                 default=None, type=int, nargs='*',
-                                 help='Retrieve only this year.')
+                                 default=None, type=int_list,
+                                 help='Retrieve only these comma-separated years.')
     inc_group.add_argument('--month',
-                                 default=None, type=int, nargs='*',
-                                 help='Retrieve only this month (1 to 12).')
+                                 default=None, type=int_list,
+                                 help='Retrieve only these comma-separated months (1 to 12).')
     inc_group.add_argument('--day',
-                                 default=None, type=int, nargs='*',
-                                 help='Retrieve only this calendar day.')
+                                 default=None, type=int_list,
+                                 help='Retrieve only these comma-separated calendar days.')
     #slicing_arguments(inc_group,project_drs)
     #exc_group = parser.add_argument_group('Exclusions')
     #excluded_slicing_arguments(exc_group,project_drs)
@@ -250,14 +250,14 @@ def download_raw(subparsers,epilog,project_drs):
 
     inc_group = parser.add_argument_group('Inclusions')
     inc_group.add_argument('--year',
-                                 default=None, type=int, nargs='*',
-                                 help='Retrieve only this year.')
+                                 default=None, type=int_list,
+                                 help='Retrieve only these comma-separated years.')
     inc_group.add_argument('--month',
-                                 default=None, type=int, nargs='*',
-                                 help='Retrieve only this month (1 to 12).')
+                                 default=None, type=int_list,
+                                 help='Retrieve only these comma-separated months (1 to 12).')
     inc_group.add_argument('--day',
-                                 default=None, type=int, nargs='*',
-                                 help='Retrieve only this calendar day.')
+                                 default=None, type=int_list,
+                                 help='Retrieve only these comma-separated calendar days.')
     #slicing_arguments(inc_group,project_drs)
     #exc_group = parser.add_argument_group('Exclusions')
     #excluded_slicing_arguments(exc_group,project_drs)
@@ -342,4 +342,6 @@ def certificates(subparsers,epilog,project_drs):
     parser.add_argument('registering_service',help="Registering service",choices=['badc','jpl'])
     return
 
+def int_list(input):
+    return [ int(item) for item in input.split(',')]
     
