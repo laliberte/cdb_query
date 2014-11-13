@@ -29,7 +29,7 @@ def main(project):
     import textwrap
 
     #Option parser
-    version_num='1.0.5-rc1'
+    version_num='1.0.5-rc2'
     description=textwrap.dedent('''\
     This script queries a {0} archive. It can query:
     1. a local POSIX-based archive that follows the {0} DRS
@@ -74,7 +74,8 @@ F. Laliberté, Juckes, M., Denvil, S., Kushner, P. J., Bull. Amer. Meteor. Soc.,
     elif options.command=='convert':
         netcdf_utils.convert(options,project_drs)
     elif options.command=='certificates':
-        certificates.retrieve_certificates(options.username,options.password,options.registering_service)
+        #certificates.retrieve_certificates(options.username,options.password,options.registering_service)
+        certificates.retrieve_certificates(options.username,options.registering_service)
         #certificates.test_certificates()
     elif 'in_diagnostic_headers_file' in dir(options):
         paths_dict=cdb_query_archive_class.SimpleTree(options,project_drs)

@@ -14,7 +14,7 @@ from setuptools import setup, find_packages
 package_name='cdb_query'
 setup(
        name = package_name,
-       version = "1.0.5-rc1",
+       version = "1.0.5-rc2",
        packages=[package_name],
        package_dir = {package_name: 'lib'},
 #
@@ -39,6 +39,7 @@ setup(
         install_requires = ['numpy','h5py','netCDF4','sqlalchemy','esgf-pyclient'],
         zip_safe=False,
         # other arguments here...
+        #package_data = {package_name : ['lib/*.sh']},
         entry_points = {
                   'console_scripts': [
                            'cdb_query_CMIP5 = '+package_name+'.cdb_query_archive:main_CMIP5',

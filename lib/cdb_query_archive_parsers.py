@@ -338,7 +338,7 @@ def certificates(subparsers,epilog,project_drs):
                                            epilog=epilog_certificates
                                          )
     parser.add_argument('username',help="Username")
-    parser.add_argument('password',help="Password")
+    #parser.add_argument('password',help="Password")
     parser.add_argument('registering_service',help="Registering service",choices=['badc','jpl'])
     return
 
