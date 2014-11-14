@@ -69,7 +69,7 @@ actions a user should take is
 
 7. Run the following command::
 
-        $ cdb_query_CMIP5 certificates username password registering_service
+        $ cdb_query_CMIP5 certificates username registering_service
 
    where the ``registering_service`` is ``badc``.
 

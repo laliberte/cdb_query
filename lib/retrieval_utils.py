@@ -183,7 +183,11 @@ def retrieve_path_data(in_dict,pointer_var):
             indices[dim], unsort_indices[dim] = indices_utils.prepare_indices(
                                                             indices_utils.get_indices_from_dim(remote_dim,indices[dim]))
         
-    retrieved_data=grab_remote_indices(remote_data.Dataset.variables[var],indices,unsort_indices)
+    try: 
+        retrieved_data=grab_remote_indices(remote_data.Dataset.variables[var],indices,unsort_indices)
+    except: 
+        print path, indices, unsort_indices
+        raise
     remote_data.close()
     return (retrieved_data, sort_table,pointer_var+[var])
 
@@ -215,6 +219,10 @@ def retrieve_slice(variable,indices,unsort_indices,dim,dimensions,dim_id,getitem
                                                  indices[dim]),
                               axis=dim_id),unsort_indices[dim],axis=dim_id)
     else:
-        return np.take(np.concatenate(map(lambda x: variable.__getitem__(getitem_tuple+(x,)),
-                                                 indices[dim]),
-                              axis=dim_id),unsort_indices[dim],axis=dim_id)
+        try :
+            return np.take(np.concatenate(map(lambda x: variable.__getitem__(getitem_tuple+(x,)),
+                                                     indices[dim]),
+                                  axis=dim_id),unsort_indices[dim],axis=dim_id)
+        except:
+            print [ getitem_tuple+(x,) for x in indices[dim]],dim_id,unsort_indices[dim]
+            raise
