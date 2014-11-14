@@ -108,6 +108,9 @@ def retrieve_path(in_dict,pointer_var):
     dest_name=out_destination.replace('tree','/'.join(pointer_var[:-1]))
     dest_name=dest_name.replace('var',var)
     dest_name=dest_name.replace('version',version)
+    #Do not retrieve aux variables:
+    if pointer_var[-1]!=var:
+        return
 
     decomposition=path.split('|')
     if not (isinstance(decomposition,list) and len(decomposition)>1):
