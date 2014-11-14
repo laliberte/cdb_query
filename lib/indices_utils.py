@@ -39,9 +39,9 @@ def prepare_indices(indices):
     unsort_indices=np.argsort(sort_indices)
 
     #always retrieve the first index (bug in netCDF4 python):
-    if not 0 in indices:
-        indices=np.insert(indices[sort_indices],0,0,axis=0)
-        unsort_indices+=1
+    #if not 0 in indices:
+    #    indices=np.insert(indices[sort_indices],0,0,axis=0)
+    #    unsort_indices+=1
 
     #Finally, convert the indices to slices:
     indices=convert_indices_to_slices(indices)

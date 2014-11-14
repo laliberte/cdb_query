@@ -182,12 +182,12 @@ def retrieve_path_data(in_dict,pointer_var):
                 remote_dim = np.arange(len(remote_data.Dataset.dimensions[dim]))
             indices[dim], unsort_indices[dim] = indices_utils.prepare_indices(
                                                             indices_utils.get_indices_from_dim(remote_dim,indices[dim]))
-        
-    try: 
+    
+    try:
         retrieved_data=grab_remote_indices(remote_data.Dataset.variables[var],indices,unsort_indices)
-    except: 
-        print path, indices, unsort_indices
-        raise
+    except RuntimeError:
+        retrieved_data=grab_remote_indices_pedantic(remote_data.Dataset.variables[var],indices,unsort_indices)
+
     remote_data.close()
     return (retrieved_data, sort_table,pointer_var+[var])
 
@@ -219,10 +219,44 @@ def retrieve_slice(variable,indices,unsort_indices,dim,dimensions,dim_id,getitem
                                                  indices[dim]),
                               axis=dim_id),unsort_indices[dim],axis=dim_id)
     else:
-        try :
-            return np.take(np.concatenate(map(lambda x: variable.__getitem__(getitem_tuple+(x,)),
-                                                     indices[dim]),
-                                  axis=dim_id),unsort_indices[dim],axis=dim_id)
-        except:
-            print [ getitem_tuple+(x,) for x in indices[dim]],dim_id,unsort_indices[dim]
-            raise
+        return np.take(np.concatenate(map(lambda x: variable.__getitem__(getitem_tuple+(x,)),
+                                                 indices[dim]),
+                              axis=dim_id),unsort_indices[dim],axis=dim_id)
+
+def grab_remote_indices_pedantic(variable,indices,unsort_indices):
+    dimensions=variable.dimensions
+    return retrieve_slice_pedantic(variable,indices,unsort_indices,dimensions[0],dimensions[1:],0)
+
+def retrieve_slice_pedantic(variable,indices,unsort_indices,dim,dimensions,dim_id,getitem_tuple=tuple()):
+    if len(dimensions)>0:
+        return np.take(np.concatenate(map(lambda x: 
+                                                 remove_zero_if_added(
+                                                 retrieve_slice_pedantic(variable,
+                                                 indices,
+                                                 unsort_indices,
+                                                 dimensions[0],
+                                                 dimensions[1:],
+                                                 dim_id+1,
+                                                 getitem_tuple=getitem_tuple+(ensure_zero(x),)),
+                                                 x,dim_id),
+                                                 indices[dim]),
+                              axis=dim_id),unsort_indices[dim],axis=dim_id)
+    else:
+        return np.take(np.concatenate(map(lambda x: remove_zero_if_added(
+                                            variable.__getitem__(getitem_tuple+(ensure_zero(x),)),
+                                            x,dim_id),
+                                                 indices[dim]),
+                              axis=dim_id),unsort_indices[dim],axis=dim_id)
+
+def ensure_zero(indices):
+    if indices.start > 0:
+        return [0,]+range(0,indices.stop)[indices]
+    else:
+        return indices
+
+def remove_zero_if_added(arr,indices,dim_id):
+    if indices.start > 0:
+        return np.take(arr,range(1,arr.shape[dim_id]),axis=dim_id)
+    else:
+        return arr
+
