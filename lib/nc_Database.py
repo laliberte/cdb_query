@@ -307,6 +307,7 @@ def retrieve_tree_recursive(options,data,output,queues,retrieval_function):
                     #output_fx.variables[var][:]=data.variables[var][:]
                     output_fx=netcdf_utils.replicate_and_copy_variable(output,data,var,chunksize=-1,zlib=True)
                 output_fx.sync()
+            
     return
 
 def retrieve_tree_recursive_check_not_empty(options,data):

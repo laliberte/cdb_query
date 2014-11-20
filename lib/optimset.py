@@ -57,6 +57,8 @@ def find_time_file(pointers,file_expt,semaphores=None):#session,file_expt,path_n
         if file_available:
             remote_data=remote_netcdf.remote_netCDF(file_expt.path.split('|')[0].replace('fileServer','dodsC'),semaphores)
             file_queryable=remote_data.is_available()
+        else:
+            file_queryable=False
 
     #Recover date range from filename:
     years_range = [int(date[:4]) for date in time_stamp.split('-')]
