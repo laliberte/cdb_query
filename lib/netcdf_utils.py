@@ -231,6 +231,7 @@ def replicate_netcdf_var(output,data,var,datatype=None,fill_value=None,add_dim=N
         else:
             if data.variables[var].chunking()=='contiguous':
                 kwargs['contiguous']=True
+                kwargs['zlib']=False
             else:
                 kwargs['chunksizes']=data.variables[var].chunking()
         output.createVariable(var,datatype,dimensions,**kwargs)

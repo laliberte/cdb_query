@@ -7,10 +7,6 @@ def input_arguments_json(parser):
     parser.add_argument('in_diagnostic_headers_file',
                                  help='Diagnostic headers file (input)')
     return
-def output_arguments_json(parser):
-    parser.add_argument('out_diagnostic_headers_file',
-                                 help='Diagnostic headers file (output)')
-    return
 
 def input_arguments(parser):
     parser.add_argument('in_diagnostic_netcdf_file',
@@ -158,6 +154,8 @@ def validate(subparsers,epilog,project_drs):
 
     input_arguments(parser)
     output_arguments(parser)
+    parser.add_argument('--in_diagnostic_headers_file',
+                                 help='Alternative diagnostic headers file (to modify target validate)',type=str,default=None)
     proc_group = parser.add_argument_group('These arguments set threading options')
     proc_group.add_argument('--num_procs',
                                  default=1, type=int,#choices=xrange(1,6),

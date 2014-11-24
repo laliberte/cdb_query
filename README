@@ -25,6 +25,8 @@ F. Laliberté, Juckes, M., Denvil, S., Kushner, P. J., Bull. Amer. Meteor. Soc.,
 Version History
 ---------------
 
+1.0.6: Major fixes to validate. Fixes to download_raw.
+
 1.0.5: Fixed the certificates manager for the POODLE bug. Fixed the handling of piControl experiments.
 
 1.0.4: Fixed handling of CORDEX nodes, fixed validate for more than one experiment.

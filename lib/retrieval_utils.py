@@ -168,6 +168,8 @@ def find_local_file(source_dir,data):
     return new_paths_list, new_file_type_list
 
 def retrieve_path_data(in_dict,pointer_var):
+    #print 'Recovering '+'/'.join(self.tree)
+
     path=in_dict['path'].replace('fileServer','dodsC').split('|')[0]
     var=in_dict['var']
     indices=copy.copy(in_dict['indices'])

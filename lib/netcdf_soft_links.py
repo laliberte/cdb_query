@@ -70,7 +70,7 @@ class create_netCDF_pointers:
                 #netcdf_utils.replicate_netcdf_var(output,remote_data.Dataset,var_name)
                 #output.variables[var_name][:]=remote_data.Dataset.variables[var_name][:]
             output.sync()
-        except dodsError as e:
+        except remote_netcdf.dodsError as e:
             e_mod=" This is an uncommon error. It is likely to be FATAL."
             print e.value+e_mod
         remote_data.close()
@@ -261,7 +261,9 @@ class read_netCDF_pointers:
                 data_node=retrieval_utils.get_data_node(path_to_retrieve,file_type)
                 if nc_Database.is_level_name_included_and_not_excluded('data_node',self,data_node):
                     if data_node in self.queues.keys():
-                        print 'Recovering '+'/'.join(self.tree)
+                        if var_to_retrieve==self.tree[-1]:
+                            #print 'Recovering '+var_to_retrieve+' in '+path_to_retrieve
+                            print 'Recovering '+'/'.join(self.tree)
                         self.queues[data_node].put((retrieval_function,)+copy.deepcopy(args))
                     else:
                         if (isinstance(output,netCDF4.Dataset) or

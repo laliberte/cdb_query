@@ -103,6 +103,7 @@ class SimpleTree:
 
     def validate(self,options):
         self.load_header(options)
+        print self.header
         #if options.data_nodes!=None:
         #    self.header['data_node_list']=options.data_nodes
 
@@ -191,11 +192,11 @@ class SimpleTree:
                 print 'Using min year {0} for experiment {1}'.format(str(min_year),experiment)
 
         #Start the retrieval workers:
-        #if not ('serial' in dir(options) and options.serial):
-        #    processes=dict()
-        #    for data_node in data_node_list:
-        #        processes[data_node]=multiprocessing.Process(target=worker_retrieve, args=(queues[data_node], queues['end']))
-        #        processes[data_node].start()
+        if not ('serial' in dir(options) and options.serial):
+            processes=dict()
+            for data_node in data_node_list:
+                processes[data_node]=multiprocessing.Process(target=worker_retrieve, args=(queues[data_node], queues['end']))
+                processes[data_node].start()
 
         #Find the data that needs to be recovered:
         self.define_database(options)
@@ -256,9 +257,16 @@ class SimpleTree:
         return
 
     def load_header(self,options):
-        self.define_database(options)
-        self.header=self.nc_Database.load_header()
-        self.close_database()
+        if ('in_dianostic_headers_file' in dir(options) and 
+           options.in_diagnostic_headers_file!=None):
+            try:
+                self.header=json.load(open(options.in_diagnostic_headers_file,'r'))['header']
+            except ValueError as e:
+                print 'The input diagnostic file '+options.in_diagnostic_headers_file+' does not conform to JSON standard. Make sure to check its syntax'
+        else:
+            self.define_database(options)
+            self.header=self.nc_Database.load_header()
+            self.close_database()
         return
 
     def record_header(self,options,output):
@@ -363,7 +371,7 @@ def launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_f
     #Second step: Process the queues:
     #print datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     start_time = datetime.datetime.now()
-    print('Retrieving from data nodes:')
+    print('Remaining retrieval from data nodes:')
     queues_size=dict()
     for data_node in data_node_list:
         queues_size[data_node]=queues[data_node].qsize()
@@ -380,13 +388,13 @@ def launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_f
                 progress_report(retrieval_function,output,tuple,queues,queues_size,data_node_list,start_time)
         
     else:
-        #for data_node in data_node_list:
-        #    queues[data_node].put('STOP')
-        processes=dict()
         for data_node in data_node_list:
             queues[data_node].put('STOP')
-            processes[data_node]=multiprocessing.Process(target=worker_retrieve, args=(queues[data_node], queues['end']))
-            processes[data_node].start()
+        #processes=dict()
+        #for data_node in data_node_list:
+        #    queues[data_node].put('STOP')
+        #    processes[data_node]=multiprocessing.Process(target=worker_retrieve, args=(queues[data_node], queues['end']))
+        #    processes[data_node].start()
 
         for data_node in data_node_list:
             for tuple in iter(queues['end'].get, 'STOP'):
@@ -410,11 +418,12 @@ def progress_report(retrieval_function,output,tuple,queues,queues_size,data_node
         #netcdf_utils.assign_tree(output,*queues['end'].get())
         netcdf_utils.assign_tree(output,*tuple)
         output.sync()
-        string_to_print=[str(queues_size[data_node]-queues[data_node].qsize()).zfill(len(str(queues_size[data_node])))+
+        string_to_print=[str(queues_size[data_node]-queues[data_node].qsize()+1).zfill(len(str(queues_size[data_node])))+
                          '/'+str(queues_size[data_node]) for
                             data_node in data_node_list]
         elapsed_time = datetime.datetime.now() - start_time
         print str(elapsed_time)+', '+' | '.join(string_to_print)+'\r',
+        #print str(elapsed_time)+'\r'
         #for data_node in data_node_list:
         #    print data_node, queues[data_node].qsize()
     return
