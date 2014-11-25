@@ -85,7 +85,7 @@ def ask(subparsers,epilog,project_drs):
                                        In this situation, cdb_query will discard ({0}) tuples that do not have variables for\n\
                                        ALL of the requested experiments'.format(','.join(project_drs.simulations_desc)))
     parser.add_argument('--update',
-                                 default=None, type=str,
+                                 type=str,action='append',
                                  help='Update the specified file. Will only ask for simulations that were not previously found.')
     input_arguments_json(parser)
     output_arguments(parser)
@@ -158,7 +158,8 @@ def validate(subparsers,epilog,project_drs):
     input_arguments(parser)
     output_arguments(parser)
     parser.add_argument('--in_diagnostic_headers_file',
-                                 help='Alternative diagnostic headers file (to modify target validate)',type=str,default=None)
+                                 help='Alternative diagnostic headers file (to modify target validate)',\
+                                 type=str,default=None)
     proc_group = parser.add_argument_group('These arguments set threading options')
     proc_group.add_argument('--num_procs',
                                  default=1, type=int,#choices=xrange(1,6),

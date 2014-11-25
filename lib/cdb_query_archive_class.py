@@ -106,22 +106,24 @@ class SimpleTree:
         return
 
     def load_previous_simulations(self,options):
+        prev_simulations_list=[]
         if ('update' in dir(options) and
              getattr(options,'update')!=None):
-             #There is an update file:
-             options_copy=copy.copy(options)
-             options_copy.in_diagnostic_netcdf_file=options.update
-             #Load the header to update:
-             self.define_database(options_copy)
-             old_header=self.nc_Database.load_header()
-             self.close_database()
-             if remove_entry_from_dictionary(self.header,'search_list')==remove_entry_from_dictionary(old_header,'search_list'):
-                print 'Updating, not considering the following simulations:'
-                prev_simulations_list=self.list_fields_local(options_copy,self.drs.simulations_desc)
-                for simulation in prev_simulations_list:
-                    print ','.join(simulation)
-                return prev_simulations_list
-        return [] 
+             for update_file in options.update:
+                 #There is an update file:
+                 options_copy=copy.copy(options)
+                 options_copy.in_diagnostic_netcdf_file=update_file
+                 #Load the header to update:
+                 self.define_database(options_copy)
+                 old_header=self.nc_Database.load_header()
+                 self.close_database()
+                 if remove_entry_from_dictionary(self.header,'search_list')==remove_entry_from_dictionary(old_header,'search_list'):
+                    prev_simulations_list.extend(self.list_fields_local(options_copy,self.drs.simulations_desc))
+        if len(prev_simulations_list)>0:
+            print 'Updating, not considering the following simulations:'
+            for simulation in prev_simulations_list:
+                print ','.join(simulation)
+        return sorted(prev_simulations_list)
 
     def validate(self,options):
         self.load_header(options)
