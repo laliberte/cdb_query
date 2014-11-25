@@ -81,7 +81,7 @@ class SimpleTree:
             prev_simulations_list=self.load_previous_simulations(options)
 
             simulations_list=discover.discover_simulations_recursive(self,options,self.drs.simulations_desc)
-            simulations_list=list(set(simulations_list).difference(prev_simulations_list))
+            simulations_list=sorted(list(set(simulations_list).difference(prev_simulations_list)))
             print "This is a list of simulations that COULD satisfy the query:"
             for simulation in simulations_list:
                 print ','.join(simulation)
@@ -115,8 +115,12 @@ class SimpleTree:
              self.define_database(options_copy)
              old_header=self.nc_Database.load_header()
              self.close_database()
-             if self.header==old_header:
-                return self.list_fields_local(options_copy,self.drs.simulations_desc)
+             if remove_entry_from_dictionary(self.header,'search_list')==remove_entry_from_dictionary(old_header,'search_list'):
+                print 'Updating, not considering the following simulations:'
+                prev_simulations_list=self.list_fields_local(options_copy,self.drs.simulations_desc)
+                for simulation in prev_simulations_list:
+                    print ','.join(simulation)
+                return prev_simulations_list
         return [] 
 
     def validate(self,options):
@@ -191,7 +195,7 @@ class SimpleTree:
         self.load_database(options,find_simple)
 
         #Find data node list:
-        data_node_list=self.nc_Database.list_data_nodes(options)
+        data_node_list=self.nc_Database.list_fields(['data_node'])
         paths_list=self.nc_Database.list_paths()
         self.close_database()
 
@@ -229,7 +233,7 @@ class SimpleTree:
         self.load_database(options,find_simple)
         simulations_list=self.nc_Database.list_fields(self.drs.simulations_desc)
 
-        data_node_list=self.nc_Database.list_data_nodes(options)
+        data_node_list=self.nc_Database.list_fields(['data_node'])
         url_list=[self.nc_Database.list_paths_by_data_node(data_node).split('|')[0].replace('fileServer','dodsC')
                     for data_node in data_node_list ]
         self.close_database()
@@ -443,7 +447,7 @@ def progress_report(retrieval_function,output,tuple,queues,queues_size,data_node
         #netcdf_utils.assign_tree(output,*queues['end'].get())
         netcdf_utils.assign_tree(output,*tuple)
         output.sync()
-        string_to_print=[str(queues_size[data_node]-queues[data_node].qsize()+1).zfill(len(str(queues_size[data_node])))+
+        string_to_print=[str(queues_size[data_node]-queues[data_node].qsize()).zfill(len(str(queues_size[data_node])))+
                          '/'+str(queues_size[data_node]) for
                             data_node in data_node_list]
         elapsed_time = datetime.datetime.now() - start_time
@@ -472,3 +476,6 @@ def define_queues(options,data_node_list):
     if 'source_dir' in dir(options) and options.source_dir!=None:
         queues[retrieval_utils.get_data_node(options.source_dir,'local_file')]=multiprocessing.Queue()
     return queues
+
+def remove_entry_from_dictionary(dictio,entry):
+    return {name:dictio[name] for name in dictio.keys() if name!=entry}
