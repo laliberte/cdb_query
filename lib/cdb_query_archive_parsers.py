@@ -215,10 +215,10 @@ def download(subparsers,epilog,project_drs):
     slicing_arguments(inc_group,project_drs,action_type='append')
     exc_group = parser.add_argument_group('Exclusions')
     excluded_slicing_arguments(exc_group,project_drs,action_type='append')
-    comp_group = parser.add_argument_group('Complex Query')
-    comp_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.base_drs,
-                                       help='List the field (or fields if repeated) found in the file' )
-    complex_slicing(comp_group,project_drs,action_type='append')
+    #comp_group = parser.add_argument_group('Complex Query')
+    #comp_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.base_drs,
+    #                                   help='List the field (or fields if repeated) found in the file' )
+    #complex_slicing(comp_group,project_drs,action_type='append')
 
     data_node_group = parser.add_argument_group('Limit download from specific data nodes')
     data_node_group.add_argument('--data_node',type=str,action='append',help='Retrieve only from the specified data nodes')
@@ -265,10 +265,10 @@ def download_raw(subparsers,epilog,project_drs):
     slicing_arguments(inc_group,project_drs,action_type='append')
     exc_group = parser.add_argument_group('Exclusions')
     excluded_slicing_arguments(exc_group,project_drs,action_type='append')
-    comp_group = parser.add_argument_group('Complex Query')
-    comp_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.base_drs,
-                                       help='List the field (or fields if repeated) found in the file' )
-    complex_slicing(comp_group,project_drs,action_type='append')
+    #comp_group = parser.add_argument_group('Complex Query')
+    #comp_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.base_drs,
+    #                                   help='List the field (or fields if repeated) found in the file' )
+    #complex_slicing(comp_group,project_drs,action_type='append')
     return
 
 def convert(subparsers,epilog,project_drs):

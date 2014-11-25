@@ -195,7 +195,7 @@ class SimpleTree:
         self.load_database(options,find_simple)
 
         #Find data node list:
-        data_node_list=self.nc_Database.list_fields(['data_node'])
+        data_node_list=[item[0] for item in self.nc_Database.list_fields(['data_node'])]
         paths_list=self.nc_Database.list_paths()
         self.close_database()
 
@@ -233,7 +233,7 @@ class SimpleTree:
         self.load_database(options,find_simple)
         simulations_list=self.nc_Database.list_fields(self.drs.simulations_desc)
 
-        data_node_list=self.nc_Database.list_fields(['data_node'])
+        data_node_list=[item[0] for item in self.nc_Database.list_fields(['data_node'])]
         url_list=[self.nc_Database.list_paths_by_data_node(data_node).split('|')[0].replace('fileServer','dodsC')
                     for data_node in data_node_list ]
         self.close_database()

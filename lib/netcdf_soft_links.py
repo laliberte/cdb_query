@@ -268,6 +268,6 @@ class read_netCDF_pointers:
                     else:
                         if (isinstance(output,netCDF4.Dataset) or
                             isinstance(output,netCDF4.Group)):
-                            netcdf_utils.assign_tree(output,*getattr(retrieval_utils,retrieval_function)(args[0],args[1]))
+                            netcdf_utils.assign_tree(output,*getattr(netcdf_utils,retrieval_function)(args[0],args[1]))
         return 
 
