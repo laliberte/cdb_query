@@ -77,7 +77,11 @@ class SimpleTree:
                 print field_name
             return
         else:
+            #Check if this is an update and if this an update find the previous simulations list:
+            prev_simulations_list=self.load_previous_simulations(options)
+
             simulations_list=discover.discover_simulations_recursive(self,options,self.drs.simulations_desc)
+            simulations_list=list(set(simulations_list).difference(prev_simulations_list))
             print "This is a list of simulations that COULD satisfy the query:"
             for simulation in simulations_list:
                 print ','.join(simulation)
@@ -101,9 +105,22 @@ class SimpleTree:
             output.close()
         return
 
+    def load_previous_simulations(self,options):
+        if ('update' in dir(options) and
+             getattr(options,'update')!=None):
+             #There is an update file:
+             options_copy=copy.copy(options)
+             options_copy.in_diagnostic_netcdf_file=options.update
+             #Load the header to update:
+             self.define_database(options_copy)
+             old_header=self.nc_Database.load_header()
+             self.close_database()
+             if self.header==old_header:
+                return self.list_fields_local(options_copy,self.drs.simulations_desc)
+        return [] 
+
     def validate(self,options):
         self.load_header(options)
-        print self.header
         #if options.data_nodes!=None:
         #    self.header['data_node_list']=options.data_nodes
 
@@ -257,12 +274,20 @@ class SimpleTree:
         return
 
     def load_header(self,options):
-        if ('in_dianostic_headers_file' in dir(options) and 
+        if ('in_diagnostic_headers_file' in dir(options) and 
            options.in_diagnostic_headers_file!=None):
             try:
                 self.header=json.load(open(options.in_diagnostic_headers_file,'r'))['header']
             except ValueError as e:
                 print 'The input diagnostic file '+options.in_diagnostic_headers_file+' does not conform to JSON standard. Make sure to check its syntax'
+            #for field_to_limit in ['experiment_list','variable_list']:
+            #    if (field_to_limit in dir(options) and
+            #        getattr(options,field_to_limit)!=None):
+            #        setattr(options,field_to_limit,
+            #                list(set(getattr(option,field_to_limit)).intersection(self.header[field_to_limit].keys())))
+            #    else:
+            #        setattr(options,field_to_limit,
+            #                self.header[field_to_limit].keys())
         else:
             self.define_database(options)
             self.header=self.nc_Database.load_header()

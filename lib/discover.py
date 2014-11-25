@@ -141,7 +141,6 @@ def intersection(database):
     for model in models_to_remove:
         conditions=[ getattr(nc_Database.File_Expt,field)==model[field_id] for field_id, field in enumerate(remove_ensemble(database.drs.simulations_desc,database.drs))]
         database.nc_Database.session.query(nc_Database.File_Expt).filter(*conditions).delete()
-
     return
 
 def remove_ensemble(simulation,project_drs):
