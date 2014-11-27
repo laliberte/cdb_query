@@ -88,8 +88,8 @@ class SimpleTree:
             print "cdb_query will now attempt to confirm that these simulations have all the requested variables."
             print "This can take some time. Please abort if there are not enough simulations for your needs."
 
-            import random
-            random.shuffle(simulations_list)
+            #import random
+            #random.shuffle(simulations_list)
 
             #if options.num_procs==1:
             #    filepath=discover.discover(self,options)
@@ -359,6 +359,11 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
         filename=queue_result.get()
         source_data=netCDF4.Dataset(filename,'r')
         source_data_hdf5=h5py.File(filename,'r')
+        #print arg
+        #print 'Output:'
+        #print_recursive(output_root)
+        #print 'Source:'
+        #print_recursive(source_data)
         nc_Database.record_to_file(output_root,source_data,source_data_hdf5)
         source_data_hdf5.close()
         source_data.close()
@@ -372,6 +377,13 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
         pool.join()
 
     return output_root
+
+def print_recursive(data):
+    print data
+    for group in data.groups.keys():
+        print group
+        print_recursive(data.groups[group])
+    return
 
 def worker_query(tuple):
     result=tuple[0](*tuple[1:-1])

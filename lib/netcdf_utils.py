@@ -136,10 +136,14 @@ def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=No
                     output.sync()
             else:
                 #output.variables[var_name][:]=data.variables[var_name][:]
-                temp=np.reshape(data.variables[var_name][:],data.variables[var_name].shape)
+                #temp=np.reshape(data.variables[var_name][:],data.variables[var_name].shape)
+                temp=data.variables[var_name][:]
                 if not 'mask' in dir(temp) or not check_empty:
-                    if output.variables[var_name].shape!=temp.shape:
-                        print data.variables[var_name].shape,  output.variables[var_name].shape,temp.shape
+                    #if output.variables[var_name].shape!=temp.shape:
+                    #    print data.variables[var_name].shape,  output.variables[var_name].shape,temp.shape
+                    #    print data
+                    #    print output
+                    #    print output.path
                     output.variables[var_name][:]=temp
                 else: 
                     #Only write the variable if it is not empty:
