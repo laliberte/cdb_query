@@ -10,19 +10,20 @@ import urllib2
 import httplib
 
 def descend_tree(database,search_path,options,list_level=None):
-    if 'experiment' in dir(options) and getattr(options,'experiment')!=None:
-        experiment_list=options.experiment
-    else:
-        experiment_list=database.header['experiment_list'].keys()
+    list_names=[('experiment','experiment_list'),('var','variable_list')]
+    lists_to_loop=dict()
+    for id in list_names:
+        if id[0] in dir(options) and getattr(options,id[0])!=None:
+            lists_to_loop[id[1]]=options.experiment
+        else:
+            lists_to_loop[id[1]]=database.header[id[1]].keys()
+    for id in lists_to_loop.keys():
+        if not isinstance(lists_to_loop[id],list): lists_to_loop[id]=[lists_to_loop[id]]
 
-    if 'var' in dir(options) and getattr(options,'var')!=None:
-        var_list=options.var
-    else:
-        var_list=database.header['var_list'].keys()
     #Create the database:
     only_list=[]
-    for var_name in var_list:
-        for experiment in experiment_list:
+    for var_name in lists_to_loop['variable_list']:
+        for experiment in lists_to_loop['experiment_list']:
             only_list.append(experiment_variable_search(database.nc_Database,search_path,database.header['file_type_list'],options,
                                         experiment,var_name,database.header['variable_list'][var_name],list_level=list_level))
     return [item for sublist in only_list for item in sublist]
