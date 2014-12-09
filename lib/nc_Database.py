@@ -226,14 +226,19 @@ def populate_database_recursive(nc_Database,data,options,find_function,semaphore
         id_list=['file_type']
         for id in id_list:
             setattr(nc_Database.file_expt,id,data.getncattr(id))
-        setattr(nc_Database.file_expt,'path','|'.join([data.getncattr('path'),
-                                               data.getncattr('checksum')]))
-        setattr(nc_Database.file_expt,'version',str(data.getncattr('version')))
 
-        setattr(nc_Database.file_expt,'data_node',
-                    retrieval_utils.get_data_node(nc_Database.file_expt.path,
-                                                  nc_Database.file_expt.file_type))
-        find_function(nc_Database,copy.deepcopy(nc_Database.file_expt))
+        #Check if data_node was included:
+        data_node=retrieval_utils.get_data_node(data.getncattr('path'),
+                                                data.getncattr('file_type'))
+        if is_level_name_included_and_not_excluded('data_node',options,data_node):
+            setattr(nc_Database.file_expt,'path','|'.join([data.getncattr('path'),
+                                                   data.getncattr('checksum')]))
+            setattr(nc_Database.file_expt,'version',str(data.getncattr('version')))
+
+            setattr(nc_Database.file_expt,'data_node',
+                        retrieval_utils.get_data_node(nc_Database.file_expt.path,
+                                                      nc_Database.file_expt.file_type))
+            find_function(nc_Database,copy.deepcopy(nc_Database.file_expt))
     else:
         #for retrieved datasets:
         #id_list=['file_type','search','path','version']
