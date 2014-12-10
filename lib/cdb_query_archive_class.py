@@ -454,9 +454,10 @@ def launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_f
 def progress_report(retrieval_function,output,tuple,queues,queues_size,data_node_list,start_time):
     if retrieval_function=='retrieve_path':
         #print '\t', queues['end'].get()
-        print '\t', tuple
-        elapsed_time = datetime.datetime.now() - start_time
-        print str(elapsed_time)
+        if tuple!=None:
+            print '\t', tuple
+            elapsed_time = datetime.datetime.now() - start_time
+            print str(elapsed_time)
     elif retrieval_function=='retrieve_path_data':
         #netcdf_utils.assign_tree(output,*queues['end'].get())
         netcdf_utils.assign_tree(output,*tuple)
