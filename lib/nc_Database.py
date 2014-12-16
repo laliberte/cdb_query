@@ -231,8 +231,11 @@ def populate_database_recursive(nc_Database,data,options,find_function,semaphore
         data_node=retrieval_utils.get_data_node(data.getncattr('path'),
                                                 data.getncattr('file_type'))
         if is_level_name_included_and_not_excluded('data_node',options,data_node):
+            checksum=''
+            if 'checksum' in data.ncattrs():
+                checksum=data.getncattr('checksum')
             setattr(nc_Database.file_expt,'path','|'.join([data.getncattr('path'),
-                                                   data.getncattr('checksum')]))
+                                                   checksum]))
             setattr(nc_Database.file_expt,'version',str(data.getncattr('version')))
 
             setattr(nc_Database.file_expt,'data_node',
