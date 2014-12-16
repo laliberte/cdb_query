@@ -13,18 +13,19 @@ def get_indices_from_dim(source,output):
         return np.array([ indices[np.isclose(source[indices]-val,0.0)][0] for val in output ])
 
 def convert_indices_to_slices(indices):
-    if len(indices)>1:
-        steps=np.unique(np.diff(indices))
-        optimal_step=steps[np.argmin(map(lambda x: len(convert_indices_to_slices_step(indices,x)),steps))]
-        return convert_indices_to_slices_step(indices,optimal_step)
-    else:
-        return convert_indices_to_slices_step(indices,1)
+    #This feature is currently broken (December 2014):
+    #if len(indices)>1:
+    #    steps=np.unique(np.diff(indices))
+    #    optimal_step=steps[np.argmin(map(lambda x: len(convert_indices_to_slices_step(indices,x)),steps))]
+    #    return convert_indices_to_slices_step(indices,optimal_step)
+    #else:
+    return convert_indices_to_slices_step(indices,1)
 
 def convert_indices_to_slices_step(indices,step):
     slices = []
     for key, it in groupby(enumerate(indices), lambda x: x[1] - step*x[0]):
-        indices = [y for x, y in it]
-        slices.append(slice(indices[0], indices[-1]+1,step))
+        indices_slice = [y for x, y in it]
+        slices.append(slice(indices_slice[0], indices_slice[-1]+1,step))
         #if len(indices) == 1:
         #    slices.append(slice(indices[0],indices[0]+1))
         #else:
