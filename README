@@ -25,6 +25,8 @@ F. Laliberté, Juckes, M., Denvil, S., Kushner, P. J., Bull. Amer. Meteor. Soc.,
 Version History
 ---------------
 
+1.0.8: Bug fixes with fancy opendap queries.
+
 1.0.7: Several bug fixes with complex queries. Includes basic updating features.
 
 1.0.6: Major fixes to validate. Fixes to download_raw.
