@@ -42,6 +42,9 @@ def find_time_file(pointers,file_expt,semaphores=None):#session,file_expt,path_n
         time_stamp=filename.replace('.nc','').split('_')[-1].split('|')[0]
     #time_stamp[0] == 'r':
 
+    if not file_expt.experiment in pointers.header['experiment_list']:
+        return
+
     years_requested=[int(year) for year in pointers.header['experiment_list'][file_expt.experiment].split(',')]
     years_list_requested=range(*years_requested)
     years_list_requested.append(years_requested[1])
