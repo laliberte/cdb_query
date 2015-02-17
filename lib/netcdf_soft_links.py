@@ -280,7 +280,7 @@ class read_netCDF_pointers:
         return 
 
 def add_previous(time_restriction):
-    return time_restriction
+    return np.logical_or(time_restriction,np.append(time_restriction[1:],False))
 
 def add_next(time_restriction):
-    return time_restriction
+    return np.logical_or(time_restriction,np.insert(time_restriction[:-1],0,False))
