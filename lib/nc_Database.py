@@ -287,6 +287,8 @@ def retrieve_tree_recursive(options,data,output,queues,retrieval_function):
                                  month=options.month,
                                  day=options.day,
                                  min_year=options.min_year,
+                                 previous=options.previous,
+                                 next=options.next,
                                  source_dir=options.source_dir)
     elif len(data.groups.keys())>0:
         for group in data.groups.keys():

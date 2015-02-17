@@ -113,7 +113,7 @@ class read_netCDF_pointers:
                 netcdf_utils.replicate_and_copy_variable(output_grp,self.data_root.groups['soft_links'],var_name)
         return
 
-    def retrieve_time_axis(self,years=None,months=None,days=None,min_year=None):
+    def retrieve_time_axis(self,years=None,months=None,days=None,min_year=None,previous=False,next=False):
         time_axis=self.data_root.variables['time'][:]
         time_restriction=np.ones(time_axis.shape,dtype=np.bool)
         if years!=None or months!=None or days!=None:
@@ -134,9 +134,16 @@ class read_netCDF_pointers:
             if days!=None:
                 days_axis=np.array([date.day for date in date_axis])
                 time_restriction=np.logical_and(time_restriction,[True if month in days else False for month in days_axis])
-        return time_axis,time_restriction
+        if previous and next:
+            return time_axis,add_next(add_previous(time_restriction))
+        elif previous and not next:
+            return time_axis,add_previous(time_restriction)
+        elif not previous and next:
+            return time_axis,add_next(time_restriction)
+        else:
+            return time_axis,time_restriction
 
-    def retrieve(self,output,retrieval_function,year=None,month=None,day=None,min_year=None,source_dir=None,semaphores=[]):
+    def retrieve(self,output,retrieval_function,year=None,month=None,day=None,min_year=None,previous=False,next=False,source_dir=None,semaphores=[]):
         self.initialize_retrieval()
         if source_dir!=None:
             #Check if the file has already been retrieved:
@@ -146,7 +153,7 @@ class read_netCDF_pointers:
         self.tree=self.data_root.path.split('/')[1:]
 
         #Then find time axis, time restriction and which variables to retrieve:
-        time_axis, time_restriction=self.retrieve_time_axis(years=year,months=month,days=day,min_year=min_year)
+        time_axis, time_restriction=self.retrieve_time_axis(years=year,months=month,days=day,min_year=min_year,previous=previous,next=next)
 
         #Record to output if output is a netCDF4 Dataset:
         if (isinstance(output,netCDF4.Dataset) or
@@ -272,3 +279,8 @@ class read_netCDF_pointers:
                             netcdf_utils.assign_tree(output,*getattr(retrieval_utils,retrieval_function)(args[0],args[1]))
         return 
 
+def add_previous(time_restriction):
+    return time_restriction
+
+def add_next(time_restriction):
+    return time_restriction
