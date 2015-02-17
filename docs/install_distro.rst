@@ -27,10 +27,26 @@ and follow their instructions. `cdb_query` has only been tested on linux machine
 
     $ conda install --no-deps libnetcdf=4.2.1.1 netcdf4=1.0.8 cffi=0.8.6 cryptography=0.5.4
 
-- If you have installed the lightweigth Miniconda distribution and you have used the default installation directories,
+.. warning:: Do not use `conda` to install other packages BEFORE you have made sure that `cdb_query` is working properly.
+
+..
+    Miniconda Fix
+    ^^^^^^^^^^^^^
+- If you have installed the lightweigth Miniconda distribution (http://conda.pydata.org/miniconda.html) and you have used the default installation directories,
   you should activate the distribution::
 
     $ source $HOME/miniconda/bin/activate $HOME/miniconda
+
+  Recent changes to the distribution have broken some cross linking in the necessary libraries. To
+  prevent these changes from affecting `cdb_query`, revert to version 2.0.1 of Anaconda::
+
+    $ conda install anaconda=2.0.1
+
+  Once this is done, you have to install netCDF4. This is accomplished through their installation
+  application::
+
+    $ conda install --no-deps libnetcdf=4.2.1.1 netcdf4=1.0.8 cffi=0.8.6 cryptography=0.5.4
+
 
   Once this is done, you have to install netCDF4. This is accomplished through their installation
   application::
@@ -49,7 +65,6 @@ and follow their instructions. `cdb_query` has only been tested on linux machine
                               cffi=0.8.6 \
                               cryptography=0.5.4
 
-.. warning:: Do not use `conda` to install other packages BEFORE you have made sure that `cdb_query` is working properly.
 
 ..
     Canopy Enthought Python Distribution
