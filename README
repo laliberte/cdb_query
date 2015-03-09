@@ -25,6 +25,8 @@ F. Laliberté, Juckes, M., Denvil, S., Kushner, P. J., Bull. Amer. Meteor. Soc.,
 Version History
 ---------------
 
+1.0.10: Fixed a bug with h5py. Critical update for 1.0.9.
+
 1.0.9: Added the possibility of downloading the time step BEFORE and / or AFTER the requested times in 'download' and 'download_raw'.
        Fixed an authentication problem with newer versions of NETCDF4.
 

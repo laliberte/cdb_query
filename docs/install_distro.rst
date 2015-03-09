@@ -17,54 +17,22 @@ and follow their instructions. `cdb_query` has only been tested on linux machine
 
     $ source $HOME/anaconda/bin/activate $HOME/anaconda
 
-  Recent changes to the distribution have broken some cross linking in the necessary libraries. To
-  prevent these changes from affecting `cdb_query`, revert to version 2.0.1 of Anaconda::
-
-    $ conda install anaconda=2.0.1
-
-  Once this is done, you have to install netCDF4. This is accomplished through their installation
+  Once this is done, you have to install netCDF4 and HDF5. This is accomplished through their installation
   application::
 
-    $ conda install --no-deps libnetcdf=4.2.1.1 netcdf4=1.0.8 cffi=0.8.6 cryptography=0.5.4
+    $ conda install netcdf4 h5py
 
 .. warning:: Do not use `conda` to install other packages BEFORE you have made sure that `cdb_query` is working properly.
 
-..
-    Miniconda Fix
-    ^^^^^^^^^^^^^
 - If you have installed the lightweigth Miniconda distribution (http://conda.pydata.org/miniconda.html) and you have used the default installation directories,
   you should activate the distribution::
 
     $ source $HOME/miniconda/bin/activate $HOME/miniconda
 
-  Recent changes to the distribution have broken some cross linking in the necessary libraries. To
-  prevent these changes from affecting `cdb_query`, revert to version 2.0.1 of Anaconda::
-
-    $ conda install anaconda=2.0.1
-
   Once this is done, you have to install netCDF4. This is accomplished through their installation
   application::
 
-    $ conda install --no-deps libnetcdf=4.2.1.1 netcdf4=1.0.8 cffi=0.8.6 cryptography=0.5.4
-
-
-  Once this is done, you have to install netCDF4. This is accomplished through their installation
-  application::
-
-    $ conda install --no-deps curl=7.30.0 \
-                              h5py=2.3.0 \
-                              hdf5=1.8.9 \
-                              jinja2=2.7.3 \
-                              libnetcdf=4.2.1.1 \
-                              markupsafe=0.23 \
-                              netcdf4=1.0.8 \
-                              numpy=1.8.2 \
-                              pip=1.5.6 \
-                              setuptools=5.7 \
-                              sqlalchemy=0.9.7 \
-                              cffi=0.8.6 \
-                              cryptography=0.5.4
-
+    $ conda install netcdf4 h5py jinja2 pip sqlalchemy
 
 ..
     Canopy Enthought Python Distribution

@@ -357,8 +357,8 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
         if options.num_procs==1:
             result=worker_query(arg)
         filename=queue_result.get()
-        source_data=netCDF4.Dataset(filename,'r')
         source_data_hdf5=h5py.File(filename,'r')
+        source_data=netCDF4.Dataset(filename,'r')
         #print arg
         #print 'Output:'
         #print_recursive(output_root)
