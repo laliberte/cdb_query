@@ -132,7 +132,7 @@ class SimpleTree:
 
         if not 'data_node_list' in self.header.keys():
             data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
-            if len(data_node_list)>1:
+            if len(data_node_list)>1 and not options.no_check_availability:
                 self.header['data_node_list']=self.rank_data_nodes(options,data_node_list,url_list)
             else:
                 self.header['data_node_list']=data_node_list
@@ -357,16 +357,18 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
         if options.num_procs==1:
             result=worker_query(arg)
         filename=queue_result.get()
-        source_data_hdf5=h5py.File(filename,'r')
         source_data=netCDF4.Dataset(filename,'r')
+        for item in h5py.h5f.get_obj_ids():
+            if 'name' in dir(item) and item.name==filename:
+                source_data_hdf5=h5py.File(item)
         #print arg
         #print 'Output:'
         #print_recursive(output_root)
         #print 'Source:'
         #print_recursive(source_data)
         nc_Database.record_to_file(output_root,source_data,source_data_hdf5)
-        source_data_hdf5.close()
         source_data.close()
+        source_data_hdf5.close()
         try:
             os.remove(filename)
         except OSError:

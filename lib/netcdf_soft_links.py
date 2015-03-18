@@ -152,27 +152,31 @@ class read_netCDF_pointers:
         #Define tree:
         self.tree=self.data_root.path.split('/')[1:]
 
-        #Then find time axis, time restriction and which variables to retrieve:
-        time_axis, time_restriction=self.retrieve_time_axis(years=year,months=month,days=day,min_year=min_year,previous=previous,next=next)
+        if 'time' in self.data_root.variables.keys():
+            #Then find time axis, time restriction and which variables to retrieve:
+            time_axis, time_restriction=self.retrieve_time_axis(years=year,months=month,days=day,min_year=min_year,previous=previous,next=next)
 
-        #Record to output if output is a netCDF4 Dataset:
-        if (isinstance(output,netCDF4.Dataset) or
-            isinstance(output,netCDF4.Group)):
+            #Record to output if output is a netCDF4 Dataset:
+            if (isinstance(output,netCDF4.Dataset) or
+                isinstance(output,netCDF4.Group)):
 
-            if not 'time' in output.dimensions.keys():
-                netcdf_utils.create_time_axis(output,self.data_root,time_axis[time_restriction])
+                if not 'time' in output.dimensions.keys():
+                    netcdf_utils.create_time_axis(output,self.data_root,time_axis[time_restriction])
 
-            #Replicate all the other variables:
-            for var in set(self.data_root.variables.keys()).difference(self.retrievable_vars):
-                if not var in output.variables.keys():
-                    output=netcdf_utils.replicate_and_copy_variable(output,self.data_root,var)
-                    #output=netcdf_utils.replicate_netcdf_var(output,self.data_root,var)
-                    #output.variables[var][:]=self.data_root.variables[var][:]
+                #Replicate all the other variables:
+                for var in set(self.data_root.variables.keys()).difference(self.retrievable_vars):
+                    if not var in output.variables.keys():
+                        output=netcdf_utils.replicate_and_copy_variable(output,self.data_root,var)
+                        #output=netcdf_utils.replicate_netcdf_var(output,self.data_root,var)
+                        #output.variables[var][:]=self.data_root.variables[var][:]
 
-        for var_to_retrieve in self.retrievable_vars:
-            self.retrieve_variables(retrieval_function,var_to_retrieve,time_restriction,
-                                        output,semaphores=semaphores)
-                                        #paths_list,file_type_list,paths_id_list,checksums_list,version_list,
+            for var_to_retrieve in self.retrievable_vars:
+                self.retrieve_variables(retrieval_function,var_to_retrieve,time_restriction,
+                                            output,semaphores=semaphores)
+                                            #paths_list,file_type_list,paths_id_list,checksums_list,version_list,
+        else:
+            #Downloading before a complete validate has been performed:
+            self.retrieve_without_time(retrieval_function,output,semaphores=semaphores)
         return
 
     def open(self):
@@ -194,6 +198,30 @@ class read_netCDF_pointers:
 
     def close(self):
         self.output_root.close()
+        return
+
+    def retrieve_without_time(self,retrieval_function,output,semaphores=None):
+        #This function simply retrieves all the files:
+        file_path=output
+        for path_to_retrieve in self.paths_list:
+            file_type=self.file_type_list[list(self.paths_list).index(path_to_retrieve)]
+            version='v'+str(self.version_list[list(self.paths_list).index(path_to_retrieve)])
+            checksum=self.checksums_list[list(self.paths_list).index(path_to_retrieve)]
+            #Get the file tree:
+            args = ({'path':path_to_retrieve+'|'+checksum,
+                    'var':self.tree[-1],
+                    'file_path':file_path,
+                    'version':version},
+                    copy.deepcopy(self.tree))
+                    #'sort_table':np.argsort(sorting_paths)[sorted_paths_link==path_id][time_slice],
+
+            #Retrieve only if it is from the requested data node:
+            data_node=retrieval_utils.get_data_node(path_to_retrieve,file_type)
+            if nc_Database.is_level_name_included_and_not_excluded('data_node',self,data_node):
+                if data_node in self.queues.keys():
+                    #print 'Recovering '+var_to_retrieve+' in '+path_to_retrieve
+                    print 'Recovering '+'/'.join(self.tree)
+                    self.queues[data_node].put((retrieval_function,)+copy.deepcopy(args))
         return
 
     def retrieve_variables(self,retrieval_function,var_to_retrieve,time_restriction,

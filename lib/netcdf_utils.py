@@ -491,7 +491,10 @@ def distributed_apply(function_handle,database,options,vars_list,args=tuple()):
                 temp_file_name=description[0]
                 var=description[1]
                 data=netCDF4.Dataset(temp_file_name,'r')
-                data_hdf5=h5py.File(temp_file_name,'r')
+                #data_hdf5=h5py.File(temp_file_name,'r')
+                for item in h5py.h5f.get_obj_ids():
+                    if 'name' in dir(item) and item.name==temp_file_name:
+                        data_hdf5=h5py.File(item)
                 tree=zip(database.drs.official_drs_no_version,var)
                 replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=True)
                 data.close()
@@ -509,7 +512,9 @@ def distributed_apply(function_handle,database,options,vars_list,args=tuple()):
                 worker(arg)
                 temp_file_name, var=queue.get()
                 data=netCDF4.Dataset(temp_file_name,'r')
-                data_hdf5=h5py.File(temp_file_name,'r')
+                for item in h5py.h5f.get_obj_ids():
+                    if 'name' in dir(item) and item.name==temp_file_name:
+                        data_hdf5=h5py.File(item)
                 tree=zip(database.drs.official_drs_no_version,var)
                 replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=True)
                 data.close()

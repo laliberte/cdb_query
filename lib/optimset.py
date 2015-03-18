@@ -28,8 +28,14 @@ def find_time(pointers,file_expt,semaphores=None):
     #elif file_expt.file_type in ['local_file','OPeNDAP']:
     #    find_time_opendap(pointers,file_expt)
     return
+
+def find_time_available(pointers,file_expt,semaphores=None):
+    #same as find_time but keeps non-queryable files:
+    if file_expt.file_type in queryable_file_types:
+        find_time_file(pointers,file_expt,file_available=True,semaphores=semaphores)
+    return
         
-def find_time_file(pointers,file_expt,semaphores=None):#session,file_expt,path_name):
+def find_time_file(pointers,file_expt,file_available=False,semaphores=None):#session,file_expt,path_name):
     #If the path is a remote file, we must use the time stamp
     filename=os.path.basename(file_expt.path)
     
@@ -55,13 +61,15 @@ def find_time_file(pointers,file_expt,semaphores=None):#session,file_expt,path_n
     if file_expt.file_type in ['local_file']:
         file_available=True
         file_queryable=True
-    else:
+    elif not file_available:
         file_available = retrieval_utils.check_file_availability(file_expt.path.split('|')[0])
-        if file_available:
+        if file_available and not file_queryable:
             remote_data=remote_netcdf.remote_netCDF(file_expt.path.split('|')[0].replace('fileServer','dodsC'),semaphores)
             file_queryable=remote_data.is_available()
-        else:
-            file_queryable=False
+    else:
+        #Assume files are available and queryable:
+        file_available=True
+        file_queryable=True
 
     #Recover date range from filename:
     years_range = [int(date[:4]) for date in time_stamp.split('-')]
@@ -96,7 +104,7 @@ def attribute_time(pointers,file_expt,file_available,file_queryable,year,month):
         pointers.session.add(file_expt_copy)
         pointers.session.commit()
     elif file_available:
-        #If file is avaible but queryable, broadcast it:
+        #If file is avaible but not queryable, broadcast it:
         print 'Path {0} is available but does not have OPeNDAP services enabled.'.format(file_expt.path)
         #Do not broadcast it later:
         file_available=False
@@ -190,13 +198,22 @@ def optimset_distributed(database,options,semaphores):
     return filepath
 
 def optimset(database,options,semaphores=None):
-    database.load_database(options,find_time,semaphores=semaphores)
-    #Find the list of institute / model with all the months for all the years / experiments and variables requested:
-    intersection(database,options)
-    
-    dataset, output=database.nc_Database.write_database(database.header,options,'record_meta_data',semaphores=semaphores)
-    database.close_database()
-    dataset.close()
+    if not options.no_check_availability:
+        database.load_database(options,find_time,semaphores=semaphores)
+        #Find the list of institute / model with all the months for all the years / experiments and variables requested:
+        intersection(database,options)
+        
+        dataset, output=database.nc_Database.write_database(database.header,options,'record_meta_data',semaphores=semaphores)
+        database.close_database()
+        dataset.close()
+    else:
+        database.load_database(options,find_time_available,semaphores=semaphores)
+        #Find the list of institute / model with all the months for all the years / experiments and variables requested:
+        intersection(database,options)
+        
+        dataset, output=database.nc_Database.write_database(database.header,options,'record_paths',semaphores=semaphores)
+        database.close_database()
+        dataset.close()
     return output
 
 def intersection(database,options):

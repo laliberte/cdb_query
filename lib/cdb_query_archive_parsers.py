@@ -155,6 +155,11 @@ def validate(subparsers,epilog,project_drs):
                                        In this situation, cdb_query will discard ({0}) tuples that do not have variables for\n\
                                        ALL of the requested experiments'.format(','.join(project_drs.simulations_desc)))
 
+    parser.add_argument('--no_check_availability',
+                     default=False, action='store_true',
+                     help='When this option is activated, checks only that the time stamp is within \n\
+                           the requested years and months.')
+
     input_arguments(parser)
     output_arguments(parser)
     parser.add_argument('--in_diagnostic_headers_file',
