@@ -63,9 +63,11 @@ def find_time_file(pointers,file_expt,file_available=False,semaphores=None):#ses
         file_queryable=True
     elif not file_available:
         file_available = retrieval_utils.check_file_availability(file_expt.path.split('|')[0])
-        if file_available and not file_queryable:
+        if file_available:
             remote_data=remote_netcdf.remote_netCDF(file_expt.path.split('|')[0].replace('fileServer','dodsC'),semaphores)
             file_queryable=remote_data.is_available()
+        else:
+            file_queryable=False
     else:
         #Assume files are available and queryable:
         file_available=True

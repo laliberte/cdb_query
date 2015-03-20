@@ -1,6 +1,6 @@
 import os, sys, string, subprocess
-from myproxy_ws_get_trustroots_wget import myproxy_ws_get_trustroots_wget
-from myproxy_ws_logon_wget import myproxy_ws_logon_wget
+from onlineca_get_trustroots_wget import onlineca_get_trustroots_wget
+from onlineca_get_cert_wget import onlineca_get_cert_wget
 
 
 def retrieve_certificates(username,registering_service):
@@ -14,7 +14,7 @@ def retrieve_certificates(username,registering_service):
 
     dods=True
 
-    ee = { 'smhi':'esg-dn1.nsc.liu.se', 'pcmdi':'pcmdi9.llnl.gov', 'ipsl':'esgf-node.ipsl.fr', 'badc':'myproxy.ceda.ac.uk',
+    ee = { 'smhi':'esg-dn1.nsc.liu.se', 'pcmdi':'pcmdi9.llnl.gov', 'ipsl':'esgf-node.ipsl.fr', 'badc':'slcs.ceda.ac.uk',
     'dkrz':'esgf-data.dkrz.de', 'pik':'esg.pik-potsdam.de', 'jpl':'jpl-esg.jpl.nasa.gov' }
     dodsrc='%s/.dodsrc' % home
 
@@ -47,16 +47,16 @@ HTTP.SSL.CAPATH=%(esgfdir)s/certificates"""
       oo.write( dodstext % locals() )
       oo.close()
 
-    oo = open(esgfdir+'/myproxy-ws-get-trustroots-wget.sh','w')
-    oo.write(myproxy_ws_get_trustroots_wget())
+    oo = open(esgfdir+'/onlineca-get-trustroots-wget.sh','w')
+    oo.write(onlineca_get_trustroots_wget())
     oo.close()
 
-    subprocess.call(['bash',esgfdir+'/myproxy-ws-get-trustroots-wget.sh','-b','-U','https://'+registering_service+'/get-trustroots'])
+    subprocess.call(['bash',esgfdir+'/onlineca-get-trustroots-wget.sh','-b','-U','https://'+registering_service+'/onlineca/trustroots/','-c',esgfdir+'/certificates'])
 
-    oo = open(esgfdir+'/myproxy-ws-logon-wget.sh','w')
-    oo.write(myproxy_ws_logon_wget())
+    oo = open(esgfdir+'/onlineca-cert-wget.sh','w')
+    oo.write(onlineca_get_cert_wget())
     oo.close()
-    subprocess.call(['bash',esgfdir+'/myproxy-ws-logon-wget.sh','-l',username,'-U','https://'+registering_service+'/logon','-o',esgfdir+'/credentials.pem'])
+    subprocess.call(['bash',esgfdir+'/onlineca-cert-wget.sh','-l',username,'-U','https://'+registering_service+'/onlineca/certificate/','-c',esgfdir])
 
     return
     #port=MyProxyClient.PROPERTY_DEFAULTS['port']

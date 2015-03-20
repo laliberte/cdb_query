@@ -25,6 +25,13 @@ F. Laliberté, Juckes, M., Denvil, S., Kushner, P. J., Bull. Amer. Meteor. Soc.,
 Version History
 ---------------
 
+1.1.0: Required update for the certificates function. The certificates function in prior versions has been deprecated.
+
+1.0.11.2: Fixed a minor bug with validate.
+
+1.0.11: Fixed a certificate issue. Added the possiblity of making a `partial` validate where only the time stamp in files
+        is checked. This allows to sidestep a full validate if download_raw is to be used.
+
 1.0.10.1-2: Fixed a bug with h5py. Critical update for 1.0.9.
 
 1.0.9: Added the possibility of downloading the time step BEFORE and / or AFTER the requested times in 'download' and 'download_raw'.
