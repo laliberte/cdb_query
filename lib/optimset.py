@@ -34,8 +34,14 @@ def find_time_available(pointers,file_expt,semaphores=None):
     if file_expt.file_type in queryable_file_types:
         find_time_file(pointers,file_expt,file_available=True,semaphores=semaphores)
     return
+
+def find_time_available(pointers,file_expt,semaphores=None):
+    #same as find_time but keeps non-queryable files:
+    if file_expt.file_type in queryable_file_types:
+        find_time_file(pointers,file_expt,file_queryable=True,semaphores=semaphores)
+    return
         
-def find_time_file(pointers,file_expt,file_available=False,semaphores=None):#session,file_expt,path_name):
+def find_time_file(pointers,file_expt,file_available=False,file_queryable=False,semaphores=None):#session,file_expt,path_name):
     #If the path is a remote file, we must use the time stamp
     filename=os.path.basename(file_expt.path)
     
@@ -63,7 +69,7 @@ def find_time_file(pointers,file_expt,file_available=False,semaphores=None):#ses
         file_queryable=True
     elif not file_available:
         file_available = retrieval_utils.check_file_availability(file_expt.path.split('|')[0])
-        if file_available:
+        if file_available and not file_queryable:
             remote_data=remote_netcdf.remote_netCDF(file_expt.path.split('|')[0].replace('fileServer','dodsC'),semaphores)
             file_queryable=remote_data.is_available()
         else:
@@ -200,8 +206,16 @@ def optimset_distributed(database,options,semaphores):
     return filepath
 
 def optimset(database,options,semaphores=None):
-    if not options.no_check_availability:
-        database.load_database(options,find_time,semaphores=semaphores)
+    if options.no_check_availability:
+        database.load_database(options,find_time_available,semaphores=semaphores)
+        #Find the list of institute / model with all the months for all the years / experiments and variables requested:
+        intersection(database,options)
+        
+        dataset, output=database.nc_Database.write_database(database.header,options,'record_paths',semaphores=semaphores)
+        database.close_database()
+        dataset.close()
+    elif options.no_check_queryability:
+        database.load_database(options,find_time_queryable,semaphores=semaphores)
         #Find the list of institute / model with all the months for all the years / experiments and variables requested:
         intersection(database,options)
         
@@ -209,11 +223,11 @@ def optimset(database,options,semaphores=None):
         database.close_database()
         dataset.close()
     else:
-        database.load_database(options,find_time_available,semaphores=semaphores)
+        database.load_database(options,find_time,semaphores=semaphores)
         #Find the list of institute / model with all the months for all the years / experiments and variables requested:
         intersection(database,options)
         
-        dataset, output=database.nc_Database.write_database(database.header,options,'record_paths',semaphores=semaphores)
+        dataset, output=database.nc_Database.write_database(database.header,options,'record_meta_data',semaphores=semaphores)
         database.close_database()
         dataset.close()
     return output
