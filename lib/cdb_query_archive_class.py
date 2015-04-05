@@ -29,6 +29,9 @@ import netcdf_utils
 import sys
 from StringIO import StringIO
 
+import certificates
+import getpass
+
 class SimpleTree:
     def __init__(self,options,project_drs):
 
@@ -130,6 +133,11 @@ class SimpleTree:
         #if options.data_nodes!=None:
         #    self.header['data_node_list']=options.data_nodes
 
+        if 'username' in dir(options) and options.username!=None:
+            user_pass=getpass.getpass('Enter Credential phrase:')
+            #Get certificates if requested by user:
+            certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass)
+
         if not 'data_node_list' in self.header.keys():
             data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
             if len(data_node_list)>1 and not options.no_check_availability:
@@ -166,7 +174,7 @@ class SimpleTree:
             #semaphores=[]
             #original_stderr = sys.stderr
             #sys.stderr = NullDevice()
-            output=distributed_recovery(optimset.optimset_distributed,self,options,simulations_list,manager,args=(semaphores,))
+            output=distributed_recovery(optimset.optimset_distributed,self,options,simulations_list,manager,args=(semaphores,),user_pass=user_pass)
             #sys.stderr = original_stderr
             #Close datasets:
             output.close()
@@ -329,7 +337,7 @@ class NullDevice():
         pass
 
 
-def distributed_recovery(function_handle,database,options,simulations_list,manager,args=tuple()):
+def distributed_recovery(function_handle,database,options,simulations_list,manager,args=tuple(),user_pass=None):
 
     #Open output file:
     output_file_name=options.out_diagnostic_netcdf_file
@@ -348,6 +356,7 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
             setattr(options_copy,desc,simulation[desc_id])
         args_list.append((function_handle,copy.copy(database),options_copy)+args+(queue_result,))
     
+
     #Span up to options.num_procs processes and each child process analyzes only one simulation
     #pool=multiprocessing.Pool(processes=options.num_procs,initializer=initializer,initargs=[queue_output],maxtasksperchild=1)
     if options.num_procs>1:
@@ -374,6 +383,10 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
         except OSError:
             pass
         output_root.sync()
+
+        if 'username' in dir(options) and options.username!=None and user_pass!=None:
+            #Reactivate certificates:
+            certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass)
     if options.num_procs>1:
         pool.close()
         pool.join()

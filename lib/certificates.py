@@ -3,7 +3,7 @@ from onlineca_get_trustroots_wget import onlineca_get_trustroots_wget
 from onlineca_get_cert_wget import onlineca_get_cert_wget
 
 
-def retrieve_certificates(username,registering_service):
+def retrieve_certificates(username,registering_service,user_pass=None):
     home=os.getenv('HOME')
     http_proxy=os.getenv('http_proxy')
     https_proxy=os.getenv('https_proxy')
@@ -56,7 +56,14 @@ HTTP.SSL.CAPATH=%(esgfdir)s/certificates"""
     oo = open(esgfdir+'/onlineca-cert-wget.sh','w')
     oo.write(onlineca_get_cert_wget())
     oo.close()
-    subprocess.call(['bash',esgfdir+'/onlineca-cert-wget.sh','-l',username,'-U','https://'+registering_service+'/onlineca/certificate/','-c',esgfdir])
+    call_to_script=['bash',esgfdir+'/onlineca-cert-wget.sh','-l',username,'-U','https://'+registering_service+'/onlineca/certificate/','-c',esgfdir]
+    if user_pass!=None:
+        call_to_script.append('-S')
+        p=subprocess.Popen(call_to_script,stdout=subprocess.PIPE,stdin=subprocess.PIPE)
+        stdout=p.communicate(input=user_pass)[0]
+        p.stdin.close()
+    else:
+        subprocess.call(call_to_script)
 
     return
     #port=MyProxyClient.PROPERTY_DEFAULTS['port']

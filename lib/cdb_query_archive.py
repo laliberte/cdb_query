@@ -16,6 +16,8 @@ import cdb_query_archive_class
 import netcdf_utils
 import certificates
 
+import getpass
+
 def main_CMIP5():
     main('CMIP5')
     return
@@ -41,7 +43,7 @@ def main(project):
 \n\
 If using this code to retrieve and process data from the ESGF please cite:\n\n\
 Efficient, robust and timely analysis of Earth System Models: a database-query approach (2014):\n\
-F. Laliberté, Juckes, M., Denvil, S., Kushner, P. J., Bull. Amer. Meteor. Soc., Submitted.'.format(version_num)
+F. Laliberté, Juckes, M., Denvil, S., Kushner, P. J., TBD, Submitted.'.format(version_num)
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
                             description=description,
                             version='%(prog)s '+version_num,
@@ -75,7 +77,8 @@ F. Laliberté, Juckes, M., Denvil, S., Kushner, P. J., Bull. Amer. Meteor. Soc.,
         netcdf_utils.convert(options,project_drs)
     elif options.command=='certificates':
         #certificates.retrieve_certificates(options.username,options.password,options.registering_service)
-        certificates.retrieve_certificates(options.username,options.registering_service)
+        user_pass=getpass.getpass('Enter Credential phrase:')
+        certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass)
         #certificates.test_certificates()
     elif 'in_diagnostic_headers_file' in dir(options):
         paths_dict=cdb_query_archive_class.SimpleTree(options,project_drs)

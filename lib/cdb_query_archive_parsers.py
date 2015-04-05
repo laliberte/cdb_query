@@ -163,11 +163,19 @@ def validate(subparsers,epilog,project_drs):
                      default=False, action='store_true',
                      help='When this option is activated, does not check if a file is queryable before proceeding.')
 
+
     input_arguments(parser)
     output_arguments(parser)
     parser.add_argument('--in_diagnostic_headers_file',
                                  help='Alternative diagnostic headers file (to modify target validate)',\
                                  type=str,default=None)
+    cert_group = parser.add_argument_group('These arguments set credentials options')
+    cert_group.add_argument('--service',default='badc',choices=['badc'],
+                     help='Registering service. At the moment works only with badc.')
+    cert_group.add_argument('--username',default=None,
+                     help='User name for registering service given in --service. Will prompt for password once.')
+
+
     proc_group = parser.add_argument_group('These arguments set threading options')
     proc_group.add_argument('--num_procs',
                                  default=1, type=int,#choices=xrange(1,6),
@@ -361,7 +369,7 @@ def certificates(subparsers,epilog,project_drs):
                                          )
     parser.add_argument('username',help="Username")
     #parser.add_argument('password',help="Password")
-    parser.add_argument('registering_service',help="Registering service",choices=['badc','jpl'])
+    parser.add_argument('service',help="Registering service",choices=['badc'])
     return
 
 def int_list(input):
