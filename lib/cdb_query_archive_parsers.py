@@ -159,9 +159,9 @@ def validate(subparsers,epilog,project_drs):
                      default=False, action='store_true',
                      help='When this option is activated, checks only that the time stamp is within \n\
                            the requested years and months.')
-    parser.add_argument('--no_check_queryability',
+    parser.add_argument('--check_queryability',
                      default=False, action='store_true',
-                     help='When this option is activated, does not check if a file is queryable before proceeding.')
+                     help='When this option is activated, checks if a file is queryable before proceeding. More robust but slower.')
 
 
     input_arguments(parser)

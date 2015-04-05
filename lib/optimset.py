@@ -203,6 +203,7 @@ def optimset_distributed(database,options,semaphores):
 
 def optimset(database,options,semaphores=None):
     if options.no_check_availability:
+        #Does not check whether files are available / queryable before proceeding.
         database.load_database(options,find_time_available,semaphores=semaphores)
         #Find the list of institute / model with all the months for all the years / experiments and variables requested:
         intersection(database,options)
@@ -210,8 +211,9 @@ def optimset(database,options,semaphores=None):
         dataset, output=database.nc_Database.write_database(database.header,options,'record_paths',semaphores=semaphores)
         database.close_database()
         dataset.close()
-    elif options.no_check_queryability:
-        database.load_database(options,find_time_queryable,semaphores=semaphores)
+    elif options.check_queryability:
+        #Check that files are both available AND queryable before proceeding.
+        database.load_database(options,find_time,semaphores=semaphores)
         #Find the list of institute / model with all the months for all the years / experiments and variables requested:
         intersection(database,options)
         
@@ -219,7 +221,8 @@ def optimset(database,options,semaphores=None):
         database.close_database()
         dataset.close()
     else:
-        database.load_database(options,find_time,semaphores=semaphores)
+        #Check that files are available but does NOT check if they are queryable before proceeding.
+        database.load_database(options,find_time_queryable,semaphores=semaphores)
         #Find the list of institute / model with all the months for all the years / experiments and variables requested:
         intersection(database,options)
         
