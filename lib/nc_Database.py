@@ -135,7 +135,10 @@ class nc_Database:
                                                           header['file_type_list'],
                                                           header['data_node_list'],
                                                           semaphores=semaphores)
-        self.record_header(output_root,header)
+        if 'no_check_availability' in dir(options) and options.no_check_availability:
+            self.record_header(output_root,{val:header[val] for val in header.keys() if val!='data_node_list'})
+        else:
+            self.record_header(output_root,header)
         temp_string=''
         for att in self.drs.simulations_desc:
             if ( att in dir(options) and

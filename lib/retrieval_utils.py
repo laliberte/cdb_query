@@ -14,6 +14,8 @@ import numpy as np
 
 import hashlib
 
+import time
+
 class HTTPSClientAuthHandler(urllib2.HTTPSHandler):
     def __init__(self, key, cert):
         urllib2.HTTPSHandler.__init__(self)
@@ -46,7 +48,7 @@ def check_file_availability_wget(url_name):
     else:
         return False
 
-def check_file_availability(url_name):
+def check_file_availability(url_name,stop=False):
     #Some monkeypathcing to get rid of SSL certificate verification:
     ssl._create_default_https_context = ssl._create_unverified_context
     cj = CookieJar()
@@ -60,7 +62,11 @@ def check_file_availability(url_name):
         else:
             return False
     except:
-        return False
+        if stop:
+            return False
+        else:
+            time.sleep(15)
+            return check_file_availability(url_name,stop=True)
 
 def download_secure(url_name,dest_name):
     if check_file_availability(url_name):

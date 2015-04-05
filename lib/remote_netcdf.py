@@ -75,7 +75,7 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
             try:
                 self.Dataset=netCDF4.Dataset(self.file_name)
             except:
-                time.sleep(15)
+                time.sleep(30)
                 self.Dataset=netCDF4.Dataset(self.file_name)
         except:
             self.close()
@@ -124,7 +124,7 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
                 units=self.Dataset.variables['time'].units
                 native_time_axis=self.Dataset.variables['time'][:]
             except:
-                time.sleep(15)
+                time.sleep(30)
                 if 'calendar' in self.Dataset.variables['time'].ncattrs():
                     calendar=self.Dataset.variables['time'].calendar
                 else:

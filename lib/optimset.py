@@ -35,7 +35,7 @@ def find_time_available(pointers,file_expt,semaphores=None):
         find_time_file(pointers,file_expt,file_available=True,semaphores=semaphores)
     return
 
-def find_time_available(pointers,file_expt,semaphores=None):
+def find_time_queryable(pointers,file_expt,semaphores=None):
     #same as find_time but keeps non-queryable files:
     if file_expt.file_type in queryable_file_types:
         find_time_file(pointers,file_expt,file_queryable=True,semaphores=semaphores)
@@ -67,17 +67,13 @@ def find_time_file(pointers,file_expt,file_available=False,file_queryable=False,
     if file_expt.file_type in ['local_file']:
         file_available=True
         file_queryable=True
-    elif not file_available:
+
+    if not file_available:
         file_available = retrieval_utils.check_file_availability(file_expt.path.split('|')[0])
-        if file_available and not file_queryable:
-            remote_data=remote_netcdf.remote_netCDF(file_expt.path.split('|')[0].replace('fileServer','dodsC'),semaphores)
-            file_queryable=remote_data.is_available()
-        else:
-            file_queryable=False
-    else:
-        #Assume files are available and queryable:
-        file_available=True
-        file_queryable=True
+
+    if file_available and not file_queryable:
+        remote_data=remote_netcdf.remote_netCDF(file_expt.path.split('|')[0].replace('fileServer','dodsC'),semaphores)
+        file_queryable=remote_data.is_available()
 
     #Recover date range from filename:
     years_range = [int(date[:4]) for date in time_stamp.split('-')]
