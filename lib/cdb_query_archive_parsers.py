@@ -169,6 +169,7 @@ def validate(subparsers,epilog,project_drs):
     parser.add_argument('--in_diagnostic_headers_file',
                                  help='Alternative diagnostic headers file (to modify target validate)',\
                                  type=str,default=None)
+
     cert_group = parser.add_argument_group('These arguments set credentials options')
     cert_group.add_argument('--service',default='badc',choices=['badc'],
                      help='Registering service. At the moment works only with badc.')
@@ -210,6 +211,13 @@ def download(subparsers,epilog,project_drs):
                                          )
     input_arguments(parser)
     output_arguments(parser)
+
+    cert_group = parser.add_argument_group('These arguments set credentials options')
+    cert_group.add_argument('--service',default='badc',choices=['badc'],
+                     help='Registering service. At the moment works only with badc.')
+    cert_group.add_argument('--username',default=None,
+                     help='User name for registering service given in --service. Will prompt for password once.')
+
     serial_group = parser.add_argument_group('Specify asynchronous behavior')
     serial_group.add_argument('--serial',default=False,action='store_true',help='Downloads the files serially.')
 
@@ -262,6 +270,13 @@ def download_raw(subparsers,epilog,project_drs):
     #proc_group.add_argument('--num_procs',
     #                             default=1, type=int,
     #                             help='Use num_procs processes to perform the computation.')
+
+    cert_group = parser.add_argument_group('These arguments set credentials options')
+    cert_group.add_argument('--service',default='badc',choices=['badc'],
+                     help='Registering service. At the moment works only with badc.')
+    cert_group.add_argument('--username',default=None,
+                     help='User name for registering service given in --service. Will prompt for password once.')
+
     serial_group = parser.add_argument_group('Specify asynchronous behavior')
     serial_group.add_argument('--serial',default=False,action='store_true',help='Downloads the files serially.')
 

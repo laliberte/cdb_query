@@ -137,6 +137,8 @@ class SimpleTree:
             user_pass=getpass.getpass('Enter Credential phrase:')
             #Get certificates if requested by user:
             certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass)
+        else:
+            user_pass=None
 
         if not 'data_node_list' in self.header.keys():
             data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
@@ -181,12 +183,26 @@ class SimpleTree:
         return
 
     def download(self,options):
+        if 'username' in dir(options) and options.username!=None:
+            user_pass=getpass.getpass('Enter Credential phrase:')
+            #Get certificates if requested by user:
+            certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass)
+        else:
+            user_pass=None
+
         output=netCDF4.Dataset(options.out_diagnostic_netcdf_file,'w')
         retrieval_function='retrieve_path_data'
-        self.remote_retrieve_and_download(options,output,retrieval_function)
+        self.remote_retrieve_and_download(options,output,retrieval_function,user_pass=user_pass)
         return
 
     def download_raw(self,options):
+        if 'username' in dir(options) and options.username!=None:
+            user_pass=getpass.getpass('Enter Credential phrase:')
+            #Get certificates if requested by user:
+            certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass)
+        else:
+            user_pass=None
+
         output=options.out_destination
 
         #Describe the tree pattern:
@@ -196,10 +212,10 @@ class SimpleTree:
             output+='/tree/var/version/'
             
         retrieval_function='retrieve_path'
-        self.remote_retrieve_and_download(options,output,retrieval_function)
+        self.remote_retrieve_and_download(options,output,retrieval_function,user_pass=user_pass)
         return
 
-    def remote_retrieve_and_download(self,options,output,retrieval_function):
+    def remote_retrieve_and_download(self,options,output,retrieval_function,user_pass=None):
         #Recover the database meta data:
         self.load_header(options)
         self.load_database(options,find_simple)
@@ -235,7 +251,7 @@ class SimpleTree:
         self.close_database()
 
         #Launch the retrieval/monitoring:
-        launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_function,options)
+        launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_function,options,user_pass=user_pass)
         return
 
     def find_data_nodes_and_simulations(self,options):
@@ -425,7 +441,7 @@ def worker_retrieve(input, output):
     output.put('STOP')
     return
 
-def launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_function,options):
+def launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_function,options,user_pass=None):
     #Second step: Process the queues:
     #print datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     start_time = datetime.datetime.now()
