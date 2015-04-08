@@ -376,22 +376,27 @@ def apply_to_variable(database,options):
     var=[getattr(options,opt) for opt in database.drs.official_drs_no_version]
     tree=zip(database.drs.official_drs_no_version,var)
 
-    #Add the fixed variables if time_frequency was not kept as a field:
-    if options.add_fixed and not var[database.drs.official_drs_no_version.index('time_frequency')]==None:
+    #Decide whether to add fixed variables:
+
+    if options.add_fixed:
         #Specification for fixed vars:
         var_fx=[ getattr(options,opt) if not opt in database.drs.var_specs+['var',] else None for opt in database.drs.official_drs_no_version]
         var_fx=copy.copy(var)
-        var_fx[database.drs.official_drs_no_version.index('ensemble')]='r0i0p0'
+        var_fx[database.drs.official_drs_no_version.index('ensemble')]=['r0i0p0']
         var_fx[database.drs.official_drs_no_version.index('var')]=None
         for opt  in database.drs.var_specs+['var',]:
-            #if opt in ['time_frequency','cmor_table']:
-            if opt in ['time_frequency']:
-                var_fx[database.drs.official_drs_no_version.index(opt)]='fx'
+            if ( opt in ['time_frequency','cmor_table'] and
+                 not var[database.drs.official_drs_no_version.index(opt)]==None):
+                var_fx[database.drs.official_drs_no_version.index(opt)]=['fx']
         tree_fx=zip(database.drs.official_drs_no_version,var_fx)
         options_fx=copy.copy(options)
         for opt_id,opt in enumerate(tree_fx):
             if opt!=tree[opt_id]:
                 setattr(options_fx,opt[0],opt[1])
+                if ('X'+opt[0] in dir(options_fx) and
+                     isinstance(getattr(options_fx,'X'+opt[0]),list) and
+                     opt[1] in getattr(options_fx,'X'+opt[0])):
+                     getattr(options_fx,'X'+opt[0]).remove(opt[1])
 
     temp_files_list=[]
     for file in files_list:
