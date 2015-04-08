@@ -376,14 +376,16 @@ def apply_to_variable(database,options):
     var=[getattr(options,opt) for opt in database.drs.official_drs_no_version]
     tree=zip(database.drs.official_drs_no_version,var)
 
-    if options.add_fixed:
+    #Add the fixed variables if time_frequency was not kept as a field:
+    if options.add_fixed and not var[database.drs.official_drs_no_version.index('time_frequency')]==None:
         #Specification for fixed vars:
         var_fx=[ getattr(options,opt) if not opt in database.drs.var_specs+['var',] else None for opt in database.drs.official_drs_no_version]
         var_fx=copy.copy(var)
         var_fx[database.drs.official_drs_no_version.index('ensemble')]='r0i0p0'
         var_fx[database.drs.official_drs_no_version.index('var')]=None
         for opt  in database.drs.var_specs+['var',]:
-            if opt in ['time_frequency','cmor_table']:
+            #if opt in ['time_frequency','cmor_table']:
+            if opt in ['time_frequency']:
                 var_fx[database.drs.official_drs_no_version.index(opt)]='fx'
         tree_fx=zip(database.drs.official_drs_no_version,var_fx)
         options_fx=copy.copy(options)
@@ -448,10 +450,10 @@ def extract_netcdf_variable_recursive(output,data,level_desc,tree,options,check_
                     netcdf_pointers.replicate(output_grp,check_empty=check_empty)
     else:
         if len(tree)>0:
-            if group_name!='':
-                extract_netcdf_variable_recursive(output,data.groups[group_name],tree[0],tree[1:],options,check_empty=check_empty)
-            else:
+            if group_name=='':
                 extract_netcdf_variable_recursive(output,data,tree[0],tree[1:],options,check_empty=check_empty)
+            elif group_name in data.groups.keys():
+                extract_netcdf_variable_recursive(output,data.groups[group_name],tree[0],tree[1:],options,check_empty=check_empty)
         else:
             netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data.groups[group_name])
             netcdf_pointers.replicate(output,check_empty=check_empty)

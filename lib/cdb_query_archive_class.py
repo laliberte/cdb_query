@@ -183,26 +183,13 @@ class SimpleTree:
         return
 
     def download(self,options):
-        if 'username' in dir(options) and options.username!=None:
-            user_pass=getpass.getpass('Enter Credential phrase:')
-            #Get certificates if requested by user:
-            certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass)
-        else:
-            user_pass=None
 
         output=netCDF4.Dataset(options.out_diagnostic_netcdf_file,'w')
         retrieval_function='retrieve_path_data'
-        self.remote_retrieve_and_download(options,output,retrieval_function,user_pass=user_pass)
+        self.remote_retrieve_and_download(options,output,retrieval_function)
         return
 
     def download_raw(self,options):
-        if 'username' in dir(options) and options.username!=None:
-            user_pass=getpass.getpass('Enter Credential phrase:')
-            #Get certificates if requested by user:
-            certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass)
-        else:
-            user_pass=None
-
         output=options.out_destination
 
         #Describe the tree pattern:
@@ -212,10 +199,17 @@ class SimpleTree:
             output+='/tree/var/version/'
             
         retrieval_function='retrieve_path'
-        self.remote_retrieve_and_download(options,output,retrieval_function,user_pass=user_pass)
+        self.remote_retrieve_and_download(options,output,retrieval_function)
         return
 
-    def remote_retrieve_and_download(self,options,output,retrieval_function,user_pass=None):
+    def remote_retrieve_and_download(self,options,output,retrieval_function):
+        if 'username' in dir(options) and options.username!=None:
+            user_pass=getpass.getpass('Enter Credential phrase:')
+            #Get certificates if requested by user:
+            certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass)
+        else:
+            user_pass=None
+
         #Recover the database meta data:
         self.load_header(options)
         self.load_database(options,find_simple)
@@ -445,6 +439,7 @@ def launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_f
     #Second step: Process the queues:
     #print datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     start_time = datetime.datetime.now()
+    renewal_time = datetime.datetime.now()
     print('Remaining retrieval from data nodes:')
     queues_size=dict()
     for data_node in data_node_list:
@@ -459,7 +454,7 @@ def launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_f
             queues[data_node].put('STOP')
             worker_retrieve(queues[data_node], queues['end'])
             for tuple in iter(queues['end'].get, 'STOP'):
-                progress_report(retrieval_function,output,tuple,queues,queues_size,data_node_list,start_time)
+                renewal_time=progress_report(options,retrieval_function,output,tuple,queues,queues_size,data_node_list,start_time,renewal_time,user_pass=user_pass)
         
     else:
         for data_node in data_node_list:
@@ -472,7 +467,8 @@ def launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_f
 
         for data_node in data_node_list:
             for tuple in iter(queues['end'].get, 'STOP'):
-                progress_report(retrieval_function,output,tuple,queues,queues_size,data_node_list,start_time)
+                renewal_time=progress_report(options,retrieval_function,output,tuple,queues,queues_size,data_node_list,start_time,renewal_time,user_pass=user_pass)
+
 
     if retrieval_function=='retrieve_path_data':
         output.close()
@@ -482,12 +478,13 @@ def launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_f
     #print datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     return
 
-def progress_report(retrieval_function,output,tuple,queues,queues_size,data_node_list,start_time):
+def progress_report(options,retrieval_function,output,tuple,queues,queues_size,data_node_list,start_time,renewal_time,user_pass=None):
+    elapsed_time = datetime.datetime.now() - start_time
+    renewal_elapsed_time=datetime.datetime.now() - renewal_time
     if retrieval_function=='retrieve_path':
         #print '\t', queues['end'].get()
         if tuple!=None:
             print '\t', tuple
-            elapsed_time = datetime.datetime.now() - start_time
             print str(elapsed_time)
     elif retrieval_function=='retrieve_path_data':
         #netcdf_utils.assign_tree(output,*queues['end'].get())
@@ -496,12 +493,20 @@ def progress_report(retrieval_function,output,tuple,queues,queues_size,data_node
         string_to_print=[str(queues_size[data_node]-queues[data_node].qsize()).zfill(len(str(queues_size[data_node])))+
                          '/'+str(queues_size[data_node]) for
                             data_node in data_node_list]
-        elapsed_time = datetime.datetime.now() - start_time
         print str(elapsed_time)+', '+' | '.join(string_to_print)+'\r',
         #print str(elapsed_time)+'\r'
         #for data_node in data_node_list:
         #    print data_node, queues[data_node].qsize()
-    return
+
+    #Maintain certificates:
+    if ('username' in dir(options) and 
+        options.username!=None and
+        user_pass!=None and
+        renewal_elapsed_time > datetime.timedelta(hours=1)):
+        #Reactivate certificates:
+        certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass)
+        renewal_time=datetime.datetime.now()
+    return renewal_time
         
 def find_simple(pointers,file_expt,semaphores=None):
     #for item in dir(file_expt):
