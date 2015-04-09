@@ -131,9 +131,38 @@ class read_netCDF_pointers:
                 months_axis=np.array([date.month for date in date_axis])
                 #time_restriction=np.logical_and(time_restriction,months_axis==month)
                 time_restriction=np.logical_and(time_restriction,[True if month in months else False for month in months_axis])
+                #Check that months are continuous:
+                if months==[item for item in months if (item % 12 +1 in months or item-2% 12+1 in months)]:
+                    time_restriction_copy=copy.copy(time_restriction)
+                    #Months are continuous further restrict time_restriction to preserve continuity:
+                    if time_restriction[0] and months_axis[0]-2 % 12 +1 in months:
+                        time_restriction[0]=False
+                    if time_restriction[-1] and months_axis[-1] % 12 +1 in months:
+                        time_restriction[-1]=False
+
+                    for id in range(len(time_restriction))[1:-1]:
+                        if time_restriction[id]:
+                            #print date_axis[id], months_axis[id-1],months_axis[id], months_axis[id]-2 % 12 +1, time_restriction[id-1]
+                            if (( ((months_axis[id-1]-1)-(months_axis[id]-1)) % 12 ==11 or
+                                 months_axis[id-1] == months_axis[id] ) and
+                                not time_restriction[id-1]):
+                                time_restriction[id]=False
+
+                    for id in reversed(range(len(time_restriction))[1:-1]):
+                        if time_restriction[id]:
+                            if (( ((months_axis[id+1]-1)-(months_axis[id]-1)) % 12 ==1 or
+                                 months_axis[id+1] == months_axis[id] ) and
+                                not time_restriction[id+1]):
+                                time_restriction[id]=False
+                    #If all values were eliminated, do not ensure continuity:
+                    if not np.any(time_restriction):
+                        time_restriction=time_restriction_copy
+
             if days!=None:
                 days_axis=np.array([date.day for date in date_axis])
                 time_restriction=np.logical_and(time_restriction,[True if month in days else False for month in days_axis])
+                    
+                
         if previous and next:
             return time_axis,add_next(add_previous(time_restriction))
         elif previous and not next:

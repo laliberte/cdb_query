@@ -300,7 +300,9 @@ def download_raw(subparsers,epilog,project_drs):
                                  help='Retrieve only these comma-separated years.')
     inc_group.add_argument('--month',
                                  default=None, type=int_list,
-                                 help='Retrieve only these comma-separated months (1 to 12).')
+                                 help='Retrieve only these comma-separated months (1 to 12). \n\
+                                       If the list of months is composed only of continuous sublists (e.g. 1,2,12)\n\
+                                       it ensures that continuous months are retrieved.')
     inc_group.add_argument('--day',
                                  default=None, type=int_list,
                                  help='Retrieve only these comma-separated calendar days.')

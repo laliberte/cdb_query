@@ -29,7 +29,7 @@ def convert_hybrid(options):
 
     data_grp=data.groups['ta']
 
-    undesired_strings=['(n,k,j,i)','(k)','(n,j,i)']
+    undesired_strings=['(n,k,j,i)','(k)','(n,j,i)','(k,j,i)','(j,i)']
 
     formulas=dict()
     for lev_id in ['','_bnds']: 
