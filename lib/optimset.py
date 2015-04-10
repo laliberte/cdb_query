@@ -64,17 +64,6 @@ def find_time_file(pointers,file_expt,file_available=False,file_queryable=False,
     #Flag to check if the time axis is requested as relative:
     picontrol_min_time=(years_list_requested[0]<=10)
 
-    if file_expt.file_type in ['local_file']:
-        file_available=True
-        file_queryable=True
-
-    if not file_available:
-        file_available = retrieval_utils.check_file_availability(file_expt.path.split('|')[0])
-
-    if file_available and not file_queryable:
-        remote_data=remote_netcdf.remote_netCDF(file_expt.path.split('|')[0].replace('fileServer','dodsC'),semaphores)
-        file_queryable=remote_data.is_available()
-
     #Recover date range from filename:
     years_range = [int(date[:4]) for date in time_stamp.split('-')]
     #Check for yearly data
@@ -88,7 +77,20 @@ def find_time_file(pointers,file_expt,file_available=False,file_queryable=False,
     if not picontrol_min_time: years_list=[ year for year in years_list if year in years_list_requested]
 
     #Record in the database:
-    for year in years_list:
+    for year_id,year in enumerate(years_list):
+        if year_id==0:
+            #Check availability / queryability:
+            if file_expt.file_type in ['local_file']:
+                file_available=True
+                file_queryable=True
+
+            if not file_available:
+                file_available = retrieval_utils.check_file_availability(file_expt.path.split('|')[0])
+
+            if file_available and not file_queryable:
+                remote_data=remote_netcdf.remote_netCDF(file_expt.path.split('|')[0].replace('fileServer','dodsC'),semaphores)
+                file_queryable=remote_data.is_available()
+            
         for month in range(1,13):
             if  ( not ( (year==years_range[0] and month<months_range[0]) or
                      (year==years_range[1] and month>months_range[1])   ) ):
