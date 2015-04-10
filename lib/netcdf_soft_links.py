@@ -325,10 +325,15 @@ class read_netCDF_pointers:
                 data_node=retrieval_utils.get_data_node(path_to_retrieve,file_type)
                 if nc_Database.is_level_name_included_and_not_excluded('data_node',self,data_node):
                     if data_node in self.queues.keys():
-                        if var_to_retrieve==self.tree[-1]:
-                            #print 'Recovering '+var_to_retrieve+' in '+path_to_retrieve
-                            print 'Recovering '+'/'.join(self.tree)
-                        self.queues[data_node].put((retrieval_function,)+copy.deepcopy(args))
+                        if ( (isinstance(output,netCDF4.Dataset) or
+                             isinstance(output,netCDF4.Group)) or
+                             time_chunk==0 ):
+                            #If it is download: retrieve
+                            #If it is download_raw: retrieve only first time_chunk
+                            if var_to_retrieve==self.tree[-1]:
+                                #print 'Recovering '+var_to_retrieve+' in '+path_to_retrieve
+                                print 'Recovering '+'/'.join(self.tree)
+                            self.queues[data_node].put((retrieval_function,)+copy.deepcopy(args))
                     else:
                         if (isinstance(output,netCDF4.Dataset) or
                             isinstance(output,netCDF4.Group)):
