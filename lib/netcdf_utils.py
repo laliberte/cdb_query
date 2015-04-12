@@ -106,6 +106,13 @@ def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=No
         #Use the hdf5 library to find the real size of the stored array:
         if hdf5!=None:
             variable_size=hdf5[var_name].size
+            storage_space=hdf5[var_name].id.get_storage_size()
+            #if storage_space<8*variable_size:
+            #    print hdf5[var_name].dtype
+            #    print hdf5[var_name].shape
+            #    print hdf5[var_name].chunks
+            #    print variable_size, storage_space
+
         if variable_size>0:
             max_request=4500 #maximum request in Mb
             #max_request=9000 #maximum request in Mb
@@ -401,16 +408,22 @@ def apply_to_variable(database,options):
     temp_files_list=[]
     for file in files_list:
         data=netCDF4.Dataset(file,'r')
+        #Load the hdf5 api:
+        for item in h5py.h5f.get_obj_ids():
+            if 'name' in dir(item) and item.name==file:
+                data_hdf5=h5py.File(item)
         temp_file=file+'.pid'+str(os.getpid())
         output_tmp=netCDF4.Dataset(temp_file,'w',format='NETCDF4',diskless=True,persist=True)
+
         #extract_netcdf_variable_recursive(output_tmp,data,tree[0],tree[1:],options,check_empty=True)
-        extract_netcdf_variable_recursive(output_tmp,data,tree[0],tree[1:],options,check_empty=False)
+        extract_netcdf_variable_recursive(output_tmp,data,tree[0],tree[1:],options,check_empty=False,hdf5=data_hdf5)
         if options.add_fixed:
             #extract_netcdf_variable_recursive(output_tmp,data,tree_fx[0],tree_fx[1:],options_fx,check_empty=True)
-            extract_netcdf_variable_recursive(output_tmp,data,tree_fx[0],tree_fx[1:],options_fx,check_empty=False)
+            extract_netcdf_variable_recursive(output_tmp,data,tree_fx[0],tree_fx[1:],options_fx,check_empty=False,hdf5=data_hdf5)
         temp_files_list.append(temp_file)
         output_tmp.close()
         data.close()
+        data_hdf5.close()
 
     temp_files_list.append(temp_output_file_name)
 
@@ -440,7 +453,7 @@ def apply_to_variable(database,options):
         pass
     return (temp_output_file_name, var)
 
-def extract_netcdf_variable_recursive(output,data,level_desc,tree,options,check_empty=False):
+def extract_netcdf_variable_recursive(output,data,level_desc,tree,options,check_empty=False,hdf5=None):
     level_name=level_desc[0]
     group_name=level_desc[1]
     if group_name==None or isinstance(group_name,list):
@@ -449,19 +462,19 @@ def extract_netcdf_variable_recursive(output,data,level_desc,tree,options,check_
                  nc_Database.retrieve_tree_recursive_check_not_empty(options,data.groups[group])):
                 output_grp=replicate_group(output,data,group)
                 if len(tree)>0:
-                    extract_netcdf_variable_recursive(output_grp,data.groups[group],tree[0],tree[1:],options,check_empty=check_empty)
+                    extract_netcdf_variable_recursive(output_grp,data.groups[group],tree[0],tree[1:],options,check_empty=check_empty,hdf5=hdf5[group])
                 else:
                     netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data.groups[group])
-                    netcdf_pointers.replicate(output_grp,check_empty=check_empty)
+                    netcdf_pointers.replicate(output_grp,check_empty=check_empty,hdf5=hdf5[group])
     else:
         if len(tree)>0:
             if group_name=='':
-                extract_netcdf_variable_recursive(output,data,tree[0],tree[1:],options,check_empty=check_empty)
+                extract_netcdf_variable_recursive(output,data,tree[0],tree[1:],options,check_empty=check_empty,hdf5=hdf5)
             elif group_name in data.groups.keys():
-                extract_netcdf_variable_recursive(output,data.groups[group_name],tree[0],tree[1:],options,check_empty=check_empty)
+                extract_netcdf_variable_recursive(output,data.groups[group_name],tree[0],tree[1:],options,check_empty=check_empty,hdf5=hdf5[group_name])
         else:
             netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data.groups[group_name])
-            netcdf_pointers.replicate(output,check_empty=check_empty)
+            netcdf_pointers.replicate(output,check_empty=check_empty,hdf5=hdf5[group_name])
     return
 
 

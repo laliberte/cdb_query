@@ -27,7 +27,6 @@ class create_netCDF_pointers:
         self.semaphores=semaphores
         return
 
-
     def record_paths(self,output,paths_list,var,years,months):
         #First order source files by preference:
         soft_links=create_soft_links.soft_links(paths_list,self.file_type_list,self.data_node_list,semaphores=self.semaphores)
@@ -86,16 +85,20 @@ class read_netCDF_pointers:
         return
 
     def initialize_retrieval(self):
-        #Initialize variables:
-        self.retrievable_vars=[var for var in self.data_root.variables.keys() 
-                            if  var in self.data_root.groups['soft_links'].variables.keys()]
 
-        #Get list of paths:
-        self.paths_list=self.data_root.groups['soft_links'].variables['path'][:]
-        self.checksums_list=self.data_root.groups['soft_links'].variables['checksum'][:]
-        self.paths_id_list=self.data_root.groups['soft_links'].variables['path_id'][:]
-        self.file_type_list=self.data_root.groups['soft_links'].variables['file_type'][:]
-        self.version_list=self.data_root.groups['soft_links'].variables['version'][:]
+        if 'soft_links' in self.data_root.groups.keys():
+            #Initialize variables:
+            self.retrievable_vars=[var for var in self.data_root.variables.keys() 
+                                if  var in self.data_root.groups['soft_links'].variables.keys()]
+
+            #Get list of paths:
+            self.paths_list=self.data_root.groups['soft_links'].variables['path'][:]
+            self.checksums_list=self.data_root.groups['soft_links'].variables['checksum'][:]
+            self.paths_id_list=self.data_root.groups['soft_links'].variables['path_id'][:]
+            self.file_type_list=self.data_root.groups['soft_links'].variables['file_type'][:]
+            self.version_list=self.data_root.groups['soft_links'].variables['version'][:]
+        else:
+            self.retrievable_vars=[var for var in self.data_root.variables.keys()]
 
         self.variables=dict()
         return
@@ -110,7 +113,7 @@ class read_netCDF_pointers:
             output_grp=netcdf_utils.replicate_group(output,self.data_root,'soft_links')
             netcdf_utils.replicate_netcdf_file(output_grp,self.data_root.groups['soft_links'])
             for var_name in self.data_root.groups['soft_links'].variables.keys():
-                netcdf_utils.replicate_and_copy_variable(output_grp,self.data_root.groups['soft_links'],var_name)
+                netcdf_utils.replicate_and_copy_variable(output_grp,self.data_root.groups['soft_links'],var_name,hdf5=hdf5['soft_links'],check_empty=check_empty)
         return
 
     def retrieve_time_axis(self,years=None,months=None,days=None,min_year=None,previous=False,next=False):
@@ -255,22 +258,16 @@ class read_netCDF_pointers:
 
     def retrieve_variables(self,retrieval_function,var_to_retrieve,time_restriction,
                                             output,semaphores=None):
-                                #paths_list,file_type_list,paths_id_list,checksums_list,version_list,
-        paths_link=self.data_root.groups['soft_links'].variables[var_to_retrieve][time_restriction,0]
-        indices_link=self.data_root.groups['soft_links'].variables[var_to_retrieve][time_restriction,1]
-
-        #Convert paths_link to id in path dimension:
-        paths_link=np.array([list(self.paths_id_list).index(path_id) for path_id in paths_link])
-
-        #Sort the paths so that we query each only once:
-        unique_paths_list_id, sorting_paths=np.unique(paths_link,return_inverse=True)
-        
         #Replicate variable to output:
         if (isinstance(output,netCDF4.Dataset) or
             isinstance(output,netCDF4.Group)):
             output=netcdf_utils.replicate_netcdf_var(output,self.data_root,var_to_retrieve,chunksize=-1,zlib=True)
             #file_path=output.filepath()
             file_path=None
+            if not 'soft_links' in self.data_root.groups.keys():
+                #Variable is stored here and simply retrieve it:
+                output.variables[var_to_retrieve][:]=self.data_root[var_to_retrieve][time_restriction]
+                return
         else:
             file_path=output
 
@@ -285,6 +282,17 @@ class read_netCDF_pointers:
                     dimensions[dim] = np.arange(len(self.data_root.dimensions[dim]))
                 unsort_dimensions[dim] = None
                 dims_length.append(len(dimensions[dim]))
+
+        # Determine the paths_ids for soft links:
+        paths_link=self.data_root.groups['soft_links'].variables[var_to_retrieve][time_restriction,0]
+        indices_link=self.data_root.groups['soft_links'].variables[var_to_retrieve][time_restriction,1]
+
+        #Convert paths_link to id in path dimension:
+        paths_link=np.array([list(self.paths_id_list).index(path_id) for path_id in paths_link])
+
+        #Sort the paths so that we query each only once:
+        unique_paths_list_id, sorting_paths=np.unique(paths_link,return_inverse=True)
+
         #Maximum number of time step per request:
         max_request=450 #maximum request in Mb
         max_time_steps=max(int(np.floor(max_request*1024*1024/(32*np.prod(dims_length)))),1)
