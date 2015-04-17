@@ -175,6 +175,9 @@ def validate(subparsers,epilog,project_drs):
                      help='If you set this value to your user name for registering service given in --service \n\
                            cdb_query will prompt you once for your password and will ensure that your credentials \n\
                            are active for the duration of the process.')
+    cert_group.add_argument('--password_from_pipe',default=False,action='store_true',
+                        help='If activated it is expected that the user is passing a password through piping\n\
+                              Example: echo $PASS | cdb_query_'+project_drs.project+' ...')
     cert_group.add_argument('--service',default='badc',choices=['badc'],
                      help='Registering service. At the moment works only with badc.')
 
@@ -219,6 +222,9 @@ def download(subparsers,epilog,project_drs):
                      help='If you set this value to your user name for registering service given in --service \n\
                            cdb_query will prompt you once for your password and will ensure that your credentials \n\
                            are active for the duration of the process.')
+    cert_group.add_argument('--password_from_pipe',default=False,action='store_true',
+                        help='If activated it is expected that the user is passing a password through piping\n\
+                              Example: echo $PASS | cdb_query_'+project_drs.project+' ...')
     cert_group.add_argument('--service',default='badc',choices=['badc'],
                      help='Registering service. At the moment works only with badc.')
 
@@ -280,6 +286,9 @@ def download_raw(subparsers,epilog,project_drs):
                      help='If you set this value to your user name for registering service given in --service \n\
                            cdb_query will prompt you once for your password and will ensure that your credentials \n\
                            are active for the duration of the process.')
+    cert_group.add_argument('--password_from_pipe',default=False,action='store_true',
+                        help='If activated it is expected that the user is passing a password through piping\n\
+                              Example: echo $PASS | cdb_query_'+project_drs.project+' ...')
     cert_group.add_argument('--service',default='badc',choices=['badc'],
                      help='Registering service. At the moment works only with badc.')
 
@@ -363,6 +372,9 @@ def apply(subparsers,epilog,project_drs):
     parser.add_argument('out_netcdf_file',
                                  help='NETCDF file (output)')
 
+    parser.add_argument('--applying_to_soft_links',default=False,action='store_true',
+                                 help='When applying an operator to soft links use this options for siginificant speed up.')
+
     select_group = parser.add_argument_group('These arguments specify the structure of the output')
     select_group.add_argument('--add_fixed',default=False, action='store_true',help='include fixed variables')
     select_group.add_argument('-k','--keep_field',action='append', type=str, choices=project_drs.official_drs_no_version,
@@ -381,7 +393,7 @@ def apply(subparsers,epilog,project_drs):
     excluded_slicing_arguments(exc_group,project_drs,action_type='append')
     comp_group = parser.add_argument_group('Complex Query')
     comp_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.official_drs_no_version,
-                                       help='Complex queyr fields.' )
+                                       help='Complex query fields.' )
     complex_slicing(comp_group,project_drs,action_type='append')
     return
 
@@ -392,6 +404,9 @@ def certificates(subparsers,epilog,project_drs):
                                            epilog=epilog_certificates
                                          )
     parser.add_argument('username',help="Username")
+    parser.add_argument('--password_from_pipe',default=False,action='store_true',
+                        help='If activated it is expected that the user is passing a password through piping\n\
+                              Example: echo $PASS | cdb_query_'+project_drs.project+' ...')
     #parser.add_argument('password',help="Password")
     parser.add_argument('service',help="Registering service",choices=['badc'])
     return

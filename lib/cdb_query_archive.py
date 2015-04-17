@@ -1,4 +1,5 @@
 import os
+import sys
 import hashlib
 
 import filesystem_query
@@ -77,7 +78,10 @@ F. Laliberté, Juckes, M., Denvil, S., Kushner, P. J., TBD, Submitted.'.format(v
         netcdf_utils.convert(options,project_drs)
     elif options.command=='certificates':
         #certificates.retrieve_certificates(options.username,options.password,options.registering_service)
-        user_pass=getpass.getpass('Enter Credential phrase:')
+        if not options.password_from_pipe:
+            user_pass=getpass.getpass('Enter Credential phrase:')
+        else:
+            user_pass=sys.stdin.readline()
         certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass)
         #certificates.test_certificates()
     elif 'in_diagnostic_headers_file' in dir(options):

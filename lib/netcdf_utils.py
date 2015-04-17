@@ -102,16 +102,17 @@ def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=No
     replicate_netcdf_var(output,data,var_name,datatype=datatype,fill_value=fill_value,add_dim=add_dim,chunksize=chunksize,zlib=zlib)
 
     if len(data.variables[var_name].shape)>0:
+        if ( 'soft_links' in data.groups.keys() and 
+              var_name in data.groups['soft_links'].variables.keys()
+              and check_empty):
+            #Variable has a soft link. Do you try to replicate:
+            return output
+
         variable_size=min(data.variables[var_name].shape)
         #Use the hdf5 library to find the real size of the stored array:
         if hdf5!=None:
             variable_size=hdf5[var_name].size
             storage_space=hdf5[var_name].id.get_storage_size()
-            #if storage_space<8*variable_size:
-            #    print hdf5[var_name].dtype
-            #    print hdf5[var_name].shape
-            #    print hdf5[var_name].chunks
-            #    print variable_size, storage_space
 
         if variable_size>0:
             max_request=4500 #maximum request in Mb
@@ -516,7 +517,11 @@ def distributed_apply(function_handle,database,options,vars_list,args=tuple()):
                     if 'name' in dir(item) and item.name==temp_file_name:
                         data_hdf5=h5py.File(item)
                 tree=zip(database.drs.official_drs_no_version,var)
-                replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=True)
+                if ('applying_to_soft_links' in dir(options) and
+                    options.applying_to_soft_links):
+                    replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=True)
+                else:
+                    replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=False)
                 data.close()
                 data_hdf5.close()
                 try:
@@ -536,7 +541,11 @@ def distributed_apply(function_handle,database,options,vars_list,args=tuple()):
                     if 'name' in dir(item) and item.name==temp_file_name:
                         data_hdf5=h5py.File(item)
                 tree=zip(database.drs.official_drs_no_version,var)
-                replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=True)
+                if ('applying_to_soft_links' in dir(options) and
+                    options.applying_to_soft_links):
+                    replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=True)
+                else:
+                    replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=False)
                 data.close()
                 data_hdf5.close()
                 try:

@@ -266,7 +266,7 @@ class read_netCDF_pointers:
             file_path=None
             if not 'soft_links' in self.data_root.groups.keys():
                 #Variable is stored here and simply retrieve it:
-                output.variables[var_to_retrieve][:]=self.data_root[var_to_retrieve][time_restriction]
+                output.variables[var_to_retrieve][:]=self.data_root.variables[var_to_retrieve][time_restriction]
                 return
         else:
             file_path=output

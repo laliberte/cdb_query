@@ -134,8 +134,12 @@ class SimpleTree:
         #    self.header['data_node_list']=options.data_nodes
 
         if 'username' in dir(options) and options.username!=None:
-            user_pass=getpass.getpass('Enter Credential phrase:')
-            #Get certificates if requested by user:
+            if not options.password_from_pipe:
+                user_pass=getpass.getpass('Enter Credential phrase:')
+                #Get certificates if requested by user:
+            else:
+                user_pass=sys.stdin.readline()
+
             certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass)
         else:
             user_pass=None
@@ -172,7 +176,7 @@ class SimpleTree:
             manager=multiprocessing.Manager()
             semaphores=dict()
             for data_node in  self.header['data_node_list']:
-                semaphores[data_node]=manager.Semaphore(1)
+                semaphores[data_node]=manager.Semaphore(5)
             #semaphores=[]
             #original_stderr = sys.stderr
             #sys.stderr = NullDevice()
@@ -204,7 +208,10 @@ class SimpleTree:
 
     def remote_retrieve_and_download(self,options,output,retrieval_function):
         if 'username' in dir(options) and options.username!=None:
-            user_pass=getpass.getpass('Enter Credential phrase:')
+            if not options.password_from_pipe:
+                user_pass=getpass.getpass('Enter Credential phrase:')
+            else:
+                user_pass=sys.stdin.readline()
             #Get certificates if requested by user:
             certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass)
         else:
@@ -366,7 +373,6 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
             setattr(options_copy,desc,simulation[desc_id])
         args_list.append((function_handle,copy.copy(database),options_copy)+args+(queue_result,))
     
-
     #Span up to options.num_procs processes and each child process analyzes only one simulation
     #pool=multiprocessing.Pool(processes=options.num_procs,initializer=initializer,initargs=[queue_output],maxtasksperchild=1)
     if options.num_procs>1:
