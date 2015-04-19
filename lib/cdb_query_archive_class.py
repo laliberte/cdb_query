@@ -356,6 +356,7 @@ class NullDevice():
 
 def distributed_recovery(function_handle,database,options,simulations_list,manager,args=tuple(),user_pass=None):
 
+    renewal_time = datetime.datetime.now()
     #Open output file:
     output_file_name=options.out_diagnostic_netcdf_file
     output_root=netCDF4.Dataset(output_file_name,'w',format='NETCDF4')
@@ -400,9 +401,14 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
             pass
         output_root.sync()
 
-        if 'username' in dir(options) and options.username!=None and user_pass!=None:
+        renewal_elapsed_time=datetime.datetime.now() - renewal_time
+        if ('username' in dir(options) and 
+            options.username!=None and
+            user_pass!=None and
+            renewal_elapsed_time > datetime.timedelta(hours=1)):
             #Reactivate certificates:
             certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass)
+            renewal_time=datetime.datetime.now()
     if options.num_procs>1:
         pool.close()
         pool.join()
