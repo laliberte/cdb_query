@@ -384,6 +384,7 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
             result=worker_query(arg)
         filename=queue_result.get()
         source_data=netCDF4.Dataset(filename,'r')
+        source_data_hdf5=None
         for item in h5py.h5f.get_obj_ids():
             if 'name' in dir(item) and item.name==filename:
                 source_data_hdf5=h5py.File(item)
