@@ -395,7 +395,8 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
         #print_recursive(source_data)
         nc_Database.record_to_file(output_root,source_data,source_data_hdf5)
         source_data.close()
-        source_data_hdf5.close()
+        if source_data_hdf5!=None:
+            source_data_hdf5.close()
         try:
             os.remove(filename)
         except OSError:
