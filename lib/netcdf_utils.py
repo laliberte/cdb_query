@@ -413,6 +413,7 @@ def apply_to_variable(database,options):
     for file in files_list:
         data=netCDF4.Dataset(file,'r')
         #Load the hdf5 api:
+        data_hdf5=None
         for item in h5py.h5f.get_obj_ids():
             if 'name' in dir(item) and item.name==file:
                 data_hdf5=h5py.File(item)
@@ -427,7 +428,8 @@ def apply_to_variable(database,options):
         temp_files_list.append(temp_file)
         output_tmp.close()
         data.close()
-        data_hdf5.close()
+        if data_hdf5!=None:
+            data_hdf5.close()
 
     temp_files_list.append(temp_output_file_name)
 
@@ -469,16 +471,25 @@ def extract_netcdf_variable_recursive(output,data,level_desc,tree,options,check_
                     extract_netcdf_variable_recursive(output_grp,data.groups[group],tree[0],tree[1:],options,check_empty=check_empty,hdf5=hdf5[group])
                 else:
                     netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data.groups[group])
-                    netcdf_pointers.replicate(output_grp,check_empty=check_empty,hdf5=hdf5[group])
+                    if hdf5!=None:
+                        netcdf_pointers.replicate(output_grp,check_empty=check_empty,hdf5=hdf5[group])
+                    else:
+                        netcdf_pointers.replicate(output_grp,check_empty=check_empty)
     else:
         if len(tree)>0:
             if group_name=='':
                 extract_netcdf_variable_recursive(output,data,tree[0],tree[1:],options,check_empty=check_empty,hdf5=hdf5)
             elif group_name in data.groups.keys():
-                extract_netcdf_variable_recursive(output,data.groups[group_name],tree[0],tree[1:],options,check_empty=check_empty,hdf5=hdf5[group_name])
+                if hdf5!=None:
+                    extract_netcdf_variable_recursive(output,data.groups[group_name],tree[0],tree[1:],options,check_empty=check_empty,hdf5=hdf5[group_name])
+                else:
+                    extract_netcdf_variable_recursive(output,data.groups[group_name],tree[0],tree[1:],options,check_empty=check_empty)
         else:
             netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data.groups[group_name])
-            netcdf_pointers.replicate(output,check_empty=check_empty,hdf5=hdf5[group_name])
+            if hdf5!=None:
+                netcdf_pointers.replicate(output,check_empty=check_empty,hdf5=hdf5[group_name])
+            else:
+                netcdf_pointers.replicate(output,check_empty=check_empty)
     return
 
 
@@ -516,6 +527,7 @@ def distributed_apply(function_handle,database,options,vars_list,args=tuple()):
                 var=description[1]
                 data=netCDF4.Dataset(temp_file_name,'r')
                 #data_hdf5=h5py.File(temp_file_name,'r')
+                data_hdf5=None
                 for item in h5py.h5f.get_obj_ids():
                     if 'name' in dir(item) and item.name==temp_file_name:
                         data_hdf5=h5py.File(item)
@@ -526,7 +538,8 @@ def distributed_apply(function_handle,database,options,vars_list,args=tuple()):
                 else:
                     replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=False)
                 data.close()
-                data_hdf5.close()
+                if data_hdf5!=None:
+                    data_hdf5.close()
                 try:
                     os.remove(temp_file_name)
                 except OSError:
@@ -540,6 +553,7 @@ def distributed_apply(function_handle,database,options,vars_list,args=tuple()):
                 worker(arg)
                 temp_file_name, var=queue.get()
                 data=netCDF4.Dataset(temp_file_name,'r')
+                data_hdf5=None
                 for item in h5py.h5f.get_obj_ids():
                     if 'name' in dir(item) and item.name==temp_file_name:
                         data_hdf5=h5py.File(item)
@@ -550,7 +564,8 @@ def distributed_apply(function_handle,database,options,vars_list,args=tuple()):
                 else:
                     replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=False)
                 data.close()
-                data_hdf5.close()
+                if data_hdf5!=None:
+                    data_hdf5.close()
                 try:
                     os.remove(temp_file_name)
                 except OSError:
