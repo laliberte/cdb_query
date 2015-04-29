@@ -94,7 +94,10 @@ def replicate_full_netcdf_recursive(output,data,hdf5=None,check_empty=False):
     if len(data.groups.keys())>0:
         for group in data.groups.keys():
             output_grp=replicate_group(output,data,group)
-            replicate_full_netcdf_recursive(output_grp,data.groups[group],hdf5=hdf5[group],check_empty=check_empty)
+            if hdf5!=None:
+                replicate_full_netcdf_recursive(output_grp,data.groups[group],hdf5=hdf5[group],check_empty=check_empty)
+            else:
+                replicate_full_netcdf_recursive(output_grp,data.groups[group],check_empty=check_empty)
     return
 
 def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=None,add_dim=None,chunksize=None,zlib=None,hdf5=None,check_empty=False):
