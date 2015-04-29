@@ -50,7 +50,8 @@ def check_file_availability_wget(url_name):
 
 def check_file_availability(url_name,stop=False):
     #Some monkeypathcing to get rid of SSL certificate verification:
-    ssl._create_default_https_context = ssl._create_unverified_context
+    if hasattr(ssl, '_create_unverified_context'): 
+        ssl._create_default_https_context = ssl._create_unverified_context
     cj = CookieJar()
     opener = urllib2.build_opener(HTTPSClientAuthHandler(os.environ['X509_USER_PROXY'], os.environ['X509_USER_PROXY']),urllib2.HTTPCookieProcessor(cj))
     urllib2.install_opener(opener)
@@ -71,7 +72,8 @@ def check_file_availability(url_name,stop=False):
 def download_secure(url_name,dest_name):
     if check_file_availability(url_name):
         #Some monkeypathcing to get rid of SSL certificate verification:
-        ssl._create_default_https_context = ssl._create_unverified_context
+        if hasattr(ssl, '_create_unverified_context'): 
+            ssl._create_default_https_context = ssl._create_unverified_context
         cj = CookieJar()
         opener = urllib2.build_opener(HTTPSClientAuthHandler(os.environ['X509_USER_PROXY'], os.environ['X509_USER_PROXY']),urllib2.HTTPCookieProcessor(cj))
         data = opener.open(url_name)
