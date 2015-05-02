@@ -43,7 +43,8 @@ setup(
         entry_points = {
                   'console_scripts': [
                            'cdb_query_CMIP5 = '+package_name+'.cdb_query_archive:main_CMIP5',
-                           'cdb_query_CORDEX = '+package_name+'.cdb_query_archive:main_CORDEX'
+                           'cdb_query_CORDEX = '+package_name+'.cdb_query_archive:main_CORDEX',
+                           'cdb_query_NMME = '+package_name+'.cdb_query_archive:main_NMME'
                                      ],
                        }
     )

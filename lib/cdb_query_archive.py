@@ -27,12 +27,16 @@ def main_CORDEX():
     main('CORDEX')
     return
 
+def main_NMME():
+    main('NMME')
+    return
+
 def main(project):
     import argparse 
     import textwrap
 
     #Option parser
-    version_num='1.2.1'
+    version_num='1.2.2'
     description=textwrap.dedent('''\
     This script queries a {0} archive. It can query:
     1. a local POSIX-based archive that follows the {0} DRS

@@ -40,6 +40,9 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
     #Search the ESGF:
     ctx = conn.new_context(project=nc_Database.drs.project,
                         experiment=experiment)
+    #print nc_Database.drs.project, experiment
+    #ctx = conn.new_context(project='NMME',experiment='19810101')
+    #print ctx.facet_counts
     ctx=ctx.constrain(**{field:var_desc[field_id] for field_id, field in enumerate(nc_Database.drs.var_specs)})
 
     for field in nc_Database.drs.slicing_args:
@@ -93,7 +96,7 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
             file_list_remote=[item for sublist in file_list_remote for item in sublist]
         except:
             warnings.warn('Search path {0} is unresponsive at the moment'.format(search_path),UserWarning)
-       
+
         map(lambda x: record_url(x,nc_Database),file_list_remote)
         return []
 
@@ -102,6 +105,8 @@ def record_url(remote_file_desc,nc_Database):
     nc_Database.file_expt.data_node=retrieval_utils.get_data_node(remote_file_desc['url'],remote_file_desc['file_type'])
     if remote_file_desc['file_type'] in nc_Database.drs.remote_file_types and remote_file_desc['checksum']:
         nc_Database.file_expt.path+='|'+remote_file_desc['checksum']
+    else:
+        nc_Database.file_expt.path+='|'
 
     for val in nc_Database.drs.remote_fields:
         setattr(nc_Database.file_expt,val,remote_file_desc[val])
@@ -170,6 +175,8 @@ def get_url_remote(item,file_type_list,drs):
                         file_info[val]=version
                 elif val=='model_version':
                     file_info[val]='v'+item.json['version']
+                elif val=='ensemble' and drs.project in ['NMME']:
+                    file_info[val]=item.json['instance_id'].split('_')[-2]
                 else:
                     file_info[val]=item.json[val]
 
@@ -178,6 +185,7 @@ def get_url_remote(item,file_type_list,drs):
                 file_info[val]=None
         #if (file_info['checksum']!=None and 
         #    set(item.urls.keys()).issuperset(drs.required_file_types)):
-        if file_info['checksum']!=None:
+        if (file_info['checksum']!=None or
+            drs.project in ['NMME']):
             url_name.append(file_info)
     return url_name

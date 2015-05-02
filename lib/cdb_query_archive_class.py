@@ -80,32 +80,34 @@ class SimpleTree:
                 print field_name
             return
         else:
-            #Check if this is an update and if this an update find the previous simulations list:
-            prev_simulations_list=self.load_previous_simulations(options)
+            if ('catalogue_missing_simulations_desc' in dir(self.drs)
+               and self.drs.catalogue_missing_simulations_desc):
+                #This allows some projects to be inconsistent in their publications:
+                filepath=discover.discover(self,options)
+                try:
+                    os.rename(filepath,filepath.replace('.pid'+str(os.getpid()),''))
+                except OSError:
+                    pass
+            else:
+                #Check if this is an update and if this an update find the previous simulations list:
+                prev_simulations_list=self.load_previous_simulations(options)
 
-            simulations_list=discover.discover_simulations_recursive(self,options,self.drs.simulations_desc)
-            simulations_list=sorted(list(set(simulations_list).difference(prev_simulations_list)))
-            print "This is a list of simulations that COULD satisfy the query:"
-            for simulation in simulations_list:
-                print ','.join(simulation)
-            print "cdb_query will now attempt to confirm that these simulations have all the requested variables."
-            print "This can take some time. Please abort if there are not enough simulations for your needs."
+                simulations_list=discover.discover_simulations_recursive(self,options,self.drs.simulations_desc)
+                simulations_list=sorted(list(set(simulations_list).difference(prev_simulations_list)))
+                print "This is a list of simulations that COULD satisfy the query:"
+                for simulation in simulations_list:
+                    print ','.join(simulation)
+                print "cdb_query will now attempt to confirm that these simulations have all the requested variables."
+                print "This can take some time. Please abort if there are not enough simulations for your needs."
 
-            import random
-            random.shuffle(simulations_list)
+                import random
+                random.shuffle(simulations_list)
 
-            #if options.num_procs==1:
-            #    filepath=discover.discover(self,options)
-            #    try:
-            #        os.rename(filepath,filepath.replace('.pid'+str(os.getpid()),''))
-            #    except OSError:
-            #        pass
-            #else:
-            manager=multiprocessing.Manager()
-            output=distributed_recovery(discover.discover,self,options,simulations_list,manager)
+                manager=multiprocessing.Manager()
+                output=distributed_recovery(discover.discover,self,options,simulations_list,manager)
 
-            #Close dataset
-            output.close()
+                #Close dataset
+                output.close()
         return
 
     def load_previous_simulations(self,options):

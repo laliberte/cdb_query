@@ -130,28 +130,35 @@ def retrieve_path(in_dict,pointer_var):
     if not (isinstance(decomposition,list) and len(decomposition)>1):
         return
 
+    if (isinstance(decomposition,list) and len(decomposition)==1):
+        return
+
     root_path=decomposition[0]
     dest_name+=root_path.split('/')[-1]
-    try: 
-        md5sum=md5_for_file(open(dest_name,'r'))
-    except:
-        md5sum=''
-    if md5sum==decomposition[1]:
-        return 'File '+dest_name+' found. MD5 OK! Not retrieving.'
-
-    size_string=download_secure(root_path,dest_name)
-    try: 
-        md5sum=md5_for_file(open(dest_name,'r'))
-    except:
-        md5sum=''
-    if md5sum!=decomposition[1]:
-        try:
-            os.remove(dest_name)
-        except:
-            pass
-        return size_string+'\n'+'File '+dest_name+' does not have the same MD5 checksum as published on the ESGF. Removing this file...'
+    if decomposition[1]=='':
+        size_string=download_secure(root_path,dest_name)
+        return 'Could NOT check MD5 checksum of retrieved file because checksum was not a priori available.'
     else:
-        return size_string+'\n'+'Checking MD5 checksum of retrieved file... MD5 OK!'
+        try: 
+            md5sum=md5_for_file(open(dest_name,'r'))
+        except:
+            md5sum=''
+        if md5sum==decomposition[1]:
+            return 'File '+dest_name+' found. MD5 OK! Not retrieving.'
+
+        size_string=download_secure(root_path,dest_name)
+        try: 
+            md5sum=md5_for_file(open(dest_name,'r'))
+        except:
+            md5sum=''
+        if md5sum!=decomposition[1]:
+            try:
+                os.remove(dest_name)
+            except:
+                pass
+            return size_string+'\n'+'File '+dest_name+' does not have the same MD5 checksum as published on the ESGF. Removing this file...'
+        else:
+            return size_string+'\n'+'Checking MD5 checksum of retrieved file... MD5 OK!'
 
 def find_local_file(source_dir,data):
     paths_list=data.variables['path'][:]
