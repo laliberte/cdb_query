@@ -372,6 +372,10 @@ def apply(options,project_drs):
     #Always add the fixed variables to apply:
     #vars_list=[ var for var in vars_list if var[database.drs.official_drs_no_version.index('ensemble')] !='r0i0p0' ]
 
+    #Randonmize the list:
+    import random
+    random.shuffle(vars_list)
+
     output_root=distributed_apply(apply_to_variable,database,options,vars_list)
     database.record_header(options,output_root)
     output_root.close()

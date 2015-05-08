@@ -25,6 +25,8 @@ F. Laliberté, Juckes, M., Denvil, S., Kushner, P. J., Bull. Amer. Meteor. Soc.,
 Version History
 ---------------
 
+1.2.2: Several bug fixes. Added support for project NMME.
+
 1.2.1: Enabled certficates management within validate, download and download_raw
 
 1.1.0: Required update for the certificates function. The certificates function in prior versions has been deprecated.
