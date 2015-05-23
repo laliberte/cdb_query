@@ -63,7 +63,7 @@ class remote_netCDF:
             self.semaphores[self.remote_data_node].release()
         return
 
-    def open_with_error(self):
+    def open_with_error(self,num_trials=1):
         error_statement=' '.join('''
 The url {0} could not be opened. 
 Copy and paste this url in a browser and try downloading the file.
@@ -72,15 +72,15 @@ it still does not work it is likely that your certificates are either
 not available or out of date.'''.splitlines()).format(self.file_name.replace('dodsC','fileServer'))
         self.acquire_semaphore()
         try:
-            try:
-                self.Dataset=netCDF4.Dataset(self.file_name)
-            except:
-                time.sleep(30)
-                self.Dataset=netCDF4.Dataset(self.file_name)
+            self.Dataset=netCDF4.Dataset(self.file_name)
         except:
-            self.close()
-            if not retrieval_utils.check_file_availability(self.file_name.replace('dodsC','fileServer')):
-                raise dodsError(error_statement)
+            if num_trials>0:
+                time.sleep(30)
+                self.open_with_error(num_trials=num_trials-1)
+            else:
+                self.close()
+                if not retrieval_utils.check_file_availability(self.file_name.replace('dodsC','fileServer')):
+                    raise dodsError(error_statement)
         return
 
     def is_available(self):

@@ -51,12 +51,15 @@ HTTP.SSL.CAPATH=%(esgfdir)s/certificates"""
     oo.write(onlineca_get_trustroots_wget())
     oo.close()
 
-    subprocess.call(['bash',esgfdir+'/onlineca-get-trustroots-wget.sh','-b','-U','https://'+registering_service+'/onlineca/trustroots/','-c',esgfdir+'/certificates'])
+    call_to_script=['bash',esgfdir+'/onlineca-get-trustroots-wget.sh','-b','-U','https://'+registering_service+'/onlineca/trustroots/','-c',esgfdir+'/certificates']
+    #print ' '.join(call_to_script)
+    subprocess.call(call_to_script)
 
     oo = open(esgfdir+'/onlineca-cert-wget.sh','w')
     oo.write(onlineca_get_cert_wget())
     oo.close()
     call_to_script=['bash',esgfdir+'/onlineca-cert-wget.sh','-l',username,'-U','https://'+registering_service+'/onlineca/certificate/','-c',esgfdir]
+    #print ' '.join(call_to_script)
     if user_pass!=None:
         call_to_script.append('-S')
         p=subprocess.Popen(call_to_script,stdout=subprocess.PIPE,stdin=subprocess.PIPE)
