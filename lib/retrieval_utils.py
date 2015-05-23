@@ -242,9 +242,15 @@ def retrieve_slice(variable,indices,unsort_indices,dim,dimensions,dim_id,getitem
                                                  indices[dim]),
                               axis=dim_id),unsort_indices[dim],axis=dim_id)
     else:
-        return np.take(np.concatenate(map(lambda x: variable.__getitem__(getitem_tuple+(x,)),
-                                                 indices[dim]),
-                              axis=dim_id),unsort_indices[dim],axis=dim_id)
+        try:
+            return np.take(np.concatenate(map(lambda x: variable.__getitem__(getitem_tuple+(x,)),
+                                                     indices[dim]),
+                                  axis=dim_id),unsort_indices[dim],axis=dim_id)
+        except RuntimeError:
+            time.sleep(15)
+            return np.take(np.concatenate(map(lambda x: variable.__getitem__(getitem_tuple+(x,)),
+                                                     indices[dim]),
+                                  axis=dim_id),unsort_indices[dim],axis=dim_id)
 
 def getitem_pedantic(shape,getitem_tuple):
     getitem_tuple_fixed=()
