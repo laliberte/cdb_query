@@ -82,10 +82,10 @@ def convert_hybrid(options):
         script_to_call='ncks -3 -G : -g '+ var + ' -A ' +' '.join([options.in_file,options.out_file])
         out=subprocess.call(script_to_call,shell=True)
 
-    script_to_call='ncap2 -O -s \''+'bnds=bnds.double();'+'\' '+options.out_file+' '+options.out_file
+    script_to_call='ncap2 -3 -O -s \''+'bnds=bnds.double();'+'\' '+options.out_file+' '+options.out_file
     out=subprocess.call(script_to_call,shell=True)
     #script_to_call='ncap2 -3 -O -s \''+first_target+'\' '+options.out_file+' '+options.out_file
-    script_to_call='ncap2 -O -s \''+first_target+second_target+'\' '+options.out_file+' '+options.out_file
+    script_to_call='ncap2 -3 -O -s \''+first_target+second_target+'\' '+options.out_file+' '+options.out_file
     #print script_to_call
     out=subprocess.call(script_to_call,shell=True)
 
