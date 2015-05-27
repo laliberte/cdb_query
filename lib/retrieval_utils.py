@@ -199,21 +199,29 @@ def retrieve_path_data(in_dict,pointer_var):
 
     remote_data=remote_netcdf.remote_netCDF(path,[])
     remote_data.open_with_error()
-    dimensions=remote_data.Dataset.variables[var].dimensions
+    try:
+        dimensions=remote_data.Dataset.variables[var].dimensions
+    except RuntimeError:
+        time.sleep(15)
+        dimensions=remote_data.Dataset.variables[var].dimensions
     for dim in dimensions:
         if dim != 'time':
-            if dim in remote_data.Dataset.variables.keys():
-                remote_dim = remote_data.Dataset.variables[dim][:]
-            else:
-                remote_dim = np.arange(len(remote_data.Dataset.dimensions[dim]))
+            try:
+                if dim in remote_data.Dataset.variables.keys():
+                    remote_dim = remote_data.Dataset.variables[dim][:]
+                else:
+                    remote_dim = np.arange(len(remote_data.Dataset.dimensions[dim]))
+            except RuntimeError:
+                time.sleep(15)
+                if dim in remote_data.Dataset.variables.keys():
+                    remote_dim = remote_data.Dataset.variables[dim][:]
+                else:
+                    remote_dim = np.arange(len(remote_data.Dataset.dimensions[dim]))
+
             indices[dim], unsort_indices[dim] = indices_utils.prepare_indices(
                                                             indices_utils.get_indices_from_dim(remote_dim,indices[dim]))
     
-    #try:
     retrieved_data=grab_remote_indices(remote_data.Dataset.variables[var],indices,unsort_indices)
-    #except RuntimeError:
-    #    retrieved_data=grab_remote_indices_pedantic(remote_data.Dataset.variables[var],indices,unsort_indices)
-
     remote_data.close()
     return (retrieved_data, sort_table,pointer_var+[var])
 
@@ -281,8 +289,6 @@ def retrieve_slice_pedantic(variable,indices,unsort_indices,dim,dimensions,dim_i
                               axis=dim_id),unsort_indices[dim],axis=dim_id)
     else:
         shape=variable.shape
-        print map(lambda x: getitem_tuple+(x,),indices[dim])
-        print map(lambda x: getitem_pedantic(shape,getitem_tuple+(x,)),indices[dim])
         return np.take(np.concatenate(map(lambda x: variable.__getitem__(getitem_pedantic(variable.shape,getitem_tuple+(x,))),
                                                  indices[dim]),
                               axis=dim_id),unsort_indices[dim],axis=dim_id)
@@ -320,4 +326,5 @@ def remove_zero_if_added(arr,indices,dim_id):
         return np.take(arr,range(1,arr.shape[dim_id]),axis=dim_id)
     else:
         return arr
+
 
