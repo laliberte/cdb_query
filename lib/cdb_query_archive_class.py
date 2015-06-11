@@ -381,6 +381,7 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
     if options.num_procs>1:
         pool=multiprocessing.Pool(processes=options.num_procs,maxtasksperchild=1)
         result=pool.map_async(worker_query,args_list,chunksize=1)
+        pool.close()
     for arg in args_list:
         if options.num_procs==1:
             result=worker_query(arg)
@@ -414,7 +415,6 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
             certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass)
             renewal_time=datetime.datetime.now()
     if options.num_procs>1:
-        pool.close()
         pool.join()
 
     return output_root
