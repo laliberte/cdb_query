@@ -523,8 +523,8 @@ def distributed_apply(function_handle,database,options,vars_list,args=tuple()):
         #Span up to options.num_procs processes and each child process analyzes only one simulation
         if options.num_procs>1:
             pool=multiprocessing.Pool(processes=options.num_procs,maxtasksperchild=1)
-            #result=pool.map_async(worker,args_list,chunksize=1)
-            result=pool.map(worker,args_list,chunksize=1)
+            result=pool.map_async(worker,args_list,chunksize=1)
+            #result=pool.map(worker,args_list)
             #Record files to main file:
             for arg in args_list:
                 description=queue.get()
