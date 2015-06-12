@@ -526,57 +526,35 @@ def distributed_apply(function_handle,database,options,vars_list,args=tuple()):
             result=pool.map_async(worker,args_list,chunksize=1)
             #result=pool.map(worker,args_list)
             #Record files to main file:
-            for arg in args_list:
-                description=queue.get()
-                temp_file_name=description[0]
-                var=description[1]
-                data=netCDF4.Dataset(temp_file_name,'r')
-                #data_hdf5=h5py.File(temp_file_name,'r')
-                data_hdf5=None
-                for item in h5py.h5f.get_obj_ids():
-                    if 'name' in dir(item) and item.name==temp_file_name:
-                        data_hdf5=h5py.File(item)
-                tree=zip(database.drs.official_drs_no_version,var)
-                if ('applying_to_soft_links' in dir(options) and
-                    options.applying_to_soft_links):
-                    replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=True)
-                else:
-                    replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=False)
-                data.close()
-                if data_hdf5!=None:
-                    data_hdf5.close()
-                try:
-                    os.remove(temp_file_name)
-                except OSError:
-                    pass
-                output_root.sync()
+        for arg in args_list:
+            if options.num_procs==1:
+                worker(arg)
+            description=queue.get(1e20)
+            temp_file_name=description[0]
+            var=description[1]
+            data=netCDF4.Dataset(temp_file_name,'r')
+            #data_hdf5=h5py.File(temp_file_name,'r')
+            data_hdf5=None
+            for item in h5py.h5f.get_obj_ids():
+                if 'name' in dir(item) and item.name==temp_file_name:
+                    data_hdf5=h5py.File(item)
+            tree=zip(database.drs.official_drs_no_version,var)
+            if ('applying_to_soft_links' in dir(options) and
+                options.applying_to_soft_links):
+                replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=True)
+            else:
+                replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=False)
+            data.close()
+            if data_hdf5!=None:
+                data_hdf5.close()
+            try:
+                os.remove(temp_file_name)
+            except OSError:
+                pass
+            output_root.sync()
+        if options.num_procs>1:
             pool.close()
             pool.join()
-        else:
-            for arg in args_list:
-                worker(arg)
-                temp_file_name, var=queue.get()
-                data=netCDF4.Dataset(temp_file_name,'r')
-                data_hdf5=None
-                for item in h5py.h5f.get_obj_ids():
-                    if 'name' in dir(item) and item.name==temp_file_name:
-                        data_hdf5=h5py.File(item)
-                tree=zip(database.drs.official_drs_no_version,var)
-                if ('applying_to_soft_links' in dir(options) and
-                    options.applying_to_soft_links):
-                    replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=True)
-                else:
-                    replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=False)
-                data.close()
-                if data_hdf5!=None:
-                    data_hdf5.close()
-                try:
-                    os.remove(temp_file_name)
-                except OSError:
-                    pass
-                output_root.sync()
-
-
         return output_root
 
 def replace_netcdf_variable_recursive(output,data,level_desc,tree,hdf5=None,check_empty=False):

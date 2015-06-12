@@ -385,7 +385,7 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
     for arg in args_list:
         if options.num_procs==1:
             result=worker_query(arg)
-        filename=queue_result.get()
+        filename=queue_result.get(1e20)
         source_data=netCDF4.Dataset(filename,'r')
         source_data_hdf5=None
         for item in h5py.h5f.get_obj_ids():
