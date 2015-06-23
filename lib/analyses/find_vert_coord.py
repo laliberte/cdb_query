@@ -54,11 +54,11 @@ def convert_hybrid(options):
     data.close()
     first_target=';'.join([formulas['lev'],
                     '*'+formulas['lev_bnds'],
-                    'd'+target+'[$time,$lev,$lat,$lon]='+target+'_bnds(:,:,:,:,1)-'+target+'_bnds(:,:,:,:,0);'],
+                    'd'+target+'[$time,$lev,$lat,$lon]='+target+'_bnds(:,:,:,:,1)-'+target+'_bnds(:,:,:,:,0);',
                     'defdim("slev",$lev.size+1)',
                     'slev[$slev]=0.0'
                     'slev(0:$lev.size-1)=lev_bounds(0:$lev.size-1,0)'
-                    'slev($lev.size)=lev_bounds($lev.size-1,1)')
+                    'slev($lev.size)=lev_bounds($lev.size-1,1)'])
 
     if target=='p':
         second_target='dz=-287.04*(1+0.61)*ta*dp/p/9.8;'
