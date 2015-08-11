@@ -159,9 +159,10 @@ def discover_simulations_recursive(database,options,simulations_desc,async=True)
         options_copy.list_only_field=None
         args_list=[]
         for val in output:
-            setattr(options_copy,simulations_desc[0],val)
-            args_list.append((copy.copy(database),copy.copy(options_copy),simulations_desc[1:],val))
-            setattr(options_copy,simulations_desc[0],None)
+            if (getattr(options_copy,simulations_desc[0]) != None):
+                setattr(options_copy,simulations_desc[0],val)
+                args_list.append((copy.copy(database),copy.copy(options_copy),simulations_desc[1:],val))
+                setattr(options_copy,simulations_desc[0],None)
         if 'num_procs' in dir(options_copy) and options_copy.num_procs>1 and async==True and len(args_list)>0:
             pool=multiprocessing.Pool(processes=min(options_copy.num_procs,len(args_list)))
             simulations_list=[item for sublist in pool.map(wrapper_discover_simulations_recursive,args_list) for item in sublist]
