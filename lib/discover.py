@@ -152,24 +152,25 @@ def wrapper_discover_simulations_recursive(args):
     return [(args[-1],)+item for item in discover_simulations_recursive(*args[:-1],async=False)]
 
 def discover_simulations_recursive(database,options,simulations_desc,async=True):
+    options_copy=copy.copy(options)
     if isinstance(simulations_desc,list) and len(simulations_desc)>1:
-        options.list_only_field=simulations_desc[0]
-        output=discover(database,options)
-        options.list_only_field=None
+        options_copy.list_only_field=simulations_desc[0]
+        output=discover(database,options_copy)
+        options_copy.list_only_field=None
         args_list=[]
         for val in output:
-            setattr(options,simulations_desc[0],val)
-            args_list.append((copy.copy(database),copy.copy(options),simulations_desc[1:],val))
-            setattr(options,simulations_desc[0],None)
-        if 'num_procs' in dir(options) and options.num_procs>1 and async==True and len(args_list)>0:
-            pool=multiprocessing.Pool(processes=min(options.num_procs,len(args_list)))
+            setattr(options_copy,simulations_desc[0],val)
+            args_list.append((copy.copy(database),copy.copy(options_copy),simulations_desc[1:],val))
+            setattr(options_copy,simulations_desc[0],None)
+        if 'num_procs' in dir(options_copy) and options_copy.num_procs>1 and async==True and len(args_list)>0:
+            pool=multiprocessing.Pool(processes=min(options_copy.num_procs,len(args_list)))
             simulations_list=[item for sublist in pool.map(wrapper_discover_simulations_recursive,args_list) for item in sublist]
             pool.close()
         else:
             simulations_list=[item for sublist in map(wrapper_discover_simulations_recursive,args_list) for item in sublist]
     else:
-        options.list_only_field=simulations_desc[0]
-        simulations_list=[(item,) for item in discover(database,options)]
-        options.list_only_field=None
+        options_copy.list_only_field=simulations_desc[0]
+        simulations_list=[(item,) for item in discover(database,options_copy)]
+        options_copy.list_only_field=None
     return simulations_list
 

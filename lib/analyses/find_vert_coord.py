@@ -54,14 +54,14 @@ def convert_hybrid(options):
     data.close()
     first_target=';'.join([formulas['lev'],
                     '*'+formulas['lev_bnds'],
-                    'd'+target+'[$time,$lev,$lat,$lon]='+target+'_bnds(:,:,:,:,1)-'+target+'_bnds(:,:,:,:,0)',
+                    'd'+target+'[$time,$lev,$lat,$lon]=('+target+'_bnds(:,:,:,:,1)-'+target+'_bnds(:,:,:,:,0)).float()',
                     'defdim("slev",$lev.size+1)',
                     'slev[$slev]=0.0',
                     'slev(0:$lev.size-1)=lev_bnds(0:$lev.size-1,0)',
                     'slev($lev.size)=lev_bnds($lev.size-1,1)'])+';'
 
     if target=='p':
-        second_target='dz=-287.04*(1+0.61)*ta*dp/p/9.8;'
+        second_target='dz=(-287.04*(1+0.61)*ta*dp/p/9.8).float();'
         second_target+='*z_bnds=p_bnds;z_bnds=0.0;'
         second_target+='for(*it=0;it<$time.size-1;it++){z_bnds(it,0,:,:,0)=orog;};for(*iz=0;iz<$lev.size-2;iz++){'
         second_target+='z_bnds(:,iz,:,:,1)=z_bnds(:,iz,:,:,0)+dz(:,iz,:,:);'
