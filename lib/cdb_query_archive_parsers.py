@@ -245,10 +245,12 @@ def download(subparsers,epilog,project_drs):
                                  default=None, type=int_list,
                                  help='Retrieve only these comma-separated calendar days.')
     inc_group.add_argument('--previous',
-                                 default=False, action='store_true',
+                                 #default=False, action='store_true',
+                                 default=0,action='count',
                                  help='Retrieve data from specified year, month, day AND the time step just BEFORE this retrieved data.')
     inc_group.add_argument('--next',
-                                 default=False, action='store_true',
+                                 #default=False, action='store_true',
+                                 default=0,action='count',
                                  help='Retrieve data from specified year, month, day AND the time step just AFTER this retrieved data.')
     #slicing_arguments(inc_group,project_drs)
     #exc_group = parser.add_argument_group('Exclusions')

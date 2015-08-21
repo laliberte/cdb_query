@@ -116,7 +116,7 @@ class read_netCDF_pointers:
                 netcdf_utils.replicate_and_copy_variable(output_grp,self.data_root.groups['soft_links'],var_name,hdf5=hdf5['soft_links'],check_empty=check_empty)
         return
 
-    def retrieve_time_axis(self,years=None,months=None,days=None,min_year=None,previous=False,next=False):
+    def retrieve_time_axis(self,years=None,months=None,days=None,min_year=None,previous=0,next=0):
         time_axis=self.data_root.variables['time'][:]
         time_restriction=np.ones(time_axis.shape,dtype=np.bool)
         if years!=None or months!=None or days!=None:
@@ -166,16 +166,15 @@ class read_netCDF_pointers:
                 time_restriction=np.logical_and(time_restriction,[True if month in days else False for month in days_axis])
                     
                 
-        if previous and next:
-            return time_axis,add_next(add_previous(time_restriction))
-        elif previous and not next:
-            return time_axis,add_previous(time_restriction)
-        elif not previous and next:
-            return time_axis,add_next(time_restriction)
-        else:
-            return time_axis,time_restriction
+        if previous>0:
+            for prev_num in range(previous):
+                time_restriction=add_previous(time_restriction)
+        if next>0:
+            for next_num in range(next):
+                time_restriction=add_next(time_restriction)
+        return time_axis,time_restriction
 
-    def retrieve(self,output,retrieval_function,year=None,month=None,day=None,min_year=None,previous=False,next=False,source_dir=None,semaphores=[]):
+    def retrieve(self,output,retrieval_function,year=None,month=None,day=None,min_year=None,previous=0,next=0,source_dir=None,semaphores=[]):
         self.initialize_retrieval()
         if source_dir!=None:
             #Check if the file has already been retrieved:
