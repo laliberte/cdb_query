@@ -60,7 +60,6 @@ F. Laliberté, Juckes, M., Denvil, S., Kushner, P. J., TBD, Submitted.'.format(v
     cdb_query_archive_parsers.generate_subparsers(parser,epilog,project_drs)
 
     options=parser.parse_args()
-    print options
 
     if 'related_experiments' in dir(options) and not options.related_experiments:
         project_drs.simulations_desc.append('experiment')
