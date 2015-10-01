@@ -18,6 +18,26 @@ def output_arguments(parser):
                                  help='NETCDF Diagnostic paths file (output)')
     return
 
+def certificates_arguments(parser,project_drs):
+    cert_group = parser.add_argument_group('Use these arguments to let cdb_query manage your credentials')
+    cert_group.add_argument('--username',default=None,
+                     help='If you set this value to your user name for registering service given in --service \n\
+                           cdb_query will prompt you once for your password and will ensure that your credentials \n\
+                           are active for the duration of the process.')
+    cert_group.add_argument('--password_from_pipe',default=False,action='store_true',
+                        help='If activated it is expected that the user is passing a password through piping\n\
+                              Example: echo $PASS | cdb_query_'+project_drs.project+' ...')
+    cert_group.add_argument('--service',default='badc',choices=['badc'],
+                     help='Registering service. At the moment works only with badc.')
+    return
+
+def processing_arguments(parser,project_drs):
+    proc_group = parser.add_argument_group('These arguments set threading options')
+    proc_group.add_argument('--num_procs',
+                                 default=1, type=int,
+                                 help='Use num_procs processes to perform the computation.')
+    return
+
 def slicing_arguments(parser,project_drs,exclude_args=[],action_type='store'):
     #Define the data slicing arguments in a dictionnary:
     for arg in project_drs.slicing_args.keys():
@@ -96,10 +116,9 @@ def ask(subparsers,epilog,project_drs):
     parser.add_argument('--distrib',
                                  default=False, action='store_true',
                                  help='Distribute the search. Will likely result in a pointers originating from one node.')
-    proc_group = parser.add_argument_group('These arguments set threading options')
-    proc_group.add_argument('--num_procs',
-                                 default=1, type=int,
-                                 help='Use num_procs processes to perform the computation.')
+
+    certificates_arguments(parser,project_drs)
+    processing_arguments(parser,project_drs)
     inc_group = parser.add_argument_group('Inclusions')
     slicing_arguments(inc_group,project_drs)
     return parser
@@ -163,31 +182,14 @@ def validate(subparsers,epilog,project_drs):
                      default=False, action='store_true',
                      help='When this option is activated, checks if a file is queryable before proceeding. More robust but slower.')
 
-
     input_arguments(parser)
     output_arguments(parser)
     parser.add_argument('--in_diagnostic_headers_file',
                                  help='Alternative diagnostic headers file (to modify target validate)',\
                                  type=str,default=None)
 
-    cert_group = parser.add_argument_group('Use these arguments to let cdb_query manage your ESGF credentials')
-    cert_group.add_argument('--username',default=None,
-                     help='If you set this value to your user name for registering service given in --service \n\
-                           cdb_query will prompt you once for your password and will ensure that your credentials \n\
-                           are active for the duration of the process.')
-    cert_group.add_argument('--password_from_pipe',default=False,action='store_true',
-                        help='If activated it is expected that the user is passing a password through piping\n\
-                              Example: echo $PASS | cdb_query_'+project_drs.project+' ...')
-    cert_group.add_argument('--service',default='badc',choices=['badc'],
-                     help='Registering service. At the moment works only with badc.')
-
-
-    proc_group = parser.add_argument_group('These arguments set threading options')
-    proc_group.add_argument('--num_procs',
-                                 default=1, type=int,#choices=xrange(1,6),
-                                 help=textwrap.dedent('Use num_procs processes to perform the computation. This function might not work with your installation.'))
-                                 #\n\
-                                 #      Has been found to be rather unstable with more than 5 processses.'))
+    certificates_arguments(parser,project_drs)
+    processing_arguments(parser,project_drs)
 
     data_node_group = parser.add_argument_group('Restrict search to specific data nodes')
     data_node_group.add_argument('--data_node',type=str,action='append',help='Consider only the specified data nodes')
@@ -217,16 +219,8 @@ def download(subparsers,epilog,project_drs):
     input_arguments(parser)
     output_arguments(parser)
 
-    cert_group = parser.add_argument_group('Use these arguments to let cdb_query manage your ESGF credentials')
-    cert_group.add_argument('--username',default=None,
-                     help='If you set this value to your user name for registering service given in --service \n\
-                           cdb_query will prompt you once for your password and will ensure that your credentials \n\
-                           are active for the duration of the process.')
-    cert_group.add_argument('--password_from_pipe',default=False,action='store_true',
-                        help='If activated it is expected that the user is passing a password through piping\n\
-                              Example: echo $PASS | cdb_query_'+project_drs.project+' ...')
-    cert_group.add_argument('--service',default='badc',choices=['badc'],
-                     help='Registering service. At the moment works only with badc.')
+    certificates_arguments(parser,project_drs)
+    processing_arguments(parser,project_drs)
 
     serial_group = parser.add_argument_group('Specify asynchronous behavior')
     serial_group.add_argument('--serial',default=False,action='store_true',help='Downloads the files serially.')
@@ -245,23 +239,14 @@ def download(subparsers,epilog,project_drs):
                                  default=None, type=int_list,
                                  help='Retrieve only these comma-separated calendar days.')
     inc_group.add_argument('--previous',
-                                 #default=False, action='store_true',
                                  default=0,action='count',
                                  help='Retrieve data from specified year, month, day AND the time step just BEFORE this retrieved data.')
     inc_group.add_argument('--next',
-                                 #default=False, action='store_true',
                                  default=0,action='count',
                                  help='Retrieve data from specified year, month, day AND the time step just AFTER this retrieved data.')
-    #slicing_arguments(inc_group,project_drs)
-    #exc_group = parser.add_argument_group('Exclusions')
-    #excluded_slicing_arguments(exc_group,project_drs)
     slicing_arguments(inc_group,project_drs,action_type='append')
     exc_group = parser.add_argument_group('Exclusions')
     excluded_slicing_arguments(exc_group,project_drs,action_type='append')
-    #comp_group = parser.add_argument_group('Complex Query')
-    #comp_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.base_drs,
-    #                                   help='List the field (or fields if repeated) found in the file' )
-    #complex_slicing(comp_group,project_drs,action_type='append')
 
     data_node_group = parser.add_argument_group('Limit download from specific data nodes')
     data_node_group.add_argument('--data_node',type=str,action='append',help='Retrieve only from the specified data nodes')
@@ -278,22 +263,8 @@ def download_raw(subparsers,epilog,project_drs):
     input_arguments(parser)
     parser.add_argument('out_destination',
                              help='Destination directory for retrieval.')
-    #proc_group = parser.add_argument_group('These arguments set threading options')
-    #proc_group.add_argument('--num_procs',
-    #                             default=1, type=int,
-    #                             help='Use num_procs processes to perform the computation.')
 
-    cert_group = parser.add_argument_group('Use these arguments to let cdb_query manage your ESGF credentials')
-    cert_group.add_argument('--username',default=None,
-                     help='If you set this value to your user name for registering service given in --service \n\
-                           cdb_query will prompt you once for your password and will ensure that your credentials \n\
-                           are active for the duration of the process.')
-    cert_group.add_argument('--password_from_pipe',default=False,action='store_true',
-                        help='If activated it is expected that the user is passing a password through piping\n\
-                              Example: echo $PASS | cdb_query_'+project_drs.project+' ...')
-    cert_group.add_argument('--service',default='badc',choices=['badc'],
-                     help='Registering service. At the moment works only with badc.')
-
+    certificates_arguments(parser,project_drs)
 
     serial_group = parser.add_argument_group('Specify asynchronous behavior')
     serial_group.add_argument('--serial',default=False,action='store_true',help='Downloads the files serially.')
@@ -323,16 +294,10 @@ def download_raw(subparsers,epilog,project_drs):
     inc_group.add_argument('--next',
                                  default=False, action='store_true',
                                  help='Retrieve data from specified year, month, day AND the time step just AFTER this retrieved data.')
-    #slicing_arguments(inc_group,project_drs)
-    #exc_group = parser.add_argument_group('Exclusions')
-    #excluded_slicing_arguments(exc_group,project_drs)
+
     slicing_arguments(inc_group,project_drs,action_type='append')
     exc_group = parser.add_argument_group('Exclusions')
     excluded_slicing_arguments(exc_group,project_drs,action_type='append')
-    #comp_group = parser.add_argument_group('Complex Query')
-    #comp_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.base_drs,
-    #                                   help='List the field (or fields if repeated) found in the file' )
-    #complex_slicing(comp_group,project_drs,action_type='append')
     return
 
 def convert(subparsers,epilog,project_drs):
@@ -344,10 +309,7 @@ def convert(subparsers,epilog,project_drs):
     input_arguments(parser)
     parser.add_argument('out_destination',
                              help='Destination directory for retrieval.')
-    proc_group = parser.add_argument_group('These arguments set threading options')
-    proc_group.add_argument('--num_procs',
-                                 default=1, type=int,
-                                 help='Use num_procs processes to perform the computation.')
+    processing_arguments(parser,project_drs)
 
     inc_group = parser.add_argument_group('Inclusions')
     slicing_arguments(inc_group,project_drs)
@@ -381,10 +343,7 @@ def apply(subparsers,epilog,project_drs):
     select_group.add_argument('--add_fixed',default=False, action='store_true',help='include fixed variables')
     select_group.add_argument('-k','--keep_field',action='append', type=str, choices=project_drs.official_drs_no_version,
                                        help='Keep these fields in the applied file.' )
-    proc_group = parser.add_argument_group('These arguments set threading options')
-    proc_group.add_argument('--num_procs',
-                                 default=1, type=int,
-                                 help='Use num_procs processes to perform the computation.')
+    processing_arguments(parser,project_drs)
 
     inc_group = parser.add_argument_group('Inclusions')
     #slicing_arguments(inc_group,project_drs)

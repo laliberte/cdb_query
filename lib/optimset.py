@@ -19,14 +19,14 @@ import remote_netcdf
 queryable_file_types=['HTTPServer','local_file']
 
 def find_time(pointers,file_expt,semaphores=None):
-    #session,file_expt,path_name,file_type,propagated_values):
-    #Top function to define how the time axis is created:
     if file_expt.file_type in queryable_file_types:
+        #Will check both availability and queryability:
         find_time_file(pointers,file_expt,semaphores=semaphores)
-    #elif file_expt.file_type in ['GridFTP']:
-    #    find_time_file(pointers,file_expt)
-    #elif file_expt.file_type in ['local_file','OPeNDAP']:
-    #    find_time_opendap(pointers,file_expt)
+    else:
+        #Assume both availability and queryability:
+        find_time_file(pointers,file_expt,
+                                file_available=True,
+                                file_queryable=True,semaphores=semaphores)
     return
 
 def find_time_available(pointers,file_expt,semaphores=None):
@@ -37,8 +37,8 @@ def find_time_available(pointers,file_expt,semaphores=None):
 
 def find_time_queryable(pointers,file_expt,semaphores=None):
     #same as find_time but keeps non-queryable files:
-    if file_expt.file_type in queryable_file_types:
-        find_time_file(pointers,file_expt,file_queryable=True,semaphores=semaphores)
+    #if file_expt.file_type in queryable_file_types:
+    find_time_file(pointers,file_expt,file_queryable=True,semaphores=semaphores)
     return
         
 def find_time_file(pointers,file_expt,file_available=False,file_queryable=False,semaphores=None):#session,file_expt,path_name):

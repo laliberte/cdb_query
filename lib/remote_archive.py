@@ -73,8 +73,8 @@ class DRS:
         return
 
     def CMIP5(self):
-        self.file_types=['local_file', 'HTTPServer', 'GridFTP']
-        self.remote_file_types=['HTTPServer','GridFTP']
+        self.file_types=['local_file', 'HTTPServer', 'GridFTP','FTPServer']
+        self.remote_file_types=['HTTPServer','GridFTP','FTPServer']
         self.required_file_types=['HTTPServer','OPENDAP']
 
         self.var_specs=['time_frequency','realm','cmor_table']
@@ -164,6 +164,53 @@ class DRS:
         self.discover_exclude_args=['experiment','var','time_frequency','realm','year','month','file_type']
 
         self.remote_fields=['institute','model','ensemble','file_type','version']
+
+        self.known_fields=['experiment','var'] + self.var_specs
+
+        return
+
+    def LRFTIP(self):
+        self.file_types=['local_file', 'FTPServer']
+        self.remote_file_types=['FTPServer']
+
+        self.var_specs=['time_frequency','realm']
+
+        self.official_drs=[
+                            'model',
+                            'experiment',
+                            'time_frequency',
+                            'realm',
+                            'var',
+                            'ensemble'
+                            ]
+                            #'version'
+        #self.official_drs_no_version=copy.copy(self.official_drs)
+        #self.official_drs_no_version.remove('version')
+
+        self.filename_drs=['var','cmor_table','model','experiment','ensemble']
+
+        self.header_desc=['search_list','file_type_list','months_list','data_node_list','experiment_list','variable_list']
+        self.base_drs=self.official_drs+[
+                  'file_type',
+                  'time',
+                  'data_node',
+                  'path'
+                  ]
+        self.simulations_desc=['model','ensemble']
+        self.catalogue_missing_simulations_desc=True
+
+        self.slicing_args={
+                      'model': [str,'Model name'],
+                      'experiment': [str,'Experiment name'],
+                      'var': [str,'Variable name, e.g. tas'],
+                      'time_frequency': [str,'Frequency, e.g. day'],
+                      'realm': [str,'Realm, e.g. atmos'],
+                      'ensemble': [str,'RIP identifier, e.g. r1i1p1']
+                      }
+                      #'file_type': [str,'File type: '+','.join(self.file_types)]
+        self.discover_exclude_args=['experiment','var','time_frequency','realm','year','month','file_type']
+
+        self.remote_fields=['model','ensemble','file_type']
 
         self.known_fields=['experiment','var'] + self.var_specs
 

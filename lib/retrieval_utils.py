@@ -1,9 +1,12 @@
 import os
+import shutil
 import subprocess
 
 import urllib2, httplib
 from cookielib import CookieJar
 import ssl
+
+import ftplib
 
 import copy
 
@@ -49,6 +52,10 @@ def check_file_availability_wget(url_name):
         return False
 
 def check_file_availability(url_name,stop=False):
+    #If ftp, assume available:
+    if len(url_name)>3 and url_name[:3]=='ftp':
+        return True
+
     #Some monkeypathcing to get rid of SSL certificate verification:
     if hasattr(ssl, '_create_unverified_context'): 
         ssl._create_default_https_context = ssl._create_unverified_context
@@ -69,7 +76,44 @@ def check_file_availability(url_name,stop=False):
             time.sleep(15)
             return check_file_availability(url_name,stop=True)
 
-def download_secure(url_name,dest_name):
+def download_secure(url_name,dest_name,file_type,username=None,user_pass=None):
+    if file_type=='HTTPServer':
+        return download_secure_HTTP(url_name,dest_name)
+    elif file_type=='local':
+        return download_secure_local(url_name,dest_name)
+    elif file_type=='FTPServer':
+        return download_secure_FTP(url_name,dest_name,username=username,user_pass=user_pass)
+
+def download_secure_FTP(url_name,dest_name,username=None,user_pass=None):
+    if (username!=None and 
+        user_pass!=None):
+        #Use credentials:
+        ftp=ftplib.FTP(url_name.split('/')[2],username,user_pass)
+
+    else:
+        #Do not use credentials and hope for anonymous:
+        ftp=ftplib.FTP(url_name.split('/')[2])
+
+    directory=os.path.dirname(dest_name)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    with open(dest_name,'wb') as local_file:
+        ftp.retrbinary('RETR %s' % '/'+'/'.join(url_name.split('/')[3:]), local_file.write)
+    
+    ftp.close()
+    file_size=np.float(os.stat(dest_name).st_size)
+    return "Downloading: %s MB: %s" % (dest_name, file_size/2.0**20)
+
+def download_secure_local(url_name,dest_name):
+    directory=os.path.dirname(dest_name)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    shutil.copy(url_name,dest_name)
+    file_size=np.float(os.stat(dest_name).st_size)
+    return "Downloading: %s MB: %s" % (dest_name, file_size/2.0**20)
+
+def download_secure_HTTP(url_name,dest_name):
     if check_file_availability(url_name):
         #Some monkeypathcing to get rid of SSL certificate verification:
         if hasattr(ssl, '_create_unverified_context'): 
@@ -118,7 +162,10 @@ def retrieve_path(in_dict,pointer_var):
     path=in_dict['path']
     out_destination=in_dict['file_path']
     version=in_dict['version']
+    file_type=in_dict['file_type']
     var=in_dict['var']
+    username=in_dict['username']
+    user_pass=in_dict['user_pass']
     dest_name=out_destination.replace('tree','/'.join(pointer_var[:-1]))
     dest_name=dest_name.replace('var',var)
     dest_name=dest_name.replace('version',version)
@@ -136,7 +183,7 @@ def retrieve_path(in_dict,pointer_var):
     root_path=decomposition[0]
     dest_name+=root_path.split('/')[-1]
     if decomposition[1]=='':
-        size_string=download_secure(root_path,dest_name)
+        size_string=download_secure(root_path,dest_name,file_type,username=username,user_pass=user_pass)
         return 'Could NOT check MD5 checksum of retrieved file because checksum was not a priori available.'
     else:
         try: 
@@ -146,7 +193,7 @@ def retrieve_path(in_dict,pointer_var):
         if md5sum==decomposition[1]:
             return 'File '+dest_name+' found. MD5 OK! Not retrieving.'
 
-        size_string=download_secure(root_path,dest_name)
+        size_string=download_secure(root_path,dest_name,file_type,username=username,user_pass=user_pass)
         try: 
             md5sum=md5_for_file(open(dest_name,'r'))
         except:
@@ -197,134 +244,30 @@ def retrieve_path_data(in_dict,pointer_var):
     unsort_indices=copy.copy(in_dict['unsort_indices'])
     sort_table=in_dict['sort_table']
 
-    remote_data=remote_netcdf.remote_netCDF(path,[])
+    remote_data=remote_netcdf.remote_netCDF(path,'HTTPServer',[])
     remote_data.open_with_error()
-    try:
-        dimensions=remote_data.Dataset.variables[var].dimensions
-    except RuntimeError:
-        time.sleep(15)
-        dimensions=remote_data.Dataset.variables[var].dimensions
+    dimensions=remote_data.retrieve_dimension_list(var)
     for dim in dimensions:
         if dim != 'time':
-            try:
-                if dim in remote_data.Dataset.variables.keys():
-                    remote_dim = remote_data.Dataset.variables[dim][:]
-                else:
-                    remote_dim = np.arange(len(remote_data.Dataset.dimensions[dim]))
-            except RuntimeError:
-                time.sleep(15)
-                if dim in remote_data.Dataset.variables.keys():
-                    remote_dim = remote_data.Dataset.variables[dim][:]
-                else:
-                    remote_dim = np.arange(len(remote_data.Dataset.dimensions[dim]))
-
+            remote_dim, attributes=remote_data.retrieve_dimension(dim)
             indices[dim], unsort_indices[dim] = indices_utils.prepare_indices(
                                                             indices_utils.get_indices_from_dim(remote_dim,indices[dim]))
     
-    retrieved_data=grab_remote_indices(remote_data.Dataset.variables[var],indices,unsort_indices)
+    retrieved_data=remote_data.grab_indices(var,indices,unsort_indices)
     remote_data.close()
     return (retrieved_data, sort_table,pointer_var+[var])
 
 def get_data_node(path,file_type):
     if file_type=='HTTPServer':
         return '/'.join(path.split('/')[:3])
+    elif file_type=='OPeNDAP':
+        return '/'.join(path.split('/')[:3])
+    elif file_type=='FTPServer':
+        return '/'.join(path.split('/')[:3])
     elif file_type=='local_file':
         return '/'.join(path.split('/')[:2])
     else:
         return ''
 
-
-def grab_remote_indices(variable,indices,unsort_indices):
-    dimensions=variable.dimensions
-    return retrieve_slice(variable,indices,unsort_indices,dimensions[0],dimensions[1:],0)
-
-def retrieve_slice(variable,indices,unsort_indices,dim,dimensions,dim_id,getitem_tuple=tuple()):
-    if len(dimensions)>0:
-        return np.take(np.concatenate(map(lambda x: retrieve_slice(variable,
-                                                 indices,
-                                                 unsort_indices,
-                                                 dimensions[0],
-                                                 dimensions[1:],
-                                                 dim_id+1,
-                                                 getitem_tuple=getitem_tuple+(x,)),
-                                                 indices[dim]),
-                              axis=dim_id),unsort_indices[dim],axis=dim_id)
-    else:
-        try:
-            return np.take(np.concatenate(map(lambda x: variable.__getitem__(getitem_tuple+(x,)),
-                                                     indices[dim]),
-                                  axis=dim_id),unsort_indices[dim],axis=dim_id)
-        except RuntimeError:
-            time.sleep(15)
-            return np.take(np.concatenate(map(lambda x: variable.__getitem__(getitem_tuple+(x,)),
-                                                     indices[dim]),
-                                  axis=dim_id),unsort_indices[dim],axis=dim_id)
-
-def getitem_pedantic(shape,getitem_tuple):
-    getitem_tuple_fixed=()
-    for item_id, item in enumerate(getitem_tuple):
-        indices_list=range(shape[item_id])[item]
-        if indices_list[-1]+item.step>shape[item_id]:
-            #Must fix the slice:
-            #getitem_tuple_fixed+=(slice(item.start,shape[item_id],item.step),)
-            getitem_tuple_fixed+=(indices_list,)
-        else:
-            getitem_tuple_fixed+=(item,)
-    return getitem_tuple_fixed
-        
-def grab_remote_indices_pedantic(variable,indices,unsort_indices):
-    dimensions=variable.dimensions
-    return retrieve_slice_pedantic(variable,indices,unsort_indices,dimensions[0],dimensions[1:],0)
-
-def retrieve_slice_pedantic(variable,indices,unsort_indices,dim,dimensions,dim_id,getitem_tuple=tuple()):
-    if len(dimensions)>0:
-        return np.take(np.concatenate(map(lambda x: retrieve_slice_pedantic(variable,
-                                                 indices,
-                                                 unsort_indices,
-                                                 dimensions[0],
-                                                 dimensions[1:],
-                                                 dim_id+1,
-                                                 getitem_tuple=getitem_tuple+(x,)),
-                                                 indices[dim]),
-                              axis=dim_id),unsort_indices[dim],axis=dim_id)
-    else:
-        shape=variable.shape
-        return np.take(np.concatenate(map(lambda x: variable.__getitem__(getitem_pedantic(variable.shape,getitem_tuple+(x,))),
-                                                 indices[dim]),
-                              axis=dim_id),unsort_indices[dim],axis=dim_id)
-
-
-def retrieve_slice_pedantic_bak(variable,indices,unsort_indices,dim,dimensions,dim_id,getitem_tuple=tuple()):
-    if len(dimensions)>0:
-        return np.take(np.concatenate(map(lambda x: 
-                                                 remove_zero_if_added(
-                                                 retrieve_slice_pedantic(variable,
-                                                 indices,
-                                                 unsort_indices,
-                                                 dimensions[0],
-                                                 dimensions[1:],
-                                                 dim_id+1,
-                                                 getitem_tuple=getitem_tuple+(ensure_zero(x),)),
-                                                 x,dim_id),
-                                                 indices[dim]),
-                              axis=dim_id),unsort_indices[dim],axis=dim_id)
-    else:
-        return np.take(np.concatenate(map(lambda x: remove_zero_if_added(
-                                            variable.__getitem__(getitem_tuple+(ensure_zero(x),)),
-                                            x,dim_id),
-                                                 indices[dim]),
-                              axis=dim_id),unsort_indices[dim],axis=dim_id)
-
-def ensure_zero(indices):
-    if indices.start > 0:
-        return [0,]+range(0,indices.stop)[indices]
-    else:
-        return indices
-
-def remove_zero_if_added(arr,indices,dim_id):
-    if indices.start > 0:
-        return np.take(arr,range(1,arr.shape[dim_id]),axis=dim_id)
-    else:
-        return arr
 
 

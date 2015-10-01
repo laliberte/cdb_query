@@ -14,7 +14,7 @@ from setuptools import setup, find_packages
 package_name='cdb_query'
 setup(
        name = package_name,
-       version = "1.2.2",
+       version = "1.3",
        packages=[package_name],
        package_dir = {package_name: 'lib'},
 #
@@ -36,7 +36,7 @@ setup(
             "Topic :: Scientific/Engineering :: Mathematics"
         ],
         long_description=read('README'),
-        install_requires = ['numpy','h5py','netCDF4','sqlalchemy','esgf-pyclient'],
+        install_requires = ['numpy','h5py','netCDF4','sqlalchemy','esgf-pyclient','timeaxis'],
         zip_safe=False,
         # other arguments here...
         #package_data = {package_name : ['lib/*.sh']},
@@ -44,7 +44,8 @@ setup(
                   'console_scripts': [
                            'cdb_query_CMIP5 = '+package_name+'.cdb_query_archive:main_CMIP5',
                            'cdb_query_CORDEX = '+package_name+'.cdb_query_archive:main_CORDEX',
-                           'cdb_query_NMME = '+package_name+'.cdb_query_archive:main_NMME'
+                           'cdb_query_NMME = '+package_name+'.cdb_query_archive:main_NMME',
+                           'cdb_query_LRFTIP = '+package_name+'.cdb_query_archive:main_LRFTIP'
                                      ],
                        }
     )

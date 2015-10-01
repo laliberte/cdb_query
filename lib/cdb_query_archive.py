@@ -31,12 +31,16 @@ def main_NMME():
     main('NMME')
     return
 
+def main_LRFTIP():
+    main('LRFTIP')
+    return
+
 def main(project):
     import argparse 
     import textwrap
 
     #Option parser
-    version_num='1.2.2'
+    version_num='1.3'
     description=textwrap.dedent('''\
     This script queries a {0} archive. It can query:
     1. a local POSIX-based archive that follows the {0} DRS
@@ -44,7 +48,7 @@ def main(project):
     2. the ESGF {0} archive.
 
     '''.format(project))
-    epilog='Version {0}: Frederic Laliberte, Paul Kushner 03/2015\n\
+    epilog='Version {0}: Frederic Laliberte, Paul Kushner 09/2015\n\
 \n\
 If using this code to retrieve and process data from the ESGF please cite:\n\n\
 Efficient, robust and timely analysis of Earth System Models: a database-query approach (2015):\n\

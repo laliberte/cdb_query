@@ -72,10 +72,20 @@ class SimpleTree:
             print 'The input diagnostic file '+options.in_diagnostic_headers_file+' does not conform to JSON standard. Make sure to check its syntax'
             raise
 
+        if 'username' in dir(options) and options.username!=None:
+            if not options.password_from_pipe:
+                user_pass=getpass.getpass('Enter Credential phrase:')
+            else:
+                user_pass=sys.stdin.readline()
+        else:
+            user_pass=None
+        options.password=user_pass
+
         #Simplify the header:
         self.union_header()
 
         if options.list_only_field!=None:
+            #Only a listing of a few fields was requested.
             for field_name in discover.discover(self,options):
                 print field_name
             return
@@ -145,6 +155,7 @@ class SimpleTree:
             certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass)
         else:
             user_pass=None
+        options.password=user_pass
 
         if not 'data_node_list' in self.header.keys():
             data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
@@ -218,6 +229,8 @@ class SimpleTree:
             certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass)
         else:
             user_pass=None
+
+        options.user_pass=user_pass
 
         #Recover the database meta data:
         self.load_header(options)

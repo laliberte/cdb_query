@@ -9,28 +9,32 @@ import retrieval_utils
 import urllib2
 import httplib
 
-def descend_tree(database,search_path,options,list_level=None):
-    list_names=[('experiment','experiment_list'),('var','variable_list')]
-    lists_to_loop=dict()
-    for id in list_names:
-        if id[0] in dir(options) and getattr(options,id[0])!=None:
-            lists_to_loop[id[1]]=options.experiment
-        else:
-            lists_to_loop[id[1]]=database.header[id[1]].keys()
-    for id in lists_to_loop.keys():
-        if not isinstance(lists_to_loop[id],list): lists_to_loop[id]=[lists_to_loop[id]]
+class browser:
+    def __init__(self,search_path,options):
+        self.options=options
+        self.search_path=search_path
 
-    #Create the database:
-    only_list=[]
-    for var_name in lists_to_loop['variable_list']:
-        for experiment in lists_to_loop['experiment_list']:
-            only_list.append(experiment_variable_search(database.nc_Database,search_path,database.header['file_type_list'],options,
-                                        experiment,var_name,database.header['variable_list'][var_name],list_level=list_level))
-    return [item for sublist in only_list for item in sublist]
-    #if len(only_list)>0:
-    #    return set(only_list[0]).intersection(*only_list)
-    #else:
-    #    return []
+    def close(self):
+        return
+
+    def descend_tree(self,database,list_level=None):
+        list_names=[('experiment','experiment_list'),('var','variable_list')]
+        lists_to_loop=dict()
+        for id in list_names:
+            if id[0] in dir(self.options) and getattr(self.options,id[0])!=None:
+                lists_to_loop[id[1]]=self.options.experiment
+            else:
+                lists_to_loop[id[1]]=database.header[id[1]].keys()
+        for id in lists_to_loop.keys():
+            if not isinstance(lists_to_loop[id],list): lists_to_loop[id]=[lists_to_loop[id]]
+
+        #Create the database:
+        only_list=[]
+        for var_name in lists_to_loop['variable_list']:
+            for experiment in lists_to_loop['experiment_list']:
+                only_list.append(experiment_variable_search(database.nc_Database,self.search_path,database.header['file_type_list'],self.options,
+                                            experiment,var_name,database.header['variable_list'][var_name],list_level=list_level))
+        return [item for sublist in only_list for item in sublist]
 
 def experiment_variable_search(nc_Database,search_path,file_type_list,options,
                                 experiment,var_name,var_desc,list_level=None):
@@ -154,38 +158,49 @@ def get_url_remote(item,file_type_list,drs):
         keys_list=[]
 
     for key in set(keys_list).intersection(file_type_list):
-        file_info=dict()
-        file_info['file_type']=key
-        try:
-            file_info['url']=item.urls[key][0][0]
-        except:
-            file_info['url']=None
-        for val in drs.official_drs+['checksum']:
-            try:
-                if val=='var':
-                    #this is a temporary fix to a poor design decision.
-                    #to really fix this, will have to change names 'var' to variables.
-                    file_info[val]=item.json['variable']
-                elif val=='version':
-                    #Version is poorly implemented... Try a fix:
-                    version=item.json['instance_id'].split('.')[-3]
-                    #Previous fix. Does not work for CORDEX
-                    #version=item.json['id'].split('.')[9]
-                    if version[0]=='v':
-                        file_info[val]=version
-                elif val=='model_version':
-                    file_info[val]='v'+item.json['version']
-                elif val=='ensemble' and drs.project in ['NMME']:
-                    file_info[val]=item.json['instance_id'].split('_')[-2]
-                else:
-                    file_info[val]=item.json[val]
-
-                if isinstance(file_info[val],list): file_info[val]=str(file_info[val][0])
-            except:
-                file_info[val]=None
-        #if (file_info['checksum']!=None and 
-        #    set(item.urls.keys()).issuperset(drs.required_file_types)):
+        if key!='OPeNDAP':
+            file_info=create_file_info_dict(key,item,drs)
+        if (key=='HTTPServer' and
+           'OPeNDAP' in file_type_list):
+            file_info=create_file_info_dict('OPeNDAP',item,drs)
+        
         if (file_info['checksum']!=None or
             drs.project in ['NMME']):
             url_name.append(file_info)
     return url_name
+
+def create_file_info_dict(key,item,drs):
+    file_info=dict()
+    file_info['file_type']=key
+    try:
+        if key=='OPeNDAP':
+            file_info['url']=item.urls['HTTPServer'][0][0].replace('fileServer','dodsC')
+        else:
+            file_info['url']=item.urls[local_key][0][0]
+    except:
+        file_info['url']=None
+    for val in drs.official_drs+['checksum']:
+        try:
+            if val=='var':
+                #this is a temporary fix to a poor design decision on my part.
+                #to really fix this, will have to change names 'var' to variables.
+                file_info[val]=item.json['variable']
+            elif val=='version':
+                #Version is poorly implemented... Try a fix:
+                version=item.json['instance_id'].split('.')[-3]
+                #Previous fix. Does not work for CORDEX
+                #version=item.json['id'].split('.')[9]
+                if version[0]=='v':
+                    file_info[val]=version
+            elif val=='model_version':
+                file_info[val]='v'+item.json['version']
+            elif val=='ensemble' and drs.project in ['NMME']:
+                file_info[val]=item.json['instance_id'].split('_')[-2]
+            else:
+                file_info[val]=item.json[val]
+
+            if isinstance(file_info[val],list): file_info[val]=str(file_info[val][0])
+        except:
+            file_info[val]=None
+    #if (file_info['checksum']!=None and 
+    #    set(item.urls.keys()).issuperset(drs.required_file_types)):

@@ -5,7 +5,8 @@ import json
 import os
 
 import retrieval_utils
-import netcdf_soft_links
+import read_soft_links
+import create_soft_links
 import netCDF4
 import netcdf_utils
 
@@ -129,23 +130,17 @@ class nc_Database:
         filepath=options.out_diagnostic_netcdf_file+'.pid'+str(os.getpid())
         output_root=netCDF4.Dataset(filepath,
                                       'w',format='NETCDF4',diskless=True,persist=True)
-        #output_root=netCDF4.Dataset(options.out_diagnostic_netcdf_file+'.pid'+str(os.getpid()),
-        #                              'w',format='NETCDF4')
-        netcdf_pointers=netcdf_soft_links.create_netCDF_pointers(
-                                                          header['file_type_list'],
-                                                          header['data_node_list'],
-                                                          semaphores=semaphores)
         if 'no_check_availability' in dir(options) and options.no_check_availability:
             self.record_header(output_root,{val:header[val] for val in header.keys() if val!='data_node_list'})
         else:
             self.record_header(output_root,header)
-        temp_string=''
-        for att in self.drs.simulations_desc:
-            if ( att in dir(options) and
-                 getattr(options,att)!=None):
-                temp_string+=att+': '+str(getattr(options,att))
-        if len(temp_string)>0:
-            output_root.setncattr('cdb_query_temp',temp_string)
+        #temp_string=''
+        #for att in self.drs.simulations_desc:
+        #    if ( att in dir(options) and
+        #         getattr(options,att)!=None):
+        #        temp_string+=att+': '+str(getattr(options,att))
+        #if len(temp_string)>0:
+        #    output_root.setncattr('cdb_query_temp',temp_string)
                     
 
         #Define time subset:
@@ -166,13 +161,13 @@ class nc_Database:
 
             output=create_tree(output_root,zip(drs_list,tree))
             #Record data:
-            if (time_frequency in ['fx','clim'] and record_function_handle!='record_paths'):
-                netcdf_pointers.record_fx(output,paths_list,var)
-            else:
-                years=[ int(year) for year in header['experiment_list'][experiment].split(',')]
-                getattr(netcdf_pointers,record_function_handle)(output,
-                                                                paths_list,
-                                                                var,years,months)
+            years=[ int(year) for year in header['experiment_list'][experiment].split(',')]
+            netcdf_pointers=create_soft_links.create_netCDF_pointers(
+                                                              paths_list,var,time_frequency,years, months,
+                                                              header['file_type_list'],
+                                                              header['data_node_list'],
+                                                              semaphores=semaphores)
+            getattr(netcdf_pointers,record_function_handle)(output,username=options.username,user_pass=options.password)
 
             #Remove recorded data from database:
             self.session.query(*out_tuples).filter(sqlalchemy.and_(*conditions)).delete()
@@ -274,25 +269,13 @@ def create_tree_recursive(output_top,tree):
 
 def retrieve_tree_recursive(options,data,output,queues,retrieval_function):
     if 'soft_links' in data.groups.keys():
-        kwargs={'queues':queues}
-        if 'data_node' in dir(options) and 'Xdata_node' in dir(options):
-            kwargs['data_node']=options.data_node
-            kwargs['Xdata_node']=options.Xdata_node
-        elif 'data_node' in dir(options):
-            kwargs['data_node']=options.data_node
-        elif 'Xdata_node' in dir(options):
-            kwargs['Xdata_node']=options.Xdata_node
-            
-        netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data,**kwargs)
+        netcdf_pointers=read_soft_links.read_netCDF_pointers(data,options=options,queues=queues)
         netcdf_pointers.retrieve(output,
                                  retrieval_function,
-                                 year=options.year,
-                                 month=options.month,
-                                 day=options.day,
-                                 min_year=options.min_year,
-                                 previous=options.previous,
-                                 next=options.next,
-                                 source_dir=options.source_dir)
+                                 options,
+                                 username=options.username,
+                                 user_pass=options.user_pass
+                                 )
     elif len(data.groups.keys())>0:
         for group in data.groups.keys():
             level_name=data.groups[group].getncattr('level_name')
@@ -310,16 +293,6 @@ def retrieve_tree_recursive(options,data,output,queues,retrieval_function):
                 else:
                     output_grp=output
                 retrieve_tree_recursive(options,data.groups[group],output_grp,queues,retrieval_function)
-    else:
-        #Fixed variables. Do not retrieve, just copy:
-        if (isinstance(output,netCDF4.Dataset) or
-            isinstance(output,netCDF4.Group)):
-            if len(data.variables.keys())>0:
-                for var in data.variables.keys():
-                    #output_fx=netcdf_utils.replicate_netcdf_var(output,data,var,chunksize=-1,zlib=True)
-                    #output_fx.variables[var][:]=data.variables[var][:]
-                    output_fx=netcdf_utils.replicate_and_copy_variable(output,data,var,chunksize=-1,zlib=True)
-                output_fx.sync()
             
     return
 

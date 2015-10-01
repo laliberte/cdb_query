@@ -10,8 +10,6 @@ import netcdf_utils
 
 import remote_netcdf
 
-import create_soft_links
-
 import indices_utils
 
 import retrieval_utils
@@ -20,68 +18,17 @@ import copy
 
 import nc_Database
 
-class create_netCDF_pointers:
-    def __init__(self,file_type_list,data_node_list,semaphores=None):
-        self.file_type_list=file_type_list
-        self.data_node_list=data_node_list
-        self.semaphores=semaphores
-        return
-
-    def record_paths(self,output,paths_list,var,years,months):
-        #First order source files by preference:
-        soft_links=create_soft_links.soft_links(paths_list,self.file_type_list,self.data_node_list,semaphores=self.semaphores)
-        soft_links.create(output)
-        return
-
-    def record_meta_data(self,output,paths_list,var,years,months):
-        #Retrieve time and meta:
-        soft_links=create_soft_links.soft_links(paths_list,self.file_type_list,self.data_node_list,semaphores=self.semaphores)
-        soft_links.create_variable(output,var,years,months)
-        #Put version:
-        output.setncattr('netcdf_soft_links_version','1.0')
-        return
-
-    def record_fx(self,output,paths_list,var):
-        #Find the most recent version:
-        most_recent_version='v'+str(np.max([int(item['version'][1:]) for item in paths_list]))
-        path=paths_list[[item['version'] for item in paths_list].index(most_recent_version)]
-
-        #Check if data in available:
-        remote_data=remote_netcdf.remote_netCDF(path['path'].split('|')[0].replace('fileServer','dodsC'),self.semaphores)
-        alt_path_name=remote_data.check_if_available_and_find_alternative([item['path'].split('|')[0].replace('fileServer','dodsC') for item in paths_list],
-                                                                 [item['path'].split('|')[1] for item in paths_list]).replace('dodsC','fileServer')
-
-        #Use aternative path:
-        path=paths_list[[item['path'].split('|')[0] for item in paths_list].index(alt_path_name)]
-
-        for att in path.keys():
-            if att!='path':      
-                output.setncattr(att,path[att])
-        output.setncattr('path',path['path'].split('|')[0])
-        output.setncattr('checksum',path['path'].split('|')[1])
-
-        remote_data=remote_netcdf.remote_netCDF(path['path'].split('|')[0].replace('fileServer','dodsC'),self.semaphores)
-        #open and record:
-        try:
-            remote_data.open_with_error()
-            for var_name in remote_data.Dataset.variables.keys():
-                netcdf_utils.replicate_and_copy_variable(output,remote_data.Dataset,var_name,zlib=True)
-                #netcdf_utils.replicate_netcdf_var(output,remote_data.Dataset,var_name)
-                #output.variables[var_name][:]=remote_data.Dataset.variables[var_name][:]
-            output.sync()
-        except remote_netcdf.dodsError as e:
-            e_mod=" This is an uncommon error. It is likely to be FATAL."
-            print e.value+e_mod
-        remote_data.close()
-        return
-
-
 class read_netCDF_pointers:
-    def __init__(self,data_root,Xdata_node=None,data_node=None,queues=dict()):
+    def __init__(self,data_root,options=None,queues=dict()):
         self.data_root=data_root
+        #Records queues for safe asynchronous retrieval:
         self.queues=queues
-        self.data_node=data_node
-        self.Xdata_node=Xdata_node
+
+        #Include slicing of data_nodes:
+        if options!=None:
+            for slice_id in ['data_node','Xdata_node']:
+                if slice_id in dir(options):
+                    setattr(self,slice_id,getattr(options,slice_id))
         return
 
     def initialize_retrieval(self):
@@ -116,76 +63,38 @@ class read_netCDF_pointers:
                 netcdf_utils.replicate_and_copy_variable(output_grp,self.data_root.groups['soft_links'],var_name,hdf5=hdf5['soft_links'],check_empty=check_empty)
         return
 
-    def retrieve_time_axis(self,years=None,months=None,days=None,min_year=None,previous=0,next=0):
+    def retrieve_time_axis(self,options):
+        #years=None,months=None,days=None,min_year=None,previous=0,next=0):
         time_axis=self.data_root.variables['time'][:]
         time_restriction=np.ones(time_axis.shape,dtype=np.bool)
-        if years!=None or months!=None or days!=None:
-            date_axis=netcdf_utils.get_date_axis(self.data_root.variables['time'])
-            if years!=None:
-                years_axis=np.array([date.year for date in date_axis])
-                if min_year!=None:
-                    #Important for piControl:
-                    #time_restriction=np.logical_and(time_restriction,years_axis-years_axis.min()+min_year== years)
-                    time_restriction=np.logical_and(time_restriction,[True if year in years else False for year in years_axis-years_axis.min()+min_year])
-                else:
-                    #time_restriction=np.logical_and(time_restriction,years_axis== years)
-                    time_restriction=np.logical_and(time_restriction,[True if year in years else False for year in years_axis])
-            if months!=None:
-                months_axis=np.array([date.month for date in date_axis])
-                #time_restriction=np.logical_and(time_restriction,months_axis==month)
-                time_restriction=np.logical_and(time_restriction,[True if month in months else False for month in months_axis])
-                #Check that months are continuous:
-                if months==[item for item in months if (item % 12 +1 in months or item-2% 12+1 in months)]:
-                    time_restriction_copy=copy.copy(time_restriction)
-                    #Months are continuous further restrict time_restriction to preserve continuity:
-                    if time_restriction[0] and months_axis[0]-2 % 12 +1 in months:
-                        time_restriction[0]=False
-                    if time_restriction[-1] and months_axis[-1] % 12 +1 in months:
-                        time_restriction[-1]=False
 
-                    for id in range(len(time_restriction))[1:-1]:
-                        if time_restriction[id]:
-                            #print date_axis[id], months_axis[id-1],months_axis[id], months_axis[id]-2 % 12 +1, time_restriction[id-1]
-                            if (( ((months_axis[id-1]-1)-(months_axis[id]-1)) % 12 ==11 or
-                                 months_axis[id-1] == months_axis[id] ) and
-                                not time_restriction[id-1]):
-                                time_restriction[id]=False
-
-                    for id in reversed(range(len(time_restriction))[1:-1]):
-                        if time_restriction[id]:
-                            if (( ((months_axis[id+1]-1)-(months_axis[id]-1)) % 12 ==1 or
-                                 months_axis[id+1] == months_axis[id] ) and
-                                not time_restriction[id+1]):
-                                time_restriction[id]=False
-                    #If all values were eliminated, do not ensure continuity:
-                    if not np.any(time_restriction):
-                        time_restriction=time_restriction_copy
-
-            if days!=None:
-                days_axis=np.array([date.day for date in date_axis])
-                time_restriction=np.logical_and(time_restriction,[True if month in days else False for month in days_axis])
-                    
-                
-        if previous>0:
-            for prev_num in range(previous):
+        date_axis=netcdf_utils.get_date_axis(self.data_root.variables['time'])
+        time_restriction=np.logical_and(time_restriction,time_restriction_years(options,date_axis,time_restriction))
+        time_restriction=np.logical_and(time_restriction,time_restriction_months(options,date_axis,time_restriction))
+        time_restriction=np.logical_and(time_restriction,time_restriction_days(options,date_axis,time_restriction))
+        if 'previous' in dir(options) and options.previous>0:
+            for prev_num in range(options.previous):
                 time_restriction=add_previous(time_restriction)
-        if next>0:
-            for next_num in range(next):
+        if 'next' in dir(options) and options.next>0:
+            for next_num in range(options.next):
                 time_restriction=add_next(time_restriction)
         return time_axis,time_restriction
 
-    def retrieve(self,output,retrieval_function,year=None,month=None,day=None,min_year=None,previous=0,next=0,source_dir=None,semaphores=[]):
+    def retrieve(self,output,retrieval_function,options,semaphores=[],username=None,user_pass=None):
+                    #year=None,month=None,day=None, min_year=None,previous=0,next=0,source_dir=None,username=None,user_pass=None):
+
         self.initialize_retrieval()
-        if source_dir!=None:
+        if 'source_dir' in dir(options) and options.source_dir!=None:
             #Check if the file has already been retrieved:
-            self.paths_list,self.file_type_list=retrieval_utils.find_local_file(source_dir,self.data_root.groups['soft_links'])
+            self.paths_list,self.file_type_list=retrieval_utils.find_local_file(options.source_dir,self.data_root.groups['soft_links'])
 
         #Define tree:
         self.tree=self.data_root.path.split('/')[1:]
 
         if 'time' in self.data_root.variables.keys():
             #Then find time axis, time restriction and which variables to retrieve:
-            time_axis, time_restriction=self.retrieve_time_axis(years=year,months=month,days=day,min_year=min_year,previous=previous,next=next)
+            time_axis, time_restriction=self.retrieve_time_axis(options)
+            #years=year,months=month,days=day,min_year=min_year,previous=previous,next=next)
 
             #Record to output if output is a netCDF4 Dataset:
             if (isinstance(output,netCDF4.Dataset) or
@@ -203,11 +112,21 @@ class read_netCDF_pointers:
 
             for var_to_retrieve in self.retrievable_vars:
                 self.retrieve_variables(retrieval_function,var_to_retrieve,time_restriction,
-                                            output,semaphores=semaphores)
+                                            output,semaphores=semaphores,username=username,user_pass=user_pass)
                                             #paths_list,file_type_list,paths_id_list,checksums_list,version_list,
         else:
-            #Downloading before a complete validate has been performed:
-            self.retrieve_without_time(retrieval_function,output,semaphores=semaphores)
+            if (isinstance(output,netCDF4.Dataset) or
+                isinstance(output,netCDF4.Group)):
+                #for var in set(self.data_root.variables.keys()).difference(self.retrievable_vars):
+                #    if not var in output.variables.keys():
+                #        output=netcdf_utils.replicate_and_copy_variable(output,self.data_root,var)
+                #Fixed variables. Do not retrieve, just copy:
+                for var in self.retrievable_vars:
+                    output=netcdf_utils.replicate_and_copy_variable(output,self.data_root,var)
+                output.sync()
+            else:
+                #Downloading before a complete validate has been performed:
+                self.retrieve_without_time(retrieval_function,output,username=username, user_pass=user_pass,semaphores=semaphores)
         return
 
     def open(self):
@@ -231,7 +150,7 @@ class read_netCDF_pointers:
         self.output_root.close()
         return
 
-    def retrieve_without_time(self,retrieval_function,output,semaphores=None):
+    def retrieve_without_time(self,retrieval_function,output,semaphores=None,username=None,user_pass=None):
         #This function simply retrieves all the files:
         file_path=output
         for path_to_retrieve in self.paths_list:
@@ -242,7 +161,10 @@ class read_netCDF_pointers:
             args = ({'path':path_to_retrieve+'|'+checksum,
                     'var':self.tree[-1],
                     'file_path':file_path,
-                    'version':version},
+                    'version':version,
+                    'file_type':file_type,
+                    'username':username,
+                    'user_pass':user_pass},
                     copy.deepcopy(self.tree))
                     #'sort_table':np.argsort(sorting_paths)[sorted_paths_link==path_id][time_slice],
 
@@ -256,7 +178,7 @@ class read_netCDF_pointers:
         return
 
     def retrieve_variables(self,retrieval_function,var_to_retrieve,time_restriction,
-                                            output,semaphores=None):
+                                            output,semaphores=None,username=None,user_pass=None):
         #Replicate variable to output:
         if (isinstance(output,netCDF4.Dataset) or
             isinstance(output,netCDF4.Group)):
@@ -296,13 +218,16 @@ class read_netCDF_pointers:
         max_request=450 #maximum request in Mb
         max_time_steps=max(int(np.floor(max_request*1024*1024/(32*np.prod(dims_length)))),1)
         for unique_path_id, path_id in enumerate(unique_paths_list_id):
-            path_to_retrieve=self.paths_list[self.paths_id_list[path_id]]
+            path_to_retrieve=self.paths_list[path_id]
 
             #Next, we check if the file is available. If it is not we replace it
             #with another file with the same checksum, if there is one!
-            remote_data=remote_netcdf.remote_netCDF(path_to_retrieve.replace('fileServer','dodsC'),semaphores)
-            path_to_retrieve=remote_data.check_if_available_and_find_alternative([path.replace('fileServer','dodsC') for path in self.paths_list],
-                                                                      self.checksums_list).replace('dodsC','fileServer')
+            file_type=self.file_type_list[list(self.paths_list).index(path_to_retrieve)]
+            remote_data=remote_netcdf.remote_netCDF(path_to_retrieve.replace('fileServer','dodsC'),file_type,semaphores)
+            if not file_type in ['FTPServer']:
+                path_to_retrieve=remote_data.check_if_available_and_find_alternative([path.replace('fileServer','dodsC') for path in self.paths_list],
+                                                                          self.checksums_list).replace('dodsC','fileServer')
+            #Get the file_type, checksum and version of the file to retrieve:
             file_type=self.file_type_list[list(self.paths_list).index(path_to_retrieve)]
             version='v'+str(self.version_list[list(self.paths_list).index(path_to_retrieve)])
             checksum=self.checksums_list[list(self.paths_list).index(path_to_retrieve)]
@@ -324,7 +249,10 @@ class read_netCDF_pointers:
                         'unsort_indices':unsort_dimensions,
                         'sort_table':np.arange(len(sorting_paths))[sorting_paths==unique_path_id][time_slice],
                         'file_path':file_path,
-                        'version':version},
+                        'version':version,
+                        'file_type':file_type,
+                        'username':username,
+                        'user_pass':user_pass},
                         copy.deepcopy(self.tree))
                         #'sort_table':np.argsort(sorting_paths)[sorted_paths_link==path_id][time_slice],
 
@@ -353,3 +281,59 @@ def add_previous(time_restriction):
 
 def add_next(time_restriction):
     return np.logical_or(time_restriction,np.insert(time_restriction[:-1],0,False))
+
+def time_restriction_years(options,date_axis,time_restriction_any):
+    if 'years' in dir(options) and options.years!=None:
+        years_axis=np.array([date.year for date in date_axis])
+        if 'min_year' in dir(options) and options.min_year!=None:
+            #Important for piControl:
+            time_restriction=np.logical_and(time_restriction_any, [True if year in options.years else False for year in years_axis-years_axis.min()+options.min_year])
+        else:
+            time_restriction=np.logical_and(time_restriction_any, [True if year in options.years else False for year in years_axis])
+        return time_restriction
+    else:
+        return time_restriction_any
+
+def time_restriction_months(options,date_axis,time_restriction_for_years):
+    if 'months' in dir(options) and options.months!=None:
+        months_axis=np.array([date.month for date in date_axis])
+        #time_restriction=np.logical_and(time_restriction,months_axis==month)
+        time_restriction=np.logical_and(time_restriction_for_years,[True if month in options.months else False for month in months_axis])
+        #Check that months are continuous:
+        if options.months==[item for item in options.months if (item % 12 +1 in options.months or item-2% 12+1 in options.months)]:
+            time_restriction_copy=copy.copy(time_restriction)
+            #Months are continuous further restrict time_restriction to preserve continuity:
+            if time_restriction[0] and months_axis[0]-2 % 12 +1 in options.months:
+                time_restriction[0]=False
+            if time_restriction[-1] and months_axis[-1] % 12 +1 in options.months:
+                time_restriction[-1]=False
+
+            for id in range(len(time_restriction))[1:-1]:
+                if time_restriction[id]:
+                    #print date_axis[id], months_axis[id-1],months_axis[id], months_axis[id]-2 % 12 +1, time_restriction[id-1]
+                    if (( ((months_axis[id-1]-1)-(months_axis[id]-1)) % 12 ==11 or
+                         months_axis[id-1] == months_axis[id] ) and
+                        not time_restriction[id-1]):
+                        time_restriction[id]=False
+
+            for id in reversed(range(len(time_restriction))[1:-1]):
+                if time_restriction[id]:
+                    if (( ((months_axis[id+1]-1)-(months_axis[id]-1)) % 12 ==1 or
+                         months_axis[id+1] == months_axis[id] ) and
+                        not time_restriction[id+1]):
+                        time_restriction[id]=False
+            #If all values were eliminated, do not ensure continuity:
+            if not np.any(time_restriction):
+                time_restriction=time_restriction_copy
+        return time_restriction
+    else:
+        return time_restriction_for_years
+
+def time_restriction_days(options,date_axis,time_restriction_any):
+    if 'days' in dir(options) and options.days!=None:
+        days_axis=np.array([date.day for date in date_axis])
+        time_restriction=np.logical_and(time_restriction_any,[True if month in days else False for month in days_axis])
+        return time_restriction
+    else:
+        return time_restriction_any
+                    

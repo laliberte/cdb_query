@@ -267,9 +267,26 @@ def create_time_axis(output,data,time_axis):
     #output.createDimension('time',len(time_axis))
     output.createDimension('time',None)
     time = output.createVariable('time','d',('time',))
-    time.calendar=str(data.variables['time'].calendar)
-    time.units=str(data.variables['time'].units)
+    if data==None:
+        time.calendar='proleptic_gregorian'
+        time.units='days since '+time_axis[0].isoformat()
+    else:
+        time.calendar=str(data.variables['time'].calendar)
+        time.units=str(data.variables['time'].units)
     time[:]=time_axis
+    return
+
+def create_time_axis_date(output,data,time_axis):
+    #output.createDimension('time',len(time_axis))
+    output.createDimension('time',None)
+    time = output.createVariable('time','d',('time',))
+    if data==None:
+        time.calendar='proleptic_gregorian'
+        time.units='days since '+time_axis[0].isoformat()
+    else:
+        time.calendar=str(data.variables['time'].calendar)
+        time.units=str(data.variables['time'].units)
+    time[:]=netCDF4.date2num(time_axis,time.units,calendar=time.calendar)
     return
 
 def netcdf_calendar(data):
@@ -278,6 +295,23 @@ def netcdf_calendar(data):
     else:
         calendar='standard'
     return calendar
+
+def create_date_axis_from_time_axis(time_axis,attributes_dict):
+    units=attributes_dict['units']
+    if 'calendar' in attributes_dict.keys(): 
+        calendar=attributes_dict['calendar']
+    else:
+        calendar='proleptic_gregorian'
+
+    if units=='day as %Y%m%d.%f':
+        date_axis=np.array(map(convert_to_date_absolute,native_time_axis))
+    else:
+        try:
+            #Put cmip5_rewrite_time_axis here:
+            date_axis=netCDF4.num2date(time_axis,units=units,calendar=calendar)
+        except TypeError:
+            time_axis=np.array([]) 
+    return date_axis
 
 def convert(options,project_drs):
     database=cdb_query_archive_class.SimpleTree(options,project_drs)

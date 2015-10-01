@@ -4,38 +4,37 @@ import copy
 import retrieval_utils
 import nc_Database
 
-def get_immediate_subdirectories(path):
-    return [name for name in os.listdir(path)
-                if os.path.isdir(os.path.join(path, name))]
+class browser:
+    def __init__(self,search_path,options):
+        self.file_type='local_file'
+        self.options=options
+        self.search_path=os.path.abspath(os.path.expanduser(os.path.expandvars(search_path)))
 
-def descend_tree(database,search_path,options,list_level=None):
-    filesystem_file_type='local_file'
-    only_list=[]
-    expanded_search_path=os.path.abspath(os.path.expanduser(os.path.expandvars(search_path)))
-    if filesystem_file_type in database.header['file_type_list']:
-        description={
-                   'file_type':filesystem_file_type,
-                   'data_node':retrieval_utils.get_data_node(expanded_search_path,filesystem_file_type),
-                   'time':'0'}
-        file_expt_copy=copy.deepcopy(database.nc_Database.file_expt)
-        for att in description.keys():
-            setattr(file_expt_copy,att,description[att])
+    def close(self):
+        return
 
-        only_list.append(descend_tree_recursive(database,file_expt_copy,
-                                [item for item in database.drs.base_drs if not item in description.keys()],
-                                expanded_search_path,
-                                options,list_level=list_level))
+    def descend_tree(self,database,list_level=None):
+        only_list=[]
+        if self.file_type in database.header['file_type_list']:
+            description={
+                       'file_type':self.file_type,
+                       'data_node':retrieval_utils.get_data_node(self.search_path,self.file_type),
+                       'time':'0'}
+            file_expt_copy=copy.deepcopy(database.nc_Database.file_expt)
+            for att in description.keys():
+                setattr(file_expt_copy,att,description[att])
 
-        if 'alt_base_drs' in dir(database.drs):
             only_list.append(descend_tree_recursive(database,file_expt_copy,
-                                    [item for item in database.drs.alt_base_drs if not item in description.keys()],
-                                    expanded_search_path,
-                                    options,list_level=list_level,alt=True))
-    return [item for sublist in only_list for item in sublist]
-    #if len(only_list)>0:
-    #    return set(only_list[0]).intersection(*only_list)
-    #else:
-    #    return []
+                                    [item for item in database.drs.base_drs if not item in description.keys()],
+                                    self.search_path,
+                                    self.options,list_level=list_level))
+
+            if 'alt_base_drs' in dir(database.drs):
+                only_list.append(descend_tree_recursive(database,file_expt_copy,
+                                        [item for item in database.drs.alt_base_drs if not item in description.keys()],
+                                        self.search_path,
+                                        self.options,list_level=list_level,alt=True))
+        return [item for sublist in only_list for item in sublist]
 
 def descend_tree_recursive(database,file_expt,tree_desc,top_path,options,list_level=None,alt=False):
     if not isinstance(tree_desc,list):
@@ -84,3 +83,8 @@ def descend_tree_recursive(database,file_expt,tree_desc,top_path,options,list_le
                                             next_tree_desc,top_path+'/'+subdir,
                                             options,list_level=list_level,alt=alt))
         return [item for sublist in only_list for item in sublist]
+
+def get_immediate_subdirectories(path):
+    return [name for name in os.listdir(path)
+            if os.path.isdir(os.path.join(path, name))]
+

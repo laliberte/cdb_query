@@ -3,6 +3,9 @@ import nc_Database
 from operator import itemgetter
 import os
 
+import random
+
+import ftp_query
 import filesystem_query
 import esgf_query
 
@@ -45,23 +48,27 @@ def discover(database,options):
     return output
 
 def discover_database(database,options):
-    only_list=[]
-    #Local filesystem archive
-    local_paths=[search_path for search_path in 
-                    database.header['search_list']
-                    if os.path.exists(os.path.abspath(os.path.expanduser(os.path.expandvars(search_path))))]
-    for search_path in local_paths:
-        only_list.append(filesystem_query.descend_tree(database,search_path,options,list_level=options.list_only_field))
+    #Copy and shuffle search path for optimal multithreaded discovery:
+    search_path_list=copy.copy(database.header['search_list'])
+    random.shuffle(search_path_list)
 
-    #ESGF search
-    remote_paths=[search_path for search_path in 
-                    database.header['search_list']
-                    if not os.path.exists(os.path.abspath(os.path.expanduser(os.path.expandvars(search_path))))]
-    remote_paths_copy=copy.copy(remote_paths)
-    import random
-    random.shuffle(remote_paths_copy)
-    for search_path in remote_paths_copy:
-        only_list.append(esgf_query.descend_tree(database,search_path,options,list_level=options.list_only_field))
+    only_list=[]
+    for search_path in search_path_list:
+        if os.path.exists(os.path.abspath(os.path.expanduser(os.path.expandvars(search_path)))):
+            #Local filesystem archive
+            browser=filesystem_query.browser(search_path,options)
+        elif ('ftp' in search_path and search_path[:3]=='ftp'):
+            #FTP filesystem archive
+            browser=ftp_query.browser(search_path,options)
+        elif ('http' in search_path and 'esg-search' in search_path):
+            #ESGF catalogue archive query
+            browser=esgf_query.browser(search_path,options)
+        else:
+            browser=None
+
+        if browser!=None:
+            only_list.append(browser.descend_tree(database,list_level=options.list_only_field))
+            browser.close()
     return [item for sublist in only_list for item in sublist]
 
 def find_model_list(diagnostic,project_drs,model_list,experiment):
