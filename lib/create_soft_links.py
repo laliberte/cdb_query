@@ -144,6 +144,7 @@ class create_netCDF_pointers:
                                                         )
             paths_ordering['checksum'][file_id]=file['path'].split('|')[1]
             paths_ordering['version'][file_id]=np.long(file['version'][1:])
+
             paths_ordering['file_type'][file_id]=file['file_type']
             paths_ordering['data_node'][file_id]=retrieval_utils.get_data_node(file['path'],paths_ordering['file_type'][file_id])
 
