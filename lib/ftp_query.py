@@ -89,8 +89,11 @@ def descend_tree_recursive(database,file_expt,tree_desc,top_path,options,ftp,lis
             if subdir in database.header_simple[local_tree_desc+'_list']:
                 subdir_list.append(subdir)
         else:
-            #We also keep the subdirectories if they represent versions
-            if not (local_tree_desc=='version' and subdir=='latest'):
+            #Keep all other subdirs as long as they are 
+            #1) not latest version
+            #2) of the form v{int}
+            if not (local_tree_desc=='version' and 
+                     (subdir=='latest' or (not RepresentsInt(subdir[1:])))):
                 subdir_list.append(subdir)
 
     if list_level!=None and local_tree_desc==list_level:
@@ -106,3 +109,10 @@ def descend_tree_recursive(database,file_expt,tree_desc,top_path,options,ftp,lis
                                             next_tree_desc,top_path+'/'+subdir,
                                             options,ftp,list_level=list_level,alt=alt))
         return [item for sublist in only_list for item in sublist]
+
+def RepresentsInt(s):
+    try: 
+        int(s)
+        return True
+    except ValueError:
+        return False
