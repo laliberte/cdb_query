@@ -5,7 +5,6 @@ import netCDF4
 import h5py
 
 import nc_Database
-import netcdf_soft_links
 
 import copy
 import os
