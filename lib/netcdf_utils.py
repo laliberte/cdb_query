@@ -23,7 +23,7 @@ import indices_utils
 import multiprocessing
 import subprocess
 
-import netcdf_soft_links
+import read_soft_links
 
 import nc_Database
 
@@ -508,7 +508,7 @@ def extract_netcdf_variable_recursive(output,data,level_desc,tree,options,check_
                 if len(tree)>0:
                     extract_netcdf_variable_recursive(output_grp,data.groups[group],tree[0],tree[1:],options,check_empty=check_empty,hdf5=hdf5[group])
                 else:
-                    netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data.groups[group])
+                    netcdf_pointers=read_soft_links.read_netCDF_pointers(data.groups[group])
                     if hdf5!=None:
                         netcdf_pointers.replicate(output_grp,check_empty=check_empty,hdf5=hdf5[group])
                     else:
@@ -523,7 +523,7 @@ def extract_netcdf_variable_recursive(output,data,level_desc,tree,options,check_
                 else:
                     extract_netcdf_variable_recursive(output,data.groups[group_name],tree[0],tree[1:],options,check_empty=check_empty)
         else:
-            netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data.groups[group_name])
+            netcdf_pointers=read_soft_links.read_netCDF_pointers(data.groups[group_name])
             if hdf5!=None:
                 netcdf_pointers.replicate(output,check_empty=check_empty,hdf5=hdf5[group_name])
             else:
@@ -601,7 +601,7 @@ def replace_netcdf_variable_recursive(output,data,level_desc,tree,hdf5=None,chec
             if len(tree)>0:
                     replace_netcdf_variable_recursive(output_grp,data.groups[group],tree[0],tree[1:],hdf5=hdf5[group],check_empty=check_empty)
             else:
-                netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data.groups[group])
+                netcdf_pointers=read_soft_links.read_netCDF_pointers(data.groups[group])
                 netcdf_pointers.replicate(output_grp,hdf5=hdf5[group],check_empty=check_empty)
     else:
         output_grp=create_group(output,data,group_name)
@@ -609,9 +609,9 @@ def replace_netcdf_variable_recursive(output,data,level_desc,tree,hdf5=None,chec
         if len(tree)>0:
             replace_netcdf_variable_recursive(output_grp,data,tree[0],tree[1:],hdf5=hdf5,check_empty=check_empty)
         else:
-            netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data)
+            netcdf_pointers=read_soft_links.read_netCDF_pointers(data)
             netcdf_pointers.replicate(output_grp,hdf5=hdf5,check_empty=check_empty)
-        #    netcdf_pointers=netcdf_soft_links.read_netCDF_pointers(data)
+        #    netcdf_pointers=read_soft_links.read_netCDF_pointers(data)
         #    netcdf_pointers.replicate(output,hdf5=hdf5,check_empty=check_empty)
     return
 
