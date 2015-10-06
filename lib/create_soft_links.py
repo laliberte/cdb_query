@@ -81,6 +81,7 @@ class create_netCDF_pointers:
                 path=usable_paths_list[0]
                 #output.createVariable(self.var,np.float32,(),zlib=True)
                 #Download the file to temp
+                print path['path'].split('|')[0], temp_file_name
                 retrieval_utils.download_secure(path['path'].split('|')[0],
                                 temp_file_name,
                                 path['file_type'],
@@ -106,6 +107,7 @@ class create_netCDF_pointers:
             output.setncattr('checksum',path['path'].split('|')[1])
             output.sync()
         finally:
+            pass
             if len(queryable_paths_list)==0:
                 os.remove(temp_file_name)
         return

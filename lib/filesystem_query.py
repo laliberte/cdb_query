@@ -71,6 +71,7 @@ def descend_tree_recursive(database,file_expt,tree_desc,top_path,options,list_le
             #2) of the form v{int}
             if not (local_tree_desc=='version' and 
                      (subdir=='latest' or (not RepresentsInt(subdir[1:])))):
+                subdir_list.append(subdir)
 
     if list_level!=None and local_tree_desc==list_level:
         return subdir_list
@@ -90,3 +91,9 @@ def get_immediate_subdirectories(path):
     return [name for name in os.listdir(path)
             if os.path.isdir(os.path.join(path, name))]
 
+def RepresentsInt(s):
+    try: 
+        int(s)
+        return True
+    except ValueError:
+        return False
