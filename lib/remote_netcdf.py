@@ -129,7 +129,7 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
                 data = self.Dataset.variables[dimension][:]
             else:
                 #If dimension is not avaiable, create a simple indexing dimension
-                remote_dimension = np.arange(len(remote_data.Dataset.dimensions[dimension]))
+                remote_dimension = np.arange(len(self.Dataset.dimensions[dimension]))
         except:
             if num_trials>0:
                 time.sleep(15)
