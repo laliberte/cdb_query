@@ -187,6 +187,8 @@ def retrieve_path(in_dict,pointer_var):
             #Downloads only if file exists!
             size_string=download_secure(root_path,dest_name,file_type,username=username,user_pass=user_pass)
             return 'Could NOT check MD5 checksum of retrieved file because checksum was not a priori available.'
+        else:
+            return 'File '+dest_name+' found but could NOT check MD% checksum of existing file because checksum was not a priori available. Not retrieving.'
     else:
         try: #Works only if file exists!
             md5sum=md5_for_file(open(dest_name,'r'))
