@@ -72,9 +72,9 @@ class read_netCDF_pointers:
         time_restriction=np.ones(time_axis.shape,dtype=np.bool)
 
         date_axis=netcdf_utils.get_date_axis(self.data_root.variables['time'])
-        time_restriction=np.logical_and(time_restriction,time_restriction_years(options,date_axis,time_restriction))
-        time_restriction=np.logical_and(time_restriction,time_restriction_months(options,date_axis,time_restriction))
-        time_restriction=np.logical_and(time_restriction,time_restriction_days(options,date_axis,time_restriction))
+        time_restriction=time_restriction_years(options,date_axis,time_restriction)
+        time_restriction=time_restriction_months(options,date_axis,time_restriction)
+        time_restriction=time_restriction_days(options,date_axis,time_restriction)
         if 'previous' in dir(options) and options.previous>0:
             for prev_num in range(options.previous):
                 time_restriction=add_previous(time_restriction)
@@ -113,6 +113,9 @@ class read_netCDF_pointers:
                         #output=netcdf_utils.replicate_netcdf_var(output,self.data_root,var)
                         #output.variables[var][:]=self.data_root.variables[var][:]
 
+            #print var_to_retrieve
+            #import time
+            #time.sleep(1000)
             for var_to_retrieve in self.retrievable_vars:
                 self.retrieve_variables(retrieval_function,var_to_retrieve,time_restriction,
                                             output,semaphores=semaphores,username=username,user_pass=user_pass)
@@ -140,7 +143,7 @@ class read_netCDF_pointers:
         return
 
     def assign(self,var_to_retrieve,time_restriction):
-        time_axis, time_bool=self.retrieve_time_axis()
+        time_axis, time_bool=self.retrieve_time_axis(None)
 
         self.output_root.createGroup(var_to_retrieve)
         netcdf_utils.create_time_axis(self.output_root.groups[var_to_retrieve],self.data_root,time_axis[np.array(time_restriction)])
@@ -286,29 +289,29 @@ def add_next(time_restriction):
     return np.logical_or(time_restriction,np.insert(time_restriction[:-1],0,False))
 
 def time_restriction_years(options,date_axis,time_restriction_any):
-    if 'years' in dir(options) and options.years!=None:
+    if 'year' in dir(options) and options.year!=None:
         years_axis=np.array([date.year for date in date_axis])
         if 'min_year' in dir(options) and options.min_year!=None:
             #Important for piControl:
-            time_restriction=np.logical_and(time_restriction_any, [True if year in options.years else False for year in years_axis-years_axis.min()+options.min_year])
+            time_restriction=np.logical_and(time_restriction_any, [True if year in options.year else False for year in years_axis-years_axis.min()+options.min_year])
         else:
-            time_restriction=np.logical_and(time_restriction_any, [True if year in options.years else False for year in years_axis])
+            time_restriction=np.logical_and(time_restriction_any, [True if year in options.year else False for year in years_axis])
         return time_restriction
     else:
         return time_restriction_any
 
 def time_restriction_months(options,date_axis,time_restriction_for_years):
-    if 'months' in dir(options) and options.months!=None:
+    if 'month' in dir(options) and options.month!=None:
         months_axis=np.array([date.month for date in date_axis])
         #time_restriction=np.logical_and(time_restriction,months_axis==month)
-        time_restriction=np.logical_and(time_restriction_for_years,[True if month in options.months else False for month in months_axis])
+        time_restriction=np.logical_and(time_restriction_for_years,[True if month in options.month else False for month in months_axis])
         #Check that months are continuous:
-        if options.months==[item for item in options.months if (item % 12 +1 in options.months or item-2% 12+1 in options.months)]:
+        if options.month==[item for item in options.month if (item % 12 +1 in options.month or item-2% 12+1 in options.month)]:
             time_restriction_copy=copy.copy(time_restriction)
             #Months are continuous further restrict time_restriction to preserve continuity:
-            if time_restriction[0] and months_axis[0]-2 % 12 +1 in options.months:
+            if time_restriction[0] and months_axis[0]-2 % 12 +1 in options.month:
                 time_restriction[0]=False
-            if time_restriction[-1] and months_axis[-1] % 12 +1 in options.months:
+            if time_restriction[-1] and months_axis[-1] % 12 +1 in options.month:
                 time_restriction[-1]=False
 
             for id in range(len(time_restriction))[1:-1]:
@@ -333,9 +336,9 @@ def time_restriction_months(options,date_axis,time_restriction_for_years):
         return time_restriction_for_years
 
 def time_restriction_days(options,date_axis,time_restriction_any):
-    if 'days' in dir(options) and options.days!=None:
+    if 'day' in dir(options) and options.day!=None:
         days_axis=np.array([date.day for date in date_axis])
-        time_restriction=np.logical_and(time_restriction_any,[True if month in days else False for month in days_axis])
+        time_restriction=np.logical_and(time_restriction_any,[True if day in options.day else False for day in days_axis])
         return time_restriction
     else:
         return time_restriction_any

@@ -108,7 +108,7 @@ def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=No
         if ( 'soft_links' in data.groups.keys() and 
               var_name in data.groups['soft_links'].variables.keys()
               and check_empty):
-            #Variable has a soft link. Do you try to replicate:
+            #Variable has a soft link.
             return output
 
         variable_size=min(data.variables[var_name].shape)
@@ -118,10 +118,10 @@ def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=No
             storage_space=hdf5[var_name].id.get_storage_size()
 
         if variable_size>0:
-            max_request=4500 #maximum request in Mb
-            #max_request=9000 #maximum request in Mb
+            max_request=4500.0 #maximum request in Mb
+            #max_request=9000.0 #maximum request in Mb
             max_time_steps=max(
-                            int(np.floor(max_request*1024*1024/(32*np.prod(data.variables[var_name].shape)))),
+                            int(np.floor(max_request*1024*1024/(32*np.prod(data.variables[var_name].shape[1:])))),
                             1)
 
             num_time_chunk=int(np.ceil(data.variables[var_name].shape[0]/float(max_time_steps)))
