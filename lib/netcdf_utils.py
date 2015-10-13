@@ -101,7 +101,6 @@ def replicate_full_netcdf_recursive(output,data,hdf5=None,check_empty=False):
     return
 
 def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=None,add_dim=None,chunksize=None,zlib=None,hdf5=None,check_empty=False):
-
     replicate_netcdf_var(output,data,var_name,datatype=datatype,fill_value=fill_value,add_dim=add_dim,chunksize=chunksize,zlib=zlib)
 
     if len(data.variables[var_name].shape)>0:
@@ -118,10 +117,10 @@ def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=No
             storage_space=hdf5[var_name].id.get_storage_size()
 
         if variable_size>0:
-            max_request=4500 #maximum request in Mb
-            #max_request=9000 #maximum request in Mb
+            max_request=4500.0 #maximum request in Mb
+            #max_request=9000.0 #maximum request in Mb
             max_time_steps=max(
-                            int(np.floor(max_request*1024*1024/(32*np.prod(data.variables[var_name].shape)))),
+                            int(np.floor(max_request*1024*1024/(32*np.prod(data.variables[var_name].shape[1:])))),
                             1)
 
             num_time_chunk=int(np.ceil(data.variables[var_name].shape[0]/float(max_time_steps)))

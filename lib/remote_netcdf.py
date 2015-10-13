@@ -161,7 +161,7 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
         try:
             self.open_with_error()
             for var_name in self.Dataset.variables.keys():
-                netcdf_utils.replicate_and_copy_variable(output,self.Dataset,var_name,zlib=True)
+                netcdf_utils.replicate_and_copy_variable(output,self.Dataset,var_name,zlib=zlib,check_empty=False)
                 #netcdf_utils.replicate_netcdf_var(output,self.Dataset,var_name)
                 #output.variables[var_name][:]=self.Dataset.variables[var_name][:]
             self.close()
