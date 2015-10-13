@@ -60,10 +60,10 @@ class read_netCDF_pointers:
             output_grp=netcdf_utils.replicate_group(output,self.data_root,'soft_links')
             netcdf_utils.replicate_netcdf_file(output_grp,self.data_root.groups['soft_links'])
             for var_name in self.data_root.groups['soft_links'].variables.keys():
-	    	if hdf5!=None:
-                	netcdf_utils.replicate_and_copy_variable(output_grp,self.data_root.groups['soft_links'],var_name,hdf5=hdf5['soft_links'],check_empty=check_empty)
-		else:
-                	netcdf_utils.replicate_and_copy_variable(output_grp,self.data_root.groups['soft_links'],var_name,check_empty=check_empty)
+                if hdf5!=None:
+                    netcdf_utils.replicate_and_copy_variable(output_grp,self.data_root.groups['soft_links'],var_name,hdf5=hdf5['soft_links'],check_empty=check_empty)
+                else:
+                    netcdf_utils.replicate_and_copy_variable(output_grp,self.data_root.groups['soft_links'],var_name,check_empty=check_empty)
         return
 
     def retrieve_time_axis(self,options):
@@ -113,6 +113,9 @@ class read_netCDF_pointers:
                         #output=netcdf_utils.replicate_netcdf_var(output,self.data_root,var)
                         #output.variables[var][:]=self.data_root.variables[var][:]
 
+            #print var_to_retrieve
+            #import time
+            #time.sleep(1000)
             for var_to_retrieve in self.retrievable_vars:
                 self.retrieve_variables(retrieval_function,var_to_retrieve,time_restriction,
                                             output,semaphores=semaphores,username=username,user_pass=user_pass)
@@ -140,7 +143,7 @@ class read_netCDF_pointers:
         return
 
     def assign(self,var_to_retrieve,time_restriction):
-        time_axis, time_bool=self.retrieve_time_axis()
+        time_axis, time_bool=self.retrieve_time_axis(None)
 
         self.output_root.createGroup(var_to_retrieve)
         netcdf_utils.create_time_axis(self.output_root.groups[var_to_retrieve],self.data_root,time_axis[np.array(time_restriction)])

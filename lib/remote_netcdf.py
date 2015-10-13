@@ -129,7 +129,7 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
                 data = self.Dataset.variables[dimension][:]
             else:
                 #If dimension is not avaiable, create a simple indexing dimension
-                remote_dimension = np.arange(len(remote_data.Dataset.dimensions[dimension]))
+                data = np.arange(len(self.Dataset.dimensions[dimension]))
         except:
             if num_trials>0:
                 time.sleep(15)
@@ -201,7 +201,7 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
             start_id=0
 
             funits=timeaxis.convert_time_units(units, time_frequency)
-            end_id=netCDF4.date2num(end_date,funits,calendar='standard')
+            end_id=timeaxis.Date2num(end_date,funits,'standard')
 
             inc = timeaxis.time_inc(time_frequency)
             length=end_id/inc-2
@@ -238,7 +238,7 @@ def dates_from_filename(filename, calendar):
 
     """
     dates = []
-    for date in filename.split('_')[-1].split('-'):
+    for date in filename.replace('.nc','').split('_')[-1].split('-'):
         digits = timeaxis.untroncated_timestamp(date)
         # Convert string digits to %Y-%m-%d %H:%M:%S format
         date_as_since = ''.join([''.join(triple) for triple in zip(digits[::2], digits[1::2], ['', '-', '-', ' ', ':', ':', ':'])])[:-1]

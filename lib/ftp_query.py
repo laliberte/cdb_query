@@ -62,8 +62,12 @@ def descend_tree_recursive(database,file_expt,tree_desc,top_path,options,ftp,lis
 
     if len(tree_desc)==1:
         #If we're at the end of the tree, we should expect files:
-        file_list=[file_name for file_name in ftp.nlst() 
-                        if (len(file_name)>3 and file_name[-3:]=='.nc')]
+        file_list_raw=ftp.nlst()
+        #ftp.voidcmd("TYPE I")
+        file_list=[file_name for file_name in file_list_raw
+                        if (len(file_name)>3 and file_name[-3:]=='.nc' )]
+                        #if (len(file_name)>3 and file_name[-3:]=='.nc' and ftp.size(file_name)>0)]
+        #ftp.voidcmd("TYPE A")
 
         if len(file_list)>0:
             for file in file_list:

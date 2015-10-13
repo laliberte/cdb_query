@@ -107,7 +107,7 @@ def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=No
         if ( 'soft_links' in data.groups.keys() and 
               var_name in data.groups['soft_links'].variables.keys()
               and check_empty):
-            #Variable has a soft link. Do you try to replicate:
+            #Variable has a soft link.
             return output
 
         variable_size=min(data.variables[var_name].shape)

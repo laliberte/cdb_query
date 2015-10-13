@@ -79,7 +79,7 @@ def check_file_availability(url_name,stop=False):
 def download_secure(url_name,dest_name,file_type,username=None,user_pass=None):
     if file_type=='HTTPServer':
         return download_secure_HTTP(url_name,dest_name)
-    elif file_type=='local':
+    elif file_type=='local_file':
         return download_secure_local(url_name,dest_name)
     elif file_type=='FTPServer':
         return download_secure_FTP(url_name,dest_name,username=username,user_pass=user_pass)
@@ -183,10 +183,14 @@ def retrieve_path(in_dict,pointer_var):
     root_path=decomposition[0]
     dest_name+=root_path.split('/')[-1]
     if decomposition[1]=='':
-        size_string=download_secure(root_path,dest_name,file_type,username=username,user_pass=user_pass)
-        return 'Could NOT check MD5 checksum of retrieved file because checksum was not a priori available.'
+        if not os.path.isfile(dest_name):
+            #Downloads only if file exists!
+            size_string=download_secure(root_path,dest_name,file_type,username=username,user_pass=user_pass)
+            return 'Could NOT check MD5 checksum of retrieved file because checksum was not a priori available.'
+        else:
+            return 'File '+dest_name+' found but could NOT check MD% checksum of existing file because checksum was not a priori available. Not retrieving.'
     else:
-        try: 
+        try: #Works only if file exists!
             md5sum=md5_for_file(open(dest_name,'r'))
         except:
             md5sum=''
