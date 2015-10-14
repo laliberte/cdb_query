@@ -74,6 +74,7 @@ class read_netCDF_pointers:
         time_restriction=time_restriction_years(options,date_axis,time_restriction)
         time_restriction=time_restriction_months(options,date_axis,time_restriction)
         time_restriction=time_restriction_days(options,date_axis,time_restriction)
+        time_restriction=time_restriction_hours(options,date_axis,time_restriction)
         if 'previous' in dir(options) and options.previous>0:
             for prev_num in range(options.previous):
                 time_restriction=add_previous(time_restriction)
