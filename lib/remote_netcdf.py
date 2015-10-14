@@ -88,6 +88,9 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
         return
 
     def is_available(self):
+        if not self.file_type in queryable_file_types: 
+            return False
+
         try:
             #devnull = open(os.devnull, 'w')
             #with RedirectStdStreams(stdout=devnull, stderr=devnull):
