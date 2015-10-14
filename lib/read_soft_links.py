@@ -25,10 +25,9 @@ class read_netCDF_pointers:
         self.queues=queues
 
         #Include slicing of data_nodes:
-        if options!=None:
-            for slice_id in ['data_node','Xdata_node']:
-                if slice_id in dir(options):
-                    setattr(self,slice_id,getattr(options,slice_id))
+        for slice_id in ['data_node','Xdata_node']:
+            if slice_id in dir(options):
+                setattr(self,slice_id,getattr(options,slice_id))
         return
 
     def initialize_retrieval(self):
