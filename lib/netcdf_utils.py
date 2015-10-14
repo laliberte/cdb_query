@@ -281,11 +281,12 @@ def create_time_axis_date(output,data,time_axis):
     #output.createDimension('time',len(time_axis))
     output.createDimension('time',None)
     time = output.createVariable('time','d',('time',))
+    time.calendar='proleptic_gregorian'
     if data==None:
-        time.calendar='proleptic_gregorian'
         time.units='days since '+time_axis[0].isoformat()
     else:
-        time.calendar=str(data.variables['time'].calendar)
+        if 'calendar' in data.variables['time'].ncattrs():
+            time.calendar=str(data.variables['time'].calendar)
         time.units=str(data.variables['time'].units)
     time[:]=netCDF4.date2num(time_axis,time.units,calendar=time.calendar)
     return
