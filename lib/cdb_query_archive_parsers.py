@@ -238,6 +238,9 @@ def download(subparsers,epilog,project_drs):
     inc_group.add_argument('--day',
                                  default=None, type=int_list,
                                  help='Retrieve only these comma-separated calendar days.')
+    inc_group.add_argument('--hour',
+                                 default=None, type=int_list,
+                                 help='Retrieve only these comma-separated hours.')
     inc_group.add_argument('--previous',
                                  default=0,action='count',
                                  help='Retrieve data from specified year, month, day AND the time step just BEFORE this retrieved data.')
@@ -288,6 +291,9 @@ def download_raw(subparsers,epilog,project_drs):
     inc_group.add_argument('--day',
                                  default=None, type=int_list,
                                  help='Retrieve only these comma-separated calendar days.')
+    inc_group.add_argument('--hour',
+                                 default=None, type=int_list,
+                                 help='Retrieve only these comma-separated hours.')
     inc_group.add_argument('--previous',
                                  default=False, action='store_true',
                                  help='Retrieve data from specified year, month, day AND the time step just BEFORE this retrieved data.')

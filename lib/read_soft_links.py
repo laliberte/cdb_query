@@ -342,3 +342,11 @@ def time_restriction_days(options,date_axis,time_restriction_any):
     else:
         return time_restriction_any
                     
+def time_restriction_hours(options,date_axis,time_restriction_any):
+    if 'hour' in dir(options) and options.hour!=None:
+        hours_axis=np.array([date.hour for date in date_axis])
+        time_restriction=np.logical_and(time_restriction_any,[True if hour in options.hour else False for hour in hours_axis])
+        return time_restriction
+    else:
+        return time_restriction_any
+                    
