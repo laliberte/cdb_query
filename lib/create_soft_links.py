@@ -244,12 +244,13 @@ class create_netCDF_pointers:
         return
 
     def unique_time_axis(self,data,years,months):
+        calendar='proleptic_gregorian'
         if data==None:
-            calendar='proleptic_gregorian'
             units='days since '+self.time_axis[0].isoformat()
         else:
             units=data.variables['time'].units
-            calendar=data.variables['time'].calendar
+            if 'calendar' in data.variables['time'].ncattrs():
+                calendar=data.variables['time'].calendar
 
         time_axis = netCDF4.date2num(self.time_axis,units,calendar=calendar)
         time_axis_unique = np.unique(time_axis)

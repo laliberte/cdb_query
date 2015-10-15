@@ -25,10 +25,9 @@ class read_netCDF_pointers:
         self.queues=queues
 
         #Include slicing of data_nodes:
-        if options!=None:
-            for slice_id in ['data_node','Xdata_node']:
-                if slice_id in dir(options):
-                    setattr(self,slice_id,getattr(options,slice_id))
+        for slice_id in ['data_node','Xdata_node']:
+            if slice_id in dir(options):
+                setattr(self,slice_id,getattr(options,slice_id))
         return
 
     def initialize_retrieval(self):
@@ -75,6 +74,7 @@ class read_netCDF_pointers:
         time_restriction=time_restriction_years(options,date_axis,time_restriction)
         time_restriction=time_restriction_months(options,date_axis,time_restriction)
         time_restriction=time_restriction_days(options,date_axis,time_restriction)
+        time_restriction=time_restriction_hours(options,date_axis,time_restriction)
         if 'previous' in dir(options) and options.previous>0:
             for prev_num in range(options.previous):
                 time_restriction=add_previous(time_restriction)
@@ -339,6 +339,14 @@ def time_restriction_days(options,date_axis,time_restriction_any):
     if 'day' in dir(options) and options.day!=None:
         days_axis=np.array([date.day for date in date_axis])
         time_restriction=np.logical_and(time_restriction_any,[True if day in options.day else False for day in days_axis])
+        return time_restriction
+    else:
+        return time_restriction_any
+                    
+def time_restriction_hours(options,date_axis,time_restriction_any):
+    if 'hour' in dir(options) and options.hour!=None:
+        hours_axis=np.array([date.hour for date in date_axis])
+        time_restriction=np.logical_and(time_restriction_any,[True if hour in options.hour else False for hour in hours_axis])
         return time_restriction
     else:
         return time_restriction_any

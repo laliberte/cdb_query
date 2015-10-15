@@ -88,7 +88,7 @@ def find_time_file(pointers,file_expt,file_available=False,file_queryable=False,
                 file_available = retrieval_utils.check_file_availability(file_expt.path.split('|')[0])
 
             if file_available and not file_queryable:
-                remote_data=remote_netcdf.remote_netCDF(file_expt.path.split('|')[0].replace('fileServer','dodsC'),semaphores)
+                remote_data=remote_netcdf.remote_netCDF(file_expt.path.split('|')[0],semaphores)
                 file_queryable=remote_data.is_available()
             
         for month in range(1,13):
