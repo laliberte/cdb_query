@@ -3,6 +3,7 @@ import numpy as np
 import re
 import subprocess
 import shutil
+import os
 
 def check_file_consistency(data,var_list):
     if not set(data.groups.keys()).issuperset(var_list.keys()):
