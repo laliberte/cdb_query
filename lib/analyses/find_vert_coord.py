@@ -191,12 +191,13 @@ def main():
                                            help='This function takes CMOR output hybrid coordinates and create CDO-compliant hybrid coordinates.',
                                            epilog=epilog,
                                            formatter_class=argparse.RawTextHelpFormatter)
+    input_arguments(convert_parser)
 
-    convert_parser=subparsers.add_parser('convert_half_level_pressures',
+    half_pres_parser=subparsers.add_parser('convert_half_level_pressures',
                                            help='This function takes CMOR output hybrid coordinates and create CDO-compliant hybrid coordinates.',
                                            epilog=epilog,
                                            formatter_class=argparse.RawTextHelpFormatter)
-    input_arguments(convert_parser)
+    input_arguments(half_pres_parser)
     options=parser.parse_args()
 
     if options.command=='convert_hybrid':
