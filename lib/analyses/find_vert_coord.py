@@ -135,7 +135,7 @@ def convert_half_level_pressures(options):
     second_target+='z[$time,$lev,$lat,$lon]=0.5*(z_bnds[:,1:$slev.size-1,:,:]+z_bnds[:,2:$slev.size-2,:,:]).float()'
 
     for var in var_list.keys():
-        script_to_call='ncks -3 -G : -g '+ var + ' '.join([options.in_file,options.out_file+'.tmp'])
+        script_to_call='ncks -3 -G : -g '+ var +' '+ ' '.join([options.in_file,options.out_file+'.tmp'])
         out=subprocess.call(script_to_call,shell=True)
         if var=='pa':
             script_to_call='ncrename -v lev,slev -d lev,slev '+options.out_file+'.tmp'
