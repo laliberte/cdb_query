@@ -139,7 +139,7 @@ def convert_half_level_pressures(options):
         if var=='pa':
             script_to_call='ncrename -v lev,slev -d lev,slev '+options.out_file+'.tmp'
             out=subprocess.call(script_to_call,shell=True)
-        script_to_call='ncks -A ' + '.join([options.out_file+'.tmp',options.out_file)
+        script_to_call='ncks -A ' + ' '.join([options.out_file+'.tmp',options.out_file])
         out=subprocess.call(script_to_call,shell=True)
             
 
