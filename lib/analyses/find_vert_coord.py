@@ -121,27 +121,6 @@ def convert_half_level_pressures(options):
     data_grp=data.groups['ta']
 
 
-    formulas=dict()
-    for lev_id in ['','_bnds']: 
-        level='lev'+lev_id
-        #formulas[level]=re.sub(r'\(.*?\)', '',data_grp.variables[level].formula)
-        formulas[level]=data_grp.variables[level].formula
-        #print data_grp.model_id
-        #print formulas[level]
-        for string in undesired_strings:
-            formulas[level]=formulas[level].replace(string,'')
-        terms=[item.replace(":","") for item in data_grp.variables[level].formula_terms.split(" ")]
-        target=formulas[level].split('=')[0].replace(' ','')
-        terms.append(target)
-        if lev_id=='':
-            terms.append(target+lev_id+'[$time,$lev,$lat,$lon]')
-        elif lev_id=='_bnds':
-            terms.append(target+lev_id+'[$time,$lev,$lat,$lon,$bnds]')
-        for var_id,var in enumerate(zip(terms[::2],terms[1::2])):
-            formulas[level]=formulas[level].replace(var[0],'%'+str(var_id)+'%')
-        for var_id,var in enumerate(zip(terms[::2],terms[1::2])):
-            formulas[level]=formulas[level].replace('%'+str(var_id)+'%',var[1])
-    data.close()
     first_target=';'.join([
                     'dp[$time,$lev,$lat,$lon]=(pa[:,1:$slev.size-1,:,:]-pa[:,2:$slev.size-2,:,:]).float()',
                     'p[$time,$lev,$lat,$lon]=0.5*(pa[:,1:$slev.size-1,:,:]+pa[:,2:$slev.size-2,:,:]).float()'
@@ -155,8 +134,14 @@ def convert_half_level_pressures(options):
     second_target+='z[$time,$lev,$lat,$lon]=0.5*(z_bnds[:,1:$slev.size-1,:,:]+z_bnds[:,2:$slev.size-2,:,:]).float()'
 
     for var in var_list.keys():
-        script_to_call='ncks -3 -G : -g '+ var + ' -A ' +' '.join([options.in_file,options.out_file])
+        script_to_call='ncks -3 -G : -g '+ var + ' '.join([options.in_file,options.out_file+'.tmp'])
         out=subprocess.call(script_to_call,shell=True)
+        if var=='pa':
+            script_to_call='ncrename -v lev,slev -d lev,slev '+options.out_file+'.tmp'])
+            out=subprocess.call(script_to_call,shell=True)
+        script_to_call='ncks -A ' + ' '.join([options.out_file+'.tmp',options.out_file])
+        out=subprocess.call(script_to_call,shell=True)
+            
 
     out=subprocess.call(script_to_call,shell=True)
     #script_to_call='ncap2 -3 -O -s \''+first_target+'\' '+options.out_file+' '+options.out_file
