@@ -106,6 +106,77 @@ def convert_hybrid(options):
     #output.close()
     return
 
+def convert_half_level_pressures(options):
+    data=Dataset(options.in_file)
+
+    var_list={
+                'ta':('time','lev','lat','lon'),
+                'hus':('time','lev','lat','lon'),
+                'pa':('time','lev','lat','lon'),
+                'orog':('lat','lon')
+                }
+
+    check_file_consistency(data,var_list)
+
+    data_grp=data.groups['ta']
+
+
+    formulas=dict()
+    for lev_id in ['','_bnds']: 
+        level='lev'+lev_id
+        #formulas[level]=re.sub(r'\(.*?\)', '',data_grp.variables[level].formula)
+        formulas[level]=data_grp.variables[level].formula
+        #print data_grp.model_id
+        #print formulas[level]
+        for string in undesired_strings:
+            formulas[level]=formulas[level].replace(string,'')
+        terms=[item.replace(":","") for item in data_grp.variables[level].formula_terms.split(" ")]
+        target=formulas[level].split('=')[0].replace(' ','')
+        terms.append(target)
+        if lev_id=='':
+            terms.append(target+lev_id+'[$time,$lev,$lat,$lon]')
+        elif lev_id=='_bnds':
+            terms.append(target+lev_id+'[$time,$lev,$lat,$lon,$bnds]')
+        for var_id,var in enumerate(zip(terms[::2],terms[1::2])):
+            formulas[level]=formulas[level].replace(var[0],'%'+str(var_id)+'%')
+        for var_id,var in enumerate(zip(terms[::2],terms[1::2])):
+            formulas[level]=formulas[level].replace('%'+str(var_id)+'%',var[1])
+    data.close()
+    first_target=';'.join([
+                    'dp[$time,$lev,$lat,$lon]=(pa[:,1:$slev.size-1,:,:]-pa[:,2:$slev.size-2,:,:]).float()',
+                    'p[$time,$lev,$lat,$lon]=0.5*(pa[:,1:$slev.size-1,:,:]+pa[:,2:$slev.size-2,:,:]).float()'
+                    ])+';'
+
+    second_target='dz=(-287.04*(1+0.61)*ta*dp/p/9.8).float();'
+    second_target+='*z_bnds=pa;z_bnds=0.0;'
+    second_target+='for(*it=0;it<$time.size-1;it++){z_bnds(it,0,:,:)=orog;};for(*iz=0;iz<$slev.size-2;iz++){'
+    second_target+='z_bnds(:,iz+1,:,:)=z_bnds(:,iz,:,:)+dz(:,iz,:,:);'
+    second_target+='};'
+    second_target+='z[$time,$lev,$lat,$lon]=0.5*(z_bnds[:,1:$slev.size-1,:,:]+z_bnds[:,2:$slev.size-2,:,:]).float()'
+
+    for var in var_list.keys():
+        script_to_call='ncks -3 -G : -g '+ var + ' -A ' +' '.join([options.in_file,options.out_file])
+        out=subprocess.call(script_to_call,shell=True)
+
+    out=subprocess.call(script_to_call,shell=True)
+    #script_to_call='ncap2 -3 -O -s \''+first_target+'\' '+options.out_file+' '+options.out_file
+    script_to_call='ncap2 -O -3 -s \''+first_target+second_target+'\' '+options.out_file+' '+options.out_file
+    #print script_to_call
+    out=subprocess.call(script_to_call,shell=True)
+
+    out_var_list=['dz','dp','z','p']
+    for var in out_var_list:
+        script_to_call='ncks -4 -L 1 -G '+ var + ' -v '+var+',slev -g / -A ' +' '.join([options.out_file,options.out_file+'.tmp'])
+        out=subprocess.call(script_to_call,shell=True)
+    
+    try:
+        shutil.move(options.out_file+'.tmp',options.out_file)
+    except OSError:
+        pass
+    #output=Dataset(options.out_file)
+    #output.close()
+    return
+
 
 def main():
     import argparse 
@@ -135,11 +206,18 @@ def main():
                                            help='This function takes CMOR output hybrid coordinates and create CDO-compliant hybrid coordinates.',
                                            epilog=epilog,
                                            formatter_class=argparse.RawTextHelpFormatter)
+
+    convert_parser=subparsers.add_parser('convert_half_level_pressures',
+                                           help='This function takes CMOR output hybrid coordinates and create CDO-compliant hybrid coordinates.',
+                                           epilog=epilog,
+                                           formatter_class=argparse.RawTextHelpFormatter)
     input_arguments(convert_parser)
     options=parser.parse_args()
 
     if options.command=='convert_hybrid':
         convert_hybrid(options)
+    elif options.command=='convert_half_level_pressures':
+        convert_half_level_pressures(options)
         
     return 
 
