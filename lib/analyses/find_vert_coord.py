@@ -123,8 +123,8 @@ def convert_half_level_pressures(options):
 
 
     first_target=';'.join([
-                    'dp[$time,$lev,$lat,$lon]=(pa[:,1:$slev.size-1,:,:]-pa[:,2:$slev.size-2,:,:]).float()',
-                    'p[$time,$lev,$lat,$lon]=0.5*(pa[:,1:$slev.size-1,:,:]+pa[:,2:$slev.size-2,:,:]).float()'
+                    'dp[$time,$lev,$lat,$lon]=(pa[:,1:$slev.size-2,:,:]-pa[:,2:$slev.size-1,:,:]).float()',
+                    'p[$time,$lev,$lat,$lon]=0.5*(pa[:,1:$slev.size-2,:,:]+pa[:,2:$slev.size-1,:,:]).float()'
                     ])+';'
 
     second_target='dz=(-287.04*(1+0.61)*ta*dp/p/9.8).float();'
@@ -145,8 +145,6 @@ def convert_half_level_pressures(options):
         os.remove(options.out_file+'.tmp')
             
 
-    out=subprocess.call(script_to_call,shell=True)
-    #script_to_call='ncap2 -3 -O -s \''+first_target+'\' '+options.out_file+' '+options.out_file
     script_to_call='ncap2 -O -3 -s \''+first_target+second_target+'\' '+options.out_file+' '+options.out_file
     #print script_to_call
     out=subprocess.call(script_to_call,shell=True)

@@ -47,6 +47,8 @@ class create_netCDF_pointers:
         self.years=years
 
         self.paths_ordering=self.order_paths_by_preference()
+        
+        self.calendar=self.obtain_unique_calendar()
         return
 
     def record_paths(self,output,username=None,user_pass=None):
@@ -167,7 +169,8 @@ class create_netCDF_pointers:
         path_name=str(path['path']).split('|')[0]
         remote_data=remote_netcdf.remote_netCDF(path_name,file_type,self.semaphores)
         time_axis=remote_data.get_time(time_frequency=self.time_frequency,
-                                        is_instant=self.is_instant)
+                                        is_instant=self.is_instant,
+                                        calendar=self.calendar)
         table_desc=[
                    ('paths','a255'),
                    ('file_type','a255'),
@@ -183,10 +186,27 @@ class create_netCDF_pointers:
         return time_axis,table
     
     def obtain_table(self):
-        #First retrieve time axes from queryable file types.
+        #Retrieve time axes from queryable file types or reconstruct time axes from time stamp
+        #from non-queryable file types.
         self.time_axis, self.table= map(np.concatenate,
                         zip(*map(self._recover_time,np.nditer(self.paths_ordering))))
         return
+
+    def _recover_calendar(self,path):
+        file_type=path['file_type']
+        checksum=path['checksum']
+        path_name=str(path['path']).split('|')[0]
+        remote_data=remote_netcdf.remote_netCDF(path_name,file_type,self.semaphores)
+        calendar=remote_data.get_calendar()
+        return calendar, file_type 
+
+    def obtain_unique_calendar(self):
+        calendar_list,file_type_list=zip(*map(self._recover_calendar,np.nditer(self.paths_ordering)))
+        #Find the calendars found from queryable file types:
+        calendars = set([item[0] for item in zip(calendar_list,file_type_list) if item[1] in queryable_file_types])
+        if len(calendars)==1:
+            return calendars.pop()
+        return calendar_list[0]
 
     def reduce_paths_ordering(self):
         #CREATE LOOK-UP TABLE:
@@ -231,7 +251,7 @@ class create_netCDF_pointers:
         if len(useful_file_id_list)>0:
             self.paths_ordering=self.paths_ordering[np.sort(useful_file_id_list)]
             
-        #The last lines were commented to allow for collision-free (up to md5 collision-free
+        #The last lines were commented to allow for collision-free (up to 32-bits hashing
         #algorithm) indexing.
 
         #Finally, set the path_id field to be following the indices in paths_ordering:
@@ -244,18 +264,15 @@ class create_netCDF_pointers:
         return
 
     def unique_time_axis(self,data,years,months):
-        calendar='proleptic_gregorian'
         if data==None:
-            units='days since '+self.time_axis[0].isoformat()
+            units='days since '+str(self.time_axis[0])
         else:
             units=data.variables['time'].units
-            if 'calendar' in data.variables['time'].ncattrs():
-                calendar=data.variables['time'].calendar
 
-        time_axis = netCDF4.date2num(self.time_axis,units,calendar=calendar)
+        time_axis = netCDF4.date2num(self.time_axis,units,calendar=self.calendar)
         time_axis_unique = np.unique(time_axis)
 
-        time_axis_unique_date=netCDF4.num2date(time_axis_unique,units,calendar=calendar)
+        time_axis_unique_date=netCDF4.num2date(time_axis_unique,units,calendar=self.calendar)
 
         #Include a filter on years: 
         time_desc={}

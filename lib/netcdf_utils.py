@@ -267,12 +267,11 @@ def create_time_axis(output,data,time_axis):
     #output.createDimension('time',len(time_axis))
     output.createDimension('time',None)
     time = output.createVariable('time','d',('time',))
-    time.calendar='proleptic_gregorian'
     if data==None:
+        time.calendar='standard'
         time.units='days since '+time_axis[0].isoformat()
     else:
-        if 'calendar' in data.variables['time'].ncattrs():
-            time.calendar=str(data.variables['time'].calendar)
+        time.calendar=netcdf_calendar(data)
         time.units=str(data.variables['time'].units)
     time[:]=time_axis
     return
@@ -281,12 +280,11 @@ def create_time_axis_date(output,data,time_axis):
     #output.createDimension('time',len(time_axis))
     output.createDimension('time',None)
     time = output.createVariable('time','d',('time',))
-    time.calendar='proleptic_gregorian'
     if data==None:
+        time.calendar='standard'
         time.units='days since '+time_axis[0].isoformat()
     else:
-        if 'calendar' in data.variables['time'].ncattrs():
-            time.calendar=str(data.variables['time'].calendar)
+        time.calendar=netcdf_calendar(data)
         time.units=str(data.variables['time'].units)
     time[:]=netCDF4.date2num(time_axis,time.units,calendar=time.calendar)
     return
@@ -303,7 +301,7 @@ def create_date_axis_from_time_axis(time_axis,attributes_dict):
     if 'calendar' in attributes_dict.keys(): 
         calendar=attributes_dict['calendar']
     else:
-        calendar='proleptic_gregorian'
+        calendar='standard'
 
     if units=='day as %Y%m%d.%f':
         date_axis=np.array(map(convert_to_date_absolute,native_time_axis))
