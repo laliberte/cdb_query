@@ -247,8 +247,6 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
         return units
 
 class dodsError(Exception):
-
-class dodsError(Exception):
     def __init__(self, value):
         self.value = value
     def __str__(self):
