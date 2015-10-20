@@ -232,6 +232,22 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
                 self.close()
         return calendar
 
+    def get_time_units(self):
+        if self.file_type in queryable_file_types:
+            try:
+                self.open_with_error()
+                units=netcdf_utils.netcdf_time_units(self.Dataset)
+                self.close()
+            except dodsError as e:
+                self.close()
+        else:
+            #Get units from filename:
+            start_date,end_date=dates_from_filename(self.file_name,calendar)
+            units='days since '+str(start_date)
+        return units
+
+class dodsError(Exception):
+
 class dodsError(Exception):
     def __init__(self, value):
         self.value = value

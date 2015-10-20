@@ -49,6 +49,7 @@ class create_netCDF_pointers:
         self.paths_ordering=self.order_paths_by_preference()
         
         self.calendar=self.obtain_unique_calendar()
+        self.calendar=self.obtain_unique_time_units()
         return
 
     def record_paths(self,output,username=None,user_pass=None):
@@ -185,7 +186,7 @@ class create_netCDF_pointers:
             table['indices']=range(0,len(time_axis))
         return time_axis,table
     
-    def obtain_table(self):
+    def obtain_time_axis(self):
         #Retrieve time axes from queryable file types or reconstruct time axes from time stamp
         #from non-queryable file types.
         self.time_axis, self.table= map(np.concatenate,
@@ -207,6 +208,18 @@ class create_netCDF_pointers:
         if len(calendars)==1:
             return calendars.pop()
         return calendar_list[0]
+
+    def _recover_time_units(self,path):
+        file_type=path['file_type']
+        checksum=path['checksum']
+        path_name=str(path['path']).split('|')[0]
+        remote_data=remote_netcdf.remote_netCDF(path_name,file_type,self.semaphores)
+        units=remote_data.get_time_units()
+        return units, file_type 
+
+    def obtain_unique_units(self):
+        units_list,file_type_list=zip(*map(self._recover_time_units,np.nditer(self.paths_ordering)))
+        return units_list[0]
 
     def reduce_paths_ordering(self):
         #CREATE LOOK-UP TABLE:
@@ -292,7 +305,7 @@ class create_netCDF_pointers:
 
     def create_variable(self,output,var,years,months):
         #Recover time axis for all files:
-        self.obtain_table()
+        self.obtain_time_axis()
 
         queryable_file_types_available=list(set(self.table['file_type']).intersection(queryable_file_types))
         if len(self.table['paths'])>0:

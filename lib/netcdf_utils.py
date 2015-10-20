@@ -296,6 +296,13 @@ def netcdf_calendar(data):
         calendar='standard'
     return calendar
 
+def netcdf_time_units(data):
+    if 'units' in dir(data.variables['time']):
+        units=data.variables['time'].units
+    else:
+        units=None
+    return calendar
+
 def create_date_axis_from_time_axis(time_axis,attributes_dict):
     units=attributes_dict['units']
     if 'calendar' in attributes_dict.keys(): 
