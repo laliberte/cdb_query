@@ -99,9 +99,9 @@ def find_time_file(pointers,file_expt,file_available=False,file_queryable=False,
 
 def attribute_time(pointers,file_expt,file_available,file_queryable,year,month):
     #Record checksum of local files:
-    if file_expt.file_type in ['local_file'] and len(file_expt.path.split('|')[1])==0:
-        #Record checksum
-        file_expt.path+=retrieval_utils.md5_for_file(open(file_expt.path.split('|')[0],'r'))
+    #if file_expt.file_type in ['local_file'] and len(file_expt.path.split('|')[1])==0:
+    #    #Record checksum
+    #    file_expt.path+=retrieval_utils.md5_for_file(open(file_expt.path.split('|')[0],'r'))
 
     if file_available and file_queryable:
         #If file is avaible and queryable, keep it:

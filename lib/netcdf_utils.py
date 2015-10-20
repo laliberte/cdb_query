@@ -117,7 +117,7 @@ def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=No
             storage_space=hdf5[var_name].id.get_storage_size()
 
         if variable_size>0:
-            max_request=4500.0 #maximum request in Mb
+            max_request=450.0 #maximum request in Mb
             #max_request=9000.0 #maximum request in Mb
             max_time_steps=max(
                             int(np.floor(max_request*1024*1024/(32*np.prod(data.variables[var_name].shape[1:])))),
@@ -133,10 +133,6 @@ def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=No
                                      ,1)
                                      #(time_chunk+1)*max_time_steps,1)
                     #output.variables[var_name][time_slice,...]=data.variables[var_name][time_slice,...]
-                    temp=data.variables[var_name][time_slice,...]
-                    #Assign only if not masked everywhere:
-                    #if not ('mask' in dir(temp) and temp.mask.all()):
-                    #output.variables[var_name][time_slice,...]=temp
                     if not 'mask' in dir(temp) or not check_empty:
                         output.variables[var_name][time_slice,...]=temp
                     else: 
