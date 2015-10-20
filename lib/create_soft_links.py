@@ -48,8 +48,6 @@ class create_netCDF_pointers:
 
         self.paths_ordering=self.order_paths_by_preference()
         
-        self.calendar=self.obtain_unique_calendar()
-        self.calendar=self.obtain_unique_time_units()
         return
 
     def record_paths(self,output,username=None,user_pass=None):
@@ -187,6 +185,10 @@ class create_netCDF_pointers:
         return time_axis,table
     
     def obtain_time_axis(self):
+        #Get the unique calendar:
+        self.calendar=self.obtain_unique_calendar()
+        #self.units=self.obtain_unique_time_units()
+
         #Retrieve time axes from queryable file types or reconstruct time axes from time stamp
         #from non-queryable file types.
         self.time_axis, self.table= map(np.concatenate,
@@ -217,7 +219,7 @@ class create_netCDF_pointers:
         units=remote_data.get_time_units()
         return units, file_type 
 
-    def obtain_unique_units(self):
+    def obtain_unique_time_units(self):
         units_list,file_type_list=zip(*map(self._recover_time_units,np.nditer(self.paths_ordering)))
         return units_list[0]
 
