@@ -49,7 +49,7 @@ class create_netCDF_pointers:
         self.paths_ordering=self.order_paths_by_preference()
         
         self.calendar=self.obtain_unique_calendar()
-        self.calendar=self.obtain_unique_time_units()
+        #self.units=self.obtain_unique_time_units()
         return
 
     def record_paths(self,output,username=None,user_pass=None):
@@ -217,7 +217,7 @@ class create_netCDF_pointers:
         units=remote_data.get_time_units()
         return units, file_type 
 
-    def obtain_unique_units(self):
+    def obtain_unique_time_units(self):
         units_list,file_type_list=zip(*map(self._recover_time_units,np.nditer(self.paths_ordering)))
         return units_list[0]
 
