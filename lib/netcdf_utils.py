@@ -134,6 +134,7 @@ def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=No
                                      #(time_chunk+1)*max_time_steps,1)
                     #output.variables[var_name][time_slice,...]=data.variables[var_name][time_slice,...]
                     temp=data.variables[var_name][time_slice,...]
+                    #Assign only if not masked everywhere:
                     if not 'mask' in dir(temp) or not check_empty:
                         output.variables[var_name][time_slice,...]=temp
                     else: 
@@ -265,7 +266,7 @@ def create_time_axis(output,data,time_axis):
     time = output.createVariable('time','d',('time',))
     if data==None:
         time.calendar='standard'
-        time.units='days since '+time_axis[0].isoformat()
+        time.units='days since '+str(time_axis[0])
     else:
         time.calendar=netcdf_calendar(data)
         time.units=str(data.variables['time'].units)
@@ -278,7 +279,7 @@ def create_time_axis_date(output,data,time_axis):
     time = output.createVariable('time','d',('time',))
     if data==None:
         time.calendar='standard'
-        time.units='days since '+time_axis[0].isoformat()
+        time.units='days since '+str(time_axis[0])
     else:
         time.calendar=netcdf_calendar(data)
         time.units=str(data.variables['time'].units)
