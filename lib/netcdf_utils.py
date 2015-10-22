@@ -606,7 +606,11 @@ def replace_netcdf_variable_recursive(output,data,level_desc,tree,hdf5=None,chec
                     replace_netcdf_variable_recursive(output_grp,data.groups[group],tree[0],tree[1:],hdf5=hdf5[group],check_empty=check_empty)
             else:
                 netcdf_pointers=read_soft_links.read_netCDF_pointers(data.groups[group])
-                netcdf_pointers.replicate(output_grp,hdf5=hdf5[group],check_empty=check_empty)
+                if hdf5!=None:
+                    netcdf_pointers.replicate(output_grp,hdf5=hdf5[group],check_empty=check_empty)
+                else:
+                    netcdf_pointers.replicate(output_grp,hdf5=hdf5,check_empty=check_empty)
+                    
     else:
         output_grp=create_group(output,data,group_name)
         output_grp.setncattr('level_name',level_name)
