@@ -264,7 +264,7 @@ def create_time_axis(output,data,time_axis):
     time = output.createVariable('time','d',('time',))
     if data==None:
         time.calendar='standard'
-        time.units='days since '+time_axis[0].isoformat()
+        time.units='days since '+str(time_axis[0])
     else:
         time.calendar=netcdf_calendar(data)
         time.units=str(data.variables['time'].units)
@@ -277,7 +277,7 @@ def create_time_axis_date(output,data,time_axis):
     time = output.createVariable('time','d',('time',))
     if data==None:
         time.calendar='standard'
-        time.units='days since '+time_axis[0].isoformat()
+        time.units='days since '+str(time_axis[0])
     else:
         time.calendar=netcdf_calendar(data)
         time.units=str(data.variables['time'].units)
