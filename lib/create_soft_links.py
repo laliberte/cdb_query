@@ -187,6 +187,10 @@ class create_netCDF_pointers:
         return time_axis,table
     
     def obtain_time_axis(self):
+        #Get the unique calendar:
+        self.calendar=self.obtain_unique_calendar()
+        #self.units=self.obtain_unique_time_units()
+
         #Retrieve time axes from queryable file types or reconstruct time axes from time stamp
         #from non-queryable file types.
         self.time_axis, self.table= map(np.concatenate,

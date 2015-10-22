@@ -285,7 +285,7 @@ def create_time_axis_date(output,data,time_axis):
     return
 
 def netcdf_calendar(data):
-    if 'calendar' in dir(data.variables['time']):
+    if 'calendar' in data.variables['time'].ncattrs():
         calendar=data.variables['time'].calendar
     else:
         calendar='standard'
