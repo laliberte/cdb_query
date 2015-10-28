@@ -223,7 +223,7 @@ class SimpleTree:
             if not options.password_from_pipe:
                 user_pass=getpass.getpass('Enter Credential phrase:')
             else:
-                user_pass=sys.stdin.readline()
+                user_pass=sys.stdin.readline().rstrip()
             #Get certificates if requested by user:
             certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass)
         else:
