@@ -101,7 +101,6 @@ def replicate_full_netcdf_recursive(output,data,hdf5=None,check_empty=False):
     return
 
 def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=None,add_dim=None,chunksize=None,zlib=None,hdf5=None,check_empty=False):
-
     replicate_netcdf_var(output,data,var_name,datatype=datatype,fill_value=fill_value,add_dim=add_dim,chunksize=chunksize,zlib=zlib)
 
     if len(data.variables[var_name].shape)>0:
@@ -118,7 +117,7 @@ def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=No
             storage_space=hdf5[var_name].id.get_storage_size()
 
         if variable_size>0:
-            max_request=4500.0 #maximum request in Mb
+            max_request=450.0 #maximum request in Mb
             #max_request=9000.0 #maximum request in Mb
             max_time_steps=max(
                             int(np.floor(max_request*1024*1024/(32*np.prod(data.variables[var_name].shape[1:])))),
@@ -136,8 +135,6 @@ def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=No
                     #output.variables[var_name][time_slice,...]=data.variables[var_name][time_slice,...]
                     temp=data.variables[var_name][time_slice,...]
                     #Assign only if not masked everywhere:
-                    #if not ('mask' in dir(temp) and temp.mask.all()):
-                    #output.variables[var_name][time_slice,...]=temp
                     if not 'mask' in dir(temp) or not check_empty:
                         output.variables[var_name][time_slice,...]=temp
                     else: 
@@ -267,12 +264,11 @@ def create_time_axis(output,data,time_axis):
     #output.createDimension('time',len(time_axis))
     output.createDimension('time',None)
     time = output.createVariable('time','d',('time',))
-    time.calendar='proleptic_gregorian'
     if data==None:
-        time.units='days since '+time_axis[0].isoformat()
+        time.calendar='standard'
+        time.units='days since '+str(time_axis[0])
     else:
-        if 'calendar' in data.variables['time'].ncattrs():
-            time.calendar=str(data.variables['time'].calendar)
+        time.calendar=netcdf_calendar(data)
         time.units=str(data.variables['time'].units)
     time[:]=time_axis
     return
@@ -281,21 +277,27 @@ def create_time_axis_date(output,data,time_axis):
     #output.createDimension('time',len(time_axis))
     output.createDimension('time',None)
     time = output.createVariable('time','d',('time',))
-    time.calendar='proleptic_gregorian'
     if data==None:
-        time.units='days since '+time_axis[0].isoformat()
+        time.calendar='standard'
+        time.units='days since '+str(time_axis[0])
     else:
-        if 'calendar' in data.variables['time'].ncattrs():
-            time.calendar=str(data.variables['time'].calendar)
+        time.calendar=netcdf_calendar(data)
         time.units=str(data.variables['time'].units)
     time[:]=netCDF4.date2num(time_axis,time.units,calendar=time.calendar)
     return
 
 def netcdf_calendar(data):
-    if 'calendar' in dir(data.variables['time']):
+    if 'calendar' in data.variables['time'].ncattrs():
         calendar=data.variables['time'].calendar
     else:
         calendar='standard'
+    return calendar
+
+def netcdf_time_units(data):
+    if 'units' in dir(data.variables['time']):
+        units=data.variables['time'].units
+    else:
+        units=None
     return calendar
 
 def create_date_axis_from_time_axis(time_axis,attributes_dict):
@@ -303,7 +305,7 @@ def create_date_axis_from_time_axis(time_axis,attributes_dict):
     if 'calendar' in attributes_dict.keys(): 
         calendar=attributes_dict['calendar']
     else:
-        calendar='proleptic_gregorian'
+        calendar='standard'
 
     if units=='day as %Y%m%d.%f':
         date_axis=np.array(map(convert_to_date_absolute,native_time_axis))
@@ -604,7 +606,11 @@ def replace_netcdf_variable_recursive(output,data,level_desc,tree,hdf5=None,chec
                     replace_netcdf_variable_recursive(output_grp,data.groups[group],tree[0],tree[1:],hdf5=hdf5[group],check_empty=check_empty)
             else:
                 netcdf_pointers=read_soft_links.read_netCDF_pointers(data.groups[group])
-                netcdf_pointers.replicate(output_grp,hdf5=hdf5[group],check_empty=check_empty)
+                if hdf5!=None:
+                    netcdf_pointers.replicate(output_grp,hdf5=hdf5[group],check_empty=check_empty)
+                else:
+                    netcdf_pointers.replicate(output_grp,hdf5=hdf5,check_empty=check_empty)
+                    
     else:
         output_grp=create_group(output,data,group_name)
         output_grp.setncattr('level_name',level_name)

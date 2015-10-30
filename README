@@ -25,6 +25,8 @@ F. Laliberté, Juckes, M., Denvil, S., Kushner, P. J., Bull. Amer. Meteor. Soc.,
 Version History
 ---------------
 
+1.4: Stability.
+
 1.3: Added support for FTP archives. Added support for project LRFTIP. Two time series
      described by soft links can now be safely concantenated BEFORE a download.
 
