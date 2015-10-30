@@ -48,8 +48,9 @@ class create_netCDF_pointers:
 
         self.paths_ordering=self.order_paths_by_preference()
         
-        self.calendar=self.obtain_unique_calendar()
-        #self.units=self.obtain_unique_time_units()
+        if not self.time_frequency in ['fx','clim']:
+            self.calendar=self.obtain_unique_calendar()
+            #self.units=self.obtain_unique_time_units()
         return
 
     def record_paths(self,output,username=None,user_pass=None):
