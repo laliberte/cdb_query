@@ -123,8 +123,10 @@ def convert_half_level_pressures(options):
 
 
     first_target=';'.join([
-                    'dp[$time,$lev,$lat,$lon]=(pa[:,1:$slev.size-1,:,:]-pa[:,2:$slev.size-2,:,:]).float()',
-                    'p[$time,$lev,$lat,$lon]=0.5*(pa[:,1:$slev.size-1,:,:]+pa[:,2:$slev.size-2,:,:]).float()'
+                    'dp=ta;'
+                    'dp(:,:,:,:)=(pa(:,1:$slev.size-1,:,:)-pa(:,0:$slev.size-2,:,:))',
+                    'p=ta;',
+                    'p(:,:,:,:)=0.5*(pa(:,1:$slev.size-1,:,:)+pa(:,0:$slev.size-2,:,:))',
                     ])+';'
 
     second_target='dz=(-287.04*(1+0.61)*ta*dp/p/9.8).float();'
@@ -132,7 +134,8 @@ def convert_half_level_pressures(options):
     second_target+='for(*it=0;it<$time.size-1;it++){z_bnds(it,0,:,:)=orog;};for(*iz=0;iz<$slev.size-2;iz++){'
     second_target+='z_bnds(:,iz+1,:,:)=z_bnds(:,iz,:,:)+dz(:,iz,:,:);'
     second_target+='};'
-    second_target+='z[$time,$lev,$lat,$lon]=0.5*(z_bnds[:,1:$slev.size-1,:,:]+z_bnds[:,2:$slev.size-2,:,:]).float()'
+    second_target+='z=ta;'
+    second_target+='z(:,:,:,:)=0.5*(z_bnds(:,1:$slev.size-1,:,:)+z_bnds(:,0:$slev.size-2,:,:));'
 
     for var in var_list.keys():
         script_to_call='ncks -3 -G : -g '+ var +' '+ ' '.join([options.in_file,options.out_file+'.tmp'])
@@ -145,10 +148,8 @@ def convert_half_level_pressures(options):
         os.remove(options.out_file+'.tmp')
             
 
-    out=subprocess.call(script_to_call,shell=True)
     #script_to_call='ncap2 -3 -O -s \''+first_target+'\' '+options.out_file+' '+options.out_file
-    script_to_call='ncap2 -O -3 -s \''+first_target+second_target+'\' '+options.out_file+' '+options.out_file
-    #print script_to_call
+    script_to_call='ncap2 -v -O -3 -s \''+first_target+second_target+'\' '+options.out_file+' '+options.out_file
     out=subprocess.call(script_to_call,shell=True)
 
     out_var_list=['dz','dp','z','p']
