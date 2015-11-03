@@ -389,7 +389,10 @@ def convert_dates_to_timestamps(output_tmp,time_frequency):
 
 def assign_tree(output,val,sort_table,tree):
     if len(tree)>1:
-        assign_tree(output.groups[tree[0]],val,sort_table,tree[1:])
+        if tree[0]!='':
+            assign_tree(output.groups[tree[0]],val,sort_table,tree[1:])
+        else:
+            assign_tree(output,val,sort_table,tree[1:])
     else:
         output.variables[tree[0]][sort_table]=val
     return

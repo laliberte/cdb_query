@@ -247,11 +247,12 @@ class SimpleTree:
 
         #Check if years should be relative, eg for piControl:
         options.min_year=None
-        for experiment in self.header['experiment_list']:
-            min_year=int(self.header['experiment_list'][experiment].split(',')[0])
-            if min_year<10:
-                options.min_year=min_year
-                print 'Using min year {0} for experiment {1}'.format(str(min_year),experiment)
+        if 'experiment_list' in self.header.keys():
+            for experiment in self.header['experiment_list']:
+                min_year=int(self.header['experiment_list'][experiment].split(',')[0])
+                if min_year<10:
+                    options.min_year=min_year
+                    print 'Using min year {0} for experiment {1}'.format(str(min_year),experiment)
 
         #Start the retrieval workers:
         if not ('serial' in dir(options) and options.serial):
