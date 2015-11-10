@@ -138,18 +138,18 @@ def convert_half_level_pressures(options):
     second_target+='z(:,:,:,:)=0.5*(z_bnds(:,1:$slev.size-1,:,:)+z_bnds(:,0:$slev.size-2,:,:));'
 
     for var in var_list.keys():
-        script_to_call='ncks -3 -G : -g '+ var +' '+ ' '.join([options.in_file,options.out_file+'.tmp'])
+        script_to_call='ncks -4 -L 1 -G : -g '+ var +' '+ ' '.join([options.in_file,options.out_file+'.tmp'])
         out=subprocess.call(script_to_call,shell=True)
         if var=='pa':
             script_to_call='ncrename -v lev,slev -d lev,slev '+options.out_file+'.tmp'
             out=subprocess.call(script_to_call,shell=True)
-        script_to_call='ncks -A ' + ' '.join([options.out_file+'.tmp',options.out_file])
+        script_to_call='ncks -A -4 -L 1 ' + ' '.join([options.out_file+'.tmp',options.out_file])
         out=subprocess.call(script_to_call,shell=True)
         os.remove(options.out_file+'.tmp')
             
 
     #script_to_call='ncap2 -3 -O -s \''+first_target+'\' '+options.out_file+' '+options.out_file
-    script_to_call='ncap2 -v -O -3 -s \''+first_target+second_target+'\' '+options.out_file+' '+options.out_file
+    script_to_call='ncap2 -v -O -4 -L 1 -s \''+first_target+second_target+'\' '+options.out_file+' '+options.out_file
     out=subprocess.call(script_to_call,shell=True)
 
     out_var_list=['dz','dp','z','p']
