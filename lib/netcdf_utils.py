@@ -179,8 +179,13 @@ def replicate_netcdf_file(output,data):
         att_val=data.getncattr(att)
         if 'encode' in dir(att_val):
             att_val=att_val.encode('ascii','replace')
+        if 'encode' in dir(att):
+            att=att.encode('ascii','replace')
         if (not att in output.ncattrs() and
             att != 'cdb_query_temp'):
+            try:
+                setattr(output,att,att_val)
+            except:
                 output.setncattr(att,att_val)
     return output
 
@@ -257,7 +262,12 @@ def replicate_netcdf_var_att(output,data,var):
         if att[0]!='_':
             if 'encode' in dir(att_val):
                 att_val=att_val.encode('ascii','replace')
-            output.variables[var].setncattr(att,att_val)
+            if 'encode' in dir(att):
+                att=att.encode('ascii','replace')
+            try:
+                setattr(output.variables[var],att,att_val)
+            except:
+                output.variables[var].setncattr(att,att_val)
     return output
 
 def create_time_axis(output,data,time_axis):
@@ -291,6 +301,8 @@ def netcdf_calendar(data):
         calendar=data.variables['time'].calendar
     else:
         calendar='standard'
+    if 'encode' in dir(calendar):
+        calendar=calendar.encode('ascii','replace')
     return calendar
 
 def netcdf_time_units(data):
@@ -607,7 +619,10 @@ def replace_netcdf_variable_recursive(output,data,level_desc,tree,hdf5=None,chec
     if group_name==None or isinstance(group_name,list):
         for group in data.groups.keys():
             output_grp=create_group(output,data,group)
-            output_grp.setncattr('level_name',level_name)
+            try:
+                setattr(output_grp,'level_name',level_name)
+            except:
+                output_grp.setncattr('level_name',level_name)
             if len(tree)>0:
                 if hdf5!=None:
                     replace_netcdf_variable_recursive(output_grp,data.groups[group],tree[0],tree[1:],hdf5=hdf5[group],check_empty=check_empty)
@@ -622,7 +637,10 @@ def replace_netcdf_variable_recursive(output,data,level_desc,tree,hdf5=None,chec
                     
     else:
         output_grp=create_group(output,data,group_name)
-        output_grp.setncattr('level_name',level_name)
+        try:
+            setattr(output_grp,'level_name',level_name)
+        except:
+            output_grp.setncattr('level_name',level_name)
         if len(tree)>0:
             replace_netcdf_variable_recursive(output_grp,data,tree[0],tree[1:],hdf5=hdf5,check_empty=check_empty)
         else:
