@@ -141,7 +141,6 @@ def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=No
                         #Only write the variable if it is not empty:
                         if not temp.mask.all():
                             output.variables[var_name][time_slice,...]=temp
-                    output.sync()
             else:
                 #output.variables[var_name][:]=data.variables[var_name][:]
                 #temp=np.reshape(data.variables[var_name][:],data.variables[var_name].shape)
@@ -152,6 +151,14 @@ def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=No
                     #    print data
                     #    print output
                     #    print output.path
+                    #output_hdf5=None
+                    #for item in h5py.h5f.get_obj_ids():
+                    #    if 'name' in dir(item) and item.name==output.filepath():
+                    #        output_hdf5=h5py.File(item)
+                    #if output_hdf5!=None:
+                    #    dset=output_hdf5[output.path].get(var_name)
+                    #    dset=temp
+                    #else:
                     output.variables[var_name][:]=temp
                 else: 
                     #Only write the variable if it is not empty:
@@ -178,9 +185,7 @@ def replicate_netcdf_file(output,data):
     for att in data.ncattrs():
         att_val=data.getncattr(att)
         if 'encode' in dir(att_val):
-            att_val=att_val.encode('ascii','replace')
-        if 'encode' in dir(att):
-            att=att.encode('ascii','replace')
+            att_val=str(att_val.encode('ascii','replace'))
         if (not att in output.ncattrs() and
             att != 'cdb_query_temp'):
             try:
@@ -397,7 +402,6 @@ def convert_dates_to_timestamps(output_tmp,time_frequency):
         return '_'+'-'.join([conversion[time_frequency](date) for date in date_axis])
     else:
         return ''
-
 
 def assign_tree(output,val,sort_table,tree):
     if len(tree)>1:
