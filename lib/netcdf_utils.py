@@ -151,10 +151,6 @@ def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=No
                     #    print data
                     #    print output
                     #    print output.path
-                    if var_name=='orog': 
-                        import matplotlib.pyplot as plt
-                        plt.contourf(temp)
-                        plt.show()
                     #output_hdf5=None
                     #for item in h5py.h5f.get_obj_ids():
                     #    if 'name' in dir(item) and item.name==output.filepath():
