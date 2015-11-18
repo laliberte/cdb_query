@@ -164,7 +164,7 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
         try:
             self.open_with_error()
             for var_name in self.Dataset.variables.keys():
-                netcdf_utils.replicate_and_copy_variable(output,self.Dataset,var_name,zlib=zlib,check_empty=False)
+                output=netcdf_utils.replicate_and_copy_variable(output,self.Dataset,var_name,zlib=zlib,check_empty=False)
                 #netcdf_utils.replicate_netcdf_var(output,self.Dataset,var_name)
                 #output.variables[var_name][:]=self.Dataset.variables[var_name][:]
             self.close()
@@ -172,7 +172,7 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
             e_mod=" This is an uncommon error. It is likely to be FATAL."
             self.close()
             print e.value+e_mod
-        return
+        return output
 
     def grab_indices(self,var,indices,unsort_indices):
         dimensions=self.retrieve_dimension_list(var)

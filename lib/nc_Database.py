@@ -129,7 +129,8 @@ class nc_Database:
         #Create output:
         filepath=options.out_diagnostic_netcdf_file+'.pid'+str(os.getpid())
         output_root=netCDF4.Dataset(filepath,
-                                      'w',format='NETCDF4',diskless=True,persist=True)
+                                      'w',format='NETCDF4')
+                                      #'w',format='NETCDF4',diskless=True,persist=True)
         if 'no_check_availability' in dir(options) and options.no_check_availability:
             self.record_header(output_root,{val:header[val] for val in header.keys() if val!='data_node_list'})
         else:

@@ -64,14 +64,10 @@ class create_netCDF_pointers:
             #Retrieve time and meta:
             self.create_variable(output,self.var,self.years,self.months)
             #Put version:
-            output.setncattr('netcdf_soft_links_version','1.1')
+            output.setncattr(str('netcdf_soft_links_version'),str('1.1'))
         return
 
     def record_fx(self,output,username=None,user_pass=None):
-        #Create soft links
-        self.create(output)
-        output.groups['soft_links'].createVariable(self.var,np.float32,(),zlib=True)
-
         #Find the most recent version:
         most_recent_version='v'+str(np.max([int(item['version'][1:]) for item in self.paths_list]))
         usable_paths_list=[ item for item in self.paths_list if item['version']==most_recent_version]
@@ -101,7 +97,8 @@ class create_netCDF_pointers:
                 #Use aternative path:
                 path=queryable_paths_list[[item['path'].split('|')[0] for item in queryable_paths_list].index(alt_path_name)]
                 remote_data=remote_netcdf.remote_netCDF(path['path'].split('|')[0],path['file_type'],self.semaphores)
-            remote_data.retrieve_variables(output,zlib=True)
+            output=remote_data.retrieve_variables(output,zlib=True)
+            output.sync()
 
             for att in path.keys():
                 if att!='path':      
@@ -113,6 +110,10 @@ class create_netCDF_pointers:
             pass
             if len(queryable_paths_list)==0:
                 os.remove(temp_file_name)
+
+        #Create soft links
+        self.create(output)
+        output.groups['soft_links'].createVariable(self.var,np.float32,(),zlib=True)
         return
 
     def create(self,output):
@@ -415,6 +416,7 @@ class create_netCDF_pointers:
 #                if j > len(substr) and all(data[0][i:i+j] in x for x in data):
 #                    substr = data[0][i:i+j]
 #    return substr
+
 
 
 

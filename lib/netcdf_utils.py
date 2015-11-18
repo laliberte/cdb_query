@@ -141,7 +141,6 @@ def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=No
                         #Only write the variable if it is not empty:
                         if not temp.mask.all():
                             output.variables[var_name][time_slice,...]=temp
-                    output.sync()
             else:
                 #output.variables[var_name][:]=data.variables[var_name][:]
                 #temp=np.reshape(data.variables[var_name][:],data.variables[var_name].shape)
@@ -152,6 +151,18 @@ def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=No
                     #    print data
                     #    print output
                     #    print output.path
+                    if var_name=='orog': 
+                        import matplotlib.pyplot as plt
+                        plt.contourf(temp)
+                        plt.show()
+                    #output_hdf5=None
+                    #for item in h5py.h5f.get_obj_ids():
+                    #    if 'name' in dir(item) and item.name==output.filepath():
+                    #        output_hdf5=h5py.File(item)
+                    #if output_hdf5!=None:
+                    #    dset=output_hdf5[output.path].get(var_name)
+                    #    dset=temp
+                    #else:
                     output.variables[var_name][:]=temp
                 else: 
                     #Only write the variable if it is not empty:
@@ -178,7 +189,7 @@ def replicate_netcdf_file(output,data):
     for att in data.ncattrs():
         att_val=data.getncattr(att)
         if 'encode' in dir(att_val):
-            att_val=att_val.encode('ascii','replace')
+            att_val=str(att_val.encode('ascii','replace'))
         if (not att in output.ncattrs() and
             att != 'cdb_query_temp'):
                 output.setncattr(att,att_val)
@@ -256,7 +267,7 @@ def replicate_netcdf_var_att(output,data,var):
         att_val=data.variables[var].getncattr(att)
         if att[0]!='_':
             if 'encode' in dir(att_val):
-                att_val=att_val.encode('ascii','replace')
+                att_val=str(att_val.encode('ascii','replace'))
             output.variables[var].setncattr(att,att_val)
     return output
 
@@ -385,7 +396,6 @@ def convert_dates_to_timestamps(output_tmp,time_frequency):
         return '_'+'-'.join([conversion[time_frequency](date) for date in date_axis])
     else:
         return ''
-
 
 def assign_tree(output,val,sort_table,tree):
     if len(tree)>1:
@@ -607,7 +617,7 @@ def replace_netcdf_variable_recursive(output,data,level_desc,tree,hdf5=None,chec
     if group_name==None or isinstance(group_name,list):
         for group in data.groups.keys():
             output_grp=create_group(output,data,group)
-            output_grp.setncattr('level_name',level_name)
+            output_grp.setncattr('level_name',str(level_name))
             if len(tree)>0:
                 if hdf5!=None:
                     replace_netcdf_variable_recursive(output_grp,data.groups[group],tree[0],tree[1:],hdf5=hdf5[group],check_empty=check_empty)
@@ -622,7 +632,7 @@ def replace_netcdf_variable_recursive(output,data,level_desc,tree,hdf5=None,chec
                     
     else:
         output_grp=create_group(output,data,group_name)
-        output_grp.setncattr('level_name',level_name)
+        output_grp.setncattr('level_name',str(level_name))
         if len(tree)>0:
             replace_netcdf_variable_recursive(output_grp,data,tree[0],tree[1:],hdf5=hdf5,check_empty=check_empty)
         else:
