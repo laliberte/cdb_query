@@ -36,6 +36,7 @@ class browser:
                                             experiment,var_name,database.header['variable_list'][var_name],list_level=list_level))
         return [item for sublist in only_list for item in sublist]
 
+unique_file_id_list=['checksum_type','checksum','tracking_id']
 def experiment_variable_search(nc_Database,search_path,file_type_list,options,
                                 experiment,var_name,var_desc,list_level=None):
 
@@ -107,10 +108,11 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
 def record_url(remote_file_desc,nc_Database):
     nc_Database.file_expt.path=remote_file_desc['url']
     nc_Database.file_expt.data_node=retrieval_utils.get_data_node(remote_file_desc['url'],remote_file_desc['file_type'])
-    if remote_file_desc['file_type'] in nc_Database.drs.remote_file_types and remote_file_desc['checksum']:
-        nc_Database.file_expt.path+='|'+remote_file_desc['checksum']
-    else:
-        nc_Database.file_expt.path+='|'
+    for unique_file_id in unique_file_id_list:
+        if remote_file_desc['file_type'] in nc_Database.drs.remote_file_types and remote_file_desc[unique_file_id]:
+            nc_Database.file_expt.path+='|'+remote_file_desc[unique_file_id]
+        else:
+            nc_Database.file_expt.path+='|'
 
     for val in nc_Database.drs.remote_fields:
         setattr(nc_Database.file_expt,val,remote_file_desc[val])
@@ -159,13 +161,9 @@ def get_url_remote(item,file_type_list,drs):
         keys_list=[]
 
     for key in set(keys_list).intersection(file_type_list):
-        #if key!='OPeNDAP':
         file_info=create_file_info_dict(key,item,drs)
-        #if (key=='HTTPServer' and
-        #   'OPeNDAP' in file_type_list):
-        #    file_info=create_file_info_dict('OPeNDAP',item,drs)
         
-        if (file_info['checksum']!=None or
+        if (any([ file_info[unique_file_id]!=None for unique_file_id in unique_file_id_list]) or
             drs.project in ['NMME']):
             url_name.append(file_info)
     return url_name
@@ -183,7 +181,7 @@ def create_file_info_dict(key,item,drs):
             file_info['url']=item.urls[key][0][0]
     except:
         file_info['url']=None
-    for val in drs.official_drs+['checksum']:
+    for val in drs.official_drs+unique_file_id_list:
         try:
             if val=='var':
                 #this is a temporary fix to a poor design decision on my part.

@@ -87,9 +87,9 @@ class read_netCDF_pointers:
                     #year=None,month=None,day=None, min_year=None,previous=0,next=0,source_dir=None,username=None,user_pass=None):
 
         self.initialize_retrieval()
-        if 'source_dir' in dir(options) and options.source_dir!=None:
-            #Check if the file has already been retrieved:
-            self.paths_list,self.file_type_list=retrieval_utils.find_local_file(options.source_dir,self.data_root.groups['soft_links'])
+        #if 'source_dir' in dir(options) and options.source_dir!=None:
+        #    #Check if the file has already been retrieved:
+        #    self.paths_list,self.file_type_list=retrieval_utils.find_local_file(options.source_dir,self.data_root.groups['soft_links'])
 
         #Define tree:
         self.tree=self.data_root.path.split('/')[1:]

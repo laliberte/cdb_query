@@ -19,6 +19,8 @@ import hashlib
 
 import time
 
+unique_file_id_list=['checksum_type','checksum','tracking_id']
+
 class HTTPSClientAuthHandler(urllib2.HTTPSHandler):
     def __init__(self, key, cert):
         urllib2.HTTPSHandler.__init__(self)
@@ -166,6 +168,15 @@ def sha_for_file(f, block_size=2**20):
         sha.update(data)
     return sha.hexdigest()
 
+def checksum_for_file(checksum_type,f, block_size=2**20):
+    checksum = getattr(hashlib,checksum_type.lower())()
+    while True:
+        data = f.read(block_size)
+        if not data:
+            break
+        checksum.update(data)
+    return checksum.hexdigest()
+
 #def retrieve_path(path,out_destination):
 def retrieve_path(in_dict,pointer_var):
     path=in_dict['path']
@@ -191,62 +202,66 @@ def retrieve_path(in_dict,pointer_var):
 
     root_path=decomposition[0]
     dest_name+=root_path.split('/')[-1]
-    if decomposition[1]=='':
+    checksum_type=decomposition[unique_file_id_list.index('checksum_type')+1]
+    checksum=decomposition[unique_file_id_list.index('checksum')+1]
+
+    if checksum=='':
         if not os.path.isfile(dest_name):
             #Downloads only if file exists!
             size_string=download_secure(root_path,dest_name,file_type,username=username,user_pass=user_pass)
-            return 'Could NOT check SHA256 checksum of retrieved file because checksum was not a priori available.'
+            return 'Could NOT check checksum of retrieved file because checksum was not a priori available.'
         else:
-            return 'File '+dest_name+' found but could NOT check SHA256 checksum of existing file because checksum was not a priori available. Not retrieving.'
+            return 'File '+dest_name+' found but could NOT check checksum of existing file because checksum was not a priori available. Not retrieving.'
     else:
         try: #Works only if file exists!
-            shasum=sha_for_file(open(dest_name,'r'))
+            comp_checksum=checksum_for_file(checksum_type,open(dest_name,'r'))
         except:
-            shasum=''
-        if shasum==decomposition[1]:
-            return 'File '+dest_name+' found. SHA256 OK! Not retrieving.'
+            comp_checksum=''
+        if comp_checksum==checksum:
+            return 'File '+dest_name+' found. '+checksum_type+' OK! Not retrieving.'
 
         size_string=download_secure(root_path,dest_name,file_type,username=username,user_pass=user_pass)
         try: 
-            shasum=sha_for_file(open(dest_name,'r'))
+            comp_checksum=checksum_for_file(checksum_type,open(dest_name,'r'))
         except:
-            shasum=''
-        if shasum!=decomposition[1]:
+            comp_checksum=''
+        if comp_checksum!=checksum:
             try:
                 os.remove(dest_name)
             except:
                 pass
-            return size_string+'\n'+'File '+dest_name+' does not have the same SHA256 checksum as published on the ESGF. Removing this file...'
+            return size_string+'\n'+'File '+dest_name+' does not have the same '+checksum_type+' checksum as published on the ESGF. Removing this file...'
         else:
-            return size_string+'\n'+'Checking SHA256 checksum of retrieved file... SHA256 OK!'
+            return size_string+'\n'+'Checking '+checksum_type+' checksum of retrieved file... '+checksum_type+' OK!'
 
-def find_local_file(source_dir,data):
-    paths_list=data.variables['path'][:]
-    version_list=data.variables['version'][:]
-    checksum_list=data.variables['checksum'][:]
-    file_type_list=data.variables['file_type'][:]
-    #THIS IS NOT DRS-SAFE:
-    tree='/'.join(data.path.split('/')[1:-2])
-    var=data.path.split('/')[-2]
-    unique_paths_list=list(np.unique([source_dir+'/'+tree+'/v'+str(version)+'/'+var+'/'+path.split('/')[-1] for path, version in zip(paths_list,version_list)]))
-    unique_checksum_list=[]
-    for path in unique_paths_list:
-        try:
-            shasum=sha_for_file(open(path,'r'))
-        except:
-            shasum=''
-        unique_checksum_list.append(shasum)
-    new_paths_list=[]
-    new_file_type_list=[]
-    for path_id,path in enumerate(paths_list):
-        local_path=source_dir+'/'+tree+'/v'+str(version_list[path_id])+'/'+var+'/'+path.split('/')[-1]
-        if unique_checksum_list[unique_paths_list.index(local_path)]==checksum_list[path_id]:
-            new_paths_list.append(local_path)
-            new_file_type_list.append('local_file')
-        else:
-            new_paths_list.append(path)
-            new_file_type_list.append(file_type_list[path_id])
-    return new_paths_list, new_file_type_list
+#def find_local_file(source_dir,data):
+#    paths_list=data.variables['path'][:]
+#    version_list=data.variables['version'][:]
+#    checksum_list=data.variables['checksum'][:]
+#    checksum_type_list=data.variables['checksum_type'][:]
+#    file_type_list=data.variables['file_type'][:]
+#    #THIS IS NOT DRS-SAFE:
+#    tree='/'.join(data.path.split('/')[1:-2])
+#    var=data.path.split('/')[-2]
+#    unique_paths_list=list(np.unique([source_dir+'/'+tree+'/v'+str(version)+'/'+var+'/'+path.split('/')[-1] for path, version in zip(paths_list,version_list)]))
+#    unique_checksum_list=[]
+#    for path in unique_paths_list:
+#        try:
+#            comp_checksum=sha_for_file(open(path,'r'))
+#        except:
+#            comp_checksum=''
+#        unique_checksum_list.append(comp_checksum)
+#    new_paths_list=[]
+#    new_file_type_list=[]
+#    for path_id,path in enumerate(paths_list):
+#        local_path=source_dir+'/'+tree+'/v'+str(version_list[path_id])+'/'+var+'/'+path.split('/')[-1]
+#        if unique_checksum_list[unique_paths_list.index(local_path)]==checksum_list[path_id]:
+#            new_paths_list.append(local_path)
+#            new_file_type_list.append('local_file')
+#        else:
+#            new_paths_list.append(path)
+#            new_file_type_list.append(file_type_list[path_id])
+#    return new_paths_list, new_file_type_list
 
 def retrieve_path_data(in_dict,pointer_var):
     #print 'Recovering '+'/'.join(self.tree)

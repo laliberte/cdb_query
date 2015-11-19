@@ -29,6 +29,8 @@ import random
 
 
 queryable_file_types=['OPENDAP','local_file']
+unique_file_id_list=['checksum_type','checksum','tracking_id']
+
 class create_netCDF_pointers:
     def __init__(self,paths_list,var,time_frequency,years,months,file_type_list,data_node_list,semaphores=[]):
         self.file_type_list=file_type_list
@@ -37,7 +39,7 @@ class create_netCDF_pointers:
         self.paths_list=paths_list
 
         self.sorts_list=['version','file_type_id','data_node_id','path_id']
-        self.id_list=['data_node','file_type','path','checksum']
+        self.id_list=['data_node','file_type','path']+unique_file_id_list
 
         self.var=var
         self.time_frequency=time_frequency
@@ -63,7 +65,7 @@ class create_netCDF_pointers:
             #Retrieve time and meta:
             self.create_variable(output,self.var,self.years,self.months)
             #Put version:
-            output.setncattr(str('netcdf_soft_links_version'),str('1.1'))
+            output.setncattr(str('netcdf_soft_links_version'),str('1.2'))
         return
 
     def record_fx(self,output,username=None,user_pass=None):
@@ -91,7 +93,7 @@ class create_netCDF_pointers:
 
                 remote_data=remote_netcdf.remote_netCDF(path['path'].split('|')[0],path['file_type'],self.semaphores)
                 alt_path_name=remote_data.check_if_available_and_find_alternative([item['path'].split('|')[0] for item in queryable_paths_list],
-                                                                         [item['path'].split('|')[1] for item in queryable_paths_list])
+                                                                         [item['path'].split('|')[unique_file_id_list.index('checksum')+1] for item in queryable_paths_list])
 
                 #Use aternative path:
                 path=queryable_paths_list[[item['path'].split('|')[0] for item in queryable_paths_list].index(alt_path_name)]
@@ -103,7 +105,8 @@ class create_netCDF_pointers:
                 if att!='path':      
                     output.setncattr(att,path[att])
             output.setncattr('path',path['path'].split('|')[0])
-            output.setncattr('checksum',path['path'].split('|')[1])
+            for unique_file_id in unique_file_id_list:
+                output.setncattr(unique_file_id,path['path'].split('|')[unique_file_id_list.index(unique_file_id)+1])
             output.sync()
         finally:
             pass
@@ -147,7 +150,8 @@ class create_netCDF_pointers:
             paths_ordering['path_id'][file_id]=hash(
                                                     paths_ordering['path'][file_id]
                                                         )
-            paths_ordering['checksum'][file_id]=file['path'].split('|')[1]
+            for unique_file_id in unique_file_id_list:
+                paths_ordering[unique_file_id][file_id]=file['path'].split('|')[unique_file_id_list.index(unique_file_id)+1]
             paths_ordering['version'][file_id]=np.long(file['version'][1:])
 
             paths_ordering['file_type'][file_id]=file['file_type']
@@ -167,7 +171,6 @@ class create_netCDF_pointers:
 
     def _recover_time(self,path):
         file_type=path['file_type']
-        checksum=path['checksum']
         path_name=str(path['path']).split('|')[0]
         remote_data=remote_netcdf.remote_netCDF(path_name,file_type,self.semaphores)
         time_axis=remote_data.get_time(time_frequency=self.time_frequency,
@@ -176,15 +179,15 @@ class create_netCDF_pointers:
         table_desc=[
                    ('paths','a255'),
                    ('file_type','a255'),
-                   ('checksum','a255'),
                    ('indices','int32')
-                   ]
+                   ] + [(unique_file_id,'a255') for unique_file_id in unique_file_id_list]
         table=np.empty(time_axis.shape, dtype=table_desc)
         if len(time_axis)>0:
             table['paths']=np.array([str(path_name) for item in time_axis])
             table['file_type']=np.array([str(file_type) for item in time_axis])
-            table['checksum']=np.array([str(checksum) for item in time_axis])
             table['indices']=range(0,len(time_axis))
+            for unique_file_id in unique_file_id_list:
+                table[unique_file_id]=np.array([str(path[unique_file_id]) for item in time_axis])
         return time_axis,table
     
     def obtain_time_axis(self):
@@ -197,7 +200,6 @@ class create_netCDF_pointers:
 
     def _recover_calendar(self,path):
         file_type=path['file_type']
-        checksum=path['checksum']
         path_name=str(path['path']).split('|')[0]
         remote_data=remote_netcdf.remote_netCDF(path_name,file_type,self.semaphores)
         calendar=remote_data.get_calendar()

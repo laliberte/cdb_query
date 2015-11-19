@@ -192,6 +192,7 @@ class nc_Database:
 #########################  DATABASE CONVERSION
 #####################################################################
 #####################################################################
+unique_file_id_list=['checksum_type','checksum','tracking_id']
 
 def populate_database_recursive(nc_Database,data,options,find_function,semaphores=None):
     if 'soft_links' in data.groups.keys():
@@ -208,8 +209,8 @@ def populate_database_recursive(nc_Database,data,options,find_function,semaphore
                                                     soft_links.variables['file_type'][path_id])
 
             if is_level_name_included_and_not_excluded('data_node',options,data_node):
-                setattr(nc_Database.file_expt,'path','|'.join([soft_links.variables['path'][path_id],
-                                                       soft_links.variables['checksum'][path_id]]))
+                setattr(nc_Database.file_expt,'path','|'.join([soft_links.variables['path'][path_id],] +
+                                                       [soft_links.variables[unique_file_id][path_id] for unique_file_id in unique_file_id_list]))
                 setattr(nc_Database.file_expt,'version','v'+str(soft_links.variables['version'][path_id]))
                 setattr(nc_Database.file_expt,'data_node',data_node)
                 find_function(nc_Database,copy.deepcopy(nc_Database.file_expt),semaphores=semaphores)
@@ -230,11 +231,8 @@ def populate_database_recursive(nc_Database,data,options,find_function,semaphore
         data_node=retrieval_utils.get_data_node(data.getncattr('path'),
                                                 data.getncattr('file_type'))
         if is_level_name_included_and_not_excluded('data_node',options,data_node):
-            checksum=''
-            if 'checksum' in data.ncattrs():
-                checksum=data.getncattr('checksum')
-            setattr(nc_Database.file_expt,'path','|'.join([data.getncattr('path'),
-                                                   checksum]))
+            setattr(nc_Database.file_expt,'path','|'.join([data.getncattr('path'),] +
+                                                   [ data.getncattr(file_unique_id) if file_unique_id in data.ncattrs() else '' for file_unique_id in file_unique_id_list]))
             setattr(nc_Database.file_expt,'version',str(data.getncattr('version')))
 
             setattr(nc_Database.file_expt,'data_node',

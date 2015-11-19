@@ -222,8 +222,8 @@ def download(subparsers,epilog,project_drs):
     serial_group = parser.add_argument_group('Specify asynchronous behavior')
     serial_group.add_argument('--serial',default=False,action='store_true',help='Downloads the files serially.')
 
-    source_group = parser.add_argument_group('Specify sources')
-    source_group.add_argument('--source_dir',default=None,help='local cache of data retrieved using \'download_raw\'')
+    #source_group = parser.add_argument_group('Specify sources')
+    #source_group.add_argument('--source_dir',default=None,help='local cache of data retrieved using \'download_raw\'')
 
     inc_group = parser.add_argument_group('Inclusions')
     inc_group.add_argument('--year',
