@@ -16,32 +16,19 @@ import numpy as np
 import remote_netcdf
 
 
-queryable_file_types=['HTTPServer','local_file']
+queryable_file_types=['OPENDAP','local_file']
 
 def find_time(pointers,file_expt,semaphores=None):
-    if file_expt.file_type in queryable_file_types:
-        #Will check both availability and queryability:
-        find_time_file(pointers,file_expt,semaphores=semaphores)
-    else:
-        #Assume both availability and queryability:
-        find_time_file(pointers,file_expt,
-                                file_available=True,
-                                file_queryable=True,semaphores=semaphores)
+    #Will check both availability and queryability:
+    find_time_file(pointers,file_expt,semaphores=semaphores)
     return
 
 def find_time_available(pointers,file_expt,semaphores=None):
     #same as find_time but keeps non-queryable files:
-    if file_expt.file_type in queryable_file_types:
-        find_time_file(pointers,file_expt,file_available=True,semaphores=semaphores)
+    find_time_file(pointers,file_expt,file_available=True,semaphores=semaphores)
     return
 
-def find_time_queryable(pointers,file_expt,semaphores=None):
-    #same as find_time but keeps non-queryable files:
-    #if file_expt.file_type in queryable_file_types:
-    find_time_file(pointers,file_expt,file_queryable=True,semaphores=semaphores)
-    return
-        
-def find_time_file(pointers,file_expt,file_available=False,file_queryable=False,semaphores=None):#session,file_expt,path_name):
+def find_time_file(pointers,file_expt,file_available=False,semaphores=None):#session,file_expt,path_name):
     #If the path is a remote file, we must use the time stamp
     filename=os.path.basename(file_expt.path)
     
@@ -80,40 +67,34 @@ def find_time_file(pointers,file_expt,file_available=False,file_queryable=False,
     for year_id,year in enumerate(years_list):
         if year_id==0:
             #Check availability / queryability:
-            if file_expt.file_type in ['local_file']:
-                file_available=True
-                file_queryable=True
-
             if not file_available:
-                file_available = retrieval_utils.check_file_availability(file_expt.path.split('|')[0])
+                if file_expt.file_type in queryable_file_types: 
+                    if file_expt.file_type in ['local_file']:
+                        file_available=True
+                    else:
+                        remote_data=remote_netcdf.remote_netCDF(file_expt.path.split('|')[0],file_expt.file_type,semaphores)
+                        file_available=remote_data.is_available()
+                else:
+                    file_available = retrieval_utils.check_file_availability(file_expt.path.split('|')[0])
 
-            if file_available and not file_queryable:
-                remote_data=remote_netcdf.remote_netCDF(file_expt.path.split('|')[0],semaphores)
-                file_queryable=remote_data.is_available()
-            
         for month in range(1,13):
             if  ( not ( (year==years_range[0] and month<months_range[0]) or
                      (year==years_range[1] and month>months_range[1])   ) ):
-                attribute_time(pointers,file_expt,file_available,file_queryable,year,month)
+                attribute_time(pointers,file_expt,file_available,year,month)
     return
 
-def attribute_time(pointers,file_expt,file_available,file_queryable,year,month):
+def attribute_time(pointers,file_expt,file_available,year,month):
     #Record checksum of local files:
     #if file_expt.file_type in ['local_file'] and len(file_expt.path.split('|')[1])==0:
     #    #Record checksum
     #    file_expt.path+=retrieval_utils.md5_for_file(open(file_expt.path.split('|')[0],'r'))
 
-    if file_available and file_queryable:
+    if file_available:
         #If file is avaible and queryable, keep it:
         file_expt_copy = copy.deepcopy(file_expt)
         setattr(file_expt_copy,'time',str(year).zfill(4)+str(month).zfill(2))
         pointers.session.add(file_expt_copy)
         pointers.session.commit()
-    elif file_available:
-        #If file is avaible but not queryable, broadcast it:
-        print 'Path {0} is available but does not have OPeNDAP services enabled.'.format(file_expt.path)
-        #Do not broadcast it later:
-        file_available=False
     return
 
 def obtain_time_list(diagnostic,project_drs,var_name,experiment,model):
@@ -213,18 +194,9 @@ def optimset(database,options,semaphores=None):
         dataset, output=database.nc_Database.write_database(database.header,options,'record_paths',semaphores=semaphores)
         database.close_database()
         dataset.close()
-    elif options.check_queryability:
-        #Check that files are both available AND queryable before proceeding.
-        database.load_database(options,find_time,semaphores=semaphores)
-        #Find the list of institute / model with all the months for all the years / experiments and variables requested:
-        intersection(database,options)
-        
-        dataset, output=database.nc_Database.write_database(database.header,options,'record_meta_data',semaphores=semaphores)
-        database.close_database()
-        dataset.close()
     else:
-        #Check that files are available but does NOT check if they are queryable before proceeding.
-        database.load_database(options,find_time_queryable,semaphores=semaphores)
+        #Checks that files are available.
+        database.load_database(options,find_time,semaphores=semaphores)
         #Find the list of institute / model with all the months for all the years / experiments and variables requested:
         intersection(database,options)
         

@@ -157,6 +157,15 @@ def md5_for_file(f, block_size=2**20):
         md5.update(data)
     return md5.hexdigest()
 
+def sha_for_file(f, block_size=2**20):
+    sha = hashlib.sha256()
+    while True:
+        data = f.read(block_size)
+        if not data:
+            break
+        sha.update(data)
+    return sha.hexdigest()
+
 #def retrieve_path(path,out_destination):
 def retrieve_path(in_dict,pointer_var):
     path=in_dict['path']
@@ -186,30 +195,30 @@ def retrieve_path(in_dict,pointer_var):
         if not os.path.isfile(dest_name):
             #Downloads only if file exists!
             size_string=download_secure(root_path,dest_name,file_type,username=username,user_pass=user_pass)
-            return 'Could NOT check MD5 checksum of retrieved file because checksum was not a priori available.'
+            return 'Could NOT check SHA256 checksum of retrieved file because checksum was not a priori available.'
         else:
-            return 'File '+dest_name+' found but could NOT check MD% checksum of existing file because checksum was not a priori available. Not retrieving.'
+            return 'File '+dest_name+' found but could NOT check SHA256 checksum of existing file because checksum was not a priori available. Not retrieving.'
     else:
         try: #Works only if file exists!
-            md5sum=md5_for_file(open(dest_name,'r'))
+            shasum=sha_for_file(open(dest_name,'r'))
         except:
-            md5sum=''
-        if md5sum==decomposition[1]:
-            return 'File '+dest_name+' found. MD5 OK! Not retrieving.'
+            shasum=''
+        if shasum==decomposition[1]:
+            return 'File '+dest_name+' found. SHA256 OK! Not retrieving.'
 
         size_string=download_secure(root_path,dest_name,file_type,username=username,user_pass=user_pass)
         try: 
-            md5sum=md5_for_file(open(dest_name,'r'))
+            shasum=sha_for_file(open(dest_name,'r'))
         except:
-            md5sum=''
-        if md5sum!=decomposition[1]:
+            shasum=''
+        if shasum!=decomposition[1]:
             try:
                 os.remove(dest_name)
             except:
                 pass
-            return size_string+'\n'+'File '+dest_name+' does not have the same MD5 checksum as published on the ESGF. Removing this file...'
+            return size_string+'\n'+'File '+dest_name+' does not have the same SHA256 checksum as published on the ESGF. Removing this file...'
         else:
-            return size_string+'\n'+'Checking MD5 checksum of retrieved file... MD5 OK!'
+            return size_string+'\n'+'Checking SHA256 checksum of retrieved file... SHA256 OK!'
 
 def find_local_file(source_dir,data):
     paths_list=data.variables['path'][:]
@@ -223,10 +232,10 @@ def find_local_file(source_dir,data):
     unique_checksum_list=[]
     for path in unique_paths_list:
         try:
-            md5sum=md5_for_file(open(path,'r'))
+            shasum=sha_for_file(open(path,'r'))
         except:
-            md5sum=''
-        unique_checksum_list.append(md5sum)
+            shasum=''
+        unique_checksum_list.append(shasum)
     new_paths_list=[]
     new_file_type_list=[]
     for path_id,path in enumerate(paths_list):
@@ -264,7 +273,7 @@ def retrieve_path_data(in_dict,pointer_var):
 def get_data_node(path,file_type):
     if file_type=='HTTPServer':
         return '/'.join(path.split('/')[:3])
-    elif file_type=='OPeNDAP':
+    elif file_type=='OPENDAP':
         return '/'.join(path.split('/')[:3])
     elif file_type=='FTPServer':
         return '/'.join(path.split('/')[:3])

@@ -288,16 +288,12 @@ def create_time_axis(output,data,time_axis):
     time[:]=time_axis
     return
 
-def create_time_axis_date(output,data,time_axis):
+def create_time_axis_date(output,time_axis,units,calendar):
     #output.createDimension('time',len(time_axis))
     output.createDimension('time',None)
     time = output.createVariable('time','d',('time',))
-    if data==None:
-        time.calendar='standard'
-        time.units='days since '+str(time_axis[0])
-    else:
-        time.calendar=netcdf_calendar(data)
-        time.units=str(data.variables['time'].units)
+    time.calendar=calendar
+    time.units=units
     time[:]=netCDF4.date2num(time_axis,time.units,calendar=time.calendar)
     return
 

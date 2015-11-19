@@ -24,34 +24,13 @@ and follow their instructions. `cdb_query` has only been tested on linux machine
 
 .. warning:: Do not use `conda` to install other packages BEFORE you have made sure that `cdb_query` is working properly.
 
-- If you have installed the lightweigth Miniconda distribution (http://conda.pydata.org/miniconda.html) and you have used the default installation directories,
-  you should activate the distribution::
-
-    $ source $HOME/miniconda/bin/activate $HOME/miniconda
-
-  Once this is done, you have to install netCDF4. This is accomplished through their installation
-  application::
-
-    $ conda install netcdf4 h5py jinja2 pip sqlalchemy
-
-..
-    Canopy Enthought Python Distribution
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-    .. warning:: Including Enthought Canopy will NOT
-                 work with this package. This may change in the future but as of March 3, 2014
-                 they do not appear to be working.
-
-    The following was tested with Canopy Enthought Python Distribution (https://www.enthought.com)
-    It is free for academic use and includes almost all of the prerequisite for `cdb_query`.
-
-    To install it, go to https://www.enthought.com/downloads/, choose your operating system
-    and follow their instructions. `cdb_query` has only been tested on linux machines. 
-
-    On linux, once the installation is complete, you should create the command line interface. 
-    The procedure is described at http://docs.enthought.com/canopy/configure/canopy-cli.html#scenario-creating-an-epd-like-python-environment.
-
-    If you have used the default installation directories, you can now activate the distribution::
-
-    $ source $HOME/canopy/bin/activate
+- As of November 2015, the following Anaconda distribution works with `cdb_query`::
     
+    $ conda install anaconda=2.4.0
+    $ conda install curl="7.38.0 0"
+    $ conda install libnetcdf="4.3.2 1"
+    $ conda install hdf5="1.8.14 0"
+    $ conda install h5py="2.5.0 np19py27_2"
+    $ conda install netcdf4="1.1.8 np19py27_0"
+
+

@@ -138,15 +138,16 @@ def get_urls(drs,result,file_type_list,var_name):
             shard_name=fil_ctx.shards[0]
         except:
             shard_name=None
-        try:
-            fil = fil_ctx.search(variable=var_name)
-            for item in fil:
-                file_list_remote.extend(get_url_remote(item,file_type_list,drs))
-        except:
-            if shard_name==None:
-                 warnings.warn('An unknown shard is unresponsive at the moment'.format(shard_name))
-            else:
-                warnings.warn('Shard {0} is unresponsive at the moment'.format(shard_name))
+        fil = fil_ctx.search(variable=var_name)
+        #try:
+        fil = fil_ctx.search(variable=var_name)
+        for item in fil:
+            file_list_remote.extend(get_url_remote(item,file_type_list,drs))
+        #except:
+        #    if shard_name==None:
+        #         warnings.warn('An unknown shard is unresponsive at the moment'.format(shard_name))
+        #    else:
+        #        warnings.warn('Shard {0} is unresponsive at the moment'.format(shard_name))
         
     return file_list_remote
 
@@ -158,11 +159,11 @@ def get_url_remote(item,file_type_list,drs):
         keys_list=[]
 
     for key in set(keys_list).intersection(file_type_list):
-        if key!='OPeNDAP':
-            file_info=create_file_info_dict(key,item,drs)
-        if (key=='HTTPServer' and
-           'OPeNDAP' in file_type_list):
-            file_info=create_file_info_dict('OPeNDAP',item,drs)
+        #if key!='OPeNDAP':
+        file_info=create_file_info_dict(key,item,drs)
+        #if (key=='HTTPServer' and
+        #   'OPeNDAP' in file_type_list):
+        #    file_info=create_file_info_dict('OPeNDAP',item,drs)
         
         if (file_info['checksum']!=None or
             drs.project in ['NMME']):
@@ -173,10 +174,13 @@ def create_file_info_dict(key,item,drs):
     file_info=dict()
     file_info['file_type']=key
     try:
-        if key=='OPeNDAP':
-            file_info['url']=item.urls['HTTPServer'][0][0].replace('fileServer','dodsC')
+        #if key=='OPeNDAP':
+        #    file_info['url']=item.urls['HTTPServer'][0][0].replace('fileServer','dodsC')
+        #else:
+        if key=='OPENDAP':
+            file_info['url']=item.urls[key][0][0].replace('.html','')
         else:
-            file_info['url']=item.urls[local_key][0][0]
+            file_info['url']=item.urls[key][0][0]
     except:
         file_info['url']=None
     for val in drs.official_drs+['checksum']:
@@ -202,5 +206,6 @@ def create_file_info_dict(key,item,drs):
             if isinstance(file_info[val],list): file_info[val]=str(file_info[val][0])
         except:
             file_info[val]=None
+    return file_info
     #if (file_info['checksum']!=None and 
     #    set(item.urls.keys()).issuperset(drs.required_file_types)):

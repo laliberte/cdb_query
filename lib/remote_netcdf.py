@@ -23,7 +23,7 @@ class RedirectStdStreams(object):
         sys.stderr = self.old_stderr
 
 
-queryable_file_types=['OPeNDAP','local_file']
+queryable_file_types=['OPENDAP','local_file']
 
 class remote_netCDF:
     def __init__(self,netcdf_file_name,file_type,semaphores):
@@ -182,7 +182,7 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
     #    time_axis, attributes=self.retrieve_dimension('time')
     #    return netcdf_utils.create_date_axis_from_time_axis(time_axis,attributes)
 
-    def get_time(self,time_frequency=None,is_instant=True,calendar='standard'):
+    def get_time(self,time_frequency=None,is_instant=False,calendar='standard'):
         if self.file_type in queryable_file_types:
             date_axis=np.zeros((0,))
             try:
@@ -200,8 +200,7 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
             return date_axis
         elif time_frequency!=None:
             start_date,end_date=dates_from_filename(self.file_name,calendar)
-            units='days since '+str(start_date)
-
+            units=self.get_time_units(calendar)
             start_id=0
 
             funits=timeaxis.convert_time_units(units, time_frequency)
@@ -232,7 +231,7 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
                 self.close()
         return calendar
 
-    def get_time_units(self):
+    def get_time_units(self,calendar):
         if self.file_type in queryable_file_types:
             try:
                 self.open_with_error()

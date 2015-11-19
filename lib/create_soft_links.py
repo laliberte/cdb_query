@@ -28,7 +28,7 @@ import nc_Database
 import random
 
 
-queryable_file_types=['OPeNDAP','local_file']
+queryable_file_types=['OPENDAP','local_file']
 class create_netCDF_pointers:
     def __init__(self,paths_list,var,time_frequency,years,months,file_type_list,data_node_list,semaphores=[]):
         self.file_type_list=file_type_list
@@ -41,7 +41,7 @@ class create_netCDF_pointers:
 
         self.var=var
         self.time_frequency=time_frequency
-        self.is_instant=True
+        self.is_instant=False
 
         self.months=months
         self.years=years
@@ -50,7 +50,6 @@ class create_netCDF_pointers:
         
         if not self.time_frequency in ['fx','clim']:
             self.calendar=self.obtain_unique_calendar()
-            #self.units=self.obtain_unique_time_units()
         return
 
     def record_paths(self,output,username=None,user_pass=None):
@@ -189,14 +188,11 @@ class create_netCDF_pointers:
         return time_axis,table
     
     def obtain_time_axis(self):
-        #Get the unique calendar:
-        self.calendar=self.obtain_unique_calendar()
-        #self.units=self.obtain_unique_time_units()
-
         #Retrieve time axes from queryable file types or reconstruct time axes from time stamp
         #from non-queryable file types.
         self.time_axis, self.table= map(np.concatenate,
                         zip(*map(self._recover_time,np.nditer(self.paths_ordering))))
+        self.units='days since '+str(np.sort(self.time_axis)[0])
         return
 
     def _recover_calendar(self,path):
@@ -214,18 +210,6 @@ class create_netCDF_pointers:
         if len(calendars)==1:
             return calendars.pop()
         return calendar_list[0]
-
-    def _recover_time_units(self,path):
-        file_type=path['file_type']
-        checksum=path['checksum']
-        path_name=str(path['path']).split('|')[0]
-        remote_data=remote_netcdf.remote_netCDF(path_name,file_type,self.semaphores)
-        units=remote_data.get_time_units()
-        return units, file_type 
-
-    def obtain_unique_time_units(self):
-        units_list,file_type_list=zip(*map(self._recover_time_units,np.nditer(self.paths_ordering)))
-        return units_list[0]
 
     def reduce_paths_ordering(self):
         #CREATE LOOK-UP TABLE:
@@ -282,16 +266,11 @@ class create_netCDF_pointers:
         #    self.paths_indices[path.replace('fileServer','dodsC')==self.table['paths']]=path_id
         return
 
-    def unique_time_axis(self,data,years,months):
-        if data==None:
-            units='days since '+str(self.time_axis[0])
-        else:
-            units=data.variables['time'].units
-
-        time_axis = netCDF4.date2num(self.time_axis,units,calendar=self.calendar)
+    def unique_time_axis(self,years,months):
+        time_axis = netCDF4.date2num(self.time_axis,self.units,calendar=self.calendar)
         time_axis_unique = np.unique(time_axis)
 
-        time_axis_unique_date=netCDF4.num2date(time_axis_unique,units,calendar=self.calendar)
+        time_axis_unique_date=netCDF4.num2date(time_axis_unique,self.units,calendar=self.calendar)
 
         #Include a filter on years: 
         time_desc={}
@@ -313,6 +292,12 @@ class create_netCDF_pointers:
         #Recover time axis for all files:
         self.obtain_time_axis()
 
+        #Convert time axis to numbers and find the unique time axis:
+        self.unique_time_axis(years,months)
+
+        #Create time axis in ouptut:
+        netcdf_utils.create_time_axis_date(output,self.time_axis_unique_date,self.units,self.calendar)
+
         queryable_file_types_available=list(set(self.table['file_type']).intersection(queryable_file_types))
         if len(self.table['paths'])>0:
             if len(queryable_file_types_available)>0:
@@ -325,12 +310,7 @@ class create_netCDF_pointers:
             else:
                 remote_data=remote_netcdf.remote_netCDF(self.table['paths'][0],self.table['file_type'][0],self.semaphores)
 
-            #Convert time axis to numbers and find the unique time axis:
-            self.unique_time_axis(remote_data.Dataset,years,months)
-
             self.reduce_paths_ordering()
-            #Create time axis in ouptut:
-            netcdf_utils.create_time_axis_date(output,remote_data.Dataset,self.time_axis_unique_date)
 
             self.create(output)
             #if len(queryable_file_types_available)>0:
