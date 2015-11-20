@@ -266,13 +266,14 @@ def retrieve_path(in_dict,pointer_var):
 def retrieve_path_data(in_dict,pointer_var):
     #print 'Recovering '+'/'.join(self.tree)
 
-    path=in_dict['path'].replace('fileServer','dodsC').split('|')[0]
+    path=in_dict['path'].split('|')[0]
     var=in_dict['var']
     indices=copy.copy(in_dict['indices'])
     unsort_indices=copy.copy(in_dict['unsort_indices'])
     sort_table=in_dict['sort_table']
+    file_type=in_dict['file_type']
 
-    remote_data=remote_netcdf.remote_netCDF(path,'HTTPServer',[])
+    remote_data=remote_netcdf.remote_netCDF(path,file_type,[])
     remote_data.open_with_error()
     dimensions=remote_data.retrieve_dimension_list(var)
     for dim in dimensions:

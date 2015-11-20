@@ -8,7 +8,7 @@ class DRS:
 
     def CORDEX(self):
         self.file_types=['local_file', 'HTTPServer', 'GridFTP','OPENDAP']
-        self.remote_file_types=['HTTPServer','GridFTP']
+        self.remote_file_types=['HTTPServer','GridFTP','OPENDAP','FTPServer']
         self.required_file_types=['HTTPServer']
 
         self.var_specs=['time_frequency']
@@ -75,7 +75,7 @@ class DRS:
 
     def CMIP5(self):
         self.file_types=['local_file', 'HTTPServer', 'GridFTP','FTPServer','OPENDAP']
-        self.remote_file_types=['HTTPServer','GridFTP','FTPServer']
+        self.remote_file_types=['HTTPServer','GridFTP','OPENDAP','FTPServer']
         self.required_file_types=['HTTPServer','OPENDAP']
 
         self.var_specs=['time_frequency','realm','cmor_table']
@@ -125,7 +125,7 @@ class DRS:
 
     def NMME(self):
         self.file_types=['local_file', 'HTTPServer', 'GridFTP']
-        self.remote_file_types=['HTTPServer','GridFTP']
+        self.remote_file_types=['HTTPServer','GridFTP','FTPServer','OPENDAP']
         self.required_file_types=['HTTPServer','OPENDAP']
 
         self.var_specs=['time_frequency','realm']

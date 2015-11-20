@@ -229,10 +229,10 @@ class read_netCDF_pointers:
             #Next, we check if the file is available. If it is not we replace it
             #with another file with the same checksum, if there is one!
             file_type=self.file_type_list[list(self.paths_list).index(path_to_retrieve)]
-            remote_data=remote_netcdf.remote_netCDF(path_to_retrieve.replace('fileServer','dodsC'),file_type,semaphores)
+            remote_data=remote_netcdf.remote_netCDF(path_to_retrieve,file_type,semaphores)
             if not file_type in ['FTPServer']:
-                path_to_retrieve=remote_data.check_if_available_and_find_alternative([path.replace('fileServer','dodsC') for path in self.paths_list],
-                                                                          self.checksums_list).replace('dodsC','fileServer')
+                path_to_retrieve=remote_data.check_if_available_and_find_alternative(self.paths_list,self.file_type_list,self.checksums_list)
+
             #Get the file_type, checksum and version of the file to retrieve:
             file_type=self.file_type_list[list(self.paths_list).index(path_to_retrieve)]
             version='v'+str(self.version_list[list(self.paths_list).index(path_to_retrieve)])

@@ -47,9 +47,10 @@ def descend_tree_recursive(database,file_expt,tree_desc,top_path,options,list_le
             for file in file_list:
                 file_expt_copy=copy.deepcopy(file_expt)
                 #Add the file identifier to the path:
+                file_expt_copy.path=file
                 for unique_file_id in unique_file_id_list:
                     #file_expt_copy.path='|'.join([file,retrieval_utils.md5_for_file(open(file,'r'))])
-                    file_expt_copy.path=file+'|'
+                    file_expt_copy.path+='|'
                 if alt: 
                     file_expt_copy.model_version=file_expt_copy.model.split('-')[1]
                     file_expt_copy.model='-'.join([file_expt_copy.institute,file_expt_copy.model.split('-')[0]])

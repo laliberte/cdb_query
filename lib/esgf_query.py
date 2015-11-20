@@ -109,7 +109,7 @@ def record_url(remote_file_desc,nc_Database):
     nc_Database.file_expt.path=remote_file_desc['url']
     nc_Database.file_expt.data_node=retrieval_utils.get_data_node(remote_file_desc['url'],remote_file_desc['file_type'])
     for unique_file_id in unique_file_id_list:
-        if remote_file_desc['file_type'] in nc_Database.drs.remote_file_types and remote_file_desc[unique_file_id]:
+        if remote_file_desc['file_type'] in nc_Database.drs.remote_file_types and remote_file_desc[unique_file_id]!=None:
             nc_Database.file_expt.path+='|'+remote_file_desc[unique_file_id]
         else:
             nc_Database.file_expt.path+='|'

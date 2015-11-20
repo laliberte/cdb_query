@@ -103,12 +103,12 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
             print e.value+e_mod
             return False
 
-    def check_if_available_and_find_alternative(self,paths_list,checksums_list):
+    def check_if_available_and_find_alternative(self,paths_list,file_type_list,checksums_list):
         if not self.is_available():
             checksum=checksums_list[list(paths_list).index(self.file_name)]
             for cs_id, cs in enumerate(checksums_list):
                 if cs==checksum and paths_list[cs_id]!=self.file_name:
-                    remote_data=remote_netCDF(paths_list[cs_id],self.semaphores)
+                    remote_data=remote_netCDF(paths_list[cs_id],file_type_list[cs_id],self.semaphores)
                     if remote_data.is_available():
                         return paths_list[cs_id]
             return self.file_name
