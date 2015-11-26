@@ -15,6 +15,8 @@ import cdb_query_archive_parsers
 import cdb_query_archive_class
 
 import netcdf_utils
+import nc_Database_apply
+import nc_Database_conversion
 import certificates
 
 import getpass
@@ -81,9 +83,9 @@ F. Laliberté, Juckes, M., Denvil, S., Kushner, P. J., TBD, Submitted.'.format(v
     #    paths_dict=cdb_query_archive_class.SimpleTree(options,project_drs)
     #    getattr(paths_dict,options.command)(options)
     if options.command=='apply':
-        netcdf_utils.apply(options,project_drs)
+        nc_Database_apply.apply(options,project_drs)
     elif options.command=='convert':
-        netcdf_utils.convert(options,project_drs)
+        nc_Database_conversion.convert(options,project_drs)
     elif options.command=='certificates':
         #certificates.retrieve_certificates(options.username,options.password,options.registering_service)
         if not options.password_from_pipe:
