@@ -42,7 +42,14 @@ def get_date_axis_units(time_axis,units,calendar):
 
 def get_date_axis_relative(time_axis,units,calendar):
     if calendar!=None:
-        date_axis = netCDF4.num2date(time_axis,units=units,calendar=calendar)
+        try:
+            date_axis = netCDF4.num2date(time_axis,units=units,calendar=calendar)
+        except ValueError:
+            if (units=='days since 0-01-01 00:00:00' and
+                calendar=='365_day'):
+                date_axis = netCDF4.num2date(time_axis-365.0,units='days since 1-01-01 00:00:00',calendar=calendar)
+            else:
+                raise
     else:
         date_axis = netCDF4.num2date(time_axis,units=units)
     return date_axis
@@ -305,7 +312,8 @@ def create_date_axis_from_time_axis(time_axis,attributes_dict):
     else:
         try:
             #Put cmip5_rewrite_time_axis here:
-            date_axis=netCDF4.num2date(time_axis,units=units,calendar=calendar)
+            date_axis=get_date_axis_relative(time_axis,units,calendar)
+            #date_axis=netCDF4.num2date(time_axis,units=units,calendar=calendar)
         except TypeError:
             time_axis=np.array([]) 
     return date_axis

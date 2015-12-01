@@ -398,14 +398,14 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
     if options.num_procs>1:
         result=pool.map_async(worker_query,args_list,chunksize=1)
     for arg in args_list:
-        renewal_time=record_in_output(renewal_time,arg,queue_result,output_root,database,options)
+        renewal_time=record_in_output(renewal_time,arg,queue_result,output_root,database,options,user_pass=user_pass)
     #finally:
     if options.num_procs>1:
         pool.terminate()
         pool.join()
     return output_root
 
-def record_in_output(renewal_time,arg,queue,output_root,database,options):
+def record_in_output(renewal_time,arg,queue,output_root,database,options,user_pass=None):
     if options.num_procs==1:
         result=worker_query(arg)
     filename=queue.get(1e20)

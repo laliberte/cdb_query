@@ -38,11 +38,8 @@ class read_netCDF_pointers:
                                 if  var in self.data_root.groups['soft_links'].variables.keys()]
 
             #Get list of paths:
-            self.paths_list=self.data_root.groups['soft_links'].variables['path'][:]
-            self.checksums_list=self.data_root.groups['soft_links'].variables['checksum'][:]
-            self.paths_id_list=self.data_root.groups['soft_links'].variables['path_id'][:]
-            self.file_type_list=self.data_root.groups['soft_links'].variables['file_type'][:]
-            self.version_list=self.data_root.groups['soft_links'].variables['version'][:]
+            for path_desc in ['path','path_id','file_type','version']+nc_Database.file_unique_id_list:
+                setattr(self,path_desc+'_list',self.data_root.groups['soft_links'].variables[path_desc][:])
         else:
             self.retrievable_vars=[var for var in self.data_root.variables.keys()]
 
@@ -89,7 +86,7 @@ class read_netCDF_pointers:
         self.initialize_retrieval()
         #if 'source_dir' in dir(options) and options.source_dir!=None:
         #    #Check if the file has already been retrieved:
-        #    self.paths_list,self.file_type_list=retrieval_utils.find_local_file(options.source_dir,self.data_root.groups['soft_links'])
+        #    self.path_list,self.file_type_list=retrieval_utils.find_local_file(options.source_dir,self.data_root.groups['soft_links'])
 
         #Define tree:
         self.tree=self.data_root.path.split('/')[1:]
@@ -119,7 +116,7 @@ class read_netCDF_pointers:
             for var_to_retrieve in self.retrievable_vars:
                 self.retrieve_variables(retrieval_function,var_to_retrieve,time_restriction,
                                             output,semaphores=semaphores,username=username,user_pass=user_pass)
-                                            #paths_list,file_type_list,paths_id_list,checksums_list,version_list,
+                                            #path_list,file_type_list,path_id_list,checksum_list,version_list,
         else:
             if (isinstance(output,netCDF4.Dataset) or
                 isinstance(output,netCDF4.Group)):
@@ -159,12 +156,13 @@ class read_netCDF_pointers:
     def retrieve_without_time(self,retrieval_function,output,semaphores=None,username=None,user_pass=None):
         #This function simply retrieves all the files:
         file_path=output
-        for path_to_retrieve in self.paths_list:
-            file_type=self.file_type_list[list(self.paths_list).index(path_to_retrieve)]
-            version='v'+str(self.version_list[list(self.paths_list).index(path_to_retrieve)])
-            checksum=self.checksums_list[list(self.paths_list).index(path_to_retrieve)]
+        for path_to_retrieve in self.path_list:
+            path_index=list(self.path_list).index(path_to_retrieve)
+            file_type=self.file_type_list[path_index]
+            version='v'+str(self.version_list[path_index])
             #Get the file tree:
-            args = ({'path':path_to_retrieve+'|'+checksum,
+            args = ({'path':'|'.join([path_to_retrieve,] +
+                               [ getattr(self,file_unique_id+'_list')[path_index] for file_unique_id in nc_Database.file_unique_id_list]),
                     'var':self.tree[-1],
                     'file_path':file_path,
                     'version':version,
@@ -215,31 +213,32 @@ class read_netCDF_pointers:
         indices_link=self.data_root.groups['soft_links'].variables[var_to_retrieve][time_restriction,1]
 
         #Convert paths_link to id in path dimension:
-        paths_link=np.array([list(self.paths_id_list).index(path_id) for path_id in paths_link])
+        paths_link=np.array([list(self.path_id_list).index(path_id) for path_id in paths_link])
 
         #Sort the paths so that we query each only once:
-        unique_paths_list_id, sorting_paths=np.unique(paths_link,return_inverse=True)
+        unique_path_list_id, sorting_paths=np.unique(paths_link,return_inverse=True)
 
         #Maximum number of time step per request:
         max_request=450 #maximum request in Mb
         max_time_steps=max(int(np.floor(max_request*1024*1024/(32*np.prod(dims_length)))),1)
-        for unique_path_id, path_id in enumerate(unique_paths_list_id):
-            path_to_retrieve=self.paths_list[path_id]
+        for unique_path_id, path_id in enumerate(unique_path_list_id):
+            path_to_retrieve=self.path_list[path_id]
 
             #Next, we check if the file is available. If it is not we replace it
             #with another file with the same checksum, if there is one!
-            file_type=self.file_type_list[list(self.paths_list).index(path_to_retrieve)]
+            file_type=self.file_type_list[list(self.path_list).index(path_to_retrieve)]
             remote_data=remote_netcdf.remote_netCDF(path_to_retrieve,file_type,semaphores)
             if not file_type in ['FTPServer']:
-                path_to_retrieve=remote_data.check_if_available_and_find_alternative(self.paths_list,self.file_type_list,self.checksums_list)
+                path_to_retrieve=remote_data.check_if_available_and_find_alternative(self.path_list,self.file_type_list,self.checksum_list)
 
             #Get the file_type, checksum and version of the file to retrieve:
-            file_type=self.file_type_list[list(self.paths_list).index(path_to_retrieve)]
-            version='v'+str(self.version_list[list(self.paths_list).index(path_to_retrieve)])
-            checksum=self.checksums_list[list(self.paths_list).index(path_to_retrieve)]
+            path_index=list(self.path_list).index(path_to_retrieve)
+            file_type=self.file_type_list[path_index]
+            version='v'+str(self.version_list[path_index])
 
             #Append the checksum:
-            path_to_retrieve+='|'+checksum
+            path_to_retrieve='|'.join([path_to_retrieve,] +
+                               [ getattr(self,file_unique_id+'_list')[path_index] for file_unique_id in nc_Database.file_unique_id_list])
 
             #time_indices=sorted_indices_link[sorted_paths_link==path_id]
             time_indices=indices_link[sorting_paths==unique_path_id]

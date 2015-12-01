@@ -93,6 +93,7 @@ class create_netCDF_pointers:
 
                 remote_data=remote_netcdf.remote_netCDF(path['path'].split('|')[0],path['file_type'],self.semaphores)
                 alt_path_name=remote_data.check_if_available_and_find_alternative([item['path'].split('|')[0] for item in queryable_paths_list],
+                                                                            [item['file_type'] for item in queryable_paths_list],
                                                                          [item['path'].split('|')[unique_file_id_list.index('checksum')+1] for item in queryable_paths_list])
 
                 #Use aternative path:

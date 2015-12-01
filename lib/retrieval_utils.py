@@ -101,7 +101,11 @@ def download_secure_FTP(url_name,dest_name,username=None,user_pass=None):
         os.makedirs(directory)
 
     with open(dest_name,'wb') as local_file:
-        ftp.retrbinary('RETR %s' % '/'+'/'.join(url_name.split('/')[3:]), local_file.write)
+        try:
+            ftp.retrbinary('RETR %s' % '/'+'/'.join(url_name.split('/')[3:]), local_file.write)
+        except ftplib.error_perm:
+            #Permission error. Try again!
+            ftp.retrbinary('RETR %s' % '/'+'/'.join(url_name.split('/')[3:]), local_file.write)
     
     ftp.close()
     file_size=np.float(os.stat(dest_name).st_size)
