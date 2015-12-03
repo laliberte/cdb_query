@@ -75,7 +75,10 @@ def find_time_file(pointers,file_expt,file_available=False,semaphores=None):#ses
                         remote_data=remote_netcdf.remote_netCDF(file_expt.path.split('|')[0],file_expt.file_type,semaphores)
                         file_available=remote_data.is_available()
                 else:
-                    file_available = retrieval_utils.check_file_availability(file_expt.path.split('|')[0])
+                    if file_expt.file_type in ['FTPServer']:
+                        file_available=True
+                    else:
+                        file_available = retrieval_utils.check_file_availability(file_expt.path.split('|')[0])
 
         for month in range(1,13):
             if  ( not ( (year==years_range[0] and month<months_range[0]) or

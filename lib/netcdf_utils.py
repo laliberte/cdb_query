@@ -315,7 +315,7 @@ def create_date_axis_from_time_axis(time_axis,attributes_dict):
             date_axis=get_date_axis_relative(time_axis,units,calendar)
             #date_axis=netCDF4.num2date(time_axis,units=units,calendar=calendar)
         except TypeError:
-            time_axis=np.array([]) 
+            date_axis=np.array([]) 
     return date_axis
 
 def assign_tree(output,val,sort_table,tree):

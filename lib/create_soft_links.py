@@ -76,7 +76,6 @@ class create_netCDF_pointers:
         queryable_paths_list=[item for item in usable_paths_list if item['file_type'] in queryable_file_types]
         if len(queryable_paths_list)==0:
             temp_file_handle, temp_file_name=tempfile.mkstemp()
-
         try:
             if len(queryable_paths_list)==0:
                 path=usable_paths_list[0]
@@ -196,7 +195,8 @@ class create_netCDF_pointers:
         #from non-queryable file types.
         self.time_axis, self.table= map(np.concatenate,
                         zip(*map(self._recover_time,np.nditer(self.paths_ordering))))
-        self.units='days since '+str(np.sort(self.time_axis)[0])
+        if len(self.time_axis)>0:
+            self.units='days since '+str(np.sort(self.time_axis)[0])
         return
 
     def _recover_calendar(self,path):
@@ -295,14 +295,14 @@ class create_netCDF_pointers:
         #Recover time axis for all files:
         self.obtain_time_axis()
 
-        #Convert time axis to numbers and find the unique time axis:
-        self.unique_time_axis(years,months)
-
-        #Create time axis in ouptut:
-        netcdf_utils.create_time_axis_date(output,self.time_axis_unique_date,self.units,self.calendar)
-
-        queryable_file_types_available=list(set(self.table['file_type']).intersection(queryable_file_types))
         if len(self.table['paths'])>0:
+            #Convert time axis to numbers and find the unique time axis:
+            self.unique_time_axis(years,months)
+
+            #Create time axis in ouptut:
+            netcdf_utils.create_time_axis_date(output,self.time_axis_unique_date,self.units,self.calendar)
+
+            queryable_file_types_available=list(set(self.table['file_type']).intersection(queryable_file_types))
             if len(queryable_file_types_available)>0:
                 #Open the first file and use its metadata to populate container file:
                 first_id=list(self.table['file_type']).index(queryable_file_types_available[0])

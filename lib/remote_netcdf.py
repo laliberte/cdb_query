@@ -5,7 +5,7 @@ import netcdf_utils
 import time
 import sys
 import os
-import timeaxis.timeaxis as timeaxis
+import timeaxis_mod
 
 class RedirectStdStreams(object):
     def __init__(self, stdout=None, stderr=None):
@@ -169,9 +169,10 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
                 #output.variables[var_name][:]=self.Dataset.variables[var_name][:]
             self.close()
         except dodsError as e:
-            e_mod=" This is an uncommon error. It is likely to be FATAL."
-            self.close()
-            print e.value+e_mod
+            if not self.file_type in ['local_file']:
+                e_mod=" This is an uncommon error. It could be FATAL if it is not part of the validate step."
+                self.close()
+                print e.value+e_mod
         return output
 
     def grab_indices(self,var,indices,unsort_indices):
@@ -203,10 +204,10 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
             units=self.get_time_units(calendar)
             start_id=0
 
-            funits=timeaxis.convert_time_units(units, time_frequency)
-            end_id=timeaxis.Date2num(end_date,funits,calendar)
+            funits=timeaxis_mod.convert_time_units(units, time_frequency)
+            end_id=timeaxis_mod.Date2num(end_date,funits,calendar)
 
-            inc = timeaxis.time_inc(time_frequency)
+            inc = timeaxis_mod.time_inc(time_frequency)
             length=end_id/inc-2
             
             last_rebuild=start_date
@@ -268,7 +269,7 @@ def dates_from_filename(filename, calendar):
     """
     dates = []
     for date in filename.replace('.nc','').split('_')[-1].split('-'):
-        digits = timeaxis.untroncated_timestamp(date)
+        digits = timeaxis_mod.untroncated_timestamp(date)
         # Convert string digits to %Y-%m-%d %H:%M:%S format
         date_as_since = ''.join([''.join(triple) for triple in zip(digits[::2], digits[1::2], ['', '-', '-', ' ', ':', ':', ':'])])[:-1]
         # Use num2date to create netCDF4 datetime objects
@@ -290,12 +291,12 @@ def rebuild_date_axis(start, length, instant, inc, units,calendar='standard'):
     """
     num_axis = np.arange(start=start, stop=start + length * inc, step=inc)
     if units.split(' ')[0] in ['years', 'months']:
-        last = timeaxis.Num2date(num_axis[-1], units=units, calendar=calendar)[0]
+        last = timeaxis_mod.Num2date(num_axis[-1], units=units, calendar=calendar)[0]
     else:
-        last = timeaxis.Num2date(num_axis[-1], units=units, calendar=calendar)
+        last = timeaxis_mod.Num2date(num_axis[-1], units=units, calendar=calendar)
     if not instant and not inc in [3, 6]:  # To solve non-instant [36]hr files
         num_axis += 0.5 * inc
-    date_axis = timeaxis.Num2date(num_axis, units=units, calendar=calendar)
+    date_axis = timeaxis_mod.Num2date(num_axis, units=units, calendar=calendar)
     return date_axis
 
 def retrieve_slice(variable,indices,unsort_indices,dim,dimensions,dim_id,getitem_tuple=tuple(),num_trials=2):

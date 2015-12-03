@@ -168,6 +168,7 @@ class nc_Database:
                                                               header['file_type_list'],
                                                               header['data_node_list'],
                                                               semaphores=semaphores)
+
             getattr(netcdf_pointers,record_function_handle)(output,username=options.username,user_pass=options.password)
 
             #Remove recorded data from database:
