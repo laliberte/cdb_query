@@ -82,10 +82,10 @@ def apply_to_variable(database,options):
         output_tmp=netCDF4.Dataset(temp_file,'w',format='NETCDF4',diskless=True,persist=True)
 
         #nc_Database_utils.extract_netcdf_variable_recursive(output_tmp,data,tree[0],tree[1:],options,check_empty=True)
-        nc_Database_utils.extract_netcdf_variable_recursive(output_tmp,data,tree[0],tree[1:],options,check_empty=False,hdf5=data_hdf5)
+        nc_Database_utils.extract_netcdf_variable_recursive(output_tmp,data,tree[0],tree[1:],options,check_empty=True,hdf5=data_hdf5)
         if options.add_fixed:
             #nc_Database_utils.extract_netcdf_variable_recursive(output_tmp,data,tree_fx[0],tree_fx[1:],options_fx,check_empty=True)
-            nc_Database_utils.extract_netcdf_variable_recursive(output_tmp,data,tree_fx[0],tree_fx[1:],options_fx,check_empty=False,hdf5=data_hdf5)
+            nc_Database_utils.extract_netcdf_variable_recursive(output_tmp,data,tree_fx[0],tree_fx[1:],options_fx,check_empty=True,hdf5=data_hdf5)
         temp_files_list.append(temp_file)
         output_tmp.close()
         data.close()
@@ -174,11 +174,12 @@ def record_in_output(arg,queue,output_root,database,options):
         if 'name' in dir(item) and item.name==temp_file_name:
             data_hdf5=h5py.File(item)
     tree=zip(database.drs.official_drs_no_version,var)
-    if ('applying_to_soft_links' in dir(options) and
-        options.applying_to_soft_links):
-        nc_Database_utils.replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=True)
-    else:
-        nc_Database_utils.replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=False)
+    #if ('applying_to_soft_links' in dir(options) and
+    #    options.applying_to_soft_links):
+    #    #Do not check empty:
+    #    nc_Database_utils.replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=False)
+    #else:
+    nc_Database_utils.replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=True)
     data.close()
     if data_hdf5!=None:
         data_hdf5.close()

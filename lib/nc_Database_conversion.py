@@ -10,6 +10,7 @@ import cdb_query_archive_class
 import nc_Database_utils
 
 import copy
+import multiprocessing
 
 def convert(options,project_drs):
     database=cdb_query_archive_class.SimpleTree(options,project_drs)

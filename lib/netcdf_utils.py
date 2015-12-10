@@ -93,7 +93,8 @@ def replicate_and_copy_variable(output,data,var_name,datatype=None,fill_value=No
     if len(data.variables[var_name].shape)>0:
         if ( 'soft_links' in data.groups.keys() and 
               var_name in data.groups['soft_links'].variables.keys()
-              and check_empty):
+              and check_empty
+              and 'time' in data.variables[var_name].dimensions):
             #Variable has a soft link.
             return output
 
