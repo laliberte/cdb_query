@@ -221,13 +221,14 @@ class create_netCDF_pointers:
 
         paths_list=[path for path in self.paths_ordering['path'] ]
         paths_id_list=[path_id for path_id in self.paths_ordering['path_id'] ]
-        for path_id, path in zip(paths_id_list,paths_list):
+        #for path_id, path in zip(paths_id_list,paths_list):
+        for path_id, path in enumerate(paths_list):
             #find in self.table the path and assign path_id to it:
             self.paths_indices[path==self.table['paths']]=path_id
 
         #Remove paths that are not necessary over the requested time range:
         #First, list the paths_id used:
-        useful_paths_id_list=list(np.unique([np.min(self.paths_indices[time==self.time_axis])  for time_id, time in enumerate(self.time_axis_unique)]))
+        useful_paths_id_list=list(np.unique([paths_id_list[np.min(self.paths_indices[time==self.time_axis])]  for time_id, time in enumerate(self.time_axis_unique)]))
         #Second, list the path_names corresponding to these paths_id:
         useful_file_name_list=[useful_path.split('/')[-1] for useful_path in 
                                 [path for path_id, path in zip(paths_id_list,paths_list)
@@ -349,9 +350,12 @@ class create_netCDF_pointers:
 
         var_out = output_grp.createVariable(var,np.int32,('time','indices'),zlib=False,fill_value=np.iinfo(np.int32).max)
         #Create soft links:
+        paths_id_list=[path_id for path_id in self.paths_ordering['path_id'] ]
+
         for time_id, time in enumerate(self.time_axis_unique):
-            var_out[time_id,0]=np.min(self.paths_indices[time==self.time_axis])
-            var_out[time_id,1]=self.table['indices'][np.logical_and(self.paths_indices==var_out[time_id,0],time==self.time_axis)][0]
+            path_index_to_use=np.min(self.paths_indices[time==self.time_axis])
+            var_out[time_id,0]=paths_id_list[path_index_to_use]
+            var_out[time_id,1]=self.table['indices'][np.logical_and(self.paths_indices==path_index_to_use,time==self.time_axis)][0]
 
         if data!=None:
             #Create support variables:
@@ -362,8 +366,11 @@ class create_netCDF_pointers:
                     var_out = output_grp.createVariable(other_var,np.int32,('time','indices'),zlib=False,fill_value=np.iinfo(np.int32).max)
                     #Create soft links:
                     for time_id, time in enumerate(self.time_axis_unique):
-                        var_out[time_id,0]=np.min(self.paths_indices[time==self.time_axis])
-                        var_out[time_id,1]=self.table['indices'][np.logical_and(self.paths_indices==var_out[time_id,0],time==self.time_axis)][0]
+                        #var_out[time_id,0]=np.min(self.paths_indices[time==self.time_axis])
+                        #var_out[time_id,1]=self.table['indices'][np.logical_and(self.paths_indices==var_out[time_id,0],time==self.time_axis)][0]
+                        path_index_to_use=np.min(self.paths_indices[time==self.time_axis])
+                        var_out[time_id,0]=paths_id_list[path_index_to_use]
+                        var_out[time_id,1]=self.table['indices'][np.logical_and(self.paths_indices==path_index_to_use,time==self.time_axis)][0]
         return
 
 
