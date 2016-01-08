@@ -151,7 +151,7 @@ class SimpleTree:
             else:
                 user_pass=sys.stdin.readline()
 
-            certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass)
+            certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass,trustroots=options.no_trustroots)
         else:
             user_pass=None
         options.password=user_pass
@@ -225,7 +225,7 @@ class SimpleTree:
             else:
                 user_pass=sys.stdin.readline().rstrip()
             #Get certificates if requested by user:
-            certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass)
+            certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass,trustroots=options.no_trustroots)
         else:
             user_pass=None
 

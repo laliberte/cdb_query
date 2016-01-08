@@ -3,7 +3,7 @@ from onlineca_get_trustroots_wget import onlineca_get_trustroots_wget
 from onlineca_get_cert_wget import onlineca_get_cert_wget
 
 
-def retrieve_certificates(username,registering_service,user_pass=None):
+def retrieve_certificates(username,registering_service,user_pass=None,trustroots=False):
     home=os.getenv('HOME')
     http_proxy=os.getenv('http_proxy')
     https_proxy=os.getenv('https_proxy')
@@ -51,9 +51,11 @@ HTTP.SSL.CAPATH=%(esgfdir)s/certificates"""
     oo.write(onlineca_get_trustroots_wget())
     oo.close()
 
-    call_to_script=['bash',esgfdir+'/onlineca-get-trustroots-wget.sh','-b','-U','https://'+registering_service+'/onlineca/trustroots/','-c',esgfdir+'/certificates']
-    #print ' '.join(call_to_script)
-    subprocess.call(call_to_script)
+    if trustroots:
+        #Do not have to renew frequently
+        call_to_script=['bash',esgfdir+'/onlineca-get-trustroots-wget.sh','-b','-U','https://'+registering_service+'/onlineca/trustroots/','-c',esgfdir+'/certificates']
+        #print ' '.join(call_to_script)
+        subprocess.call(call_to_script)
 
     oo = open(esgfdir+'/onlineca-cert-wget.sh','w')
     oo.write(onlineca_get_cert_wget())

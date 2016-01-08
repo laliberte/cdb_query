@@ -208,14 +208,17 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
             end_id=timeaxis_mod.Date2num(end_date,funits,calendar)
 
             inc = timeaxis_mod.time_inc(time_frequency)
-            length=end_id/inc-2
+            length=max(end_id/inc-2,1.0)
             
             last_rebuild=start_date
+            if last_rebuild == end_date:
+                date_axis=rebuild_date_axis(0, length, is_instant, inc, funits,calendar=calendar)
+                return date_axis
+
             while last_rebuild < end_date:
                 date_axis=rebuild_date_axis(0, length, is_instant, inc, funits,calendar=calendar)
                 last_rebuild=date_axis[-1]
                 length+=1
-
             return date_axis
         else:
             raise StandardError('time_frequency not provided for non-queryable file type.')

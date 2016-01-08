@@ -29,6 +29,8 @@ def certificates_arguments(parser,project_drs):
                               Example: echo $PASS | cdb_query_'+project_drs.project+' ...')
     cert_group.add_argument('--service',default='badc',choices=['badc'],
                      help='Registering service. At the moment works only with badc.')
+    cert_group.add_argument('--no_trustroots',default=True,action='store_false',
+                     help='Bypass trustroots retrieval.')
     return
 
 def processing_arguments(parser,project_drs):
