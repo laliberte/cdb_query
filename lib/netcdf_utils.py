@@ -45,8 +45,12 @@ def get_date_axis_relative(time_axis,units,calendar):
         try:
             date_axis = netCDF4.num2date(time_axis,units=units,calendar=calendar)
         except ValueError:
-            if (units=='days since 0-01-01 00:00:00' and
-                calendar=='365_day'):
+            if (
+                (units=='days since 0-01-01 00:00:00' and
+                calendar=='365_day') or
+                (units=='days since 0-1-1 00:00:00' and
+                calendar=='365_day') 
+                ):
                 date_axis = netCDF4.num2date(time_axis-365.0,units='days since 1-01-01 00:00:00',calendar=calendar)
             else:
                 raise
