@@ -14,12 +14,12 @@ from setuptools import setup, find_packages
 package_name='cdb_query'
 setup(
        name = package_name,
-       version = "1.5",
+       version = "1.6",
        packages=[package_name],
        package_dir = {package_name: 'lib'},
 #
 #        # metadata for upload to PyPI
-        author = "F. B. Laliberté, P. J. Kushner",
+        author = "F. B. Laliberte, P. J. Kushner",
         author_email = "frederic.laliberte@utoronto.ca",
         description = "Simple tools to query and retrieve data from the ESGF's CMIP5 and CORDEX projects.",
         license = "BSD",
@@ -36,7 +36,7 @@ setup(
             "Topic :: Scientific/Engineering :: Mathematics"
         ],
         long_description=read('README'),
-        install_requires = ['numpy','h5py','netCDF4','sqlalchemy','esgf-pyclient'],
+        install_requires = ['numpy','h5py','netCDF4','sqlalchemy','esgf-pyclient','netcdf4_soft_links'],
         zip_safe=False,
         # other arguments here...
         #package_data = {package_name : ['lib/*.sh']},

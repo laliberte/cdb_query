@@ -1,16 +1,14 @@
+#External:
 import sqlalchemy
 import sqlalchemy.orm
 import json
-
 import os
 import netCDF4
-
-import retrieval_utils
-import read_soft_links
-import create_soft_links
-import netcdf_utils
-
 import copy
+
+#External but related:
+import netcdf4_soft_links.read_soft_links as read_soft_links
+import netcdf4_soft_links.create_soft_links as create_soft_links
 
 class nc_Database:
     def __init__(self,project_drs,database_file=None):
@@ -177,14 +175,13 @@ class nc_Database:
         return output_root, filepath
 
     def retrieve_database(self,options,output,queues,retrieval_function_name):
-        retrieval_function=getattr(retrieval_utils,retrieval_function_name)
         self.load_nc_file()
-        retrieve_tree_recursive(options,self.Dataset,output,queues,retrieval_function)
+        retrieve_tree_recursive(options,self.Dataset,output,queues,retrieval_function_name)
         if 'ensemble' in dir(options) and options.ensemble!=None:
             #Always include r0i0p0 when ensemble was sliced:
             options_copy=copy.copy(options)
             options_copy.ensemble='r0i0p0'
-            retrieve_tree_recursive(options_copy,self.Dataset,output,queues,retrieval_function)
+            retrieve_tree_recursive(options_copy,self.Dataset,output,queues,retrieval_function_name)
         self.close_nc_file()
         return
 
@@ -270,11 +267,11 @@ def create_tree_recursive(output_top,tree):
         output=create_tree_recursive(output,tree[1:])
     return output
 
-def retrieve_tree_recursive(options,data,output,queues,retrieval_function):
+def retrieve_tree_recursive(options,data,output,queues,retrieval_function_name):
     if 'soft_links' in data.groups.keys():
         netcdf_pointers=read_soft_links.read_netCDF_pointers(data,options=options,queues=queues)
         netcdf_pointers.retrieve(output,
-                                 retrieval_function,
+                                 retrieval_function_name,
                                  options,
                                  username=options.username,
                                  user_pass=options.user_pass
@@ -295,7 +292,7 @@ def retrieve_tree_recursive(options,data,output,queues,retrieval_function):
                             output_grp.setncattr(att,data.groups[group].getncattr(att))
                 else:
                     output_grp=output
-                retrieve_tree_recursive(options,data.groups[group],output_grp,queues,retrieval_function)
+                retrieve_tree_recursive(options,data.groups[group],output_grp,queues,retrieval_function_name)
             
     return
 

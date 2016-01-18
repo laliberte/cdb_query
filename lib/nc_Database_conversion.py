@@ -1,16 +1,16 @@
-import netcdf_utils
+#External:
 import datetime
-
 import os
-
 import netCDF4
-
-import cdb_query_archive_class
-
-import nc_Database_utils
-
 import copy
 import multiprocessing
+
+#External but related:
+import netcdf4_soft_links.netcdf_utils as netcdf_utils
+
+#Internal:
+import cdb_query_archive_class
+import nc_Database_utils
 
 def convert(options,project_drs):
     database=cdb_query_archive_class.SimpleTree(options,project_drs)

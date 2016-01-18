@@ -1,25 +1,17 @@
-import os
+#External:
 import sys
-import hashlib
+import getpass
 
-import filesystem_query
-import esgf_query
+#External but related:
+import netcdf4_soft_links.certificates as certificates
 
-import copy
-
+#Internal:
 import remote_archive
-
-#import database_utils
-
 import cdb_query_archive_parsers
 import cdb_query_archive_class
-
-import netcdf_utils
 import nc_Database_apply
 import nc_Database_conversion
-import certificates
 
-import getpass
 
 def main_CMIP5():
     main('CMIP5')

@@ -1,17 +1,16 @@
+#External:
 import copy
 import nc_Database
 from operator import itemgetter
 import os
-
 import random
+import sqlalchemy
+import multiprocessing
 
+#Internal:
 import ftp_query
 import filesystem_query
 import esgf_query
-
-import sqlalchemy
-
-import multiprocessing
 
 ##### PATH #####
 def find_path(nc_Database,file_expt,semaphores=None):

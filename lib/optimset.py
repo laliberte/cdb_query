@@ -1,19 +1,16 @@
+#External:
 import copy
 import os
-
-import nc_Database
-
-import retrieval_utils
-
 from operator import itemgetter
-
-import netcdf_utils
-
 import sqlalchemy
-
 import numpy as np
 
-import remote_netcdf
+#External but related:
+import netcdf4_soft_links.retrieval_utils
+import netcdf4_soft_links.remote_netcdf
+
+#Internal:
+import nc_Database
 
 
 queryable_file_types=['OPENDAP','local_file']

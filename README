@@ -25,6 +25,9 @@ F. Laliberté, Juckes, M., Denvil, S., Kushner, P. J., Bull. Amer. Meteor. Soc.,
 Version History
 ---------------
 
+1.6: Split the source code in two. Some of the heavy lifiting is now provided
+     by the netcdf4_soft_links package.
+
 1.5: Added tracking_id and support for different checksum methods.
      Compatibility with new ESGF architecture.
      Rewrite of important code components.

@@ -1,11 +1,7 @@
-import os
+#External:
 import copy
 import warnings
 from pyesgf.search import SearchConnection
-
-import multiprocessing as mproc
-import cdb_query_archive_class
-
 import urllib2
 import httplib
 

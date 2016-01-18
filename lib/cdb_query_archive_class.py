@@ -1,28 +1,23 @@
-import discover
-import optimset
-
+#External:
 import netCDF4
-
-import nc_Database
-
 import copy
 import os
-
 import json
 import timeit
-
 import numpy as np
-
 import multiprocessing
-
 import random
-
 import sys
-
-import certificates
 import getpass
 
-import retrieval_manager
+#External but related:
+import netcdf4_soft_links.certificates
+import netcdf4_soft_links.retrieval_manager as retrieval_manager
+
+#Internal:
+import discover
+import optimset
+import nc_Database
 import recovery_manager
 
 class SimpleTree:

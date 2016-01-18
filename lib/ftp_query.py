@@ -1,10 +1,9 @@
-import os
-import glob
+#External:
 import copy
-import cdb_query_archive_class
-import nc_Database
-
 import ftplib
+
+#Internal:
+import nc_Database
 
 class browser:
     def __init__(self,search_path,options):

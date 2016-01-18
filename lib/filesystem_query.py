@@ -1,7 +1,9 @@
+#External:
 import os
 import glob
 import copy
-import cdb_query_archive_class
+
+#Internal:
 import nc_Database
 
 class browser:

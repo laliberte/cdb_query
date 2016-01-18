@@ -1,16 +1,13 @@
-
+#External:
 import netCDF4
 import h5py
-
 import copy
-
 import os
-
-import cdb_query_archive_class
-
 import multiprocessing
 import subprocess
 
+#Internal:
+import cdb_query_archive_class
 import nc_Database_utils
 
 def apply(options,project_drs):

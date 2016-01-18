@@ -1,8 +1,9 @@
+#External but related:
+import netcdf4_soft_links.read_soft_links as read_soft_links
+import netcdf4_soft_links.netcdf_utils as netcdf_utils
 
-import read_soft_links
-
+#Internal:
 import nc_Database
-import netcdf_utils
 
 def assign_tree(output,val,sort_table,tree):
     if len(tree)>1:
