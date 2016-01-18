@@ -290,17 +290,3 @@ def retrieve_path_data(in_dict,pointer_var):
     remote_data.close()
     return (retrieved_data, sort_table,pointer_var+[var])
 
-def get_data_node(path,file_type):
-    if file_type=='HTTPServer':
-        return '/'.join(path.split('/')[:3])
-    elif file_type=='OPENDAP':
-        return '/'.join(path.split('/')[:3])
-    elif file_type=='FTPServer':
-        return '/'.join(path.split('/')[:3])
-    elif file_type=='local_file':
-        return '/'.join(path.split('/')[:2])
-    else:
-        return ''
-
-
-

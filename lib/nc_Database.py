@@ -3,11 +3,11 @@ import sqlalchemy.orm
 import json
 
 import os
+import netCDF4
 
 import retrieval_utils
 import read_soft_links
 import create_soft_links
-import netCDF4
 import netcdf_utils
 
 import copy
@@ -176,7 +176,8 @@ class nc_Database:
 
         return output_root, filepath
 
-    def retrieve_database(self,options,output,queues,retrieval_function):
+    def retrieve_database(self,options,output,queues,retrieval_function_name):
+        retrieval_function=getattr(retrieval_utils,retrieval_function_name)
         self.load_nc_file()
         retrieve_tree_recursive(options,self.Dataset,output,queues,retrieval_function)
         if 'ensemble' in dir(options) and options.ensemble!=None:
@@ -206,7 +207,7 @@ def populate_database_recursive(nc_Database,data,options,find_function,semaphore
                 setattr(nc_Database.file_expt,id,soft_links.variables[id][path_id])
 
             #Check if data_node was included:
-            data_node=retrieval_utils.get_data_node(soft_links.variables['path'][path_id],
+            data_node=remote_netcdf.get_data_node(soft_links.variables['path'][path_id],
                                                     soft_links.variables['file_type'][path_id])
 
             if is_level_name_included_and_not_excluded('data_node',options,data_node):
@@ -230,7 +231,7 @@ def populate_database_recursive(nc_Database,data,options,find_function,semaphore
             setattr(nc_Database.file_expt,id,data.getncattr(id))
 
         #Check if data_node was included:
-        data_node=retrieval_utils.get_data_node(data.getncattr('path'),
+        data_node=remote_netcdf.get_data_node(data.getncattr('path'),
                                                 data.getncattr('file_type'))
         if is_level_name_included_and_not_excluded('data_node',options,data_node):
             file_path='|'.join([data.getncattr('path'),] +
@@ -239,7 +240,7 @@ def populate_database_recursive(nc_Database,data,options,find_function,semaphore
             setattr(nc_Database.file_expt,'version',str(data.getncattr('version')))
 
             setattr(nc_Database.file_expt,'data_node',
-                        retrieval_utils.get_data_node(nc_Database.file_expt.path,
+                        remote_netcdf.get_data_node(nc_Database.file_expt.path,
                                                       nc_Database.file_expt.file_type))
             find_function(nc_Database,copy.deepcopy(nc_Database.file_expt))
     else:
@@ -250,7 +251,7 @@ def populate_database_recursive(nc_Database,data,options,find_function,semaphore
             setattr(nc_Database.file_expt,id,'')
         if len(data.variables.keys())>0:
             setattr(nc_Database.file_expt,'data_node',
-                        retrieval_utils.get_data_node(nc_Database.file_expt.path,
+                        remote_netcdf.get_data_node(nc_Database.file_expt.path,
                                                       nc_Database.file_expt.file_type))
             find_function(nc_Database,copy.deepcopy(nc_Database.file_expt))
     return
@@ -336,12 +337,6 @@ def is_level_name_included_and_not_excluded(level_name,options,group):
         not_excluded=True
     return included and not_excluded
 
-def record_to_file(output_root,output,output_hdf5):
-    netcdf_utils.replicate_netcdf_file(output_root,output)
-    #netcdf_utils.replicate_full_netcdf_recursive(output_root,output,check_empty=True)
-    #netcdf_utils.replicate_full_netcdf_recursive(output_root,output,check_empty=False,hdf5=output_hdf5)
-    netcdf_utils.replicate_full_netcdf_recursive(output_root,output,check_empty=True,hdf5=output_hdf5)
-    return
 
 class File_Expt(object):
     #Create a class that can be used with sqlachemy:

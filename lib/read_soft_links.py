@@ -173,7 +173,7 @@ class read_netCDF_pointers:
                     #'sort_table':np.argsort(sorting_paths)[sorted_paths_link==path_id][time_slice],
 
             #Retrieve only if it is from the requested data node:
-            data_node=retrieval_utils.get_data_node(path_to_retrieve,file_type)
+            data_node=remote_netcdf.get_data_node(path_to_retrieve,file_type)
             if nc_Database.is_level_name_included_and_not_excluded('data_node',self,data_node):
                 if data_node in self.queues.keys():
                     #print 'Recovering '+var_to_retrieve+' in '+path_to_retrieve
@@ -262,7 +262,7 @@ class read_netCDF_pointers:
                         #'sort_table':np.argsort(sorting_paths)[sorted_paths_link==path_id][time_slice],
 
                 #Retrieve only if it is from the requested data node:
-                data_node=retrieval_utils.get_data_node(path_to_retrieve,file_type)
+                data_node=remote_netcdf.get_data_node(path_to_retrieve,file_type)
                 if nc_Database.is_level_name_included_and_not_excluded('data_node',self,data_node):
                     if data_node in self.queues.keys():
                         if ( (isinstance(output,netCDF4.Dataset) or

@@ -155,7 +155,7 @@ class create_netCDF_pointers:
             paths_ordering['version'][file_id]=np.long(file['version'][1:])
 
             paths_ordering['file_type'][file_id]=file['file_type']
-            paths_ordering['data_node'][file_id]=retrieval_utils.get_data_node(file['path'],paths_ordering['file_type'][file_id])
+            paths_ordering['data_node'][file_id]=remote_netcdf.get_data_node(file['path'],paths_ordering['file_type'][file_id])
 
         #Sort paths from most desired to least desired:
         #First order desiredness for least to most:

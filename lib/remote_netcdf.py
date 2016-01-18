@@ -1,6 +1,5 @@
 import netCDF4
 import numpy as np
-import retrieval_utils
 import netcdf_utils
 import time
 import sys
@@ -30,7 +29,7 @@ class remote_netCDF:
         self.file_name=netcdf_file_name
         self.semaphores=semaphores
         self.file_type=file_type
-        self.remote_data_node=retrieval_utils.get_data_node(self.file_name, self.file_type)
+        self.remote_data_node=get_data_node(self.file_name, self.file_type)
         if isinstance(semaphores,dict):
             self.in_semaphores=(self.remote_data_node in  self.semaphores.keys())
         else:
@@ -83,7 +82,6 @@ not available or out of date.'''.splitlines()).format(self.file_name.replace('do
                 self.open_with_error(num_trials=num_trials-1)
             else:
                 self.close()
-                #if not retrieval_utils.check_file_availability(self.file_name.replace('dodsC','fileServer')):
                 raise dodsError(error_statement)
         return
 
@@ -372,3 +370,16 @@ def remove_zero_if_added(arr,indices,dim_id):
         return np.take(arr,range(1,arr.shape[dim_id]),axis=dim_id)
     else:
         return arr
+
+def get_data_node(path,file_type):
+    if file_type=='HTTPServer':
+        return '/'.join(path.split('/')[:3])
+    elif file_type=='OPENDAP':
+        return '/'.join(path.split('/')[:3])
+    elif file_type=='FTPServer':
+        return '/'.join(path.split('/')[:3])
+    elif file_type=='local_file':
+        return '/'.join(path.split('/')[:2])
+    else:
+        return ''
+        
