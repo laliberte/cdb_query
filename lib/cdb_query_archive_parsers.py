@@ -4,6 +4,9 @@ import textwrap
 import datetime
 import copy
 
+#External but related:
+import netcdf4_soft_links.manage_soft_links_parsers as manage_soft_links_parsers
+
 def input_arguments_json(parser):
     parser.add_argument('in_diagnostic_headers_file',
                                  help='Diagnostic headers file (input)')
@@ -17,21 +20,6 @@ def input_arguments(parser):
 def output_arguments(parser):
     parser.add_argument('out_diagnostic_netcdf_file',
                                  help='NETCDF Diagnostic paths file (output)')
-    return
-
-def certificates_arguments(parser,project_drs):
-    cert_group = parser.add_argument_group('Use these arguments to let cdb_query manage your credentials')
-    cert_group.add_argument('--username',default=None,
-                     help='If you set this value to your user name for registering service given in --service \n\
-                           cdb_query will prompt you once for your password and will ensure that your credentials \n\
-                           are active for the duration of the process.')
-    cert_group.add_argument('--password_from_pipe',default=False,action='store_true',
-                        help='If activated it is expected that the user is passing a password through piping\n\
-                              Example: echo $PASS | cdb_query_'+project_drs.project+' ...')
-    cert_group.add_argument('--service',default='badc',choices=['badc'],
-                     help='Registering service. At the moment works only with badc.')
-    cert_group.add_argument('--no_trustroots',default=True,action='store_false',
-                     help='Bypass trustroots retrieval.')
     return
 
 def processing_arguments(parser,project_drs):
@@ -76,16 +64,17 @@ def generate_subparsers(parser,epilog,project_drs):
     #quick_ask(subparsers,epilog,project_drs)
     ask(subparsers,epilog,project_drs)
     list_fields(subparsers,epilog,project_drs)
-
-    #Optimset tree
     validate(subparsers,epilog,project_drs)
-    download(subparsers,epilog,project_drs)
-    download_raw(subparsers,epilog,project_drs)
+
     apply(subparsers,epilog,project_drs)
     convert(subparsers,epilog,project_drs)
+
+    download(subparsers,epilog,project_drs)
+    download_raw(subparsers,epilog,project_drs)
     certificates(subparsers,epilog,project_drs)
     return
 
+#QUERY PARSERS
 def ask(subparsers,epilog,project_drs):
     #Find data
     epilog_ask=epilog
@@ -120,7 +109,7 @@ def ask(subparsers,epilog,project_drs):
                                  default=False, action='store_true',
                                  help='Distribute the search. Will likely result in a pointers originating from one node.')
 
-    certificates_arguments(parser,project_drs)
+    manage_soft_links_parsers.certificates_arguments(parser,project_drs)
     processing_arguments(parser,project_drs)
     inc_group = parser.add_argument_group('Inclusions')
     slicing_arguments(inc_group,project_drs)
@@ -188,7 +177,7 @@ def validate(subparsers,epilog,project_drs):
                                  help='Alternative diagnostic headers file (to modify target validate)',\
                                  type=str,default=None)
 
-    certificates_arguments(parser,project_drs)
+    manage_soft_links_parsers.certificates_arguments(parser,project_drs)
     processing_arguments(parser,project_drs)
 
     data_node_group = parser.add_argument_group('Restrict search to specific data nodes')
@@ -209,103 +198,7 @@ def validate(subparsers,epilog,project_drs):
     complex_slicing(comp_group,project_drs,action_type='append')
     return
 
-def download(subparsers,epilog,project_drs):
-    epilog_validate=textwrap.dedent(epilog)
-    parser=subparsers.add_parser('download',
-                                           description=textwrap.dedent('Take as an input the results from \'validate\' and returns a\n\
-                                                 netcdf file with the data retrieved.'),
-                                           epilog=epilog_validate,
-                                         )
-    input_arguments(parser)
-    output_arguments(parser)
-
-    certificates_arguments(parser,project_drs)
-    processing_arguments(parser,project_drs)
-
-    serial_group = parser.add_argument_group('Specify asynchronous behavior')
-    serial_group.add_argument('--serial',default=False,action='store_true',help='Downloads the files serially.')
-
-    #source_group = parser.add_argument_group('Specify sources')
-    #source_group.add_argument('--source_dir',default=None,help='local cache of data retrieved using \'download_raw\'')
-
-    inc_group = parser.add_argument_group('Inclusions')
-    inc_group.add_argument('--year',
-                                 default=None, type=int_list,
-                                 help='Retrieve only these comma-separated years.')
-    inc_group.add_argument('--month',
-                                 default=None, type=int_list,
-                                 help='Retrieve only these comma-separated months (1 to 12).')
-    inc_group.add_argument('--day',
-                                 default=None, type=int_list,
-                                 help='Retrieve only these comma-separated calendar days.')
-    inc_group.add_argument('--hour',
-                                 default=None, type=int_list,
-                                 help='Retrieve only these comma-separated hours.')
-    inc_group.add_argument('--previous',
-                                 default=0,action='count',
-                                 help='Retrieve data from specified year, month, day AND the time step just BEFORE this retrieved data.')
-    inc_group.add_argument('--next',
-                                 default=0,action='count',
-                                 help='Retrieve data from specified year, month, day AND the time step just AFTER this retrieved data.')
-    slicing_arguments(inc_group,project_drs,action_type='append')
-    exc_group = parser.add_argument_group('Exclusions')
-    excluded_slicing_arguments(exc_group,project_drs,action_type='append')
-
-    data_node_group = parser.add_argument_group('Limit download from specific data nodes')
-    data_node_group.add_argument('--data_node',type=str,action='append',help='Retrieve only from the specified data nodes')
-    data_node_group.add_argument('--Xdata_node',type=str,action='append',help='Do not retrieve from the specified data nodes')
-
-    return
-
-def download_raw(subparsers,epilog,project_drs):
-    epilog_download_raw=textwrap.dedent(epilog)
-    parser=subparsers.add_parser('download_raw',
-                                           description=textwrap.dedent('Take as an input the results from \'validate\' and downloads the data.'),
-                                           epilog=epilog_download_raw,
-                                         )
-    input_arguments(parser)
-    parser.add_argument('out_destination',
-                             help='Destination directory for retrieval.')
-
-    certificates_arguments(parser,project_drs)
-
-    serial_group = parser.add_argument_group('Specify asynchronous behavior')
-    serial_group.add_argument('--serial',default=False,action='store_true',help='Downloads the files serially.')
-
-    source_group = parser.add_argument_group('Specify sources')
-    source_group.add_argument('--source_dir',default=None,help='local cache of data retrieved using \'download_raw\'')
-
-    data_node_group = parser.add_argument_group('Limit download from specific data nodes')
-    data_node_group.add_argument('--data_node',type=str,action='append',help='Retrieve only from the specified data nodes')
-    data_node_group.add_argument('--Xdata_node',type=str,action='append',help='Do not retrieve from the specified data nodes')
-
-    inc_group = parser.add_argument_group('Inclusions')
-    inc_group.add_argument('--year',
-                                 default=None, type=int_list,
-                                 help='Retrieve only these comma-separated years.')
-    inc_group.add_argument('--month',
-                                 default=None, type=int_list,
-                                 help='Retrieve only these comma-separated months (1 to 12). \n\
-                                       If the list of months is composed only of continuous sublists (e.g. 1,2,12)\n\
-                                       it ensures that continuous months are retrieved.')
-    inc_group.add_argument('--day',
-                                 default=None, type=int_list,
-                                 help='Retrieve only these comma-separated calendar days.')
-    inc_group.add_argument('--hour',
-                                 default=None, type=int_list,
-                                 help='Retrieve only these comma-separated hours.')
-    inc_group.add_argument('--previous',
-                                 default=False, action='store_true',
-                                 help='Retrieve data from specified year, month, day AND the time step just BEFORE this retrieved data.')
-    inc_group.add_argument('--next',
-                                 default=False, action='store_true',
-                                 help='Retrieve data from specified year, month, day AND the time step just AFTER this retrieved data.')
-
-    slicing_arguments(inc_group,project_drs,action_type='append')
-    exc_group = parser.add_argument_group('Exclusions')
-    excluded_slicing_arguments(exc_group,project_drs,action_type='append')
-    return
-
+#nc_Database PARSERS
 def convert(subparsers,epilog,project_drs):
     epilog_convert=textwrap.dedent(epilog)
     parser=subparsers.add_parser('convert',
@@ -326,7 +219,6 @@ def convert(subparsers,epilog,project_drs):
                                        help='List the field (or fields if repeated) found in the file' )
     complex_slicing(comp_group,project_drs,action_type='append')
     return
-
 
 def apply(subparsers,epilog,project_drs):
     epilog_apply=textwrap.dedent(epilog)
@@ -364,18 +256,27 @@ def apply(subparsers,epilog,project_drs):
     complex_slicing(comp_group,project_drs,action_type='append')
     return
 
+#SOFT-LINKS PARSERS
 def certificates(subparsers,epilog,project_drs):
-    epilog_certificates=textwrap.dedent(epilog)
-    parser=subparsers.add_parser('certificates',
-                                           description=textwrap.dedent('Recovers ESGF certificates'),
-                                           epilog=epilog_certificates
-                                         )
-    parser.add_argument('username',help="Username")
-    parser.add_argument('--password_from_pipe',default=False,action='store_true',
-                        help='If activated it is expected that the user is passing a password through piping\n\
-                              Example: echo $PASS | cdb_query_'+project_drs.project+' ...')
-    #parser.add_argument('password',help="Password")
-    parser.add_argument('service',help="Registering service",choices=['badc'])
+    manage_soft_links.certificates(subparsers,epilog,project_drs)
+    return
+
+def download(subparsers,epilog,project_drs):
+    parser=manage_soft_links_parsers.download(subparsers,epilod,project_drs)
+
+    inc_group = parser.add_argument_group('Inclusions')
+    slicing_arguments(inc_group,project_drs,action_type='append')
+    exc_group = parser.add_argument_group('Exclusions')
+    excluded_slicing_arguments(exc_group,project_drs,action_type='append')
+    return
+
+def download_raw(subparsers,epilog,project_drs):
+    parser=manage_soft_links_parsers.download_raw(subparsers,epilod,project_drs)
+
+    inc_group = parser.add_argument_group('Inclusions')
+    slicing_arguments(inc_group,project_drs,action_type='append')
+    exc_group = parser.add_argument_group('Exclusions')
+    excluded_slicing_arguments(exc_group,project_drs,action_type='append')
     return
 
 def int_list(input):
