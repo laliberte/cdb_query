@@ -238,7 +238,7 @@ class SimpleTree:
         paths_list=self.nc_Database.list_paths()
         self.close_database()
 
-        queues, processes, data_node_list=retrieval_manager.start_processes(options,data_node_list)
+        queues, data_node_list=retrieval_manager.start_processes(options,data_node_list)
 
         #Find the data that needs to be recovered:
         self.define_database(options)
