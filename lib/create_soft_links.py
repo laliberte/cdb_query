@@ -278,15 +278,19 @@ class create_netCDF_pointers:
 
         #Include a filter on years: 
         time_desc={}
-        years_range=range(*years)
-        years_range.append(years[-1])
-        if years[0]<10:
-            #This is important for piControl
-            years_range=list(np.array(years_range)+np.min([date.year for date in time_axis_unique_date]))
-            #min_year=np.min([date.year for date in time_axis_unique_date])
+        if years!=None:
+            years_range=range(*years)
+            years_range.append(years[-1])
+            if years[0]<10:
+                #This is important for piControl
+                years_range=list(np.array(years_range)+np.min([date.year for date in time_axis_unique_date]))
+                #min_year=np.min([date.year for date in time_axis_unique_date])
 
-        valid_times=np.array([True  if (date.year in years_range and 
-                                     date.month in months) else False for date in  time_axis_unique_date])
+            valid_times=np.array([True  if (date.year in years_range and 
+                                         date.month in months) else False for date in  time_axis_unique_date])
+        else:
+            valid_times=np.array([True  if (date.month in months) else False for date in  time_axis_unique_date])
+            
         self.time_axis_unique=time_axis_unique[valid_times]
         self.time_axis_unique_date=time_axis_unique_date[valid_times]
         self.time_axis=time_axis

@@ -162,7 +162,11 @@ class nc_Database:
 
             output=create_tree(output_root,zip(drs_list,tree))
             #Record data:
-            years=[ int(year) for year in header['experiment_list'][experiment].split(',')]
+            if header['experiment_list'][experiment]=='':
+                #This allows to request all years:
+                years=None
+            else:
+                years=[ int(year) for year in header['experiment_list'][experiment].split(',')]
             netcdf_pointers=create_soft_links.create_netCDF_pointers(
                                                               paths_list,var,time_frequency,years, months,
                                                               header['file_type_list'],

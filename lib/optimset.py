@@ -44,24 +44,31 @@ def find_time_file(pointers,file_expt,file_available=False,semaphores=None):#ses
     if not file_expt.experiment in pointers.header['experiment_list']:
         return
 
-    years_requested=[int(year) for year in pointers.header['experiment_list'][file_expt.experiment].split(',')]
-    years_list_requested=range(*years_requested)
-    years_list_requested.append(years_requested[1])
-
-    #Flag to check if the time axis is requested as relative:
-    picontrol_min_time=(years_list_requested[0]<=10)
-
     #Recover date range from filename:
-    years_range = [int(date[:4]) for date in time_stamp.split('-')]
+    file_years_range = [int(date[:4]) for date in time_stamp.split('-')]
     #Check for yearly data
     if len(time_stamp.split('-')[0])>4:
-        months_range=[int(date[4:6]) for date in time_stamp.split('-')]
+        file_months_range=[int(date[4:6]) for date in time_stamp.split('-')]
     else:
-        months_range=range(1,13)
-    years_list=range(*years_range)
-    years_list.append(years_range[1])
+        file_months_range=range(1,13)
+    years_list=range(*file_years_range)
+    years_list.append(file_years_range[1])
 
-    if not picontrol_min_time: years_list=[ year for year in years_list if year in years_list_requested]
+    period_list = pointers.header['experiment_list'][file_expt.experiment]
+    if not isinstance(period_list,list): period_list=[period_list]
+
+    if '' in period_list:
+        consider_all_times=True
+    else:
+        consider_all_times=False
+        years_list_requested=[]
+        for period in period_list:
+            years_requested=[int(year) for year in period.split(',')]
+            years_list_requested.extend(range(*years_requested))
+            years_list_requested.append(years_requested[1])
+        #Flag to check if the time axis is requested as relative:
+        picontrol_min_time=(years_list_requested[0]<=10)
+        if not picontrol_min_time: years_list=[ year for year in years_list if year in years_list_requested]
 
     #Record in the database:
     for year_id,year in enumerate(years_list):
@@ -81,8 +88,10 @@ def find_time_file(pointers,file_expt,file_available=False,semaphores=None):#ses
                         file_available = retrieval_utils.check_file_availability(file_expt.path.split('|')[0])
 
         for month in range(1,13):
-            if  ( not ( (year==years_range[0] and month<months_range[0]) or
-                     (year==years_range[1] and month>months_range[1])   ) ):
+            if  (
+                ( not ( (year==file_years_range[0] and month<file_months_range[0]) or
+                     (year==file_years_range[1] and month>file_months_range[1])   ) )
+                or consider_all_times ):
                 attribute_time(pointers,file_expt,file_available,year,month)
     return
 
@@ -118,21 +127,26 @@ def obtain_time_list(diagnostic,project_drs,var_name,experiment,model):
 def find_model_list(diagnostic,project_drs,model_list,experiment):
     period_list = diagnostic.header['experiment_list'][experiment]
     if not isinstance(period_list,list): period_list=[period_list]
-    years_list=[]
-    for period in period_list:
-        years_range=[int(year) for year in period.split(',')]
-        years_list.extend(range(*years_range))
-        years_list.append(years_range[1])
-    time_list=[]
-    for year in years_list:
-        for month in get_diag_months_list(diagnostic):
-            time_list.append(str(year).zfill(4)+str(month).zfill(2))
+    if '' in period_list:
+        consider_all_times=True
+    else:
+        consider_all_times=False
+        years_list=[]
+        for period in period_list:
+            years_range=[int(year) for year in period.split(',')]
+            years_list.extend(range(*years_range))
+            years_list.append(years_range[1])
+        time_list=[]
+        for year in years_list:
+            for month in get_diag_months_list(diagnostic):
+                time_list.append(str(year).zfill(4)+str(month).zfill(2))
+
+        #Flag to check if the time axis is requested as relative:
+        picontrol_min_time=(years_list[0]<=10)
 
     model_list_var=copy.copy(model_list)
     model_list_copy=copy.copy(model_list)
 
-    #Flag to check if the time axis is requested as relative:
-    picontrol_min_time=(years_list[0]<=10)
 
     for model in model_list_var:
         missing_vars=[]
@@ -155,13 +169,14 @@ def find_model_list(diagnostic,project_drs,model_list,experiment):
                 time_list_var=obtain_time_list(diagnostic,project_drs,var_name,experiment,model)
                 #time_list_var=[str(int(time)-int(min_time['_'.join(model)+'_'+experiment])).zfill(6) for time in time_list_var]
                 time_list_var=[str(int(time)-int(min_time)).zfill(6) for time in time_list_var]
-                if not set(time_list).issubset(time_list_var):
-                    missing_vars.append(var_name+':'+','.join(
-                                        diagnostic.header['variable_list'][var_name])+
-                                        ' for some months: '+','.join(
-                                        sorted(set(time[:4] for time in set(time_list).difference(time_list_var)))
-                                        )
-                                       )
+                if not consider_all_times:
+                    if not set(time_list).issubset(time_list_var):
+                        missing_vars.append(var_name+':'+','.join(
+                                            diagnostic.header['variable_list'][var_name])+
+                                            ' for some months: '+','.join(
+                                            sorted(set(time[:4] for time in set(time_list).difference(time_list_var)))
+                                            )
+                                           )
         if len(missing_vars)>0:
            #print('\nThe reasons why some simulations were excluded:')
            if 'experiment' in project_drs.simulations_desc:
