@@ -11,7 +11,7 @@ import sys
 import getpass
 
 #External but related:
-import netcdf4_soft_links.certificates
+import netcdf4_soft_links.certificates as certificates
 import netcdf4_soft_links.retrieval_manager as retrieval_manager
 
 #Internal:
@@ -55,9 +55,9 @@ class SimpleTree:
     def ask(self,options):
         #Load header:
         try:
-            self.header=json.load(open(options.in_diagnostic_headers_file,'r'))['header']
+            self.header=json.load(open(options.in_headers_file,'r'))['header']
         except ValueError as e:
-            print 'The input diagnostic file '+options.in_diagnostic_headers_file+' does not conform to JSON standard. Make sure to check its syntax'
+            print 'The input diagnostic file '+options.in_headers_file+' does not conform to JSON standard. Make sure to check its syntax'
             raise
 
         if 'username' in dir(options) and options.username!=None:
@@ -115,7 +115,7 @@ class SimpleTree:
              for update_file in options.update:
                  #There is an update file:
                  options_copy=copy.copy(options)
-                 options_copy.in_diagnostic_netcdf_file=update_file
+                 options_copy.in_netcdf_file=update_file
                  #Load the header to update:
                  self.define_database(options_copy)
                  old_header=self.nc_Database.load_header()
@@ -188,8 +188,7 @@ class SimpleTree:
         return
 
     def download(self,options):
-
-        output=netCDF4.Dataset(options.out_diagnostic_netcdf_file,'w')
+        output=netCDF4.Dataset(options.out_netcdf_file,'w')
         retrieval_function='retrieve_path_data'
         self.remote_retrieve_and_download(options,output,retrieval_function)
         return
@@ -292,19 +291,19 @@ class SimpleTree:
         return fields_list
 
     def define_database(self,options):
-        if 'in_diagnostic_netcdf_file' in dir(options):
-            self.nc_Database=nc_Database.nc_Database(self.drs,database_file=options.in_diagnostic_netcdf_file)
+        if 'in_netcdf_file' in dir(options):
+            self.nc_Database=nc_Database.nc_Database(self.drs,database_file=options.in_netcdf_file)
         else:
             self.nc_Database=nc_Database.nc_Database(self.drs)
         return
 
     def load_header(self,options):
-        if ('in_diagnostic_headers_file' in dir(options) and 
-           options.in_diagnostic_headers_file!=None):
+        if ('in_headers_file' in dir(options) and 
+           options.in_headers_file!=None):
             try:
-                self.header=json.load(open(options.in_diagnostic_headers_file,'r'))['header']
+                self.header=json.load(open(options.in_headers_file,'r'))['header']
             except ValueError as e:
-                print 'The input diagnostic file '+options.in_diagnostic_headers_file+' does not conform to JSON standard. Make sure to check its syntax'
+                print 'The input diagnostic file '+options.in_headers_file+' does not conform to JSON standard. Make sure to check its syntax'
             #for field_to_limit in ['experiment_list','variable_list']:
             #    if (field_to_limit in dir(options) and
             #        getattr(options,field_to_limit)!=None):

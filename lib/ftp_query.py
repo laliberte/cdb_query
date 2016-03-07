@@ -5,6 +5,9 @@ import ftplib
 #Internal:
 import nc_Database
 
+#External but related:
+import netcdf4_soft_links.remote_netcdf as remote_netcdf
+
 class browser:
     def __init__(self,search_path,options):
         self.file_type='FTPServer'

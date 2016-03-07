@@ -46,7 +46,7 @@ def main(project):
 \n\
 If using this code to retrieve and process data from the ESGF please cite:\n\n\
 Efficient, robust and timely analysis of Earth System Models: a database-query approach (2015):\n\
-F. Laliberté, Juckes, M., Denvil, S., Kushner, P. J., TBD, Submitted.'.format(version_num)
+F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD, Submitted.'.format(version_num)
     parser = argparse.ArgumentParser(formatter_class=argparse.RawDescriptionHelpFormatter,
                             description=description,
                             version='%(prog)s '+version_num,
@@ -86,11 +86,8 @@ F. Laliberté, Juckes, M., Denvil, S., Kushner, P. J., TBD, Submitted.'.format(v
             user_pass=sys.stdin.readline()
         certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass)
         #certificates.test_certificates()
-    elif 'in_diagnostic_headers_file' in dir(options):
-        paths_dict=cdb_query_archive_class.SimpleTree(options,project_drs)
-        #Run the command:
-        getattr(paths_dict,options.command)(options)
-    elif 'in_diagnostic_netcdf_file' in dir(options):
+    #elif 'in_diagnostic_headers_file' in dir(options):
+    else:
         paths_dict=cdb_query_archive_class.SimpleTree(options,project_drs)
         #Run the command:
         getattr(paths_dict,options.command)(options)

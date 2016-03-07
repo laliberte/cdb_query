@@ -9,6 +9,7 @@ import copy
 #External but related:
 import netcdf4_soft_links.read_soft_links as read_soft_links
 import netcdf4_soft_links.create_soft_links as create_soft_links
+import netcdf4_soft_links.remote_netcdf as remote_netcdf
 
 class nc_Database:
     def __init__(self,project_drs,database_file=None):
@@ -125,7 +126,7 @@ class nc_Database:
         trees_list=self.list_subset([getattr(File_Expt,level) for level in drs_list])
 
         #Create output:
-        filepath=options.out_diagnostic_netcdf_file+'.pid'+str(os.getpid())
+        filepath=options.out_netcdf_file+'.pid'+str(os.getpid())
         output_root=netCDF4.Dataset(filepath,
                                       'w',format='NETCDF4')
                                       #'w',format='NETCDF4',diskless=True,persist=True)
@@ -160,8 +161,8 @@ class nc_Database:
 
             output=create_tree(output_root,zip(drs_list,tree))
             #Record data:
-            years=range(*[ int(year) for year in header['experiment_list'][experiment].split(',')])
-            years.append(years[-1])
+            years_range=[ int(year) for year in header['experiment_list'][experiment].split(',')]
+            years=range(years_range[0],years_range[1]+1)
 
             netcdf_pointers=create_soft_links.create_netCDF_pointers(
                                                               paths_list,time_frequency,years, months,

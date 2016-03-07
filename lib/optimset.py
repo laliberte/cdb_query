@@ -6,8 +6,8 @@ import sqlalchemy
 import numpy as np
 
 #External but related:
-import netcdf4_soft_links.retrieval_utils
-import netcdf4_soft_links.remote_netcdf
+import netcdf4_soft_links.retrieval_utils as retrieval_utils
+import netcdf4_soft_links.remote_netcdf as remote_netcdf
 
 #Internal:
 import nc_Database

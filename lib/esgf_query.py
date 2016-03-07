@@ -5,6 +5,9 @@ from pyesgf.search import SearchConnection
 import urllib2
 import httplib
 
+#External but related:
+import netcdf4_soft_links.remote_netcdf as remote_netcdf
+
 class browser:
     def __init__(self,search_path,options):
         self.options=options

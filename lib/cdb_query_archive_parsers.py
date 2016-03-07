@@ -8,17 +8,17 @@ import copy
 import netcdf4_soft_links.manage_soft_links_parsers as manage_soft_links_parsers
 
 def input_arguments_json(parser):
-    parser.add_argument('in_diagnostic_headers_file',
+    parser.add_argument('in_headers_file',
                                  help='Diagnostic headers file (input)')
     return
 
 def input_arguments(parser):
-    parser.add_argument('in_diagnostic_netcdf_file',
+    parser.add_argument('in_netcdf_file',
                                  help='NETCDF Diagnostic paths file (input)')
     return
 
 def output_arguments(parser):
-    parser.add_argument('out_diagnostic_netcdf_file',
+    parser.add_argument('out_netcdf_file',
                                  help='NETCDF Diagnostic paths file (output)')
     return
 
@@ -258,11 +258,11 @@ def apply(subparsers,epilog,project_drs):
 
 #SOFT-LINKS PARSERS
 def certificates(subparsers,epilog,project_drs):
-    manage_soft_links.certificates(subparsers,epilog,project_drs)
+    manage_soft_links_parsers.certificates(subparsers,epilog,project_drs)
     return
 
 def download(subparsers,epilog,project_drs):
-    parser=manage_soft_links_parsers.download(subparsers,epilod,project_drs)
+    parser=manage_soft_links_parsers.download(subparsers,epilog,project_drs)
 
     inc_group = parser.add_argument_group('Inclusions')
     slicing_arguments(inc_group,project_drs,action_type='append')
@@ -271,7 +271,7 @@ def download(subparsers,epilog,project_drs):
     return
 
 def download_raw(subparsers,epilog,project_drs):
-    parser=manage_soft_links_parsers.download_raw(subparsers,epilod,project_drs)
+    parser=manage_soft_links_parsers.download_raw(subparsers,epilog,project_drs)
 
     inc_group = parser.add_argument_group('Inclusions')
     slicing_arguments(inc_group,project_drs,action_type='append')

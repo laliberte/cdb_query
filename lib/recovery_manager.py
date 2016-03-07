@@ -6,6 +6,7 @@ import os
 import multiprocessing
 import datetime
 from StringIO import StringIO
+import sys
 
 #External but related:
 import netcdf4_soft_links.netcdf_utils as netcdf_utils
@@ -15,7 +16,7 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
 
     renewal_time = datetime.datetime.now()
     #Open output file:
-    output_file_name=options.out_diagnostic_netcdf_file
+    output_file_name=options.out_netcdf_file
     output_root=netCDF4.Dataset(output_file_name,'w',format='NETCDF4')
 
     simulations_list_no_fx=[simulation for simulation in simulations_list if 
