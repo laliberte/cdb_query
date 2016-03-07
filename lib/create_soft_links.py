@@ -50,8 +50,6 @@ class create_netCDF_pointers:
 
         self.paths_ordering=self.order_paths_by_preference()
         
-        if not self.time_frequency in ['fx','clim']:
-            self.calendar=self.obtain_unique_calendar()
         return
 
     def record_paths(self,output,username=None,user_pass=None):
@@ -62,6 +60,8 @@ class create_netCDF_pointers:
         if self.time_frequency in ['fx','clim']:
             self.record_fx(output,username=username,user_pass=user_pass)
         else:
+            #Find unique calendar:
+            self.calendar=self.obtain_unique_calendar()
             #Retrieve time and meta:
             self.create_variable(output,self.var,self.years,self.months)
             #Put version:

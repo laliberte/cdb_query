@@ -129,6 +129,7 @@ def find_model_list(diagnostic,project_drs,model_list,experiment):
     if not isinstance(period_list,list): period_list=[period_list]
     if '' in period_list:
         consider_all_times=True
+        picontrol_min_time=False
     else:
         consider_all_times=False
         years_list=[]
