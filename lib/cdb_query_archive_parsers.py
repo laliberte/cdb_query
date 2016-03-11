@@ -3,6 +3,7 @@ import argparse
 import textwrap
 import datetime
 import copy
+import os
 
 #External but related:
 import netcdf4_soft_links.manage_soft_links_parsers as manage_soft_links_parsers
@@ -226,6 +227,10 @@ def apply(subparsers,epilog,project_drs):
                                            description=textwrap.dedent('Take as an input retrieved data and apply bash script'),
                                            epilog=epilog_apply
                                          )
+    apply_arguments(parser,project_drs)
+    return 
+
+def apply_arguments(parser,project_drs):
     parser.add_argument('script',default='',help="Command-line script")
     parser.add_argument('in_diagnostic_netcdf_file',
                                  help='NETCDF retrieved files (input).')
@@ -236,6 +241,9 @@ def apply(subparsers,epilog,project_drs):
 
     parser.add_argument('--applying_to_soft_links',default=False,action='store_true',
                                  help='When applying an operator to soft links use this options for siginificant speed up.')
+
+    parser.add_argument('--swap_dir',type=writeable_dir,default='.',
+                                 help='Use this directory as a swap directory.')
 
     select_group = parser.add_argument_group('These arguments specify the structure of the output')
     select_group.add_argument('--add_fixed',default=False, action='store_true',help='include fixed variables')
@@ -255,6 +263,16 @@ def apply(subparsers,epilog,project_drs):
                                        help='Complex query fields.' )
     complex_slicing(comp_group,project_drs,action_type='append')
     return
+
+def download_and_apply(subparsers,epilog,project_drs):
+    epilog_apply=textwrap.dedent(epilog)
+    parser=subparsers.add_parser('download_and_apply',
+                                           description=textwrap.dedent('Take as an input a database file, download the data and apply bash script'),
+                                           epilog=epilog_apply
+                                         )
+    parser=manage_soft_links_parsers.download_arguments(parser,project_drs)
+    apply_arguments(parser,project_drs)
+    return 
 
 #SOFT-LINKS PARSERS
 def certificates(subparsers,epilog,project_drs):
@@ -281,4 +299,13 @@ def download_raw(subparsers,epilog,project_drs):
 
 def int_list(input):
     return [ int(item) for item in input.split(',')]
+
+def writeable_dir(prospective_dir):
+  if not os.path.isdir(prospective_dir):
+    raise Exception("{0} is not a temporary directory".format(prospective_dir))
+  if os.access(prospective_dir, os.W_OK):
+    return prospective_dir
+  else:
+    raise Exception("{0} is not a writable dir".format(prospective_dir))
+
     

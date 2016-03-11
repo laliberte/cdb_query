@@ -12,7 +12,7 @@ import nc_Database_utils
 
 def apply(options,project_drs):
     if options.script=='': return
-    database=cdb_query_archive_class.SimpleTree(options,project_drs)
+    database=cdb_query_archive_class.SimpleTree(project_drs)
     #Recover the database meta data:
     if options.keep_field!=None:
         drs_to_eliminate=[field for field in database.drs.official_drs_no_version if
@@ -40,13 +40,13 @@ def apply_to_variable(database,options):
     files_list=[input_file_name,]+options.in_extra_netcdf_files
 
     output_file_name=options.out_netcdf_file+'.pid'+str(os.getpid())
-    temp_output_file_name= output_file_name+'.tmp'
+    #Put temp files in the swap dir:
+    temp_output_file_name= options.swap_dir+'/'+os.path.basename(output_file_name)+'.tmp'
 
     var=[getattr(options,opt) for opt in database.drs.official_drs_no_version]
     tree=zip(database.drs.official_drs_no_version,var)
 
     #Decide whether to add fixed variables:
-
     if options.add_fixed:
         #Specification for fixed vars:
         var_fx=[ getattr(options,opt) if not opt in database.drs.var_specs+['var',] else None for opt in database.drs.official_drs_no_version]
@@ -75,14 +75,16 @@ def apply_to_variable(database,options):
         for item in h5py.h5f.get_obj_ids():
             if 'name' in dir(item) and item.name==file:
                 data_hdf5=h5py.File(item)
-        temp_file=file+'.pid'+str(os.getpid())
+        #Put temp files in the swap dir:
+        #temp_file=file+'.pid'+str(os.getpid())
+        temp_file=options.swap_dir+'/'+os.path.basename(file)+'.pid'+str(os.getpid())
         output_tmp=netCDF4.Dataset(temp_file,'w',format='NETCDF4',diskless=True,persist=True)
 
-        #nc_Database_utils.extract_netcdf_variable_recursive(output_tmp,data,tree[0],tree[1:],options,check_empty=True)
-        nc_Database_utils.extract_netcdf_variable_recursive(output_tmp,data,tree[0],tree[1:],options,check_empty=True,hdf5=data_hdf5)
+        #nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree,options,check_empty=True)
+        nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree,options,check_empty=True,hdf5=data_hdf5)
         if options.add_fixed:
-            #nc_Database_utils.extract_netcdf_variable_recursive(output_tmp,data,tree_fx[0],tree_fx[1:],options_fx,check_empty=True)
-            nc_Database_utils.extract_netcdf_variable_recursive(output_tmp,data,tree_fx[0],tree_fx[1:],options_fx,check_empty=True,hdf5=data_hdf5)
+            #nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree_fx,options_fx,check_empty=True)
+            nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree_fx,options_fx,check_empty=True,hdf5=data_hdf5)
         temp_files_list.append(temp_file)
         output_tmp.close()
         data.close()

@@ -177,15 +177,23 @@ class nc_Database:
 
         return output_root, filepath
 
-    def retrieve_database(self,options,output,queues,retrieval_function_name):
-        self.load_nc_file()
-        retrieve_tree_recursive(options,self.Dataset,output,queues,retrieval_function_name)
-        if 'ensemble' in dir(options) and options.ensemble!=None:
-            #Always include r0i0p0 when ensemble was sliced:
-            options_copy=copy.copy(options)
-            options_copy.ensemble='r0i0p0'
-            retrieve_tree_recursive(options_copy,self.Dataset,output,queues,retrieval_function_name)
-        self.close_nc_file()
+    def retrieve_database(self,options,output,queues):
+        ##Recover the database meta data:
+        drs_to_eliminate=self.drs.official_drs_no_version
+        trees_list=[zip(self.official_drs_no_version,[ var[drs_to_eliminate.index(field)] if field in drs_to_eliminate else None
+                            for field in self.drs.official_drs_no_version]) for var in 
+                            self.list_fields(drs_to_eliminate) ]
+        map(lambda x: nc_Database_utils.extract_netcdf_variable(output,data,x,options))
+        #Always add the fixed variables to download:
+        #vars_list=[ var for var in vars_list if var[database.drs.official_drs_no_version.index('ensemble')] !='r0i0p0' ]
+        #self.load_nc_file()
+        #retrieve_tree_recursive(options,self.Dataset,output,queues,retrieval_function_name)
+        #if 'ensemble' in dir(options) and options.ensemble!=None:
+        #    #Always include r0i0p0 when ensemble was sliced:
+        #    options_copy=copy.copy(options)
+        #    options_copy.ensemble='r0i0p0'
+        #    retrieve_tree_recursive(options_copy,self.Dataset,output,queues,retrieval_function_name)
+        #self.close_nc_file()
         return
 
 
@@ -270,36 +278,36 @@ def create_tree_recursive(output_top,tree):
         output=create_tree_recursive(output,tree[1:])
     return output
 
-def retrieve_tree_recursive(options,data,output,queues,retrieval_function_name):
-    if 'soft_links' in data.groups.keys():
-        netcdf_pointers=read_soft_links.read_netCDF_pointers(data,options=options,queues=queues)
-        netcdf_pointers.retrieve(output,
-                                 retrieval_function_name,
-                                 options,
-                                 username=options.username,
-                                 user_pass=options.user_pass
-                                 )
-    elif len(data.groups.keys())>0:
-        for group in data.groups.keys():
-            level_name=data.groups[group].getncattr('level_name')
-            if ( is_level_name_included_and_not_excluded(level_name,options,group) and
-                 retrieve_tree_recursive_check_not_empty(options,data.groups[group])):
-                if (isinstance(output,netCDF4.Dataset) or
-                    isinstance(output,netCDF4.Group)):
-                    if not group in output.groups.keys():
-                        output_grp=output.createGroup(group)
-                    else:
-                        output_grp=output.groups[group]
-                    for att in data.groups[group].ncattrs():
-                        if not att in output_grp.ncattrs():
-                            output_grp.setncattr(att,data.groups[group].getncattr(att))
-                else:
-                    output_grp=output
-                retrieve_tree_recursive(options,data.groups[group],output_grp,queues,retrieval_function_name)
-            
-    return
+#def retrieve_tree_recursive(options,data,output,queues,retrieval_function_name):
+#    if 'soft_links' in data.groups.keys():
+#        netcdf_pointers=read_soft_links.read_netCDF_pointers(data,options=options,queues=queues)
+#        netcdf_pointers.retrieve(output,
+#                                 retrieval_function_name,
+#                                 options,
+#                                 username=options.username,
+#                                 user_pass=options.user_pass
+#                                 )
+#    elif len(data.groups.keys())>0:
+#        for group in data.groups.keys():
+#            level_name=data.groups[group].getncattr('level_name')
+#            if ( is_level_name_included_and_not_excluded(level_name,options,group) and
+#                 tree_recursive_check_not_empty(options,data.groups[group])):
+#                if (isinstance(output,netCDF4.Dataset) or
+#                    isinstance(output,netCDF4.Group)):
+#                    if not group in output.groups.keys():
+#                        output_grp=output.createGroup(group)
+#                    else:
+#                        output_grp=output.groups[group]
+#                    for att in data.groups[group].ncattrs():
+#                        if not att in output_grp.ncattrs():
+#                            output_grp.setncattr(att,data.groups[group].getncattr(att))
+#                else:
+#                    output_grp=output
+#                retrieve_tree_recursive(options,data.groups[group],output_grp,queues,retrieval_function_name)
+#            
+#    return
 
-def retrieve_tree_recursive_check_not_empty(options,data):
+def tree_recursive_check_not_empty(options,data):
     if 'soft_links' in data.groups.keys():
         return True
     elif len(data.groups.keys())>0:
@@ -307,7 +315,7 @@ def retrieve_tree_recursive_check_not_empty(options,data):
         for group in data.groups.keys():
             level_name=data.groups[group].getncattr('level_name')
             if is_level_name_included_and_not_excluded(level_name,options,group):
-                empty_list.append(retrieve_tree_recursive_check_not_empty(options,data.groups[group]))
+                empty_list.append(tree_recursive_check_not_empty(options,data.groups[group]))
         return any(empty_list)
     else:
         if len(data.variables.keys())>0:

@@ -12,8 +12,7 @@ import sys
 import netcdf4_soft_links.netcdf_utils as netcdf_utils
 import netcdf4_soft_links.certificates as certificates
 
-def distributed_recovery(function_handle,database,options,simulations_list,manager,args=tuple(),user_pass=None):
-
+def distributed_recovery(function_handle,database,options,simulations_list,manager,args=tuple()):
     renewal_time = datetime.datetime.now()
     #Open output file:
     output_file_name=options.out_netcdf_file
@@ -42,14 +41,14 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
         #result=pool.map_async(worker_query,args_list,chunksize=1)
         result=pool.map(worker_query,args_list,chunksize=1)
     for arg in args_list:
-        renewal_time=record_in_output(renewal_time,arg,queue_result,output_root,database,options,user_pass=user_pass)
+        renewal_time=record_in_output(renewal_time,arg,queue_result,output_root,database,options)
     #finally:
     if options.num_procs>1:
         pool.terminate()
         pool.join()
     return output_root
 
-def record_in_output(renewal_time,arg,queue,output_root,database,options,user_pass=None):
+def record_in_output(renewal_time,arg,queue,output_root,database,options):
     if options.num_procs==1:
         result=worker_query(arg)
     filename=queue.get(1e20)
@@ -71,10 +70,10 @@ def record_in_output(renewal_time,arg,queue,output_root,database,options,user_pa
     renewal_elapsed_time=datetime.datetime.now() - renewal_time
     if ('username' in dir(options) and 
         options.username!=None and
-        user_pass!=None and
+        options.password!=None and
         renewal_elapsed_time > datetime.timedelta(hours=1)):
         #Reactivate certificates:
-        certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass)
+        certificates.retrieve_certificates(options.username,options.service,user_pass=options.password)
         renewal_time=datetime.datetime.now()
     return renewal_time
 

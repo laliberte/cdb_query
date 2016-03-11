@@ -18,38 +18,13 @@ import netcdf4_soft_links.retrieval_manager as retrieval_manager
 import discover
 import optimset
 import nc_Database
+import nc_Database_apply
+import nc_Database_conversion
 import recovery_manager
 
 class SimpleTree:
-    def __init__(self,options,project_drs):
-
+    def __init__(self,project_drs):
         self.drs=project_drs
-        return
-
-    def union_header(self):
-        #This method creates a simplified header
-
-        #Create the diagnostic description dictionary:
-        self.header_simple={}
-        #Find all the requested realms, frequencies and variables:
-
-        variable_list=['var_list']+[field+'_list' for field in self.drs.var_specs]
-        for list_name in variable_list: self.header_simple[list_name]=[]
-        for var_name in self.header['variable_list'].keys():
-            self.header_simple['var_list'].append(var_name)
-            for list_id, list_name in enumerate(list(variable_list[1:])):
-                self.header_simple[list_name].append(self.header['variable_list'][var_name][list_id])
-
-        #Find all the requested experiments and years:
-        experiment_list=['experiment_list','years_list']
-        for list_name in experiment_list: self.header_simple[list_name]=[]
-        for experiment_name in self.header['experiment_list'].keys():
-            self.header_simple['experiment_list'].append(experiment_name)
-            for list_name in list(experiment_list[1:]):
-                self.header_simple[list_name].append(self.header['experiment_list'][experiment_name])
-                
-        #Find the unique members:
-        for list_name in self.header_simple.keys(): self.header_simple[list_name]=list(set(self.header_simple[list_name]))
         return
 
     def ask(self,options):
@@ -60,17 +35,9 @@ class SimpleTree:
             print 'The input diagnostic file '+options.in_headers_file+' does not conform to JSON standard. Make sure to check its syntax'
             raise
 
-        if 'username' in dir(options) and options.username!=None:
-            if not options.password_from_pipe:
-                user_pass=getpass.getpass('Enter Credential phrase:')
-            else:
-                user_pass=sys.stdin.readline()
-        else:
-            user_pass=None
-        options.password=user_pass
-
         #Simplify the header:
-        self.union_header()
+        self.header_simple=union_header(self.drs,self.header)
+        #self.union_header()
 
         if options.list_only_field!=None:
             #Only a listing of a few fields was requested.
@@ -134,16 +101,7 @@ class SimpleTree:
         #    self.header['data_node_list']=options.data_nodes
 
         if 'username' in dir(options) and options.username!=None:
-            if not options.password_from_pipe:
-                user_pass=getpass.getpass('Enter Credential phrase:')
-                #Get certificates if requested by user:
-            else:
-                user_pass=sys.stdin.readline()
-
-            certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass,trustroots=options.no_trustroots)
-        else:
-            user_pass=None
-        options.password=user_pass
+            certificates.retrieve_certificates(options.username,options.service,user_pass=options.password,trustroots=options.no_trustroots)
 
         if not 'data_node_list' in self.header.keys():
             data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
@@ -169,60 +127,44 @@ class SimpleTree:
             import random
             random.shuffle(simulations_list)
 
-            #for simulation in simulations_list:
-            #    #if simulation[-1]!='r0i0p0':
-            #    print '_'.join(simulation)
-            #print "Validating"
-
             manager=multiprocessing.Manager()
             semaphores=dict()
             for data_node in  self.header['data_node_list']:
                 semaphores[data_node]=manager.Semaphore(5)
-            #semaphores=[]
-            #original_stderr = sys.stderr
-            #sys.stderr = NullDevice()
-            output=recovery_manager.distributed_recovery(optimset.optimset_distributed,self,options,simulations_list,manager,args=(semaphores,),user_pass=user_pass)
-            #sys.stderr = original_stderr
+            output=recovery_manager.distributed_recovery(optimset.optimset_distributed,self,options,simulations_list,manager,args=(semaphores,))
             #Close datasets:
             output.close()
         return
 
+    def convert(self,options):
+        nc_Database_conversion.convert(options,project_drs)
+        return
+
+    def apply(self,options):
+        nc_Database_apply.apply(options,self.project_drs)
+        return
+
     def download(self,options):
         output=netCDF4.Dataset(options.out_netcdf_file,'w')
-        retrieval_function='retrieve_path_data'
-        self.remote_retrieve_and_download(options,output,retrieval_function)
+        self.download_and_download_raw(options,output)
         return
 
     def download_raw(self,options):
         output=options.out_destination
-
         #Describe the tree pattern:
         if self.drs.official_drs.index('var')>self.drs.official_drs.index('version'):
             output+='/tree/version/var/'
         else:
             output+='/tree/var/version/'
-            
-        retrieval_function='retrieve_path'
-        self.remote_retrieve_and_download(options,output,retrieval_function)
+        self.download_and_download_raw(options,output)
         return
 
-    def remote_retrieve_and_download(self,options,output,retrieval_function):
+    def download_and_download_raw(self,options,output):
         if 'username' in dir(options) and options.username!=None:
-            if not options.password_from_pipe:
-                user_pass=getpass.getpass('Enter Credential phrase:')
-            else:
-                user_pass=sys.stdin.readline().rstrip()
-            #Get certificates if requested by user:
-            certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass,trustroots=options.no_trustroots)
-        else:
-            user_pass=None
-
-        options.user_pass=user_pass
+            certificates.retrieve_certificates(options.username,options.service,user_pass=options.password,trustroots=options.no_trustroots)
 
         #Recover the database meta data:
         self.load_header(options)
-        self.load_database(options,find_simple)
-
         #Check if years should be relative, eg for piControl:
         options.min_year=None
         if 'experiment_list' in self.header.keys():
@@ -233,19 +175,19 @@ class SimpleTree:
                     print 'Using min year {0} for experiment {1}'.format(str(min_year),experiment)
 
         #Find data node list:
+        self.load_database(options,find_simple)
         data_node_list=[item[0] for item in self.nc_Database.list_fields(['data_node'])]
-        paths_list=self.nc_Database.list_paths()
         self.close_database()
 
         queues, data_node_list=retrieval_manager.start_processes(options,data_node_list)
 
         #Find the data that needs to be recovered:
         self.define_database(options)
-        self.nc_Database.retrieve_database(options,output,queues,retrieval_function)
+        self.nc_Database.retrieve_database(options,output,queues)
         self.close_database()
 
         #Launch the retrieval/monitoring:
-        retrieval_manager.launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_function,options,user_pass=user_pass)
+        retrieval_manager.launch_download_and_remote_retrieve(output,data_node_list,queues,options)
         return
 
     def find_data_nodes_and_simulations(self,options):
@@ -350,3 +292,29 @@ def find_simple(pointers,file_expt,semaphores=None):
 
 def remove_entry_from_dictionary(dictio,entry):
     return {name:dictio[name] for name in dictio.keys() if name!=entry}
+
+def union_header(project_drs,header):
+    #This method creates a simplified header
+
+    #Create the diagnostic description dictionary:
+    header_simple={}
+    #Find all the requested realms, frequencies and variables:
+
+    variable_list=['var_list']+[field+'_list' for field in project_drs.var_specs]
+    for list_name in variable_list: header_simple[list_name]=[]
+    for var_name in header['variable_list'].keys():
+        header_simple['var_list'].append(var_name)
+        for list_id, list_name in enumerate(list(variable_list[1:])):
+            header_simple[list_name].append(header['variable_list'][var_name][list_id])
+
+    #Find all the requested experiments and years:
+    experiment_list=['experiment_list','years_list']
+    for list_name in experiment_list: header_simple[list_name]=[]
+    for experiment_name in header['experiment_list'].keys():
+        header_simple['experiment_list'].append(experiment_name)
+        for list_name in list(experiment_list[1:]):
+            header_simple[list_name].append(header['experiment_list'][experiment_name])
+            
+    #Find the unique members:
+    for list_name in header_simple.keys(): header_simple[list_name]=list(set(header_simple[list_name]))
+    return header_simple

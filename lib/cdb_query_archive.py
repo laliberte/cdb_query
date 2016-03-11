@@ -67,28 +67,19 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD, Submitted.'.format(ve
         if time_opt in dir(options) and getattr(options,time_opt):
             options.time=True
 
-    #Load pointer file:
-    #if options.command=='remote_retrieve':
-    #    paths_dict=cdb_query_archive_class.SimpleTree(options,project_drs)
-    #    getattr(paths_dict,options.command)(options)
-    #elif options.command=='download':
-    #    paths_dict=cdb_query_archive_class.SimpleTree(options,project_drs)
-    #    getattr(paths_dict,options.command)(options)
-    if options.command=='apply':
-        nc_Database_apply.apply(options,project_drs)
-    elif options.command=='convert':
-        nc_Database_conversion.convert(options,project_drs)
-    elif options.command=='certificates':
-        #certificates.retrieve_certificates(options.username,options.password,options.registering_service)
+    if 'username' in dir(options) and options.username!=None:
         if not options.password_from_pipe:
             user_pass=getpass.getpass('Enter Credential phrase:')
         else:
             user_pass=sys.stdin.readline()
-        certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass)
-        #certificates.test_certificates()
-    #elif 'in_diagnostic_headers_file' in dir(options):
     else:
-        paths_dict=cdb_query_archive_class.SimpleTree(options,project_drs)
+        user_pass=None
+    options.password=user_pass
+
+    if options.command=='certificates':
+        certificates.retrieve_certificates(options.username,options.service,user_pass=options.password)
+    else:
+        paths_dict=cdb_query_archive_class.SimpleTree(project_drs)
         #Run the command:
         getattr(paths_dict,options.command)(options)
         
