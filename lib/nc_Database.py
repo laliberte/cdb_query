@@ -11,6 +11,9 @@ import netcdf4_soft_links.read_soft_links as read_soft_links
 import netcdf4_soft_links.create_soft_links as create_soft_links
 import netcdf4_soft_links.remote_netcdf as remote_netcdf
 
+#Internal:
+import nc_Database_utils
+
 class nc_Database:
     def __init__(self,project_drs,database_file=None):
         #Defines the tree structure:
@@ -112,7 +115,7 @@ class nc_Database:
         subset=tuple([File_Expt.path,]+[getattr(File_Expt,item) for item in self.drs.official_drs])
         return sorted(list(set(self.list_subset(subset))))
 
-    def write_database(self,header,options,record_function_handle,semaphores=[]):
+    def write_database(self,header,options,record_function_handle,semaphores=dict()):
         #List all the trees:
         drs_list=copy.copy(self.drs.base_drs)
 
@@ -179,21 +182,17 @@ class nc_Database:
 
     def retrieve_database(self,options,output,queues):
         ##Recover the database meta data:
+
+        #Find the trees. Here, we want all of them with the full DRS:
         drs_to_eliminate=self.drs.official_drs_no_version
-        trees_list=[zip(self.official_drs_no_version,[ var[drs_to_eliminate.index(field)] if field in drs_to_eliminate else None
-                            for field in self.drs.official_drs_no_version]) for var in 
-                            self.list_fields(drs_to_eliminate) ]
-        map(lambda x: nc_Database_utils.extract_netcdf_variable(output,data,x,options))
-        #Always add the fixed variables to download:
-        #vars_list=[ var for var in vars_list if var[database.drs.official_drs_no_version.index('ensemble')] !='r0i0p0' ]
-        #self.load_nc_file()
-        #retrieve_tree_recursive(options,self.Dataset,output,queues,retrieval_function_name)
-        #if 'ensemble' in dir(options) and options.ensemble!=None:
-        #    #Always include r0i0p0 when ensemble was sliced:
-        #    options_copy=copy.copy(options)
-        #    options_copy.ensemble='r0i0p0'
-        #    retrieve_tree_recursive(options_copy,self.Dataset,output,queues,retrieval_function_name)
-        #self.close_nc_file()
+        #trees_list=[zip(self.drs.official_drs_no_version,[ None
+        #                    for field in self.drs.official_drs_no_version]) for var in 
+        #                    self.list_fields(drs_to_eliminate) ]
+        trees_list=[zip(self.drs.official_drs_no_version,[ None
+                            for field in self.drs.official_drs_no_version]),]
+        self.load_nc_file()
+        map(lambda x: nc_Database_utils.extract_netcdf_variable(output,self.Dataset,x,options,queues=queues),trees_list)
+        self.close_nc_file()
         return
 
 

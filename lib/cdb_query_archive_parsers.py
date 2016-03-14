@@ -232,7 +232,7 @@ def apply(subparsers,epilog,project_drs):
 
 def apply_arguments(parser,project_drs):
     parser.add_argument('script',default='',help="Command-line script")
-    parser.add_argument('in_diagnostic_netcdf_file',
+    parser.add_argument('in_netcdf_file',
                                  help='NETCDF retrieved files (input).')
     parser.add_argument('in_extra_netcdf_files',nargs='*',
                                  help='NETCDF extra retrieved files (input).')

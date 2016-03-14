@@ -37,7 +37,6 @@ class SimpleTree:
 
         #Simplify the header:
         self.header_simple=union_header(self.drs,self.header)
-        #self.union_header()
 
         if options.list_only_field!=None:
             #Only a listing of a few fields was requested.
@@ -137,29 +136,36 @@ class SimpleTree:
         return
 
     def convert(self,options):
-        nc_Database_conversion.convert(options,project_drs)
+        nc_Database_conversion.convert(options,self)
         return
 
     def apply(self,options):
-        nc_Database_apply.apply(options,self.project_drs)
+        #self.download_and_download_raw_start_queues(options,output)
+        nc_Database_apply.apply(options,self)
         return
 
     def download(self,options):
+        options.download=True
         output=netCDF4.Dataset(options.out_netcdf_file,'w')
+        self.download_and_download_raw_start_queues(options,output)
+
         self.download_and_download_raw(options,output)
         return
 
     def download_raw(self,options):
+        options.download=True
         output=options.out_destination
         #Describe the tree pattern:
         if self.drs.official_drs.index('var')>self.drs.official_drs.index('version'):
             output+='/tree/version/var/'
         else:
             output+='/tree/var/version/'
+        self.download_and_download_raw_start_queues(options,output)
+        
         self.download_and_download_raw(options,output)
         return
 
-    def download_and_download_raw(self,options,output):
+    def download_and_download_raw_start_queues(self,options,output):
         if 'username' in dir(options) and options.username!=None:
             certificates.retrieve_certificates(options.username,options.service,user_pass=options.password,trustroots=options.no_trustroots)
 
@@ -179,15 +185,18 @@ class SimpleTree:
         data_node_list=[item[0] for item in self.nc_Database.list_fields(['data_node'])]
         self.close_database()
 
-        queues, data_node_list=retrieval_manager.start_processes(options,data_node_list)
+        #manager=multiprocessing.Manager()
+        self.queues, self.data_node_list=retrieval_manager.start_processes(options,data_node_list)
+        return
 
+    def download_and_download_raw(self,options,output):
         #Find the data that needs to be recovered:
-        self.define_database(options)
-        self.nc_Database.retrieve_database(options,output,queues)
+        self.load_database(options,find_simple)
+        self.nc_Database.retrieve_database(options,output,self.queues)
         self.close_database()
 
         #Launch the retrieval/monitoring:
-        retrieval_manager.launch_download_and_remote_retrieve(output,data_node_list,queues,options)
+        retrieval_manager.launch_download_and_remote_retrieve(output,self.data_node_list,self.queues,options)
         return
 
     def find_data_nodes_and_simulations(self,options):
@@ -267,7 +276,7 @@ class SimpleTree:
         self.close_database()
         return
 
-    def load_database(self,options,find_function,semaphores=None):
+    def load_database(self,options,find_function,semaphores=dict()):
         self.define_database(options)
         if 'header' in dir(self):
             self.nc_Database.header=self.header

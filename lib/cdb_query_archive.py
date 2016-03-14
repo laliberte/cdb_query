@@ -1,5 +1,6 @@
 #External:
 import sys
+import select
 import getpass
 
 #External but related:
@@ -67,11 +68,21 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD, Submitted.'.format(ve
         if time_opt in dir(options) and getattr(options,time_opt):
             options.time=True
 
+    if (options.command=='certificates' and 
+        'username' in dir(options) and options.username==None):
+        options.username=raw_input('Enter Username: ')
+        
     if 'username' in dir(options) and options.username!=None:
         if not options.password_from_pipe:
-            user_pass=getpass.getpass('Enter Credential phrase:')
+            user_pass=getpass.getpass('Enter Credential phrase: ')
         else:
-            user_pass=sys.stdin.readline()
+            timeout=1
+            i,o,e=select.select([sys.stdin],[],[],timeout)
+            if i:
+                user_pass=sys.stdin.readline()
+            else:
+                print '--password_from_pipe selected but no password was piped. Exiting.'
+                return
     else:
         user_pass=None
     options.password=user_pass

@@ -10,9 +10,9 @@ import subprocess
 import cdb_query_archive_class
 import nc_Database_utils
 
-def apply(options,project_drs):
+def apply(options,database):
     if options.script=='': return
-    database=cdb_query_archive_class.SimpleTree(project_drs)
+    #database=cdb_query_archive_class.SimpleTree(project_drs)
     #Recover the database meta data:
     if options.keep_field!=None:
         drs_to_eliminate=[field for field in database.drs.official_drs_no_version if
@@ -36,7 +36,7 @@ def apply(options,project_drs):
     return
 
 def apply_to_variable(database,options):
-    input_file_name=options.in_diagnostic_netcdf_file
+    input_file_name=options.in_netcdf_file
     files_list=[input_file_name,]+options.in_extra_netcdf_files
 
     output_file_name=options.out_netcdf_file+'.pid'+str(os.getpid())
@@ -125,7 +125,6 @@ def worker(tuple):
     return
     
 def distributed_apply(function_handle,database,options,vars_list,args=tuple()):
-
         #Open output file:
         output_file_name=options.out_netcdf_file
         output_root=netCDF4.Dataset(output_file_name,'w',format='NETCDF4')

@@ -15,17 +15,17 @@ import nc_Database
 
 queryable_file_types=['OPENDAP','local_file']
 
-def find_time(pointers,file_expt,semaphores=None):
+def find_time(pointers,file_expt,semaphores=dict()):
     #Will check both availability and queryability:
     find_time_file(pointers,file_expt,semaphores=semaphores)
     return
 
-def find_time_available(pointers,file_expt,semaphores=None):
+def find_time_available(pointers,file_expt,semaphores=dict()):
     #same as find_time but keeps non-queryable files:
     find_time_file(pointers,file_expt,file_available=True,semaphores=semaphores)
     return
 
-def find_time_file(pointers,file_expt,file_available=False,semaphores=None):#session,file_expt,path_name):
+def find_time_file(pointers,file_expt,file_available=False,semaphores=dict()):#session,file_expt,path_name):
     #If the path is a remote file, we must use the time stamp
     filename=os.path.basename(file_expt.path)
     
@@ -184,7 +184,7 @@ def optimset_distributed(database,options,semaphores):
     #print 'Finished ',options.institute,options.model,options.ensemble
     return filepath
 
-def optimset(database,options,semaphores=None):
+def optimset(database,options,semaphores=dict()):
     if options.no_check_availability:
         #Does not check whether files are available / queryable before proceeding.
         database.load_database(options,find_time_available,semaphores=semaphores)
