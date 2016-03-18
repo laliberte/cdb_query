@@ -144,12 +144,27 @@ class SimpleTree:
         nc_Database_apply.apply(options,self)
         return
 
+    def download_and_apply(self,options):
+        options.download=True
+        manager=multiprocessing.Manager()
+        processes=self.download_and_download_raw_start_queues(options,manager=manager)
+        try:
+            nc_Database_apply.apply(options,self,manager=manager)
+        finally:
+            for item in processes.keys():
+                processes[item].terminate()
+        return
+
     def download(self,options):
         options.download=True
         output=netCDF4.Dataset(options.out_netcdf_file,'w')
-        self.download_and_download_raw_start_queues(options,output)
+        processes=self.download_and_download_raw_start_queues(options)
 
-        self.download_and_download_raw(options,output)
+        try:
+            self.download_and_download_raw(options,output)
+        finally:
+            for item in processes.keys():
+                processes[item].terminate()
         return
 
     def download_raw(self,options):
@@ -160,12 +175,16 @@ class SimpleTree:
             output+='/tree/version/var/'
         else:
             output+='/tree/var/version/'
-        self.download_and_download_raw_start_queues(options,output)
+        processes=self.download_and_download_raw_start_queues(options)
         
-        self.download_and_download_raw(options,output)
+        try:
+            self.download_and_download_raw(options,output)
+        finally:
+            for item in processes.keys():
+                processes[item].terminate()
         return
 
-    def download_and_download_raw_start_queues(self,options,output):
+    def download_and_download_raw_start_queues(self,options,manager=None):
         if 'username' in dir(options) and options.username!=None:
             certificates.retrieve_certificates(options.username,options.service,user_pass=options.password,trustroots=options.no_trustroots)
 
@@ -186,8 +205,8 @@ class SimpleTree:
         self.close_database()
 
         #manager=multiprocessing.Manager()
-        self.queues, self.data_node_list=retrieval_manager.start_processes(options,data_node_list)
-        return
+        self.queues, self.data_node_list, processes=retrieval_manager.start_processes(options,data_node_list,manager=manager)
+        return processes
 
     def download_and_download_raw(self,options,output):
         #Find the data that needs to be recovered:

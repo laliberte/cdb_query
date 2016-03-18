@@ -70,6 +70,7 @@ def generate_subparsers(parser,epilog,project_drs):
     apply(subparsers,epilog,project_drs)
     convert(subparsers,epilog,project_drs)
 
+    download_and_apply(subparsers,epilog,project_drs)
     download(subparsers,epilog,project_drs)
     download_raw(subparsers,epilog,project_drs)
     certificates(subparsers,epilog,project_drs)
@@ -172,6 +173,10 @@ def validate(subparsers,epilog,project_drs):
                      help='When this option is activated, checks only that the time stamp is within \n\
                            the requested years and months.')
 
+    parser.add_argument('--missing_years',
+                     default=False, action='store_true',
+                     help='When this option is activated, do not exclude models if they are missing years.')
+
     input_arguments(parser)
     output_arguments(parser)
     parser.add_argument('--in_diagnostic_headers_file',
@@ -270,7 +275,7 @@ def download_and_apply(subparsers,epilog,project_drs):
                                            description=textwrap.dedent('Take as an input a database file, download the data and apply bash script'),
                                            epilog=epilog_apply
                                          )
-    parser=manage_soft_links_parsers.download_arguments(parser,project_drs)
+    manage_soft_links_parsers.download_arguments_no_files(parser,project_drs)
     apply_arguments(parser,project_drs)
     return 
 

@@ -164,8 +164,11 @@ class nc_Database:
 
             output=create_tree(output_root,zip(drs_list,tree))
             #Record data:
-            years_range=[ int(year) for year in header['experiment_list'][experiment].split(',')]
-            years=range(years_range[0],years_range[1]+1)
+            if 'missing_years' in dir(options) and options.missing_years:
+                years=None
+            else:
+                years_range=[ int(year) for year in header['experiment_list'][experiment].split(',')]
+                years=range(years_range[0],years_range[1]+1)
 
             netcdf_pointers=create_soft_links.create_netCDF_pointers(
                                                               paths_list,time_frequency,years, months,

@@ -6,11 +6,14 @@ import os
 import multiprocessing
 import subprocess
 
+#External but related:
+import netcdf4_soft_links.retrieval_manager as retrieval_manager
+
 #Internal:
 import cdb_query_archive_class
 import nc_Database_utils
 
-def apply(options,database):
+def apply(options,database,manager=None):
     if options.script=='': return
     #database=cdb_query_archive_class.SimpleTree(project_drs)
     #Recover the database meta data:
@@ -30,12 +33,12 @@ def apply(options,database):
     import random
     random.shuffle(vars_list)
 
-    output_root=distributed_apply(apply_to_variable,database,options,vars_list)
+    output_root=distributed_apply(apply_to_variable,database,options,vars_list,manager=manager)
     database.record_header(options,output_root)
     output_root.close()
     return
 
-def apply_to_variable(database,options):
+def apply_to_variable(database,retrieved_file_list,recovery_queue,options):
     input_file_name=options.in_netcdf_file
     files_list=[input_file_name,]+options.in_extra_netcdf_files
 
@@ -66,30 +69,25 @@ def apply_to_variable(database,options):
                      isinstance(getattr(options_fx,'X'+opt[0]),list) and
                      opt[1] in getattr(options_fx,'X'+opt[0])):
                      getattr(options_fx,'X'+opt[0]).remove(opt[1])
+    else:
+        tree_fx=None
+        options_fx=None
 
     temp_files_list=[]
     for file in files_list:
-        data=netCDF4.Dataset(file,'r')
-        #Load the hdf5 api:
-        data_hdf5=None
-        for item in h5py.h5f.get_obj_ids():
-            if 'name' in dir(item) and item.name==file:
-                data_hdf5=h5py.File(item)
-        #Put temp files in the swap dir:
-        #temp_file=file+'.pid'+str(os.getpid())
         temp_file=options.swap_dir+'/'+os.path.basename(file)+'.pid'+str(os.getpid())
-        output_tmp=netCDF4.Dataset(temp_file,'w',format='NETCDF4',diskless=True,persist=True)
-
-        #nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree,options,check_empty=True)
-        nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree,options,check_empty=True,hdf5=data_hdf5)
-        if options.add_fixed:
-            #nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree_fx,options_fx,check_empty=True)
-            nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree_fx,options_fx,check_empty=True,hdf5=data_hdf5)
+        if 'download' in dir(options) and options.download:
+            recovery_queue.put((temp_file,file,tree,tree_fx,options,options_fx))
+        else:
+            extract_single_tree_and_file(temp_file,file,tree,tree_fx,options,options_fx,queues=database.queues,check_empty=True)
         temp_files_list.append(temp_file)
-        output_tmp.close()
-        data.close()
-        if data_hdf5!=None:
-            data_hdf5.close()
+
+    if 'download' in dir(options) and options.download:
+        #Wait until the file has been retrieved:
+        for file in temp_files_list:
+            while not file in retrieved_file_list:
+                pass
+            retrieved_file_list.remove(file)
 
     temp_files_list.append(temp_output_file_name)
 
@@ -98,20 +96,7 @@ def apply_to_variable(database,options):
         if not '{'+str(file_id)+'}' in options.script:
             script_to_call+=' {'+str(file_id)+'}'
 
-    #script_to_call+=' '+temp_output_file_name
-
-    #print '/'.join(var)
-    #print script_to_call.format(*temp_files_list)
     out=subprocess.call(script_to_call.format(*temp_files_list),shell=True)
-
-    #import shlex
-    #args = shlex.split(script_to_call.format(*temp_files_list))
-    #out=subprocess.call(args,shell=True)
-    #out=subprocess.Popen(script_to_call.format(*temp_files_list),shell=True,
-    #                     stdout=subprocess.PIPE,
-    #                     stderr=subprocess.PIPE)
-    #out.wait()
-
     try:
         for file in temp_files_list[:-1]:
             os.remove(file)
@@ -119,19 +104,68 @@ def apply_to_variable(database,options):
         pass
     return (temp_output_file_name, var)
 
-def worker(tuple):
+def extract_single_tree_and_file(temp_file,file,tree,tree_fx,options,options_fx,queues=dict(),check_empty=False):
+    data=netCDF4.Dataset(file,'r')
+    #Load the hdf5 api:
+    data_hdf5=None
+    for item in h5py.h5f.get_obj_ids():
+        if 'name' in dir(item) and item.name==file:
+            data_hdf5=h5py.File(item)
+    #Put temp files in the swap dir:
+    output_tmp=netCDF4.Dataset(temp_file,'w',format='NETCDF4',diskless=True,persist=True)
+    if options.add_fixed:
+        #nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree_fx,options_fx,check_empty=True)
+        nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree_fx,options_fx,check_empty=True,hdf5=data_hdf5)
+
+    #nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree,options,check_empty=True)
+    nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree,options,check_empty=True,hdf5=data_hdf5,queues=queues)
+    if 'download' in dir(options) and options.download:
+        data_node_list=queues.keys()
+        data_node_list.remove('end')
+        retrieval_manager.launch_download_and_remote_retrieve(output_tmp,data_node_list,queues,options)
+        #output_tmp is implictly closed by the retrieval manager
+    else:
+        output_tmp.close()
+    data.close()
+    if data_hdf5!=None:
+        data_hdf5.close()
+    return
+
+def worker_recovery(input_queue, retrieval_queues, output_list):
+    for tuple in iter(input_queue.get, 'STOP'):
+        extract_single_tree_and_file(*tuple,check_empty=True,queues=retrieval_queues)
+        output_list.append(tuple[0])
+    return
+
+def worker_apply(tuple):
     result=tuple[0](*tuple[1:-1])
     tuple[-1].put(result)
     return
     
-def distributed_apply(function_handle,database,options,vars_list,args=tuple()):
+def distributed_apply(function_handle,database,options,vars_list,args=tuple(),manager=None):
         #Open output file:
         output_file_name=options.out_netcdf_file
         output_root=netCDF4.Dataset(output_file_name,'w',format='NETCDF4')
 
-        manager=multiprocessing.Manager()
-        queue=manager.Queue()
-        #queue=multiprocessing.Queue()
+
+        if manager==None:
+            manager=multiprocessing.Manager()
+        #This is the gathering queue:
+        gathering_queue=manager.Queue()
+
+        if 'download' in dir(options) and options.download:
+            #This starts a process to handle the recovery:
+            recovery_queue=manager.Queue()
+            retrieved_file_list=manager.list()
+            process=multiprocessing.Process(target=worker_recovery, 
+                                            name=worker_recovery,
+                                            args=(recovery_queue, database.queues, retrieved_file_list))
+            process.start()
+        else:
+            retrieved_file_list=[]
+            database.queues=dict()
+            recovery_queue=None
+
         #Set up the discovery var per var:
         args_list=[]
         for var_id,var in enumerate(vars_list):
@@ -139,30 +173,31 @@ def distributed_apply(function_handle,database,options,vars_list,args=tuple()):
             for opt_id, opt in enumerate(database.drs.official_drs_no_version):
                 if var[opt_id]!=None:
                     setattr(options_copy,opt,var[opt_id])
-            args_list.append((function_handle,copy.copy(database),options_copy)+args+(queue,))
+            args_list.append((function_handle,copy.copy(database),retrieved_file_list,recovery_queue,options_copy)+args+(gathering_queue,))
         
         #Span up to options.num_procs processes and each child process analyzes only one simulation
         if options.num_procs>1:
             pool=multiprocessing.Pool(processes=options.num_procs,maxtasksperchild=1)
         try:
             if options.num_procs>1:
-                #result=pool.map_async(worker,args_list,chunksize=1)
-                result=pool.map(worker,args_list,chunksize=1)
-                #result=[pool.apply_async(worker,arg) for arg in args_list]
+                #result=pool.map_async(worker_apply,args_list,chunksize=1)
+                result=pool.map(worker_apply,args_list,chunksize=1)
+                #result=[pool.apply_async(worker_apply,arg) for arg in args_list]
             #Record files to main file:
             for arg in args_list:
-                record_in_output(arg,queue,output_root,database,options)
+                record_in_output(arg,gathering_queue,output_root,database,options)
                 output_root.sync()
         finally:
+            recovery_queue.put('STOP')
             if options.num_procs>1:
                 pool.terminate()
                 pool.join()
         return output_root
 
-def record_in_output(arg,queue,output_root,database,options):
+def record_in_output(arg,gathering_queue,output_root,database,options):
     if options.num_procs==1:
-        worker(arg)
-    description=queue.get(1e20)
+        worker_apply(arg)
+    description=gathering_queue.get(1e20)
     temp_file_name=description[0]
     var=description[1]
     data=netCDF4.Dataset(temp_file_name,'r')
