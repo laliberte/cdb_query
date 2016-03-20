@@ -66,7 +66,10 @@ def convert_to_variable(database,options):
     #Get the time:
     timestamp=convert_dates_to_timestamps(output_tmp,options.time_frequency)
     output_tmp.close()
-    os.rename(temp_output_file_name,output_file_name+timestamp+'.nc')
+    if timestamp=='':
+        os.remove(temp_output_file_name,output_file_name+timestamp+'.nc')
+    else:
+        os.rename(temp_output_file_name,output_file_name+timestamp+'.nc')
     return
 
 def convert_dates_to_timestamps(output_tmp,time_frequency):
@@ -76,7 +79,7 @@ def convert_dates_to_timestamps(output_tmp,time_frequency):
     conversion['day']=(lambda x: str(x.year).zfill(4)+str(x.month).zfill(2)+str(x.day).zfill(2))
     conversion['6hr']=(lambda x: str(x.year).zfill(4)+str(x.month).zfill(2)+str(x.day).zfill(2)+str(x.hour).zfill(2)+str(x.minute).zfill(2)+str(x.second).zfill(2))
     conversion['3hr']=(lambda x: str(x.year).zfill(4)+str(x.month).zfill(2)+str(x.day).zfill(2)+str(x.hour).zfill(2)+str(x.minute).zfill(2)+str(x.second).zfill(2))
-    if time_frequency!='fx':
+    if time_frequency!='fx' and len(output_tmp.variables['time'])>0:
         date_axis=netcdf_utils.get_date_axis(output_tmp.variables['time'])[[0,-1]]
         return '_'+'-'.join([conversion[time_frequency](date) for date in date_axis])
     else:

@@ -112,7 +112,7 @@ def obtain_time_list(diagnostic,project_drs,var_name,experiment,model):
                             ).filter(sqlalchemy.and_(*conditions)).distinct().all()]
     return time_list_var
 
-def find_model_list(diagnostic,project_drs,model_list,experiment):
+def find_model_list(diagnostic,project_drs,model_list,experiment,options):
     period_list = diagnostic.header['experiment_list'][experiment]
     if not isinstance(period_list,list): period_list=[period_list]
     years_list=[]
@@ -152,7 +152,8 @@ def find_model_list(diagnostic,project_drs,model_list,experiment):
                 time_list_var=obtain_time_list(diagnostic,project_drs,var_name,experiment,model)
                 #time_list_var=[str(int(time)-int(min_time['_'.join(model)+'_'+experiment])).zfill(6) for time in time_list_var]
                 time_list_var=[str(int(time)-int(min_time)).zfill(6) for time in time_list_var]
-                if not set(time_list).issubset(time_list_var):
+                if ( not ('missing_years' in dir(options) and options.missing_years) and 
+                     not set(time_list).issubset(time_list_var) ):
                     missing_vars.append(var_name+':'+','.join(
                                         diagnostic.header['variable_list'][var_name])+
                                         ' for some months: '+','.join(
@@ -217,10 +218,10 @@ def intersection(database,options):
 
     if not 'experiment' in database.drs.simulations_desc:
         for experiment in database.header['experiment_list'].keys():
-            model_list = find_model_list(database,database.drs,model_list,experiment)
+            model_list = find_model_list(database,database.drs,model_list,experiment,options)
         model_list_combined=model_list
     else:
-        model_list_combined=set().union(*[find_model_list(database,database.drs,model_list,experiment) 
+        model_list_combined=set().union(*[find_model_list(database,database.drs,model_list,experiment,options) 
                                            for experiment in database.header['experiment_list'].keys()])
     
     #Step two: create the new paths dictionary:

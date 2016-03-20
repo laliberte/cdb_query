@@ -147,7 +147,6 @@ def distributed_apply(function_handle,database,options,vars_list,args=tuple(),ma
         output_file_name=options.out_netcdf_file
         output_root=netCDF4.Dataset(output_file_name,'w',format='NETCDF4')
 
-
         if manager==None:
             manager=multiprocessing.Manager()
         #This is the gathering queue:
@@ -188,7 +187,8 @@ def distributed_apply(function_handle,database,options,vars_list,args=tuple(),ma
                 record_in_output(arg,gathering_queue,output_root,database,options)
                 output_root.sync()
         finally:
-            recovery_queue.put('STOP')
+            if 'download' in dir(options) and options.download:
+                recovery_queue.put('STOP')
             if options.num_procs>1:
                 pool.terminate()
                 pool.join()
