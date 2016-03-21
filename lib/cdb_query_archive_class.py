@@ -66,9 +66,7 @@ class SimpleTree:
 
                 import random
                 random.shuffle(simulations_list)
-
-                manager=multiprocessing.Manager()
-                output=recovery_manager.distributed_recovery(discover.discover,self,options,simulations_list,manager)
+                output=recovery_manager.distributed_recovery(discover.discover,self,options,simulations_list)
 
                 #Close dataset
                 output.close()
@@ -130,7 +128,7 @@ class SimpleTree:
             semaphores=dict()
             for data_node in  self.header['data_node_list']:
                 semaphores[data_node]=manager.Semaphore(5)
-            output=recovery_manager.distributed_recovery(optimset.optimset_distributed,self,options,simulations_list,manager,args=(semaphores,))
+            output=recovery_manager.distributed_recovery(optimset.optimset_distributed,self,options,simulations_list,manager=manager,args=(semaphores,))
             #Close datasets:
             output.close()
         return

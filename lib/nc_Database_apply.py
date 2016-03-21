@@ -2,8 +2,6 @@
 import netCDF4
 import h5py
 import copy
-import os
-import multiprocessing
 import subprocess
 
 #External but related:
@@ -12,6 +10,7 @@ import netcdf4_soft_links.retrieval_manager as retrieval_manager
 #Internal:
 import cdb_query_archive_class
 import nc_Database_utils
+import apply_manager
 
 def apply(options,database,manager=None):
     if options.script=='': return
@@ -33,7 +32,7 @@ def apply(options,database,manager=None):
     import random
     random.shuffle(vars_list)
 
-    output_root=distributed_apply(apply_to_variable,database,options,vars_list,manager=manager)
+    output_root=apply_manager.distributed_apply(apply_to_variable,database,options,vars_list,manager=manager)
     database.record_header(options,output_root)
     output_root.close()
     return
@@ -129,95 +128,4 @@ def extract_single_tree_and_file(temp_file,file,tree,tree_fx,options,options_fx,
     data.close()
     if data_hdf5!=None:
         data_hdf5.close()
-    return
-
-def worker_recovery(input_queue, retrieval_queues, output_list):
-    for tuple in iter(input_queue.get, 'STOP'):
-        extract_single_tree_and_file(*tuple,check_empty=True,queues=retrieval_queues)
-        output_list.append(tuple[0])
-    return
-
-def worker_apply(tuple):
-    result=tuple[0](*tuple[1:-1])
-    tuple[-1].put(result)
-    return
-    
-def distributed_apply(function_handle,database,options,vars_list,args=tuple(),manager=None):
-        #Open output file:
-        output_file_name=options.out_netcdf_file
-        output_root=netCDF4.Dataset(output_file_name,'w',format='NETCDF4')
-
-        if manager==None:
-            manager=multiprocessing.Manager()
-        #This is the gathering queue:
-        gathering_queue=manager.Queue()
-
-        if 'download' in dir(options) and options.download:
-            #This starts a process to handle the recovery:
-            recovery_queue=manager.Queue()
-            retrieved_file_list=manager.list()
-            process=multiprocessing.Process(target=worker_recovery, 
-                                            name=worker_recovery,
-                                            args=(recovery_queue, database.queues, retrieved_file_list))
-            process.start()
-        else:
-            retrieved_file_list=[]
-            database.queues=dict()
-            recovery_queue=None
-
-        #Set up the discovery var per var:
-        args_list=[]
-        for var_id,var in enumerate(vars_list):
-            options_copy=copy.copy(options)
-            for opt_id, opt in enumerate(database.drs.official_drs_no_version):
-                if var[opt_id]!=None:
-                    setattr(options_copy,opt,var[opt_id])
-            args_list.append((function_handle,copy.copy(database),retrieved_file_list,recovery_queue,options_copy)+args+(gathering_queue,))
-        
-        #Span up to options.num_procs processes and each child process analyzes only one simulation
-        if options.num_procs>1:
-            pool=multiprocessing.Pool(processes=options.num_procs,maxtasksperchild=1)
-        try:
-            if options.num_procs>1:
-                #result=pool.map_async(worker_apply,args_list,chunksize=1)
-                result=pool.map(worker_apply,args_list,chunksize=1)
-                #result=[pool.apply_async(worker_apply,arg) for arg in args_list]
-            #Record files to main file:
-            for arg in args_list:
-                record_in_output(arg,gathering_queue,output_root,database,options)
-                output_root.sync()
-        finally:
-            if 'download' in dir(options) and options.download:
-                recovery_queue.put('STOP')
-            if options.num_procs>1:
-                pool.terminate()
-                pool.join()
-        return output_root
-
-def record_in_output(arg,gathering_queue,output_root,database,options):
-    if options.num_procs==1:
-        worker_apply(arg)
-    description=gathering_queue.get(1e20)
-    temp_file_name=description[0]
-    var=description[1]
-    data=netCDF4.Dataset(temp_file_name,'r')
-    #data_hdf5=h5py.File(temp_file_name,'r')
-    data_hdf5=None
-    for item in h5py.h5f.get_obj_ids():
-        if 'name' in dir(item) and item.name==temp_file_name:
-            data_hdf5=h5py.File(item)
-    tree=zip(database.drs.official_drs_no_version,var)
-    #if ('applying_to_soft_links' in dir(options) and
-    #    options.applying_to_soft_links):
-    #    #Do not check empty:
-    #    nc_Database_utils.replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=False)
-    #else:
-    nc_Database_utils.replace_netcdf_variable_recursive(output_root,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=True)
-    data.close()
-    if data_hdf5!=None:
-        data_hdf5.close()
-    try:
-        os.remove(temp_file_name)
-    except OSError:
-        pass
     return

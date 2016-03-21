@@ -67,7 +67,7 @@ def convert_to_variable(database,options):
     timestamp=convert_dates_to_timestamps(output_tmp,options.time_frequency)
     output_tmp.close()
     if timestamp=='':
-        os.remove(temp_output_file_name,output_file_name+timestamp+'.nc')
+        os.remove(temp_output_file_name)
     else:
         os.rename(temp_output_file_name,output_file_name+timestamp+'.nc')
     return
