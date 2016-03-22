@@ -9,41 +9,14 @@ import multiprocessing
 import netcdf4_soft_links.netcdf_utils as netcdf_utils
 
 #Internal:
-import cdb_query_archive_class
 import nc_Database_utils
 
-def convert(options,database):
-    #Recover the database meta data:
-    vars_list=database.list_fields_local(options,database.drs.official_drs_no_version)
-    database.load_header(options)
-
-    #Find the list of arguments to pass to convert_variable:
-    args_list=[]
-    for var_id,var in enumerate(vars_list):
-        options_copy=copy.copy(options)
-        for opt_id, opt in enumerate(database.drs.official_drs_no_version):
-            setattr(options_copy,opt,var[opt_id])
-        args_list.append((copy.copy(database),options_copy))
-    if options.num_procs>1:
-        pool=multiprocessing.Pool(processes=options.num_procs,maxtasksperchild=1)
-        try:
-            result=pool.map(convert_to_variable_tuple,args_list,chunksize=1)
-        finally:
-            pool.terminate()
-            pool.join()
-    else:
-        result=map(convert_to_variable_tuple,args_list)
-    return
-
-def convert_to_variable_tuple(x):
-    return convert_to_variable(*x)
-
-def convert_to_variable(database,options):
+def convert_to_variable(project_drs,options,recovered_file_list=[],recovery_queue=None):
     input_file_name=options.in_netcdf_file
 
     options.version='v'+datetime.datetime.now().strftime('%Y%m%d')
-    var=[getattr(options,opt) for opt in database.drs.official_drs]
-    file_name=[getattr(options,opt) for opt in database.drs.filename_drs]
+    var=[getattr(options,opt) for opt in project_drs.official_drs]
+    file_name=[getattr(options,opt) for opt in project_drs.filename_drs]
     output_file_name=options.out_destination+'/'+'/'.join(var)+'/'+'_'.join(file_name)
     temp_output_file_name=output_file_name+'.pid'+str(os.getpid())
 
@@ -57,9 +30,9 @@ def convert_to_variable(database,options):
     data=netCDF4.Dataset(input_file_name,'r')
     output_tmp=netCDF4.Dataset(temp_output_file_name,'w',format='NETCDF4',diskless=True,persist=True)
     #nc_Database_utils.extract_netcdf_variable_recursive(output_tmp,data,options)
-    #tree=zip(database.drs.official_drs_no_version,var)
-    var=[getattr(options,opt) for opt in database.drs.official_drs_no_version]
-    tree=zip(database.drs.official_drs_no_version,var)
+    #tree=zip(project_drs.official_drs_no_version,var)
+    var=[getattr(options,opt) for opt in project_drs.official_drs_no_version]
+    tree=zip(project_drs.official_drs_no_version,var)
     nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree,options)
     data.close()
 

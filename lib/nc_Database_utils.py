@@ -105,4 +105,15 @@ def replace_netcdf_variable_recursive(output,data,level_desc,tree,hdf5=None,chec
         #    netcdf_pointers.replicate(output,hdf5=hdf5,check_empty=check_empty)
     return
 
-    
+def convert_dates_to_timestamps(output_tmp,time_frequency):
+    conversion=dict()
+    conversion['year']=(lambda x: str(x.year).zfill(4))
+    conversion['mon']=(lambda x: str(x.year).zfill(4)+str(x.month).zfill(2))
+    conversion['day']=(lambda x: str(x.year).zfill(4)+str(x.month).zfill(2)+str(x.day).zfill(2))
+    conversion['6hr']=(lambda x: str(x.year).zfill(4)+str(x.month).zfill(2)+str(x.day).zfill(2)+str(x.hour).zfill(2)+str(x.minute).zfill(2)+str(x.second).zfill(2))
+    conversion['3hr']=(lambda x: str(x.year).zfill(4)+str(x.month).zfill(2)+str(x.day).zfill(2)+str(x.hour).zfill(2)+str(x.minute).zfill(2)+str(x.second).zfill(2))
+    if time_frequency!='fx' and len(output_tmp.variables['time'])>0:
+        date_axis=netcdf_utils.get_date_axis(output_tmp.variables['time'])[[0,-1]]
+        return '_'+'-'.join([conversion[time_frequency](date) for date in date_axis])
+    else:
+        return ''

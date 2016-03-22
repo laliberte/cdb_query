@@ -19,12 +19,14 @@ import discover
 import optimset
 import nc_Database
 import nc_Database_apply
-import nc_Database_conversion
+#import nc_Database_convert
 import recovery_manager
+import apply_manager
 
 class SimpleTree:
     def __init__(self,project_drs):
         self.drs=project_drs
+        self.queues=dict()
         return
 
     def ask(self,options):
@@ -38,38 +40,42 @@ class SimpleTree:
         #Simplify the header:
         self.header_simple=union_header(self.drs,self.header)
 
-        if options.list_only_field!=None:
-            #Only a listing of a few fields was requested.
+        #Only a listing of a few fields was requested.
+        if ('list_only_field' in dir(options) and options.list_only_field!=None):
             for field_name in discover.discover(self,options):
                 print field_name
             return
-        else:
-            if ('catalogue_missing_simulations_desc' in dir(self.drs)
-               and self.drs.catalogue_missing_simulations_desc):
-                #This allows some projects to be inconsistent in their publications:
-                filepath=discover.discover(self,options)
-                try:
-                    os.rename(filepath,filepath.replace('.pid'+str(os.getpid()),''))
-                except OSError:
-                    pass
-            else:
-                #Check if this is an update and if this an update find the previous simulations list:
-                prev_simulations_list=self.load_previous_simulations(options)
 
-                simulations_list=discover.discover_simulations_recursive(self,options,self.drs.simulations_desc)
-                simulations_list=sorted(list(set(simulations_list).difference(prev_simulations_list)))
-                print "This is a list of simulations that COULD satisfy the query:"
-                for simulation in simulations_list:
-                    print ','.join(simulation)
-                print "cdb_query will now attempt to confirm that these simulations have all the requested variables."
-                print "This can take some time. Please abort if there are not enough simulations for your needs."
+        if ('catalogue_missing_simulations_desc' in dir(self.drs)
+           and self.drs.catalogue_missing_simulations_desc):
+            #This allows some projects to be inconsistent in their publications:
+            filepath=discover.discover(self,options)
+            try:
+                os.rename(filepath,filepath.replace('.pid'+str(os.getpid()),''))
+            except OSError:
+                pass
+            return
 
-                import random
-                random.shuffle(simulations_list)
-                output=recovery_manager.distributed_recovery(discover.discover,self,options,simulations_list)
+        #Check if this is an update and if this an update find the previous simulations list:
+        prev_simulations_list=self.load_previous_simulations(options)
 
-                #Close dataset
-                output.close()
+        #Find the simulation list:
+        simulations_list=discover.discover_simulations_recursive(self,options,self.drs.simulations_desc)
+        simulations_list=sorted(list(set(simulations_list).difference(prev_simulations_list)))
+        if not ('silent' in dir(options) and options.silent):
+            print "This is a list of simulations that COULD satisfy the query:"
+            for simulation in simulations_list:
+                print ','.join(simulation)
+            print "cdb_query will now attempt to confirm that these simulations have all the requested variables."
+            print "This can take some time. Please abort if there are not enough simulations for your needs."
+
+        #Randomize to minimize strain on index nodes:
+        import random
+        random.shuffle(simulations_list)
+
+        output=recovery_manager.distributed_recovery(discover.discover,self,options,simulations_list)
+        #Close dataset
+        output.close()
         return
 
     def load_previous_simulations(self,options):
@@ -87,9 +93,10 @@ class SimpleTree:
                  if remove_entry_from_dictionary(self.header,'search_list')==remove_entry_from_dictionary(old_header,'search_list'):
                     prev_simulations_list.extend(self.list_fields_local(options_copy,self.drs.simulations_desc))
         if len(prev_simulations_list)>0:
-            print 'Updating, not considering the following simulations:'
-            for simulation in prev_simulations_list:
-                print ','.join(simulation)
+            if not ('silent' in dir(options) and options.silent):
+                print 'Updating, not considering the following simulations:'
+                for simulation in prev_simulations_list:
+                    print ','.join(simulation)
         return sorted(prev_simulations_list)
 
     def validate(self,options):
@@ -109,37 +116,63 @@ class SimpleTree:
         else:
             simulations_list=[]
 
-        if options.num_procs==1:
-            filepath=optimset.optimset(self,options)
-            try:
-                os.rename(filepath,filepath.replace('.pid'+str(os.getpid()),''))
-            except OSError:
-                pass
+        #if options.num_procs==1:
+        #    filepath=optimset.optimset(self,options)
+        #    try:
+        #        os.rename(filepath,filepath.replace('.pid'+str(os.getpid()),''))
+        #    except OSError:
+        #        pass
+        #else:
+        #Find the atomic simulations:
+        if simulations_list==[]:
+            simulations_list=self.list_fields_local(options,self.drs.simulations_desc)
+
+        #Randomize the list:
+        import random
+        random.shuffle(simulations_list)
+
+        manager=multiprocessing.Manager()
+        semaphores=dict()
+        for data_node in  self.header['data_node_list']:
+            semaphores[data_node]=manager.Semaphore(5)
+        output=recovery_manager.distributed_recovery(optimset.optimset_distributed,self,options,simulations_list,manager=manager,semaphores=semaphores)
+        #Close datasets:
+        output.close()
+        return
+
+    def convert(self,options,manager=None):
+        options.convert=True
+        options.script=''
+        self.apply(options)
+        return
+
+    def apply(self,options,manager=None):
+        
+        if (options.script=='' and 
+            ('in_extra_netcdf_files' in dir(options) and 
+              len(options.in_extra_netcdf_files)>0) ):
+            raise InputErrorr('The identity script \'\' can only be used when no extra netcdf files are specified.')
+
+        #Recover the database meta data:
+        if ('keep_field' in dir(options) and options.keep_field!=None):
+            drs_to_eliminate=[field for field in self.drs.official_drs_no_version if
+                                                 not field in options.keep_field]
         else:
-            #Find the atomic simulations:
-            if simulations_list==[]:
-                simulations_list=self.list_fields_local(options,self.drs.simulations_desc)
+            drs_to_eliminate=self.drs.official_drs_no_version
+        vars_list=[[ var[drs_to_eliminate.index(field)] if field in drs_to_eliminate else None
+                            for field in self.drs.official_drs_no_version] for var in 
+                            self.list_fields_local(options,drs_to_eliminate) ]
 
-            #Randomize the list:
-            import random
-            random.shuffle(simulations_list)
+        #Randonmize the list:
+        import random
+        random.shuffle(vars_list)
 
-            manager=multiprocessing.Manager()
-            semaphores=dict()
-            for data_node in  self.header['data_node_list']:
-                semaphores[data_node]=manager.Semaphore(5)
-            output=recovery_manager.distributed_recovery(optimset.optimset_distributed,self,options,simulations_list,manager=manager,args=(semaphores,))
-            #Close datasets:
+        output=apply_manager.distributed_apply(nc_Database_apply.apply_to_variable,
+                                               nc_Database_apply.extract_single_tree_and_file,
+                                                 self.drs,options,vars_list,retrieval_queues=self.queues,manager=manager)
+        if not ('convert' in dir(options) and options.convert):
+            self.record_header(options,output)
             output.close()
-        return
-
-    def convert(self,options):
-        nc_Database_conversion.convert(options,self)
-        return
-
-    def apply(self,options):
-        #self.download_and_download_raw_start_queues(options,output)
-        nc_Database_apply.apply(options,self)
         return
 
     def download_and_apply(self,options):
@@ -147,7 +180,7 @@ class SimpleTree:
         manager=multiprocessing.Manager()
         processes=self.download_and_download_raw_start_queues(options,manager=manager)
         try:
-            nc_Database_apply.apply(options,self,manager=manager)
+            self.apply(options,manager=manager)
         finally:
             for item in processes.keys():
                 processes[item].terminate()
@@ -195,7 +228,8 @@ class SimpleTree:
                 min_year=int(self.header['experiment_list'][experiment].split(',')[0])
                 if min_year<10:
                     options.min_year=min_year
-                    print 'Using min year {0} for experiment {1}'.format(str(min_year),experiment)
+                    if not ('silent' in dir(options) and options.silent):
+                        print 'Using min year {0} for experiment {1}'.format(str(min_year),experiment)
 
         #Find data node list:
         self.load_database(options,find_simple)

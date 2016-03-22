@@ -12,17 +12,17 @@ import datetime
 import netcdf4_soft_links.netcdf_utils as netcdf_utils
 import netcdf4_soft_links.certificates as certificates
 
-def worker_recovery(in_queue,out_queue):
+def worker_recovery(in_queue,out_queue,semaphores):
     for tuple in iter(in_queue.get,'STOP'):
-        result=recovery_func(tuple)
+        result=recovery_func(tuple,semaphores)
         out_queue.put(result,out_queue)
     out_queue.put('STOP')
     return
 
-def recovery_func(tuple):
-    return tuple[0](*tuple[1:])
+def recovery_func(tuple,semaphores):
+    return tuple[0](*tuple[1:],semaphores=semaphores)
 
-def distributed_recovery(function_handle,database,options,simulations_list,manager=None,args=tuple()):
+def distributed_recovery(function_handle,database,options,simulations_list,manager=None,semaphores=dict()):
     if manager==None:
         manager=multiprocessing.Manager()
 
@@ -39,19 +39,23 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
         options_copy=copy.copy(options)
         for desc_id, desc in enumerate(database.drs.simulations_desc):
             setattr(options_copy,desc,simulation[desc_id])
-        submit_queue.put((function_handle,copy.copy(database),options_copy)+args)
+        submit_queue.put((function_handle,copy.copy(database),options_copy))
     
     #Span up to options.num_procs processes and each child process analyzes only one simulation
     if options.num_procs==1:
+        submit_queue.put('STOP')
         output_root=netCDF4.Dataset(options.out_netcdf_file,'w',format='NETCDF4')
         for tuple in iter(submit_queue.get,'STOP'):
             renewal_time=record_in_output(recovery_func(tuple),renewal_time,output_root,options)
             output_root.sync()
     else:
+        processes=[]
         try:
-            processes=[multiprocessing.Process(target=worker_apply, 
-                                            args=(submit_queue,record_queue)) for proc in range(options.num_procs)]
-            for process in processes: process.start()
+            processes.extend([multiprocessing.Process(target=worker_recovery, 
+                                            args=(submit_queue,record_queue,semaphores)) for proc in range(options.num_procs)])
+            for process in processes:
+                process.start()
+                submit_queue.put('STOP')
             output_root=worker_record(record_queue,renewal_time,options)
         finally:
             for process in processes: process.terminate()
@@ -60,9 +64,10 @@ def distributed_recovery(function_handle,database,options,simulations_list,manag
 def worker_record(out_queue,renewal_time,options):
     #Open output file:
     output_root=netCDF4.Dataset(options.out_netcdf_file,'w',format='NETCDF4')
-    for filename in iter(out_queue.get,'STOP'):
-        record_in_output(filename,renewal_time,output_root,options)
-        output_root.sync()
+    for process in range(options.num_procs):
+        for filename in iter(out_queue.get,'STOP'):
+            record_in_output(filename,renewal_time,output_root,options)
+            output_root.sync()
     return output_root
 
 def record_in_output(filename,renewal_time,output_root,options):

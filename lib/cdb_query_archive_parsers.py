@@ -101,6 +101,8 @@ def ask(subparsers,epilog,project_drs):
     parser.add_argument('--update',
                                  type=str,action='append',
                                  help='Update the specified file. Will only ask for simulations that were not previously found.')
+    parser.add_argument('-s','--silent',default=False,action='store_true',help='Make not verbose.')
+
     input_arguments_json(parser)
     output_arguments(parser)
     parser.add_argument('--list_only_field',default=None, choices=project_drs.remote_fields,
@@ -213,17 +215,8 @@ def convert(subparsers,epilog,project_drs):
                                          )
     input_arguments(parser)
     parser.add_argument('out_destination',
-                             help='Destination directory for retrieval.')
-    processing_arguments(parser,project_drs)
-
-    inc_group = parser.add_argument_group('Inclusions')
-    slicing_arguments(inc_group,project_drs)
-    exc_group = parser.add_argument_group('Exclusions')
-    excluded_slicing_arguments(exc_group,project_drs)
-    comp_group = parser.add_argument_group('Complex Query')
-    comp_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.base_drs,
-                                       help='List the field (or fields if repeated) found in the file' )
-    complex_slicing(comp_group,project_drs,action_type='append')
+                             help='Destination directory for conversion.')
+    convert_arguments(parser,project_drs)
     return
 
 def apply(subparsers,epilog,project_drs):
@@ -244,22 +237,23 @@ def apply_arguments(parser,project_drs):
     parser.add_argument('out_netcdf_file',
                                  help='NETCDF file (output)')
 
+    select_group = parser.add_argument_group('These arguments specify the structure of the output')
+    select_group.add_argument('--add_fixed',default=False, action='store_true',help='include fixed variables')
+    select_group.add_argument('-k','--keep_field',action='append', type=str, choices=project_drs.official_drs_no_version,
+                                       help='Keep these fields in the applied file.' )
+    convert_arguments(parser,project_drs)
+    return
+
+def convert_arguments(parser,project_drs):
     parser.add_argument('--applying_to_soft_links',default=False,action='store_true',
                                  help='When applying an operator to soft links use this options for siginificant speed up.')
 
     parser.add_argument('--swap_dir',type=writeable_dir,default='.',
                                  help='Use this directory as a swap directory.')
 
-    select_group = parser.add_argument_group('These arguments specify the structure of the output')
-    select_group.add_argument('--add_fixed',default=False, action='store_true',help='include fixed variables')
-    select_group.add_argument('-k','--keep_field',action='append', type=str, choices=project_drs.official_drs_no_version,
-                                       help='Keep these fields in the applied file.' )
     processing_arguments(parser,project_drs)
 
     inc_group = parser.add_argument_group('Inclusions')
-    #slicing_arguments(inc_group,project_drs)
-    #exc_group = parser.add_argument_group('Exclusions')
-    #excluded_slicing_arguments(exc_group,project_drs)
     slicing_arguments(inc_group,project_drs,action_type='append')
     exc_group = parser.add_argument_group('Exclusions')
     excluded_slicing_arguments(exc_group,project_drs,action_type='append')

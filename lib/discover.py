@@ -13,7 +13,7 @@ import filesystem_query
 import esgf_query
 
 ##### PATH #####
-def find_path(nc_Database,file_expt,semaphores=None):
+def find_path(nc_Database,file_expt,semaphores=dict()):
     for val in dir(file_expt):
         if val[0]!='_' and val!='case_id':
             getattr(file_expt,val)
@@ -21,7 +21,7 @@ def find_path(nc_Database,file_expt,semaphores=None):
     nc_Database.session.commit()
     return
 
-def discover(database,options):
+def discover(database,options,semaphores=dict()):
     database.define_database(options)
     only_list=[]
 
@@ -41,7 +41,6 @@ def discover(database,options):
         #Remove data_nodes:
         delattr(dataset,'data_node_list')
         dataset.close()
-
 
     database.close_database()
     return output
@@ -158,6 +157,7 @@ def wrapper_discover_simulations_recursive(args):
     return [(args[-1],)+item for item in discover_simulations_recursive(*args[:-1],async=False)]
 
 def discover_simulations_recursive(database,options,simulations_desc,async=True):
+    #Recursively find possible simulation list
     options_copy=copy.copy(options)
     if isinstance(simulations_desc,list) and len(simulations_desc)>1:
         options_copy.list_only_field=simulations_desc[0]
@@ -173,8 +173,10 @@ def discover_simulations_recursive(database,options,simulations_desc,async=True)
                 args_list.append((copy.copy(database),copy.copy(options_copy),simulations_desc[1:],val))
         if 'num_procs' in dir(options_copy) and options_copy.num_procs>1 and async==True and len(args_list)>0:
             pool=multiprocessing.Pool(processes=min(options_copy.num_procs,len(args_list)))
-            simulations_list=[item for sublist in pool.map(wrapper_discover_simulations_recursive,args_list) for item in sublist]
-            pool.close()
+            try:
+                simulations_list=[item for sublist in pool.map(wrapper_discover_simulations_recursive,args_list) for item in sublist]
+            finally:
+                pool.terminate()
         else:
             simulations_list=[item for sublist in map(wrapper_discover_simulations_recursive,args_list) for item in sublist]
     else:
