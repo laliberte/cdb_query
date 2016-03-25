@@ -11,7 +11,7 @@ import netcdf4_soft_links.remote_netcdf as remote_netcdf
 
 #Internal:
 import nc_Database
-
+import cdb_query_archive_class
 
 queryable_file_types=['OPENDAP','local_file']
 
@@ -179,32 +179,38 @@ def get_diag_months_list(diagnostic):
         diag_months_list=range(1,13)
     return diag_months_list
 
-def optimset_distributed(database,options,semaphores):
+def validate_distributed(database,options,semaphores):
     #print 'Starting ',options.institute,options.model,options.ensemble
-    filepath=optimset(database,options,semaphores=semaphores)
+    filepath=validate(database,options,semaphores=semaphores)
     #print 'Finished ',options.institute,options.model,options.ensemble
     return filepath
 
-def optimset(database,options,semaphores=dict()):
+def validate(project_drs,options,Dataset=None,semaphores=dict()):
+    database=cdb_query_archive_class.SimpleTree(project_drs)
+    database.load_header(options)
+    if 'data_node_list' in dir(project_drs):
+        database.header['data_node_list']=project_drs.data_node_list
+    else:
+        data_node_list, url_list, simulations_list =database.find_data_nodes_and_simulations(options)
+        if len(data_node_list)>1 and not options.no_check_availability:
+                data_node_list=database.rank_data_nodes(options,data_node_list,url_list)
+        database.header['data_node_list']=data_node_list
+
     if options.no_check_availability:
         #Does not check whether files are available / queryable before proceeding.
-        database.load_database(options,find_time_available,semaphores=semaphores)
+        database.load_database(options,find_time_available,Dataset=Dataset,semaphores=semaphores)
         #Find the list of institute / model with all the months for all the years / experiments and variables requested:
         intersection(database,options)
-        
         dataset, output=database.nc_Database.write_database(database.header,options,'record_paths',semaphores=semaphores)
-        database.close_database()
-        dataset.close()
     else:
         #Checks that files are available.
-        database.load_database(options,find_time,semaphores=semaphores)
+        database.load_database(options,find_time,Dataset=Dataset,semaphores=semaphores)
         #Find the list of institute / model with all the months for all the years / experiments and variables requested:
         intersection(database,options)
-        
         dataset, output=database.nc_Database.write_database(database.header,options,'record_meta_data',semaphores=semaphores)
-        database.close_database()
-        dataset.close()
-    return output
+    database.close_database()
+    #dataset.close()
+    return dataset, output
 
 def intersection(database,options):
     #This function finds the models that satisfy all the criteria

@@ -15,13 +15,16 @@ import netcdf4_soft_links.remote_netcdf as remote_netcdf
 import nc_Database_utils
 
 class nc_Database:
-    def __init__(self,project_drs,database_file=None):
+    def __init__(self,project_drs,database_file=None,database_Dataset=None):
         #Defines the tree structure:
         self.drs=project_drs
         self.database_file=database_file
 
-        self._setup_database()
+        if (isinstance(database_Dataset,netCDF4.Dataset) or
+            isinstance(database_Dataset,netCDF4.Group)):
+            self.Dataset=database_Dataset
 
+        self._setup_database()
         return
 
     def _setup_database(self):
@@ -49,7 +52,11 @@ class nc_Database:
         return
 
     def load_nc_file(self):
-        self.Dataset=netCDF4.Dataset(self.database_file,'r')
+        if ( (not 'Dataset' in dir(self) ) or
+             ( 'Dataset' in dir(self) and
+                not (isinstance(self.Dataset,netCDF4.Dataset) or
+                    isinstance(self.Dataset,netCDF4.Group)) )):
+            self.Dataset=netCDF4.Dataset(self.database_file,'r')
         return
 
     def close_nc_file(self):
@@ -66,10 +73,6 @@ class nc_Database:
         self.close_nc_file()
         return header
 
-    def record_header(self,output_root,header):
-        for value in header.keys():
-            output_root.setncattr(value,json.dumps(header[value]))
-        return
 
     def populate_database(self,options,find_function,semaphores=None):
         self.load_nc_file()
@@ -129,14 +132,19 @@ class nc_Database:
         trees_list=self.list_subset([getattr(File_Expt,level) for level in drs_list])
 
         #Create output:
-        filepath=options.out_netcdf_file+'.pid'+str(os.getpid())
-        output_root=netCDF4.Dataset(filepath,
-                                      'w',format='NETCDF4')
-                                      #'w',format='NETCDF4',diskless=True,persist=True)
+        temp_output_file_name=options.out_netcdf_file+'.pid'+str(os.getpid())
+        #temp_output_file_name=options.out_netcdf_file
+        if ('swap_dir' in dir(options) and options.swap_dir!='.'):
+            temp_output_file_name=options.swap_dir+'/'+os.path.basename(temp_output_file_name)
+
+        output_root=netCDF4.Dataset(temp_output_file_name,
+                                      'w',format='NETCDF4',diskless=True,persist=True)
+                                      #'w',format='NETCDF4',diskless=True,persist=False)
+                                      #'w',format='NETCDF4'
         if 'no_check_availability' in dir(options) and options.no_check_availability:
-            self.record_header(output_root,{val:header[val] for val in header.keys() if val!='data_node_list'})
+            record_header(output_root,{val:header[val] for val in header.keys() if val!='data_node_list'})
         else:
-            self.record_header(output_root,header)
+            record_header(output_root,header)
         #temp_string=''
         #for att in self.drs.simulations_desc:
         #    if ( att in dir(options) and
@@ -181,7 +189,7 @@ class nc_Database:
             #Remove recorded data from database:
             self.session.query(*out_tuples).filter(sqlalchemy.and_(*conditions)).delete()
 
-        return output_root, filepath
+        return output_root, temp_output_file_name
 
     def retrieve_database(self,options,output,queues):
         ##Recover the database meta data:
@@ -353,3 +361,8 @@ class File_Expt(object):
     def __init__(self,diag_tree_desc):
         for tree_desc in diag_tree_desc:
             setattr(self,tree_desc,'')
+
+def record_header(output_root,header):
+    for value in header.keys():
+        output_root.setncattr(value,json.dumps(header[value]))
+    return

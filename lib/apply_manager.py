@@ -8,43 +8,27 @@ import multiprocessing
 #Internal:
 import nc_Database_utils
 
-def worker_apply(function_handle,in_queue,out_queue,recovered_file_list,recovery_queue):
+def worker_apply(function_handle,in_queue,out_queue,downloaded_file_list,download_queue):
     for tuple in iter(in_queue.get,'STOP'):
-        result=apply_func(function_handle,tuple,recovered_file_list=recovered_file_list,recovery_queue=recovery_queue)
+        result=apply_func(function_handle,tuple,downloaded_file_list=downloaded_file_list,download_queue=download_queue)
         out_queue.put(result,out_queue)
     out_queue.put('STOP')
     return
 
-def apply_func(function_handle,tuple,recovered_file_list=[],recovery_queue=None):
-    return function_handle(*tuple,recovered_file_list=recovered_file_list,recovery_queue=recovery_queue)
+def apply_func(function_handle,tuple,downloaded_file_list=[],download_queue=None):
+    return function_handle(*tuple,downloaded_file_list=downloaded_file_list,download_queue=download_queue)
 
-def worker_recovery(recovery_function_handle, input_queue, retrieval_queues, output_list):
-    for tuple in iter(input_queue.get, 'STOP'):
-        recovery_function_handle(*tuple,check_empty=True,queues=retrieval_queues)
-        output_list.append(tuple[0])
-    return
-
-def distributed_apply(function_handle,recovery_function_handle,project_drs,options,vars_list,manager=None,retrieval_queues=dict()):
+def distributed_apply(function_handle,download_function_handle,project_drs,options,vars_list,manager=None,retrieval_queues=dict()):
     if manager==None:
         manager=multiprocessing.Manager()
     #This is the gathering queue:
     record_queue=manager.Queue()
     #This is the apply queue:
     apply_queue=manager.Queue()
+    processes=[]
 
-    if 'download' in dir(options) and options.download:
-        #This starts a process to handle the recovery:
-        recovery_queue=manager.Queue()
-        recovered_file_list=manager.list()
-        recovery_process=multiprocessing.Process(target=worker_recovery, 
-                                        name='worker_recovery',
-                                        args=(recovery_function_handle,recovery_queue,retrieval_queues,recovered_file_list))
-        recovery_process.start()
-    else:
-        recovered_file_list=[]
-        retrieval_queues=dict()
-        recovery_queue=None
-        recovery_process=None
+    #validate_queue, validated_file_list, validate_process = start_download_manager(download_function_handle,retrieval_queues,options)
+    download_queue, downloaded_file_list, download_process = start_download_manager(download_function_handle,retrieval_queues,manager,options)
 
     #Set up the discovery var per var:
     for var_id,var in enumerate(vars_list):
@@ -63,23 +47,23 @@ def distributed_apply(function_handle,recovery_function_handle,project_drs,optio
             output=None
 
         for tuple in iter(apply_queue.get,'STOP'):
-            record_in_output(apply_func(function_handle,tuple,recovered_file_list=recovered_file_list,recovery_queue=recovery_queue),
+            record_in_output(apply_func(function_handle,tuple,downloaded_file_list=downloaded_file_list,download_queue=download_queue),
                             output,project_drs,options)
             if not ('convert' in dir(options) and options.convert): output.sync()
     else:
         try:
             processes=[multiprocessing.Process(target=worker_apply, 
-                                            args=(function_handle,apply_queue,record_queue,recovered_file_list,recovery_queue)) for proc in range(options.num_procs)]
+                                            args=(function_handle,apply_queue,record_queue,downloaded_file_list,download_queue)) for proc in range(options.num_procs)]
             for process in processes:
                 process.start()
                 apply_queue.put('STOP')
             output=worker_record(record_queue,project_drs,options)
         finally:
             for process in processes: process.terminate()
-            if 'terminate' in dir(recovery_process): recovery_process.terminate()
+            if 'terminate' in dir(download_process): download_process.terminate()
 
     if 'download' in dir(options) and options.download:
-        recovery_queue.put('STOP')
+        download_queue.put('STOP')
     return output
 
 def worker_record(out_queue,project_drs,options):
@@ -105,10 +89,14 @@ def record_in_output_directory(description,project_drs,options):
     temp_file_name=description[0]
     var=description[1]
 
+    version='v'+datetime.datetime.now().strftime('%Y%m%d')
+    var_with_version=[var[project_drs.official_drs_no_version.index(opt)] if opt in project_drs.official_drs_no_version
+                     else verions for opt in project_drs.official_drs]
+
     if ('out_destination' in dir(options)):
-        output_file_name=options.out_destination+'/'+'/'.join(var)+'/'+os.path.basename(temp_file_name)
+        output_file_name=options.out_destination+'/'+'/'.join(var_with_version)+'/'+os.path.basename(temp_file_name)
     else:
-        output_file_name=options.out_netcdf_file+'/'+'/'.join(var)+'/'+os.path.basename(temp_file_name)
+        output_file_name=options.out_netcdf_file+'/'+'/'.join(var_with_version)+'/'+os.path.basename(temp_file_name)
 
     #Create directory:
     try:
@@ -155,3 +143,23 @@ def record_in_output_database(description,output,project_drs,options):
     except OSError:
         pass
     return
+
+def start_download_manager(download_function_handle,retrieval_queues,manager,options):
+    if 'download' in dir(options) and options.download:
+        #This starts a process to handle the download:
+        download_queue=manager.Queue()
+        downloaded_file_list=manager.list()
+        download_process=multiprocessing.Process(target=worker_download, 
+                                        name='worker_download',
+                                        args=(download_function_handle,download_queue,retrieval_queues,downloaded_file_list))
+        download_process.start()
+        return download_queue, downloaded_file_list, download_process
+    else:
+        return None, None, []
+
+def worker_download(download_function_handle, input_queue, retrieval_queues, output_list):
+    for tuple in iter(input_queue.get, 'STOP'):
+        download_function_handle(*tuple,check_empty=True,queues=retrieval_queues)
+        output_list.append(tuple[0])
+    return
+

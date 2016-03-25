@@ -24,10 +24,13 @@ def output_arguments(parser):
     return
 
 def processing_arguments(parser,project_drs):
-    proc_group = parser.add_argument_group('These arguments set threading options')
+    proc_group = parser.add_argument_group('These arguments set threading options and swap space')
     proc_group.add_argument('--num_procs',
                                  default=1, type=int,
                                  help='Use num_procs processes to perform the computation.')
+    proc_group.add_argument('--swap_dir',type=writeable_dir,default='.',
+                                 help='Use this directory as a swap directory.')
+
     return
 
 def slicing_arguments(parser,project_drs,exclude_args=[],action_type='store'):
@@ -63,17 +66,19 @@ def generate_subparsers(parser,epilog,project_drs):
     #Discover tree
     subparsers = parser.add_subparsers(help='Commands to discover available data on the archive',dest='command')
     #quick_ask(subparsers,epilog,project_drs)
-    ask(subparsers,epilog,project_drs)
+    certificates(subparsers,epilog,project_drs)
     list_fields(subparsers,epilog,project_drs)
+
+    ask(subparsers,epilog,project_drs)
     validate(subparsers,epilog,project_drs)
+
+    download_raw(subparsers,epilog,project_drs)
+    download(subparsers,epilog,project_drs)
+
+    download_and_apply(subparsers,epilog,project_drs)
 
     apply(subparsers,epilog,project_drs)
     convert(subparsers,epilog,project_drs)
-
-    download_and_apply(subparsers,epilog,project_drs)
-    download(subparsers,epilog,project_drs)
-    download_raw(subparsers,epilog,project_drs)
-    certificates(subparsers,epilog,project_drs)
     return
 
 #QUERY PARSERS
@@ -93,18 +98,6 @@ def ask(subparsers,epilog,project_drs):
                                                  to function properly. If it fails it is possible the servers are down.'''),
                                            epilog=epilog_ask
                                          )
-    parser.add_argument('--related_experiments',
-                                 default=False, action='store_true',
-                                 help='When this option is activated, queried experiments are assumed to be related.\n\
-                                       In this situation, cdb_query will discard ({0}) tuples that do not have variables for\n\
-                                       ALL of the requested experiments'.format(','.join(project_drs.simulations_desc)))
-    parser.add_argument('--update',
-                                 type=str,action='append',
-                                 help='Update the specified file. Will only ask for simulations that were not previously found.')
-    parser.add_argument('-s','--silent',default=False,action='store_true',help='Make not verbose.')
-
-    input_arguments_json(parser)
-    output_arguments(parser)
     parser.add_argument('--list_only_field',default=None, choices=project_drs.remote_fields,
                               help='When this option is used, the ask function prints only the specified field \n\
                                   for which published data COULD match the query. Does nothing to the output file.\n\
@@ -112,6 +105,19 @@ def ask(subparsers,epilog,project_drs):
     parser.add_argument('--distrib',
                                  default=False, action='store_true',
                                  help='Distribute the search. Will likely result in a pointers originating from one node.')
+
+    parser.add_argument('--related_experiments',
+                                 default=False, action='store_true',
+                                 help='When this option is activated, queried experiments are assumed to be related.\n\
+                                       In this situation, cdb_query will discard ({0}) tuples that do not have variables for\n\
+                                       ALL of the requested experiments'.format(','.join(project_drs.simulations_desc)))
+    parser.add_argument('-s','--silent',default=False,action='store_true',help='Make not verbose.')
+    #parser.add_argument('--update',
+    #                             type=str,action='append',
+    #                             help='Update the specified file. Will only ask for simulations that were not previously found.')
+
+    input_arguments_json(parser)
+    output_arguments(parser)
 
     manage_soft_links_parsers.certificates_arguments(parser,project_drs)
     processing_arguments(parser,project_drs)
@@ -164,6 +170,25 @@ def validate(subparsers,epilog,project_drs):
                                          certificates have not been installed on this machine.'),
                                    epilog=epilog_validate,
                                  )
+
+    validate_arguments(parser,project_drs)
+
+    input_arguments(parser)
+    output_arguments(parser)
+    #parser.add_argument('--in_diagnostic_headers_file',
+    #                             help='Alternative diagnostic headers file (to modify target validate)',\
+    #                             type=str,default=None)
+
+    manage_soft_links_parsers.certificates_arguments(parser,project_drs)
+
+    data_node_group = parser.add_argument_group('Restrict search to specific data nodes')
+    data_node_group.add_argument('--data_node',type=str,action='append',help='Consider only the specified data nodes')
+    data_node_group.add_argument('--Xdata_node',type=str,action='append',help='Do not consider the specified data nodes')
+
+    convert_arguments(parser,project_drs)
+    return
+
+def validate_arguments(parser,project_drs):
     parser.add_argument('--related_experiments',
                                  default=False, action='store_true',
                                  help='When this option is activated, queried experiments are assumed to be related.\n\
@@ -178,47 +203,9 @@ def validate(subparsers,epilog,project_drs):
     parser.add_argument('--missing_years',
                      default=False, action='store_true',
                      help='When this option is activated, do not exclude models if they are missing years.')
-
-    input_arguments(parser)
-    output_arguments(parser)
-    parser.add_argument('--in_diagnostic_headers_file',
-                                 help='Alternative diagnostic headers file (to modify target validate)',\
-                                 type=str,default=None)
-
-    manage_soft_links_parsers.certificates_arguments(parser,project_drs)
-    processing_arguments(parser,project_drs)
-
-    data_node_group = parser.add_argument_group('Restrict search to specific data nodes')
-    data_node_group.add_argument('--data_node',type=str,action='append',help='Consider only the specified data nodes')
-    data_node_group.add_argument('--Xdata_node',type=str,action='append',help='Do not consider the specified data nodes')
-
-    #inc_group = parser.add_argument_group('Inclusions')
-    #slicing_arguments(inc_group,project_drs)
-    #exc_group = parser.add_argument_group('Exclusions')
-    #excluded_slicing_arguments(exc_group,project_drs)
-    inc_group = parser.add_argument_group('Inclusions')
-    slicing_arguments(inc_group,project_drs,action_type='append')
-    exc_group = parser.add_argument_group('Exclusions')
-    excluded_slicing_arguments(exc_group,project_drs,action_type='append')
-    comp_group = parser.add_argument_group('Complex Query')
-    comp_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.base_drs,
-                                       help='List the field (or fields if repeated) found in the file' )
-    complex_slicing(comp_group,project_drs,action_type='append')
     return
 
 #nc_Database PARSERS
-def convert(subparsers,epilog,project_drs):
-    epilog_convert=textwrap.dedent(epilog)
-    parser=subparsers.add_parser('convert',
-                                           description=textwrap.dedent('Take as an input the results from \'download\' and converts the data.'),
-                                           epilog=epilog_convert,
-                                         )
-    input_arguments(parser)
-    parser.add_argument('out_destination',
-                             help='Destination directory for conversion.')
-    convert_arguments(parser,project_drs)
-    return
-
 def apply(subparsers,epilog,project_drs):
     epilog_apply=textwrap.dedent(epilog)
     parser=subparsers.add_parser('apply',
@@ -244,12 +231,21 @@ def apply_arguments(parser,project_drs):
     convert_arguments(parser,project_drs)
     return
 
+def convert(subparsers,epilog,project_drs):
+    epilog_convert=textwrap.dedent(epilog)
+    parser=subparsers.add_parser('convert',
+                               description=textwrap.dedent('Take as an input the results from \'download\' and converts the data.'),
+                               epilog=epilog_convert,
+                             )
+    input_arguments(parser)
+    parser.add_argument('out_destination',
+                             help='Destination directory for conversion.')
+    convert_arguments(parser,project_drs)
+    return
+
 def convert_arguments(parser,project_drs):
     parser.add_argument('--applying_to_soft_links',default=False,action='store_true',
                                  help='When applying an operator to soft links use this options for siginificant speed up.')
-
-    parser.add_argument('--swap_dir',type=writeable_dir,default='.',
-                                 help='Use this directory as a swap directory.')
 
     processing_arguments(parser,project_drs)
 

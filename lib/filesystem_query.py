@@ -45,7 +45,7 @@ unique_file_id_list=['checksum_type','checksum','tracking_id']
 def descend_tree_recursive(database,file_expt,tree_desc,top_path,options,list_level=None,alt=False):
     if not isinstance(tree_desc,list):
         return
-
+    
     if len(tree_desc)==1:
         file_list=glob.glob(top_path+'/*.nc') 
         if len(file_list)>0:

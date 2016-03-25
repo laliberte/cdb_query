@@ -6,11 +6,13 @@ import os
 import random
 import sqlalchemy
 import multiprocessing
+import json
 
 #Internal:
 import ftp_query
 import filesystem_query
 import esgf_query
+import cdb_query_archive_class
 
 ##### PATH #####
 def find_path(nc_Database,file_expt,semaphores=dict()):
@@ -21,18 +23,32 @@ def find_path(nc_Database,file_expt,semaphores=dict()):
     nc_Database.session.commit()
     return
 
-def discover(database,options,semaphores=dict()):
+def ask(project_drs,options):
+    database=cdb_query_archive_class.SimpleTree(project_drs)
+    #Load header:
+    try:
+        database.header=json.load(open(options.in_headers_file,'r'))['header']
+    except ValueError as e:
+        print 'The input diagnostic file '+options.in_headers_file+' does not conform to JSON standard. Make sure to check its syntax'
+        raise
+
+    #Simplify the header:
+    database.union_header()
+    return ask_with_database(database,options)
+
+def ask_with_database(database,options):
     database.define_database(options)
     only_list=[]
 
-    only_list.append(discover_database(database,options))
+    only_list.append(ask_database(database,options))
     if options.ensemble!=None:
         options_copy=copy.copy(options)
         options_copy.ensemble='r0i0p0'
-        only_list.append(discover_database(database,options_copy))
+        only_list.append(ask_database(database,options_copy))
 
     if options.list_only_field!=None:
         output=set([item for sublist in only_list for item in sublist])
+        dataset=None
     else:
         intersection(database)
         #List data_nodes:
@@ -40,13 +56,13 @@ def discover(database,options,semaphores=dict()):
         dataset, output =database.nc_Database.write_database(database.header,options,'record_paths')
         #Remove data_nodes:
         delattr(dataset,'data_node_list')
-        dataset.close()
+        #dataset.close()
 
     database.close_database()
-    return output
+    return dataset, output
 
-def discover_database(database,options):
-    #Copy and shuffle search path for optimal multithreaded discovery:
+def ask_database(database,options):
+    #Copy and shuffle search path for optimal multithreaded asky:
     search_path_list=copy.copy(database.header['search_list'])
     random.shuffle(search_path_list)
 
@@ -70,38 +86,38 @@ def discover_database(database,options):
     return [item for sublist in only_list for item in sublist]
 
 def find_model_list(diagnostic,project_drs,model_list,experiment):
-        for var_name in diagnostic.header['variable_list'].keys():
-            time_frequency=diagnostic.header['variable_list'][var_name][project_drs.var_specs.index('time_frequency')]
-            if not time_frequency in ['fx','en']:
-                #Do this without fx variables:
-                conditions=[
-                             nc_Database.File_Expt.var==var_name,
-                             nc_Database.File_Expt.experiment==experiment
-                           ]
-                for field_id, field in enumerate(project_drs.var_specs):
-                    conditions.append(getattr(nc_Database.File_Expt,field)==diagnostic.header['variable_list'][var_name][field_id])
+    for var_name in diagnostic.header['variable_list'].keys():
+        time_frequency=diagnostic.header['variable_list'][var_name][project_drs.var_specs.index('time_frequency')]
+        if not time_frequency in ['fx','en']:
+            #Do this without fx variables:
+            conditions=[
+                         nc_Database.File_Expt.var==var_name,
+                         nc_Database.File_Expt.experiment==experiment
+                       ]
+            for field_id, field in enumerate(project_drs.var_specs):
+                conditions.append(getattr(nc_Database.File_Expt,field)==diagnostic.header['variable_list'][var_name][field_id])
 
-                model_list_var=diagnostic.nc_Database.session.query(*[getattr(nc_Database.File_Expt,desc) for desc in project_drs.simulations_desc]
-                                        ).filter(sqlalchemy.and_(*conditions)).distinct().all()
-                model_list=set(model_list).intersection(set(model_list_var))
+            model_list_var=diagnostic.nc_Database.session.query(*[getattr(nc_Database.File_Expt,desc) for desc in project_drs.simulations_desc]
+                                    ).filter(sqlalchemy.and_(*conditions)).distinct().all()
+            model_list=set(model_list).intersection(set(model_list_var))
 
-        #Do it for fx variables:
-        model_list_fx=[remove_ensemble(model,project_drs) for model in model_list]
-        for var_name in diagnostic.header['variable_list'].keys():
-            time_frequency=diagnostic.header['variable_list'][var_name][project_drs.var_specs.index('time_frequency')]
-            if time_frequency in ['fx','en']:
-                conditions=[
-                             nc_Database.File_Expt.var==var_name,
-                             nc_Database.File_Expt.experiment==experiment
-                           ]
-                for field_id, field in enumerate(project_drs.var_specs):
-                    conditions.append(getattr(nc_Database.File_Expt,field)==diagnostic.header['variable_list'][var_name][field_id])
-                model_list_var=diagnostic.nc_Database.session.query(
-                                        *[getattr(nc_Database.File_Expt,desc) for desc in project_drs.simulations_desc if desc!='ensemble']
-                                           ).filter(sqlalchemy.and_(*conditions)).distinct().all()
-                model_list_fx=set(model_list_fx).intersection(set(model_list_var))
-        model_list_combined=[model for model in model_list if remove_ensemble(model,project_drs) in model_list_fx]
-        return model_list_combined
+    #Do it for fx variables:
+    model_list_fx=[remove_ensemble(model,project_drs) for model in model_list]
+    for var_name in diagnostic.header['variable_list'].keys():
+        time_frequency=diagnostic.header['variable_list'][var_name][project_drs.var_specs.index('time_frequency')]
+        if time_frequency in ['fx','en']:
+            conditions=[
+                         nc_Database.File_Expt.var==var_name,
+                         nc_Database.File_Expt.experiment==experiment
+                       ]
+            for field_id, field in enumerate(project_drs.var_specs):
+                conditions.append(getattr(nc_Database.File_Expt,field)==diagnostic.header['variable_list'][var_name][field_id])
+            model_list_var=diagnostic.nc_Database.session.query(
+                                    *[getattr(nc_Database.File_Expt,desc) for desc in project_drs.simulations_desc if desc!='ensemble']
+                                       ).filter(sqlalchemy.and_(*conditions)).distinct().all()
+            model_list_fx=set(model_list_fx).intersection(set(model_list_var))
+    model_list_combined=[model for model in model_list if remove_ensemble(model,project_drs) in model_list_fx]
+    return model_list_combined
 
 def intersection(database):
     #Step one: find all the institute / model tuples with all the requested variables
@@ -153,15 +169,15 @@ def remove_ensemble(simulation,project_drs):
     simulations_desc_indices_without_ensemble.remove(project_drs.simulations_desc.index('ensemble'))
     return itemgetter(*simulations_desc_indices_without_ensemble)(simulation)
 
-def wrapper_discover_simulations_recursive(args):
-    return [(args[-1],)+item for item in discover_simulations_recursive(*args[:-1],async=False)]
+def wrapper_ask_simulations_recursive(args):
+    return [(args[-1],)+item for item in ask_simulations_recursive(*args[:-1],async=False)]
 
-def discover_simulations_recursive(database,options,simulations_desc,async=True):
+def ask_simulations_recursive(database,options,simulations_desc,async=True):
     #Recursively find possible simulation list
     options_copy=copy.copy(options)
     if isinstance(simulations_desc,list) and len(simulations_desc)>1:
         options_copy.list_only_field=simulations_desc[0]
-        output=discover(database,options_copy)
+        output=ask_with_database(database,options_copy)[1]
         options_copy.list_only_field=None
         args_list=[]
         for val in output:
@@ -174,14 +190,14 @@ def discover_simulations_recursive(database,options,simulations_desc,async=True)
         if 'num_procs' in dir(options_copy) and options_copy.num_procs>1 and async==True and len(args_list)>0:
             pool=multiprocessing.Pool(processes=min(options_copy.num_procs,len(args_list)))
             try:
-                simulations_list=[item for sublist in pool.map(wrapper_discover_simulations_recursive,args_list) for item in sublist]
+                simulations_list=[item for sublist in pool.map(wrapper_ask_simulations_recursive,args_list) for item in sublist]
             finally:
                 pool.terminate()
         else:
-            simulations_list=[item for sublist in map(wrapper_discover_simulations_recursive,args_list) for item in sublist]
+            simulations_list=[item for sublist in map(wrapper_ask_simulations_recursive,args_list) for item in sublist]
     else:
         options_copy.list_only_field=simulations_desc[0]
-        simulations_list=[(item,) for item in discover(database,options_copy)]
+        simulations_list=[(item,) for item in ask_with_database(database,options_copy)[1]]
         options_copy.list_only_field=None
     return simulations_list
 
