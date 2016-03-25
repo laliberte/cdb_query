@@ -8,18 +8,21 @@ import os
 #External but related:
 import netcdf4_soft_links.manage_soft_links_parsers as manage_soft_links_parsers
 
+def absolute_path(path):
+    return os.path.abspath(os.path.expanduser(os.path.expandvars(path)))
+
 def input_arguments_json(parser):
-    parser.add_argument('in_headers_file',
+    parser.add_argument('in_headers_file',type=absolute_path,
                                  help='Diagnostic headers file (input)')
     return
 
 def input_arguments(parser):
-    parser.add_argument('in_netcdf_file',
+    parser.add_argument('in_netcdf_file',type=absolute_path,
                                  help='NETCDF Diagnostic paths file (input)')
     return
 
 def output_arguments(parser):
-    parser.add_argument('out_netcdf_file',
+    parser.add_argument('out_netcdf_file',type=absolute_path,
                                  help='NETCDF Diagnostic paths file (output)')
     return
 
