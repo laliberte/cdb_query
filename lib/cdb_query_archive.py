@@ -11,7 +11,6 @@ import remote_archive
 import cdb_query_archive_parsers
 import cdb_query_archive_class
 import nc_Database_apply
-import nc_Database_conversion
 
 
 def main_CMIP5():
