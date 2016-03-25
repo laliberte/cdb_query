@@ -10,11 +10,11 @@ import netcdf4_soft_links.retrieval_manager as retrieval_manager
 
 #Internal:
 import nc_Database_utils
-import discover
+import ask
 import validate
 
 def ask_to_variable(project_drs,options):
-    dataset, query_output_file_name=discover.discover(project_drs,options)
+    dataset, query_output_file_name=ask.ask(project_drs,options)
 
     var=[getattr(options,opt) for opt in project_drs.official_drs_no_version]
     tree=zip(project_drs.official_drs_no_version,var)
@@ -61,7 +61,7 @@ def apply_to_variable(project_drs,options,downloaded_file_list=[],download_queue
     temp_output_file_name=get_temp_output_file_name(options,output_file_name)
 
     if ('ask' in dir(options) and options.ask):
-        dataset, query_output_file_name=discover.discover(project_drs,options)
+        dataset, query_output_file_name=ask.ask(project_drs,options)
         if not ('validate' in dir(options) and options.validate):
             make_ask_result_compatible_with_apply(temp_output_file_name, dataset, tree,tree_fx,options,options_fx,hdf5_file=query_output_file_name)
             return (temp_output_file_name, var)
