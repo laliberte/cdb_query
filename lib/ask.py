@@ -23,17 +23,20 @@ def find_path(nc_Database,file_expt,semaphores=dict()):
     nc_Database.session.commit()
     return
 
-def ask(project_drs,options):
-    database=cdb_query_archive_class.SimpleTree(project_drs)
-    #Load header:
-    try:
-        database.header=json.load(open(options.in_headers_file,'r'))['header']
-    except ValueError as e:
-        print 'The input diagnostic file '+options.in_headers_file+' does not conform to JSON standard. Make sure to check its syntax'
-        raise
+#def ask(project_drs,options):
+#    database=cdb_query_archive_class.SimpleTree(project_drs)
+#    #Load header:
+#    try:
+#        database.header=json.load(open(options.in_headers_file,'r'))['header']
+#    except ValueError as e:
+#        print 'The input diagnostic file '+options.in_headers_file+' does not conform to JSON standard. Make sure to check its syntax'
+#        raise
+#
+#    #Simplify the header:
+#    database.union_header()
+#    return ask_with_database(database,options)
 
-    #Simplify the header:
-    database.union_header()
+def ask(database,options):
     return ask_with_database(database,options)
 
 def ask_with_database(database,options):
@@ -56,10 +59,10 @@ def ask_with_database(database,options):
         dataset, output =database.nc_Database.write_database(database.header,options,'record_paths')
         #Remove data_nodes:
         delattr(dataset,'data_node_list')
-        #dataset.close()
+        dataset.close()
 
     database.close_database()
-    return dataset, output
+    return output
 
 def ask_database(database,options):
     #Copy and shuffle search path for optimal multithreaded asky:
@@ -187,12 +190,14 @@ def ask_simulations_recursive(database,options,simulations_desc,async=True):
                 setattr(options_copy,simulations_desc[0],None)
             elif (getattr(options_copy,simulations_desc[0]) == val):
                 args_list.append((copy.copy(database),copy.copy(options_copy),simulations_desc[1:],val))
-        if 'num_procs' in dir(options_copy) and options_copy.num_procs>1 and async==True and len(args_list)>0:
+        if ('num_procs' in dir(options_copy) and options_copy.num_procs>1 and async==True and len(args_list)>0
+            and not ('serial' in dir(options_copy) and options_copy.serial)):
             pool=multiprocessing.Pool(processes=min(options_copy.num_procs,len(args_list)))
             try:
                 simulations_list=[item for sublist in pool.map(wrapper_ask_simulations_recursive,args_list) for item in sublist]
             finally:
                 pool.terminate()
+                pool.join()
         else:
             simulations_list=[item for sublist in map(wrapper_ask_simulations_recursive,args_list) for item in sublist]
     else:

@@ -179,15 +179,14 @@ def get_diag_months_list(diagnostic):
         diag_months_list=range(1,13)
     return diag_months_list
 
-def validate_distributed(database,options,semaphores):
-    #print 'Starting ',options.institute,options.model,options.ensemble
-    filepath=validate(database,options,semaphores=semaphores)
-    #print 'Finished ',options.institute,options.model,options.ensemble
-    return filepath
+#def validate_distributed(database,options,semaphores):
+#    #print 'Starting ',options.institute,options.model,options.ensemble
+#    filepath=validate(database,options,semaphores=semaphores)
+#    #print 'Finished ',options.institute,options.model,options.ensemble
+#    return filepath
 
-def validate(project_drs,options,Dataset=None,semaphores=dict()):
-    database=cdb_query_archive_class.SimpleTree(project_drs)
-    database.load_header(options)
+#def validate(project_drs,options,Dataset=None,semaphores=dict()):
+def validate(database,project_drs,options,semaphores=dict()):
     if 'data_node_list' in dir(project_drs):
         database.header['data_node_list']=project_drs.data_node_list
     else:
@@ -198,19 +197,19 @@ def validate(project_drs,options,Dataset=None,semaphores=dict()):
 
     if options.no_check_availability:
         #Does not check whether files are available / queryable before proceeding.
-        database.load_database(options,find_time_available,Dataset=Dataset,semaphores=semaphores)
+        database.load_database(options,find_time_available,semaphores=semaphores)
         #Find the list of institute / model with all the months for all the years / experiments and variables requested:
         intersection(database,options)
         dataset, output=database.nc_Database.write_database(database.header,options,'record_paths',semaphores=semaphores)
     else:
         #Checks that files are available.
-        database.load_database(options,find_time,Dataset=Dataset,semaphores=semaphores)
+        database.load_database(options,find_time,semaphores=semaphores)
         #Find the list of institute / model with all the months for all the years / experiments and variables requested:
         intersection(database,options)
         dataset, output=database.nc_Database.write_database(database.header,options,'record_meta_data',semaphores=semaphores)
     database.close_database()
-    #dataset.close()
-    return dataset, output
+    dataset.close()
+    return output
 
 def intersection(database,options):
     #This function finds the models that satisfy all the criteria

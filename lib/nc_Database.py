@@ -191,18 +191,12 @@ class nc_Database:
 
         return output_root, temp_output_file_name
 
-    def retrieve_database(self,options,output,queues):
+    def retrieve_database(self,output,options,queues=dict()):
         ##Recover the database meta data:
-
-        #Find the trees. Here, we want all of them with the full DRS:
-        drs_to_eliminate=self.drs.official_drs_no_version
-        #trees_list=[zip(self.drs.official_drs_no_version,[ None
-        #                    for field in self.drs.official_drs_no_version]) for var in 
-        #                    self.list_fields(drs_to_eliminate) ]
-        trees_list=[zip(self.drs.official_drs_no_version,[ None
-                            for field in self.drs.official_drs_no_version]),]
+        tree=zip(self.drs.official_drs_no_version,[ None
+                            for field in self.drs.official_drs_no_version])
         self.load_nc_file()
-        map(lambda x: nc_Database_utils.extract_netcdf_variable(output,self.Dataset,x,options,queues=queues),trees_list)
+        nc_Database_utils.extract_netcdf_variable(output,self.Dataset,tree,options,queues=queues)
         self.close_nc_file()
         return
 

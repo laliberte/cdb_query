@@ -73,22 +73,20 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD, Submitted.'.format(ve
         
     if 'username' in dir(options) and options.username!=None:
         if not options.password_from_pipe:
-            user_pass=getpass.getpass('Enter Credential phrase: ')
+            options.password=getpass.getpass('Enter Credential phrase: ')
         else:
             timeout=1
             i,o,e=select.select([sys.stdin],[],[],timeout)
             if i:
-                user_pass=sys.stdin.readline()
+                options.password=sys.stdin.readline()
             else:
                 print '--password_from_pipe selected but no password was piped. Exiting.'
                 return
+        certificates.retrieve_certificates(options.username,options.service,user_pass=options.password,trustroots=options.no_trustroots)
     else:
-        user_pass=None
-    options.password=user_pass
+        options.password=None
 
-    if options.command=='certificates':
-        certificates.retrieve_certificates(options.username,options.service,user_pass=options.password)
-    else:
+    if options.command!='certificates':
         paths_dict=cdb_query_archive_class.SimpleTree(project_drs)
         #Run the command:
         getattr(paths_dict,options.command)(options)

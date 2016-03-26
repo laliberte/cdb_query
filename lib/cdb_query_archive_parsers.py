@@ -124,8 +124,10 @@ def ask(subparsers,epilog,project_drs):
 
     manage_soft_links_parsers.certificates_arguments(parser,project_drs)
     processing_arguments(parser,project_drs)
-    inc_group = parser.add_argument_group('Inclusions')
+    inc_group = parser.add_argument_group('Inclusions (single only due to limitation in ESGF search)')
     slicing_arguments(inc_group,project_drs)
+    exc_group = parser.add_argument_group('Exclusions (inactive in ESGF search)')
+    excluded_slicing_arguments(exc_group,project_drs,action_type='append')
     return parser
 
 def list_fields(subparsers,epilog,project_drs):

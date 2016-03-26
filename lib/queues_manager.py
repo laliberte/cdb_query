@@ -4,39 +4,84 @@ import h5py
 import copy
 import os
 import multiprocessing
+import Queue
 
 #Internal:
 import nc_Database_utils
 
+#http://stackoverflow.com/questions/2080660/python-multiprocessing-and-a-shared-counter
+class Counter(object):
+    #Shared counter class
+    def __init__(self,manager):
+        self.val = manager.Value('i', 0)
 
-class cdb_manager:
-    def __init__(self,project_drs,options):
-        self.manager=multiprocessing.Manager()
+    def increment(self, n=1):
+        with self.val.get_lock():
+            value=self.val.value
+            self.val.value += n
+            return value
 
-        #Create queue from last to perform to first:
+    @property
+    def value(self):
+        return self.val.value
 
-        self.queues_names=[name if (name in dir(options) and getattr(options,name)) for name in
-                     ['ask',
-                     'validate',
-                     'download_raw',
-                     'find_local',
-                     'time_split'
-                     ]
-                     ]
+class CDB_queue_manager:
+    def __init__(self,manager,options):
+        #self.manager=multiprocessing.Manager()
+
+        #Create queues:
+        self.queues_names=manager.list()
+        for name in ['ask','validate','download_raw','time_split']:
+            if (name in dir(options) and getattr(options,name)):
+                self.queues_names.append(name)
                      
         if 'download' in dir(options) and getattr(options,'download'):
-            self.queues_names.extend([
-                         'download_and_apply',
-                         'download_remote_and_apply',
-                         'download_local_and_apply'])
-        if 'script' in dir(options) and getattr(options,'script')!='':
-            self.queues_names.append('apply')
-
+            self.queues_names.append('download')
+        else:
+            self.queues_names.append('reduce')
         self.queues_names.append('record')
-
+        
         for queue_name in queues_names:
-            setattr(self,queue_name+'_queue',manager.Queue())
+            setattr(self,queue_name,manager.Queue())
+        
+        #Create a shared counter to prevent file collisions:
+        self.counter=Counter(manager)
+        return
+                
+    def put(self,item):
+        #Put the item in the right queue and give it a number:
+        getattr(self,item[0]).put((self.counter.increment(),item))
+        return
 
+    def get(self):
+        timeout_first=0.01
+        timeout_subsequent=0.1
+        timeout=timeout_first
+
+        while True:
+            if len(self.queues_names)==0:
+                #If all queues names were removed, let consumer know
+                return 'STOP'
+
+            #Get an element from one queue, starting from the last:
+            for queue_name in reversed(self.queues_names):
+                try:
+                    item=getattr(self,queue_name).get(timeout)
+                    if item=='STOP':
+                        #remove queue name from list if it passed 'STOP'
+                        self.queues_names.remove(queue_name)
+                    return item
+                except Queue.Empty:
+                    pass
+            #First pass, short timeout. Subsequent pass, longer:
+            if timeout==timeout_first: timeout=subsequent
+        return 
+
+def consumer(CDB_queue_manager,project_drs,options):
+    for item in iter(CDB_queue_manager,get,'STOP'):
+        counter=item[0]
+        if 
+        
 
 def worker_apply(function_handle,in_queue,out_queue,downloaded_file_list,download_queue):
     for tuple in iter(in_queue.get,'STOP'):
