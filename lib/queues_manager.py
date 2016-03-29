@@ -77,10 +77,10 @@ class CDB_queue_manager:
             if timeout==timeout_first: timeout=subsequent
         return 
 
-def consumer(CDB_queue_manager,project_drs,options):
-    for item in iter(CDB_queue_manager,get,'STOP'):
-        counter=item[0]
-        if 
+#def consumer(CDB_queue_manager,project_drs,options):
+#    for item in iter(CDB_queue_manager,get,'STOP'):
+#        counter=item[0]
+#        if 
         
 
 def worker_apply(function_handle,in_queue,out_queue,downloaded_file_list,download_queue):

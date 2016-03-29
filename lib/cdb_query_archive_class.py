@@ -16,8 +16,10 @@ import netcdf4_soft_links.retrieval_manager as retrieval_manager
 
 #Internal:
 import ask
+import validate
 import nc_Database
 import nc_Database_reduce
+import downloads
 #import nc_Database_convert
 import recovery_manager
 
@@ -172,7 +174,7 @@ class SimpleTree:
             print ','.join(field)
         return
 
-    def put_or_process(self,function_handle,function_name,vars_list,options)
+    def put_or_process(self,function_handle,function_name,vars_list,options):
         if (len(vars_list)==1 or
             self.qeues_manager==None or
            ('serial' in dir(options) and options.serial)):
