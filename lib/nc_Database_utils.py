@@ -56,11 +56,7 @@ def extract_netcdf_variable_recursive(output,data,level_desc,tree,options,check_
 def retrieve_or_replicate(output_grp,data,group,options,check_empty,hdf5,semaphores,queue):
     netcdf_pointers=read_soft_links.read_netCDF_pointers(data.groups[group],options=options,semaphores=semaphores,queue=queue)
     if 'download' in dir(options) and options.download:
-        if (isinstance(output_grp,netCDF4.Dataset) or
-            isinstance(output_grp,netCDF4.Group)):
-            netcdf_pointers.retrieve(output_grp,'retrieve_path_data',filepath=options.out_netcdf_file)
-        else:
-            netcdf_pointers.retrieve(output_grp,'retrieve_path',filepath=options.out_netcdf_file)
+        netcdf_pointers.retrieve(output_grp,'retrieve_path_data',filepath=options.out_netcdf_file)
     else:
         if hdf5!=None:
             netcdf_pointers.replicate(output_grp,check_empty=check_empty,hdf5=hdf5[group])

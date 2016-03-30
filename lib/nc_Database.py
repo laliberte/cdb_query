@@ -200,6 +200,12 @@ class nc_Database:
         self.close_nc_file()
         return
 
+    def retrieve_dates(self,options):
+        ##Recover the database meta data:
+        self.load_nc_file()
+        retrieve_dates_recursive(self.Dataset,options)
+        self.close_nc_file()
+        return
 
 #####################################################################
 #####################################################################
@@ -282,34 +288,16 @@ def create_tree_recursive(output_top,tree):
         output=create_tree_recursive(output,tree[1:])
     return output
 
-#def retrieve_tree_recursive(options,data,output,queues,retrieval_function_name):
-#    if 'soft_links' in data.groups.keys():
-#        netcdf_pointers=read_soft_links.read_netCDF_pointers(data,options=options,queues=queues)
-#        netcdf_pointers.retrieve(output,
-#                                 retrieval_function_name,
-#                                 options,
-#                                 username=options.username,
-#                                 user_pass=options.user_pass
-#                                 )
-#    elif len(data.groups.keys())>0:
-#        for group in data.groups.keys():
-#            level_name=data.groups[group].getncattr('level_name')
-#            if ( is_level_name_included_and_not_excluded(level_name,options,group) and
-#                 tree_recursive_check_not_empty(options,data.groups[group])):
-#                if (isinstance(output,netCDF4.Dataset) or
-#                    isinstance(output,netCDF4.Group)):
-#                    if not group in output.groups.keys():
-#                        output_grp=output.createGroup(group)
-#                    else:
-#                        output_grp=output.groups[group]
-#                    for att in data.groups[group].ncattrs():
-#                        if not att in output_grp.ncattrs():
-#                            output_grp.setncattr(att,data.groups[group].getncattr(att))
-#                else:
-#                    output_grp=output
-#                retrieve_tree_recursive(options,data.groups[group],output_grp,queues,retrieval_function_name)
-#            
-#    return
+def retrieve_dates_recursive(data,options):
+    if 'soft_links' in data.groups.keys():
+        netcdf_pointers=read_soft_links.read_netCDF_pointers(data,options=options)
+        return netcdf_pointers.date_axis[netcdf_pointers.time_restriction]
+    elif len(data.groups.keys())>0:
+        for group in data.groups.keys():
+        return np.concatenate([ retrieve_tree_recursive(data.groups[group],options)
+                    for group in data.groups.keys()
+                    if ( is_level_name_included_and_not_excluded(data.groups[group].getncattr('level_name'),options,group) and
+                     tree_recursive_check_not_empty(options,data.groups[group])) ])
 
 def tree_recursive_check_not_empty(options,data):
     if 'soft_links' in data.groups.keys():

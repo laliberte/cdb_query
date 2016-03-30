@@ -31,7 +31,8 @@ class CDB_queue_manager:
 
         #Create queues:
         self.queues_names=manager.list()
-        for name in ['ask','validate','download_raw','time_split']:
+        #for name in ['ask','validate','download_raw','time_split']:
+        for name in ['ask','validate','time_split']:
             if (name in dir(options) and getattr(options,name)):
                 self.queues_names.append(name)
                      

@@ -29,6 +29,16 @@ class SimpleTree:
         self.queues_manager=queues_manager
         return
 
+    def ask_var_list(self,simulations_list,options):
+        if ('keep_field' in dir(options) and options.keep_field!=None):
+            drs_to_eliminate=[field for field in self.drs.simulations_desc if
+                                                 not field in options.keep_field]
+        else:
+            drs_to_eliminate=self.drs.simulations_desc
+        return [[ var[self.drs.simulations_desc.index(field)] if field in drs_to_eliminate else None
+                            for field in self.drs.official_drs_no_version] for var in 
+                            simulations_list_no_fx ]
+
     def ask(self,options):
         #Load header:
         try:
@@ -59,16 +69,7 @@ class SimpleTree:
             print "cdb_query will now attempt to confirm that these simulations have all the requested variables."
             print "This can take some time. Please abort if there are not enough simulations for your needs."
 
-        #Do it by simulation, except if one simulation field should be kept for further operations:
-        if ('keep_field' in dir(options) and options.keep_field!=None):
-            drs_to_eliminate=[field for field in self.drs.simulations_desc if
-                                                 not field in options.keep_field]
-        else:
-            drs_to_eliminate=self.drs.simulations_desc
-        vars_list=[[ var[self.drs.simulations_desc.index(field)] if field in drs_to_eliminate else None
-                            for field in self.drs.official_drs_no_version] for var in 
-                            simulations_list_no_fx ]
-
+        vars_list=self.ask_var_list(simulations_list_no_fx,options)
         self.put_or_process(ask.ask,'ask',var_list,options)
         return
 
@@ -92,56 +93,34 @@ class SimpleTree:
                                     simulation[self.drs.simulations_desc.index('ensemble')]!='r0i0p0']
 
         #Do it by simulation, except if one simulation field should be kept for further operations:
-        if ('keep_field' in dir(options) and options.keep_field!=None):
-            drs_to_eliminate=[field for field in self.drs.simulations_desc if
-                                                 not field in options.keep_field]
-        else:
-            drs_to_eliminate=self.drs.simulations_desc
-        vars_list=[[ var[self.drs.simulations_desc.index(field)] if field in drs_to_eliminate else None
-                            for field in self.drs.official_drs_no_version] for var in 
-                            simulations_list_no_fx ]
 
+        vars_list=self.ask_var_list(simlations_list_no_fx,options)
         self.put_or_process(validate.validate,'validate',vars_list,options)
         return
 
-    def download_raw(self,options):
-        #Recover the database meta data:
+    def reduce_var_list(self,options):
         if ('keep_field' in dir(options) and options.keep_field!=None):
             drs_to_eliminate=[field for field in self.drs.official_drs_no_version if
                                                  not field in options.keep_field]
         else:
             drs_to_eliminate=self.drs.official_drs_no_version
-        vars_list=[[ var[drs_to_eliminate.index(field)] if field in drs_to_eliminate else None
+        return [[ var[drs_to_eliminate.index(field)] if field in drs_to_eliminate else None
                             for field in self.drs.official_drs_no_version] for var in 
                             self.list_fields_local(options,drs_to_eliminate) ]
 
-        self.put_or_process(downloads.download_raw,'download_raw',vars_list,options)
-        return
+    #def download_raw(self,options):
+    #    #Recover the database meta data:
+    #    vars_list=self.reduce_var_list(options)
+    #    self.put_or_process(downloads.download_raw,'download_raw',vars_list,options)
+    #    return
 
     def time_split(self,options):
-        if ('keep_field' in dir(options) and options.keep_field!=None):
-            drs_to_eliminate=[field for field in self.drs.official_drs_no_version if
-                                                 not field in options.keep_field]
-        else:
-            drs_to_eliminate=self.drs.official_drs_no_version
-        vars_list=[[ var[drs_to_eliminate.index(field)] if field in drs_to_eliminate else None
-                            for field in self.drs.official_drs_no_version] for var in 
-                            self.list_fields_local(options,drs_to_eliminate) ]
-
+        vars_list=self.reduce_var_list(options)
         self.put_or_process(time_split.time_split,'time_split',vars_list,options)
         return
 
     def download(self,options):
-        #Recover the database meta data:
-        if ('keep_field' in dir(options) and options.keep_field!=None):
-            drs_to_eliminate=[field for field in self.drs.official_drs_no_version if
-                                                 not field in options.keep_field]
-        else:
-            drs_to_eliminate=self.drs.official_drs_no_version
-        vars_list=[[ var[drs_to_eliminate.index(field)] if field in drs_to_eliminate else None
-                            for field in self.drs.official_drs_no_version] for var in 
-                            self.list_fields_local(options,drs_to_eliminate) ]
-
+        vars_list=self.reduce_var_list(options)
         self.put_or_process(downloads.download,'download',vars_list,options)
         return
 
@@ -151,16 +130,7 @@ class SimpleTree:
               len(options.in_extra_netcdf_files)>0) ):
             raise InputErrorr('The identity script \'\' can only be used when no extra netcdf files are specified.')
 
-        #Recover the database meta data:
-        if ('keep_field' in dir(options) and options.keep_field!=None):
-            drs_to_eliminate=[field for field in self.drs.official_drs_no_version if
-                                                 not field in options.keep_field]
-        else:
-            drs_to_eliminate=self.drs.official_drs_no_version
-        vars_list=[[ var[drs_to_eliminate.index(field)] if field in drs_to_eliminate else None
-                            for field in self.drs.official_drs_no_version] for var in 
-                            self.list_fields_local(options,drs_to_eliminate) ]
-
+        vars_list=self.reduce_var_list(options)
         self.put_or_process(reduce_engine.reduce_application,'reduce',vars_list,options)
         return
 
@@ -249,7 +219,6 @@ class SimpleTree:
             self.close_database()
         return
         
-    #def load_database(self,options,find_function,Dataset=None,semaphores=dict()):
     def load_database(self,options,find_function,semaphores=dict()):
         self.define_database(options)
         if 'header' in dir(self):
@@ -275,15 +244,6 @@ class SimpleTree:
         del self.nc_Database
         return
 
-    #def record_header(self,options,output):
-    #    self.define_database(options)
-    #    self.header=self.nc_Database.load_header()
-    #    nc_Database.record_header(output,self.header)
-    #    self.close_database()
-    #    return
-
-
-        
 def find_simple(pointers,file_expt,semaphores=None):
     pointers.session.add(file_expt)
     pointers.session.commit()
