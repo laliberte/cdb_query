@@ -9,45 +9,50 @@ import Queue
 #Internal:
 import nc_Database_utils
 
-#http://stackoverflow.com/questions/2080660/python-multiprocessing-and-a-shared-counter
+#http://eli.thegreenplace.net/2012/01/04/shared-counter-with-pythons-multiprocessing
 class Counter(object):
     #Shared counter class
     def __init__(self,manager):
         self.val = manager.Value('i', 0)
+        self.lock = manager.Lock()
 
-    def increment(self, n=1):
-        with self.val.get_lock():
+    def increment(self):
+        with self.lock:
             value=self.val.value
-            self.val.value += n
+            self.val.value += 1
             return value
+
+    def increment_list(self, n=1):
+        values_list=[]
+        with self.lock:
+            for id in range(n):
+                values_list.append(self.val.value)
+                self.val.value += 1
+            return values_list
 
     @property
     def value(self):
-        return self.val.value
+        with self.lock:
+            return self.val.value
 
 class CDB_queue_manager:
     def __init__(self,options):
         self.manager=multiprocessing.Manager()
 
         #Create queues:
-        self.queues_names=manager.list()
+        self.queues_names=self.manager.list()
         #for name in ['ask','validate','download_raw','time_split']:
         #for name in ['ask','validate','time_split']:
-        for name in ['ask','validate']:
+        for name in ['ask','validate','reduce','download']:
             if (name in dir(options) and getattr(options,name)):
                 self.queues_names.append(name)
-                     
-        if 'download' in dir(options) and getattr(options,'download'):
-            self.queues_names.append('download')
-        else:
-            self.queues_names.append('reduce')
         self.queues_names.append('record')
         
-        for queue_name in queues_names:
-            setattr(self,queue_name,manager.Queue())
+        for queue_name in self.queues_names:
+            setattr(self,queue_name,self.manager.Queue())
         
         #Create a shared counter to prevent file collisions:
-        self.counter=Counter(manager)
+        self.counter=Counter(self.manager)
         return
                 
     def put(self,item):
@@ -68,23 +73,42 @@ class CDB_queue_manager:
 
             #Get an element from one queue, starting from the last:
             for queue_name in reversed(self.queues_names):
-                try:
-                    item=getattr(self,queue_name).get(timeout)
-                    if item=='STOP':
-                        #remove queue name from list if it passed 'STOP'
-                        self.queues_names.remove(queue_name)
-                    return item
-                except Queue.Empty:
-                    pass
+                if queue_name != 'record':
+                    try:
+                        item=getattr(self,queue_name).get(timeout)
+                        if item=='STOP':
+                            #remove queue name from list if it passed 'STOP'
+                            self.queues_names.remove(queue_name)
+                        return item
+                    except Queue.Empty:
+                        pass
             #First pass, short timeout. Subsequent pass, longer:
             if timeout==timeout_first: timeout=subsequent
         return 
 
-#def consumer(CDB_queue_manager,project_drs,options):
-#    for item in iter(CDB_queue_manager,get,'STOP'):
-#        counter=item[0]
-#        if 
-        
+def consumer(CDB_queue_manager,project_drs,options):
+    for item in iter(CDB_queue_manager,get,'STOP'):
+        counter=item[0]
+        #Create unique file id:
+        options.out_netcdf_file+='.'+str(counter)
+
+        #Recursively apply commands:
+        apps_class=cdb_query_archive_class.SimpleTree(project_drs,queues_manager=CDB_queue_manager)
+        #Run the command:
+        getattr(apps,options.command)(options)
+    return
+
+def consumer(CDB_queue_manager,project_drs,options):
+    for item in iter(CDB_queue_manager,get,'STOP'):
+        counter=item[0]
+        #Create unique file id:
+        item[1].out_netcdf_file+='.'+str(counter)
+
+        #Recursively apply commands:
+        apps_class=cdb_query_archive_class.SimpleTree(project_drs,queues_manager=CDB_queue_manager)
+        #Run the command:
+        getattr(apps,options.command)(item[1])
+    return
 
 def worker_apply(function_handle,in_queue,out_queue,downloaded_file_list,download_queue):
     for tuple in iter(in_queue.get,'STOP'):

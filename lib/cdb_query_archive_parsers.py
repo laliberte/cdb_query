@@ -83,7 +83,7 @@ def generate_subparsers(parser,epilog,project_drs):
     return
 
 def functions_arguments(parser,functions_list):
-    authorized_functions=['ask','validate','download_raw','time_split','download','reduce']
+    authorized_functions=['ask','validate','download_raw','time_split','download','reduce','convert']
     for function in authorized_functions:
         if function in functions_list:
             parser.add_argument('--'+function, default=True,help=argparse.SUPPRESS)
@@ -240,11 +240,9 @@ def reduce_arguments(parser,project_drs):
     parser.add_argument('out_netcdf_file',
                                  help='NETCDF file (output)')
 
-    select_group = parser.add_argument_group('These arguments specify the structure of the output')
-    select_group.add_argument('--add_fixed',default=False, action='store_true',help='include fixed variables')
+    convert_arguments(parser,project_drs)
     select_group.add_argument('-k','--keep_field',action='append', type=str, choices=project_drs.official_drs_no_version,
                                        help='Keep these fields in the applied file.' )
-    convert_arguments(parser,project_drs)
     return
 
 def convert(subparsers,epilog,project_drs):
@@ -253,10 +251,11 @@ def convert(subparsers,epilog,project_drs):
                                description=textwrap.dedent('Take as an input the results from \'download\' and converts the data.'),
                                epilog=epilog_convert,
                              )
-    functions_arguments(parser,['convert'])
+    functions_arguments(parser,['reduce','convert'])
     input_arguments(parser)
     parser.add_argument('out_destination',
                              help='Destination directory for conversion.')
+    parser_add_argument('--script',default='',help=argparse.SUPPRESS)
     convert_arguments(parser,project_drs)
     return
 
@@ -265,6 +264,9 @@ def convert_arguments(parser,project_drs):
                                  help='When reducing an operator to soft links use this options for siginificant speed up.')
 
     processing_arguments(parser,project_drs)
+
+    select_group = parser.add_argument_group('These arguments specify the structure of the output')
+    select_group.add_argument('--add_fixed',default=False, action='store_true',help='include fixed variables')
 
     inc_group = parser.add_argument_group('Inclusions')
     slicing_arguments(inc_group,project_drs,action_type='append')

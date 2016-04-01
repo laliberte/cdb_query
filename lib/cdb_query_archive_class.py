@@ -37,7 +37,7 @@ class SimpleTree:
             drs_to_eliminate=self.drs.simulations_desc
         return [[ var[self.drs.simulations_desc.index(field)] if field in drs_to_eliminate else None
                             for field in self.drs.official_drs_no_version] for var in 
-                            simulations_list_no_fx ]
+                            simulations_list ]
 
     def ask(self,options):
         #Load header:
@@ -70,7 +70,7 @@ class SimpleTree:
             print "This can take some time. Please abort if there are not enough simulations for your needs."
 
         vars_list=self.ask_var_list(simulations_list_no_fx,options)
-        self.put_or_process('ask',ask.ask,var_list,options)
+        self.put_or_process('ask',ask.ask,vars_list,options)
         return
 
     def validate(self,options):
@@ -135,7 +135,8 @@ class SimpleTree:
         return
 
     def convert(self,options):
-        self.download(options)
+        #Convert is simply reduce with the identity script:
+        self.reduce(options)
         return
 
     def list_fields(self,options):
@@ -146,21 +147,26 @@ class SimpleTree:
 
     def put_or_process(self,function_name,function_handle,vars_list,options):
         if (len(vars_list)==1 or
-            self.qeues_manager==None or
+            self.queues_manager==None or
            ('serial' in dir(options) and options.serial)):
-            ouput_file_name=function_handle(self,options)
-            options.in_netcdf_file=output_file_name
             next_function_name=self.queues_manager.queues_names[self.queues_manager.queues_names.index(function_name)+1]
-            self.queues_manager.put((next_function_name,function_handle,self.drs,options))
+
+            ouput_file_name=function_handle(self,options)
+            if ('convert' in dir(options) and options.convert and next_function_name=='record'):
+                #This is the last function in the chain. Convert and exit.
+                record_in_output_directory(output_file_name,vars_list[0],options)
+            else:
+                options.in_netcdf_file=output_file_name
+                self.queues_manager.put((next_function_name,options))
         else:
             #Randomize to minimize strain on index nodes:
             random.shuffle(vars_list)
-            for var in enumerate(vars_list):
+            for var_id,var in enumerate(vars_list):
                 options_copy=copy.copy(options)
-                for opt_id, opt in enumerate(project_drs.official_drs_no_version):
+                for opt_id, opt in enumerate(self.drs.official_drs_no_version):
                     if var[opt_id]!=None:
                         setattr(options_copy,opt,var[opt_id])
-                    self.queues_manager.put((function_name,function_handle,self.drs,options_copy))
+                self.queues_manager.put((function_name,options_copy))
         return
 
     def list_fields_local(self,options,fields_to_list):
@@ -270,3 +276,29 @@ def rank_data_nodes(options,data_node_list,url_list):
             pass
         print 'Done!'
     return list(np.array(data_node_list_timed)[np.argsort(data_node_timing)])+list(set(data_node_list).difference(data_node_list_timed))
+
+def record_in_output_directory(input_file_name,var,project_drs,options):
+    version='v'+datetime.datetime.now().strftime('%Y%m%d')
+    var_with_version=[var[project_drs.official_drs_no_version.index(opt)] if opt in project_drs.official_drs_no_version
+                     else verions for opt in project_drs.official_drs]
+
+    output_file_name=options.out_destination+'/'+'/'.join(var_with_version)+'/'+os.path.basename(input_file_name)
+    #Create directory:
+    try:
+        directory=os.path.dirname(output_file_name)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+    except:
+        pass
+
+    time_frequency=var[project_drs.official_drs_no_version.index('time_frequency')]
+    #Get the time:
+    output_tmp=netCDF4.Dataset(temp_file_name,'r')
+    timestamp=nc_Database_utils.convert_dates_to_timestamps(output_tmp,time_frequency)
+    output_tmp.close()
+
+    if timestamp=='':
+        os.remove(temp_file_name)
+    else:
+        os.rename(temp_file_name,'.'.join(output_file_name.split('.')[:-1])+timestamp+'.nc')
+    return

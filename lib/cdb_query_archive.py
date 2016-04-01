@@ -11,6 +11,7 @@ import remote_archive
 import cdb_query_archive_parsers
 import cdb_query_archive_class
 import nc_Database_apply
+import queues_manager
 
 
 def main_CMIP5():
@@ -88,10 +89,9 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD, Submitted.'.format(ve
         options.password=None
 
     if options.command!='certificates':
-        queues_manager=queues_manager.CDB_queue_manager(options)
-        paths_dict=cdb_query_archive_class.SimpleTree(project_drs)
+        paths_dict=cdb_query_archive_class.SimpleTree(project_drs,queues_manager=queues_manager.CDB_queue_manager(options))
         #Run the command:
-        getattr(paths_dict,options.command)(options,queues_manager=queues_manager)
+        getattr(paths_dict,options.command)(options)
         
 if __name__ == "__main__":
     main('CMIP5')

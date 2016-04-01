@@ -180,7 +180,7 @@ def ask_simulations_recursive(database,options,simulations_desc,async=True):
     options_copy=copy.copy(options)
     if isinstance(simulations_desc,list) and len(simulations_desc)>1:
         options_copy.list_only_field=simulations_desc[0]
-        output=ask_with_database(database,options_copy)[1]
+        output=ask_with_database(database,options_copy)
         options_copy.list_only_field=None
         args_list=[]
         for val in output:
@@ -202,7 +202,7 @@ def ask_simulations_recursive(database,options,simulations_desc,async=True):
             simulations_list=[item for sublist in map(wrapper_ask_simulations_recursive,args_list) for item in sublist]
     else:
         options_copy.list_only_field=simulations_desc[0]
-        simulations_list=[(item,) for item in ask_with_database(database,options_copy)[1]]
+        simulations_list=[(item,) for item in ask_with_database(database,options_copy)]
         options_copy.list_only_field=None
     return simulations_list
 
