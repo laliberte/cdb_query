@@ -32,7 +32,8 @@ class CDB_queue_manager:
         #Create queues:
         self.queues_names=manager.list()
         #for name in ['ask','validate','download_raw','time_split']:
-        for name in ['ask','validate','time_split']:
+        #for name in ['ask','validate','time_split']:
+        for name in ['ask','validate']:
             if (name in dir(options) and getattr(options,name)):
                 self.queues_names.append(name)
                      
@@ -104,7 +105,7 @@ def distributed_apply(function_handle,download_function_handle,project_drs,optio
     processes=[]
 
     #validate_queue, validated_file_list, validate_process = start_download_manager(download_function_handle,retrieval_queues,options)
-    download_queue, downloaded_file_list, download_process = start_download_manager(download_function_handle,retrieval_queues,manager,options)
+    #download_queue, downloaded_file_list, download_process = start_download_manager(download_function_handle,retrieval_queues,manager,options)
 
     #Set up the discovery var per var:
     for var_id,var in enumerate(vars_list):

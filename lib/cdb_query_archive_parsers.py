@@ -82,6 +82,15 @@ def generate_subparsers(parser,epilog,project_drs):
     convert(subparsers,epilog,project_drs)
     return
 
+def function_arguments(parser,functions_list):
+    authorized_functions=['ask','validate','download_raw','time_split','download','reduce']
+    for function in authorized_functions:
+        if function in functions_list:
+            parser.add_argument('--'+function, default=True,help=argparse.SUPPRESS)
+        else:
+            parser.add_argument('--'+function, default=False,help=argparse.SUPPRESS)
+
+
 #QUERY PARSERS
 def ask(subparsers,epilog,project_drs):
     #Find data
@@ -99,6 +108,8 @@ def ask(subparsers,epilog,project_drs):
                                                  to function properly. If it fails it is possible the servers are down.'''),
                                            epilog=epilog_ask
                                          )
+    functions_arguments(parser,['ask'])
+
     parser.add_argument('--list_only_field',default=None, choices=project_drs.remote_fields,
                               help='When this option is used, the ask function prints only the specified field \n\
                                   for which published data COULD match the query. Does nothing to the output file.\n\
@@ -174,6 +185,7 @@ def validate(subparsers,epilog,project_drs):
                                    epilog=epilog_validate,
                                  )
 
+    functions_arguments(parser,['validate'])
     validate_arguments(parser,project_drs)
 
     input_arguments(parser)
@@ -215,6 +227,7 @@ def reduce(subparsers,epilog,project_drs):
                                        description=textwrap.dedent('Take as an input retrieved data and reduce bash script'),
                                        epilog=epilog_reduce
                                          )
+    functions_arguments(parser,['reduce'])
     reduce_arguments(parser,project_drs)
     return 
 
@@ -240,6 +253,7 @@ def convert(subparsers,epilog,project_drs):
                                description=textwrap.dedent('Take as an input the results from \'download\' and converts the data.'),
                                epilog=epilog_convert,
                              )
+    functions_arguments(parser,['convert'])
     input_arguments(parser)
     parser.add_argument('out_destination',
                              help='Destination directory for conversion.')
@@ -268,6 +282,7 @@ def download_and_reduce(subparsers,epilog,project_drs):
                                            description=textwrap.dedent('Take as an input a database file, download the data and reduce bash script'),
                                            epilog=epilog_reduce
                                          )
+    functions_arguments(parser,['download','reduce'])
     manage_soft_links_parsers.download_arguments_no_files(parser,project_drs)
     reduce_arguments(parser,project_drs)
     return 
@@ -279,6 +294,7 @@ def certificates(subparsers,epilog,project_drs):
 
 def download(subparsers,epilog,project_drs):
     parser=manage_soft_links_parsers.download(subparsers,epilog,project_drs)
+    functions_arguments(parser,['download'])
 
     inc_group = parser.add_argument_group('Inclusions')
     slicing_arguments(inc_group,project_drs,action_type='append')
@@ -288,6 +304,7 @@ def download(subparsers,epilog,project_drs):
 
 #def download_raw(subparsers,epilog,project_drs):
 #    parser=manage_soft_links_parsers.download_raw(subparsers,epilog,project_drs)
+#    functions_arguments(parser,['download_raw'])
 #
 #    inc_group = parser.add_argument_group('Inclusions')
 #    slicing_arguments(inc_group,project_drs,action_type='append')
