@@ -82,7 +82,7 @@ def generate_subparsers(parser,epilog,project_drs):
     convert(subparsers,epilog,project_drs)
     return
 
-def function_arguments(parser,functions_list):
+def functions_arguments(parser,functions_list):
     authorized_functions=['ask','validate','download_raw','time_split','download','reduce']
     for function in authorized_functions:
         if function in functions_list:

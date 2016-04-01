@@ -294,7 +294,7 @@ def retrieve_dates_recursive(data,options):
         return netcdf_pointers.date_axis[netcdf_pointers.time_restriction]
     elif len(data.groups.keys())>0:
         for group in data.groups.keys():
-        return np.concatenate([ retrieve_tree_recursive(data.groups[group],options)
+            return np.concatenate([ retrieve_tree_recursive(data.groups[group],options)
                     for group in data.groups.keys()
                     if ( is_level_name_included_and_not_excluded(data.groups[group].getncattr('level_name'),options,group) and
                      tree_recursive_check_not_empty(options,data.groups[group])) ])
