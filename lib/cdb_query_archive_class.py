@@ -108,11 +108,11 @@ class SimpleTree:
                             for field in self.drs.official_drs_no_version] for var in 
                             self.list_fields_local(options,drs_to_eliminate) ]
 
-    #def download_raw(self,options):
-    #    #Recover the database meta data:
-    #    vars_list=self.reduce_var_list(options)
-    #    self.put_or_process('dowload_raw',downloads.download_raw,vars_list,options)
-    #    return
+    def download_raw(self,options):
+        #Recover the database meta data:
+        vars_list=self.reduce_var_list(options)
+        self.put_or_process('dowload_raw',downloads.download_raw,vars_list,options)
+        return
 
     def time_split(self,options):
         vars_list=self.reduce_var_list(options)
@@ -145,19 +145,25 @@ class SimpleTree:
             print ','.join(field)
         return
 
+    def list_fields_local(self,options,fields_to_list):
+        self.load_database(options,find_simple)
+        fields_list=self.nc_Database.list_fields(fields_to_list)
+        self.close_database()
+        return fields_list
+
     def put_or_process(self,function_name,function_handle,vars_list,options):
         if (len(vars_list)==1 or
             self.queues_manager==None or
-           ('serial' in dir(options) and options.serial)):
+            'serial' in dir(options) and options.serial):
             next_function_name=self.queues_manager.queues_names[self.queues_manager.queues_names.index(function_name)+1]
+            output_file_name=function_handle(self,options)
 
-            ouput_file_name=function_handle(self,options)
             if ('convert' in dir(options) and options.convert and next_function_name=='record'):
                 #This is the last function in the chain. Convert and exit.
                 record_in_output_directory(output_file_name,vars_list[0],options)
             else:
                 options.in_netcdf_file=output_file_name
-                self.queues_manager.put((next_function_name,options))
+            self.queues_manager.put((next_function_name,options))
         else:
             #Randomize to minimize strain on index nodes:
             random.shuffle(vars_list)
@@ -169,11 +175,9 @@ class SimpleTree:
                 self.queues_manager.put((function_name,options_copy))
         return
 
-    def list_fields_local(self,options,fields_to_list):
-        self.load_database(options,find_simple)
-        fields_list=self.nc_Database.list_fields(fields_to_list)
-        self.close_database()
-        return fields_list
+    #def close_queue(self,queue_name):
+    #    self.queues_manager.put((queue_name,'STOP'))
+    #    return
 
     def find_data_nodes_and_simulations(self,options):
         #We have to time the response of the data node.

@@ -240,7 +240,7 @@ def reduce_arguments(parser,project_drs):
     parser.add_argument('out_netcdf_file',
                                  help='NETCDF file (output)')
 
-    convert_arguments(parser,project_drs)
+    select_group=convert_arguments(parser,project_drs)
     select_group.add_argument('-k','--keep_field',action='append', type=str, choices=project_drs.official_drs_no_version,
                                        help='Keep these fields in the applied file.' )
     return
@@ -255,7 +255,7 @@ def convert(subparsers,epilog,project_drs):
     input_arguments(parser)
     parser.add_argument('out_destination',
                              help='Destination directory for conversion.')
-    parser_add_argument('--script',default='',help=argparse.SUPPRESS)
+    parser.add_argument('--script',default='',help=argparse.SUPPRESS)
     convert_arguments(parser,project_drs)
     return
 
@@ -276,7 +276,7 @@ def convert_arguments(parser,project_drs):
     comp_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.official_drs_no_version,
                                        help='Complex query fields.' )
     complex_slicing(comp_group,project_drs,action_type='append')
-    return
+    return select_group
 
 def download_and_reduce(subparsers,epilog,project_drs):
     epilog_reduce=textwrap.dedent(epilog)

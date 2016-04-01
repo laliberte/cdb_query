@@ -89,9 +89,16 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD, Submitted.'.format(ve
         options.password=None
 
     if options.command!='certificates':
-        paths_dict=cdb_query_archive_class.SimpleTree(project_drs,queues_manager=queues_manager.CDB_queue_manager(options))
-        #Run the command:
-        getattr(paths_dict,options.command)(options)
+        if options.command=='list_fields':
+            apps_class=cdb_query_archive_class.SimpleTree(project_drs)
+            #Run the command:
+            getattr(apps_class,options.command)(options)
+        else:
+            manager=queues_manager.CDB_queue_manager(options)
+            apps_class=cdb_query_archive_class.SimpleTree(project_drs,queues_manager=manager)
+            #Run the command:
+            getattr(apps_class,options.command)(options)
+            queues_manager.recorder(manager,project_drs,options)
         
 if __name__ == "__main__":
     main('CMIP5')
