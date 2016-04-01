@@ -87,9 +87,10 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD, Submitted.'.format(ve
         options.password=None
 
     if options.command!='certificates':
+        queues_manager=queues_manager.CDB_queue_manager(options)
         paths_dict=cdb_query_archive_class.SimpleTree(project_drs)
         #Run the command:
-        getattr(paths_dict,options.command)(options)
+        getattr(paths_dict,options.command)(options,queues_manager=queues_manager)
         
 if __name__ == "__main__":
     main('CMIP5')

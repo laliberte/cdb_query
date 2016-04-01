@@ -70,7 +70,7 @@ class SimpleTree:
             print "This can take some time. Please abort if there are not enough simulations for your needs."
 
         vars_list=self.ask_var_list(simulations_list_no_fx,options)
-        self.put_or_process(ask.ask,'ask',var_list,options)
+        self.put_or_process('ask',ask.ask,var_list,options)
         return
 
     def validate(self,options):
@@ -95,7 +95,7 @@ class SimpleTree:
         #Do it by simulation, except if one simulation field should be kept for further operations:
 
         vars_list=self.ask_var_list(simlations_list_no_fx,options)
-        self.put_or_process(validate.validate,'validate',vars_list,options)
+        self.put_or_process('validate',validate.validate,vars_list,options)
         return
 
     def reduce_var_list(self,options):
@@ -111,17 +111,17 @@ class SimpleTree:
     #def download_raw(self,options):
     #    #Recover the database meta data:
     #    vars_list=self.reduce_var_list(options)
-    #    self.put_or_process(downloads.download_raw,'download_raw',vars_list,options)
+    #    self.put_or_process('dowload_raw',downloads.download_raw,vars_list,options)
     #    return
 
     def time_split(self,options):
         vars_list=self.reduce_var_list(options)
-        self.put_or_process(time_split.time_split,'time_split',vars_list,options)
+        self.put_or_process('time_split',time_split.time_split,vars_list,options)
         return
 
     def download(self,options):
         vars_list=self.reduce_var_list(options)
-        self.put_or_process(downloads.download,'download',vars_list,options)
+        self.put_or_process('download',downloads.download,vars_list,options)
         return
 
     def reduce(self,options):
@@ -131,7 +131,7 @@ class SimpleTree:
             raise InputErrorr('The identity script \'\' can only be used when no extra netcdf files are specified.')
 
         vars_list=self.reduce_var_list(options)
-        self.put_or_process(reduce_engine.reduce_application,'reduce',vars_list,options)
+        self.put_or_process('reduce',reduce_engine.reduce_application,vars_list,options)
         return
 
     def convert(self,options):
@@ -144,14 +144,14 @@ class SimpleTree:
             print ','.join(field)
         return
 
-    def put_or_process(self,function_handle,function_name,vars_list,options):
+    def put_or_process(self,function_name,function_handle,vars_list,options):
         if (len(vars_list)==1 or
             self.qeues_manager==None or
            ('serial' in dir(options) and options.serial)):
             ouput_file_name=function_handle(self,options)
             options.in_netcdf_file=output_file_name
-            next_function=self.queues_manager.queues_names[self.queues_manager.queues_names.index(function_name)+1]
-            self.queues_manager.put((next_function,self.drs,options))
+            next_function_name=self.queues_manager.queues_names[self.queues_manager.queues_names.index(function_name)+1]
+            self.queues_manager.put((next_function_name,function_handle,self.drs,options))
         else:
             #Randomize to minimize strain on index nodes:
             random.shuffle(vars_list)
@@ -160,7 +160,7 @@ class SimpleTree:
                 for opt_id, opt in enumerate(project_drs.official_drs_no_version):
                     if var[opt_id]!=None:
                         setattr(options_copy,opt,var[opt_id])
-                    self.queues_manager.put((function_name,self.drs,options_copy))
+                    self.queues_manager.put((function_name,function_handle,self.drs,options_copy))
         return
 
     def list_fields_local(self,options,fields_to_list):

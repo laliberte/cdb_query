@@ -26,8 +26,8 @@ class Counter(object):
         return self.val.value
 
 class CDB_queue_manager:
-    def __init__(self,manager,options):
-        #self.manager=multiprocessing.Manager()
+    def __init__(self,options):
+        self.manager=multiprocessing.Manager()
 
         #Create queues:
         self.queues_names=manager.list()
@@ -56,6 +56,7 @@ class CDB_queue_manager:
         return
 
     def get(self):
+        #Simple get that goes through the queues sequentially
         timeout_first=0.01
         timeout_subsequent=0.1
         timeout=timeout_first
