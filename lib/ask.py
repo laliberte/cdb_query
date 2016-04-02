@@ -36,7 +36,7 @@ def find_path(nc_Database,file_expt,semaphores=dict()):
 #    database.union_header()
 #    return ask_with_database(database,options)
 
-def ask(database,options):
+def ask(database,options,queues_manager=None):
     return ask_with_database(database,options)
 
 def ask_with_database(database,options):

@@ -92,8 +92,10 @@ class SimpleTree:
         simulations_list_no_fx=[simulation for simulation in simulations_list if 
                                     simulation[self.drs.simulations_desc.index('ensemble')]!='r0i0p0']
 
+        if self.queues_manager != None:
+            for data_node in data_node_list:
+                self.queues_manager.semaphores.add(data_node)
         #Do it by simulation, except if one simulation field should be kept for further operations:
-
         vars_list=self.ask_var_list(simlations_list_no_fx,options)
         self.put_or_process('validate',validate.validate,vars_list,options)
         return
@@ -152,6 +154,9 @@ class SimpleTree:
         return fields_list
 
     def put_or_process(self,function_name,function_handle,vars_list,options):
+        #Set number of processors to 1 for all child processses.
+        #This is important for the setup of the ask function:
+        options.num_procs=1
         if (len(vars_list)==1 or
             self.queues_manager==None or
             'serial' in dir(options) and options.serial):

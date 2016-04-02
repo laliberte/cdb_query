@@ -191,12 +191,12 @@ class nc_Database:
 
         return output_root, temp_output_file_name
 
-    def retrieve_database(self,output,options,queue=None):
+    def retrieve_database(self,output,options,queues_manager=None):
         ##Recover the database meta data:
         tree=zip(self.drs.official_drs_no_version,[ None
                             for field in self.drs.official_drs_no_version])
         self.load_nc_file()
-        nc_Database_utils.extract_netcdf_variable(output,self.Dataset,tree,options,queue=queue)
+        nc_Database_utils.extract_netcdf_variable(output,self.Dataset,tree,options,queues_manager=queues_manager)
         self.close_nc_file()
         return
 

@@ -19,20 +19,52 @@ class Counter(object):
 
     def increment(self,n=1):
         with self.lock:
-            value=self.val.value
-            self.val.value += n
-            return value + n
+            return self.increment_no_lock(n=n)
 
-    def decrement(self):
+    def increment_no_lock(self,n=1):
+        value=self.val.value
+        self.val.value += n
+        return value + n
+
+    def decrement(self,n=1):
         with self.lock:
-            value=self.val.value
-            self.val.value -= 1
-            return value - 1
+            return self.decrement_no_lock(n=n)
+
+    def decrement_no_lock(self,n=1):
+        value=self.val.value
+        self.val.value -= n
+        return value - n
 
     @property
     def value(self):
         with self.lock:
             return self.val.value
+
+    @property
+    def value_no_lock(self):
+        with self.lock:
+            return self.val.value
+
+class Semaphores_data_node:
+    #Shared counter class
+    def __init__(self,manager,n=20,num_concurrent=1):
+        self.dict = manager.dict()
+        self.lock = manager.Lock()
+        self.list = [manager.Semaphores(num_concurrent) for id in range(n)]
+
+    def add(self,data_node): 
+        #Add a pointer to a semaphore:
+        with self.lock:
+            if not data_node in self.dict.keys():
+                if len(self.dict.keys())>0:
+                    self.dict[data_node]=1+np.max([self.dict[key] for key in self.dict[key]])
+                else:
+                    self.dict[data_node]=0
+        return
+
+    def get(self,data_node):
+        #Just send the semaphore object:
+        return self.list[self.dict[data_node]]
 
 class CDB_queue_manager:
     def __init__(self,options):
@@ -43,7 +75,7 @@ class CDB_queue_manager:
         self.queues_names=[]
         #for name in ['ask','validate','download_raw','time_split']:
         #for name in ['ask','validate','time_split']:
-        for name in ['ask','validate','reduce','download']:
+        for name in ['ask','validate','download','reduce']:
             if (name in dir(options) and getattr(options,name)):
                 self.queues_names.append(name)
         self.queues_names.append('record')
@@ -54,12 +86,19 @@ class CDB_queue_manager:
         
         #Create a shared counter to prevent file collisions:
         self.counter=Counter(self.manager)
+
+        if 'validate' in self.queues_name:
+            #Create sempahores for validate:
+            self.semaphores_validate=Semaphores_data_nodes(self.manager,num_concurrent=5)
+
+        if 'download' in self.queues_name:
+            #Create sempahores for download:
+            self.semaphores_download=Semaphores_data_nodes(self.manager,num_concurrent=options.num_dl)
         return
                 
     def put(self,item):
-        if item[0]!='record':
-            next_queue=self.queues_names[self.queues_names.index(item[0])+1]
-            getattr(self,next_queue_name+'_expected').increment()
+        if item[0]==self.queues_names[0]:
+            getattr(self,item[0]+'_expected').increment()
         #Put the item in the right queue and give it a number:
         getattr(self,item[0]).put((self.counter.increment(),)+item)
         return
@@ -76,20 +115,35 @@ class CDB_queue_manager:
         timeout_subsequent=0.1
         timeout=timeout_first
 
-        while True:
+        while self.expected_queue_size()>0:
             #Get an element from one queue, starting from the last:
             for queue_name in self.queues_names:
-                if getattr(self,queue_name+'_expected').value > 0:
-                    if not (not record and queue_name == 'record'):
-                    #Record workers can pick from the record queue
-                        try:
-                            item=getattr(self,queue_name).get(True,timeout)
-                            getattr(self,next_queue_name+'_expected').decrement()
-                        except Queue.Empty:
-                            pass
-            #First pass, short timeout. Subsequent pass, longer:
-            if timeout==timeout_first: timeout=timeout_subsequent
-        return 
+                #Record workers can pick from the record queue
+                if not (not record and queue_name == 'record'):
+                    try:
+                        return self.get_queue(queue_name)
+                    except Queue.Empty:
+                        pass
+                #First pass, short timeout. Subsequent pass, longer:
+                if timeout==timeout_first: timeout=timeout_subsequent
+        return 'STOP'
+
+    def get_queue(self,queue_name):
+        #Get queue with locks:
+        with getattr(self,queue_name+'_expected').lock:
+            if getattr(self,queue_name+'_expected').value_no_lock > 0:
+                #Will fail with Queue.Empty if the item had not been put in the queue:
+                item=getattr(self,queue_name).get(True,timeout)
+                #Increment future actions:
+                if item[0]!='record':
+                    next_queue=self.queues_names[self.queues_names.index(item[0])+1]
+                    getattr(self,next_queue_name+'_expected').increment()
+                #Decrement current acction:
+                getattr(self,queue_name+'_expected').decrement_no_lock()
+        return item
+
+    def expected_queue_size():
+        return np.max([getattr(self,queue_name+'_expected').value for queue_name in self.queues_names])
 
 def recorder(queue_manager,project_drs,options):
     if not ('convert' in dir(options) and options.convert):

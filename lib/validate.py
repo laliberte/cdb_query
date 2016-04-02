@@ -179,14 +179,7 @@ def get_diag_months_list(diagnostic):
         diag_months_list=range(1,13)
     return diag_months_list
 
-#def validate_distributed(database,options,semaphores):
-#    #print 'Starting ',options.institute,options.model,options.ensemble
-#    filepath=validate(database,options,semaphores=semaphores)
-#    #print 'Finished ',options.institute,options.model,options.ensemble
-#    return filepath
-
-#def validate(project_drs,options,Dataset=None,semaphores=dict()):
-def validate(database,project_drs,options,semaphores=dict()):
+def validate(database,project_drs,options,queues_manager=None):
     if 'data_node_list' in dir(project_drs):
         database.header['data_node_list']=project_drs.data_node_list
     else:
@@ -194,6 +187,7 @@ def validate(database,project_drs,options,semaphores=dict()):
         if len(data_node_list)>1 and not options.no_check_availability:
                 data_node_list=database.rank_data_nodes(options,data_node_list,url_list)
         database.header['data_node_list']=data_node_list
+    semaphores={key:queues_manager.semaphores_validate.get(key) for key in queues_manager.semaphores_validate.dict.keys()}
 
     if options.no_check_availability:
         #Does not check whether files are available / queryable before proceeding.
