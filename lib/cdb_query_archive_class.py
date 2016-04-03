@@ -57,7 +57,16 @@ class SimpleTree:
             return
 
         #Find the simulation list:
-        simulations_list=ask.ask_simulations_recursive(self,options,self.drs.simulations_desc)
+        #Check if a specific simulation was sliced:
+        single_simulation_requested=[]
+        for desc in self.drs.simulations_desc:
+            if (getattr(options,desc) !=None and 
+               len(getattr(options,desc))==1):
+               single_simulation_requested.append(getattr(options,desc)[0])
+        if len(single_simulation_requested)==len(self.drs.simulations_desc):
+            simulations_list=[tuple(single_simulation_requested)]
+        else:
+            simulations_list=ask.ask_simulations_recursive(self,options,self.drs.simulations_desc)
 
         #Remove fixed variable:
         simulations_list_no_fx=[simulation for simulation in simulations_list if 
@@ -94,7 +103,7 @@ class SimpleTree:
 
         if self.queues_manager != None:
             for data_node in data_node_list:
-                self.queues_manager.semaphores.add(data_node)
+                self.queues_manager.validate_semaphores.add_new_data_node(data_node)
         #Do it by simulation, except if one simulation field should be kept for further operations:
         vars_list=self.ask_var_list(simlations_list_no_fx,options)
         self.put_or_process('validate',validate.validate,vars_list,options)
@@ -111,6 +120,10 @@ class SimpleTree:
                             self.list_fields_local(options,drs_to_eliminate) ]
 
     def download_raw(self,options):
+        if self.queues_manager != None:
+            data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
+            for data_node in data_node_list:
+                self.queues_manager.validate_semaphores.add_new_data_node(data_node)
         #Recover the database meta data:
         vars_list=self.reduce_var_list(options)
         self.put_or_process('dowload_raw',downloads.download_raw,vars_list,options)
@@ -118,10 +131,23 @@ class SimpleTree:
 
     def time_split(self,options):
         vars_list=self.reduce_var_list(options)
-        self.put_or_process('time_split',time_split.time_split,vars_list,options)
+        self.put_or_process('time_split',downloads.time_split,vars_list,options)
+        return
+
+    def download_remote(self,options):
+        if self.queues_manager != None:
+            data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
+            for data_node in data_node_list:
+                self.queues_manager.validate_semaphores.add_new_data_node(data_node)
+        vars_list=self.reduce_var_list(options)
+        self.put_or_process('download_remote',downloads.download_remote,vars_list,options)
         return
 
     def download(self,options):
+        if self.queues_manager != None:
+            data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
+            for data_node in data_node_list:
+                self.queues_manager.validate_semaphores.add_new_data_node(data_node)
         vars_list=self.reduce_var_list(options)
         self.put_or_process('download',downloads.download,vars_list,options)
         return
@@ -133,7 +159,7 @@ class SimpleTree:
             raise InputErrorr('The identity script \'\' can only be used when no extra netcdf files are specified.')
 
         vars_list=self.reduce_var_list(options)
-        self.put_or_process('reduce',reduce_engine.reduce_application,vars_list,options)
+        self.put_or_process('reduce',reduce_engine.reduce_variable,vars_list,options)
         return
 
     def convert(self,options):
@@ -161,14 +187,14 @@ class SimpleTree:
             self.queues_manager==None or
             'serial' in dir(options) and options.serial):
             next_function_name=self.queues_manager.queues_names[self.queues_manager.queues_names.index(function_name)+1]
-            output_file_name=function_handle(self,options)
+            output_file_name=function_handle(self,options,queues_manager=self.queues_manager)
 
             if ('convert' in dir(options) and options.convert and next_function_name=='record'):
                 #This is the last function in the chain. Convert and exit.
                 record_in_output_directory(output_file_name,vars_list[0],options)
             else:
                 options.in_netcdf_file=output_file_name
-            self.queues_manager.put((next_function_name,options))
+                self.queues_manager.put((next_function_name,options))
         else:
             #Randomize to minimize strain on index nodes:
             random.shuffle(vars_list)
@@ -176,13 +202,9 @@ class SimpleTree:
                 options_copy=copy.copy(options)
                 for opt_id, opt in enumerate(self.drs.official_drs_no_version):
                     if var[opt_id]!=None:
-                        setattr(options_copy,opt,var[opt_id])
+                        setattr(options_copy,opt,[var[opt_id],])
                 self.queues_manager.put((function_name,options_copy))
         return
-
-    #def close_queue(self,queue_name):
-    #    self.queues_manager.put((queue_name,'STOP'))
-    #    return
 
     def find_data_nodes_and_simulations(self,options):
         #We have to time the response of the data node.
