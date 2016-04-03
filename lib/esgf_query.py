@@ -8,6 +8,8 @@ import httplib
 #External but related:
 import netcdf4_soft_links.remote_netcdf as remote_netcdf
 
+unique_file_id_list=['checksum_type','checksum','tracking_id']
+
 class browser:
     def __init__(self,search_path,options):
         self.options=options
@@ -31,14 +33,36 @@ class browser:
         only_list=[]
         for var_name in lists_to_loop['variable_list']:
             for experiment in lists_to_loop['experiment_list']:
-                only_list.append(experiment_variable_search(database.nc_Database,self.search_path,database.header['file_type_list'],self.options,
+                only_list.append(experiment_variable_search_recursive(database.nc_Database.drs.slicing_args.keys(),database.nc_Database,self.search_path,database.header['file_type_list'],self.options,
                                             experiment,var_name,database.header['variable_list'][var_name],list_level=list_level))
         return [item for sublist in only_list for item in sublist]
 
-unique_file_id_list=['checksum_type','checksum','tracking_id']
+def experiment_variable_search_recursive(slicing_args,nc_Database,search_path,file_type_list,options,
+                                        experiment,var_name,var_desc,list_level=None):
+    if isinstance(slicing_args,list) and len(slicing_args)>0:
+        #Go down slicing arguments:
+        if ( slicing_args[0] in dir(options) and 
+             getattr(options,slicing_args[0])!=None ):
+            only_list=[]
+            for field_option in getattr(options,slicing_args[0]):
+                options_copy = copy.copy(options)
+                setattr(options_copy,slicing_args[0],[field_option,])
+                only_list.append(experiment_variable_search_recursive(slicing_args[1:],nc_Database,search_path,file_type_list,options_copy,
+                                                         experiment,var_name,var_desc,list_level=list_level))
+            return [item for sublist in only_list for item in sublist]
+        else:
+            return experiment_variable_search_recursive(slicing_args[1:],nc_Database,search_path,file_type_list,options,
+                                                         experiment,var_name,var_desc,list_level=list_level)
+            #return experiment_variable_search_recursive(slicing_args[1:],nc_Database,search_path,file_type_list,options,
+            #                                             experiment,var_name,var_desc,list_level=list_level)
+    else:
+        #When done, perform the search:
+        return experiment_variable_search(nc_Database,search_path,file_type_list,options,
+                                         experiment,var_name,var_desc,list_level=list_level)
+
 def experiment_variable_search(nc_Database,search_path,file_type_list,options,
                                 experiment,var_name,var_desc,list_level=None):
-
+    #Assumes that all slicing arguments in options are length-one list:
     conn = SearchConnection(search_path, distrib=options.distrib)
 
     #Search the ESGF:
@@ -49,16 +73,10 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
     #print ctx.facet_counts
     ctx=ctx.constrain(**{field:var_desc[field_id] for field_id, field in enumerate(nc_Database.drs.var_specs)})
 
-    for field in nc_Database.drs.slicing_args:
+    for field in nc_Database.drs.slicing_args.keys():
         if field in dir(options) and getattr(options,field)!=None:
-            ctx=ctx.constrain(**{field:getattr(options,field)})
-
-    #if options.model:
-    #    ctx=ctx.constrain(model=options.model)
-    #if options.institute:
-    #    ctx=ctx.constrain(institute=options.institute)
-    #if options.ensemble:
-    #    ctx=ctx.constrain(ensemble=options.ensemble)
+            #This is where the lenght-one list is important:
+            ctx=ctx.constrain(**{field:getattr(options,field)[0]})
 
     nc_Database.file_expt.experiment=experiment
     nc_Database.file_expt.var=var_name

@@ -185,10 +185,11 @@ def ask_simulations_recursive(database,options,simulations_desc,async=True):
         args_list=[]
         for val in output:
             if (getattr(options_copy,simulations_desc[0]) == None):
-                setattr(options_copy,simulations_desc[0],val)
+                #Here it is important to pass a list:
+                setattr(options_copy,simulations_desc[0],[val,])
                 args_list.append((copy.copy(database),copy.copy(options_copy),simulations_desc[1:],val))
                 setattr(options_copy,simulations_desc[0],None)
-            elif (getattr(options_copy,simulations_desc[0]) == val):
+            elif (val in getattr(options_copy,simulations_desc[0])):
                 args_list.append((copy.copy(database),copy.copy(options_copy),simulations_desc[1:],val))
         if ('num_procs' in dir(options_copy) and options_copy.num_procs>1 and async==True and len(args_list)>0
             and not ('serial' in dir(options_copy) and options_copy.serial)):
