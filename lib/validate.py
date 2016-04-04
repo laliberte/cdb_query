@@ -179,15 +179,15 @@ def get_diag_months_list(diagnostic):
         diag_months_list=range(1,13)
     return diag_months_list
 
-def validate(database,project_drs,options,queues_manager=None):
-    if 'data_node_list' in dir(project_drs):
-        database.header['data_node_list']=project_drs.data_node_list
+def validate(database,options,queues_manager=None):
+    if 'data_node_list' in dir(database.drs):
+        database.header['data_node_list']=database.drs.data_node_list
     else:
         data_node_list, url_list, simulations_list =database.find_data_nodes_and_simulations(options)
         if len(data_node_list)>1 and not options.no_check_availability:
                 data_node_list=database.rank_data_nodes(options,data_node_list,url_list)
         database.header['data_node_list']=data_node_list
-    semaphores={key:queues_manager.semaphores_validate.get(key) for key in queues_manager.semaphores_validate.dict.keys()}
+    semaphores=queues_manager.validate_semaphores
 
     if options.no_check_availability:
         #Does not check whether files are available / queryable before proceeding.

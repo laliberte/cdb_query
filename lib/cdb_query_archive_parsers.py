@@ -68,22 +68,28 @@ def complex_slicing(parser,project_drs,action_type='store'):
 def generate_subparsers(parser,epilog,project_drs):
     #Discover tree
     subparsers = parser.add_subparsers(help='Commands to discover available data on the archive',dest='command')
-    #quick_ask(subparsers,epilog,project_drs)
+
     certificates(subparsers,epilog,project_drs)
     list_fields(subparsers,epilog,project_drs)
 
     ask(subparsers,epilog,project_drs)
     validate(subparsers,epilog,project_drs)
 
-    #download_raw(subparsers,epilog,project_drs)
-    download(subparsers,epilog,project_drs)
+    download_files(subparsers,epilog,project_drs)
+    time_split(subparsers,epilog,project_drs)
+    download_opendap(subparsers,epilog,project_drs)
+
+    load(subparsers,epilog,project_drs)
 
     reduce(subparsers,epilog,project_drs)
     convert(subparsers,epilog,project_drs)
     return
 
 def functions_arguments(parser,functions_list):
-    authorized_functions=['ask','validate','download_raw','time_split','download','reduce','convert']
+    authorized_functions=['ask','validate',
+                           'download_files','reduce_soft_links',
+                            'time_split','download_opendap',
+                            'load','reduce','convert']
     for function in authorized_functions:
         if function in functions_list:
             parser.add_argument('--'+function, default=True,help=argparse.SUPPRESS)
@@ -220,6 +226,47 @@ def validate_arguments(parser,project_drs):
                      help='When this option is activated, do not exclude models if they are missing years.')
     return
 
+def download_files(subparsers,epilog,project_drs):
+    parser=manage_soft_links_parsers.download_files(subparsers,epilog,project_drs)
+    functions_arguments(parser,['download_files'])
+
+    inc_group = parser.add_argument_group('Inclusions')
+    slicing_arguments(inc_group,project_drs,action_type='append')
+    exc_group = parser.add_argument_group('Exclusions')
+    excluded_slicing_arguments(exc_group,project_drs,action_type='append')
+    return
+
+def time_split(subparsers,epilog,project_drs):
+    epilog_time_split=textwrap.dedent(epilog)
+    parser=subparsers.add_parser('time_split',
+                                       description=textwrap.dedent('Takes the output of validate and describe a time-splitting'),
+                                       epilog=epilog_time_split
+                                         )
+    functions_arguments(parser,['time_split'])
+    manage_soft_links_parsers.download_arguments_no_io(parser,project_drs)
+    reduce_arguments(parser,project_drs)
+    return
+
+def download_opendap(subparsers,epilog,project_drs):
+    parser=manage_soft_links_parsers.download_opendap(subparsers,epilog,project_drs)
+    functions_arguments(parser,['download_opendap'])
+
+    inc_group = parser.add_argument_group('Inclusions')
+    slicing_arguments(inc_group,project_drs,action_type='append')
+    exc_group = parser.add_argument_group('Exclusions')
+    excluded_slicing_arguments(exc_group,project_drs,action_type='append')
+    return
+
+def load(subparsers,epilog,project_drs):
+    parser=manage_soft_links_parsers.load(subparsers,epilog,project_drs)
+    functions_arguments(parser,['load'])
+
+    inc_group = parser.add_argument_group('Inclusions')
+    slicing_arguments(inc_group,project_drs,action_type='append')
+    exc_group = parser.add_argument_group('Exclusions')
+    excluded_slicing_arguments(exc_group,project_drs,action_type='append')
+    return
+
 #nc_Database PARSERS
 def reduce(subparsers,epilog,project_drs):
     epilog_reduce=textwrap.dedent(epilog)
@@ -285,37 +332,14 @@ def download_and_reduce(subparsers,epilog,project_drs):
                                            epilog=epilog_reduce
                                          )
     functions_arguments(parser,['download','reduce'])
-    manage_soft_links_parsers.download_arguments_no_files(parser,project_drs)
+    manage_soft_links_parsers.download_arguments_no_io(parser,project_drs)
     reduce_arguments(parser,project_drs)
     return 
 
-#SOFT-LINKS PARSERS
 def certificates(subparsers,epilog,project_drs):
     manage_soft_links_parsers.certificates(subparsers,epilog,project_drs)
     return
 
-def download(subparsers,epilog,project_drs):
-    parser=manage_soft_links_parsers.download(subparsers,epilog,project_drs)
-    functions_arguments(parser,['download'])
-
-    inc_group = parser.add_argument_group('Inclusions')
-    slicing_arguments(inc_group,project_drs,action_type='append')
-    exc_group = parser.add_argument_group('Exclusions')
-    excluded_slicing_arguments(exc_group,project_drs,action_type='append')
-    return
-
-#def download_raw(subparsers,epilog,project_drs):
-#    parser=manage_soft_links_parsers.download_raw(subparsers,epilog,project_drs)
-#    functions_arguments(parser,['download_raw'])
-#
-#    inc_group = parser.add_argument_group('Inclusions')
-#    slicing_arguments(inc_group,project_drs,action_type='append')
-#    exc_group = parser.add_argument_group('Exclusions')
-#    excluded_slicing_arguments(exc_group,project_drs,action_type='append')
-#    return
-
-def int_list(input):
-    return [ int(item) for item in input.split(',')]
 
 def writeable_dir(prospective_dir):
   if not os.path.isdir(prospective_dir):
@@ -326,3 +350,6 @@ def writeable_dir(prospective_dir):
     raise Exception("{0} is not a writable dir".format(prospective_dir))
 
     
+def int_list(input):
+    return [ int(item) for item in input.split(',')]
+

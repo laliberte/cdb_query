@@ -105,7 +105,7 @@ class SimpleTree:
             for data_node in data_node_list:
                 self.queues_manager.validate_semaphores.add_new_data_node(data_node)
         #Do it by simulation, except if one simulation field should be kept for further operations:
-        vars_list=self.ask_var_list(simlations_list_no_fx,options)
+        vars_list=self.ask_var_list(simulations_list_no_fx,options)
         self.put_or_process('validate',validate.validate,vars_list,options)
         return
 
