@@ -201,7 +201,7 @@ class nc_Database:
             nc_Database_utils.extract_netcdf_variable(output,self.Dataset,tree,options,download_semaphores=queues_manager.download.semaphores,
                                                                                        download_queues_manager=queues_manager.download)
             qeues_manager.download.set_closed()
-            retrieval_manager.launch_download_and_remote_retrieve(output,data_node_list,queues_manager.download,options)
+            retrieval_manager.launch_download(output,data_node_list,queues_manager.download,options)
         else:
             nc_Database_utils.extract_netcdf_variable(output,self.Dataset,tree,options)
         self.close_nc_file()

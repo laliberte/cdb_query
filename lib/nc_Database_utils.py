@@ -1,5 +1,6 @@
 #External:
 import netCDF4
+import h5py
 
 #External but related:
 import netcdf4_soft_links.read_soft_links as read_soft_links
@@ -49,11 +50,9 @@ def extract_retrieve_or_replicate(group_name,output,data,tree,download_semaphore
     return
 
 def retrieve_or_replicate(output_grp,data,group,options,check_empty,hdf5,download_semaphores,download_queues_manager):
-    netcdf_pointers=read_soft_links.read_netCDF_pointers(data.groups[group],options=options,semaphores=download_semaphores)
+    netcdf_pointers=read_soft_links.read_netCDF_pointers(data.groups[group],options=options,semaphores=download_semaphores,queues=download_queues_manager)
     if 'download' in dir(options) and options.download:
         netcdf_pointers.retrieve(output_grp,'retrieve_path_data',filepath=options.out_netcdf_file)
-        for arg in netcdf_pointers.retrieval_queue_list:
-            download_queues_manager.put_to_data_node(arg[1]['data_node'],arg)
     else:
         if hdf5!=None:
             netcdf_pointers.replicate(output_grp,check_empty=check_empty,hdf5=hdf5[group])
@@ -136,9 +135,9 @@ def record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_d
     if ('applying_to_soft_links' in dir(options) and
         options.applying_to_soft_links):
         #Do not check empty:
-        nc_Database_utils.replace_netcdf_variable_recursive(output,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=False)
+        replace_netcdf_variable_recursive(output,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=False)
     else:
-        nc_Database_utils.replace_netcdf_variable_recursive(output,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=True)
+        replace_netcdf_variable_recursive(output,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=True)
         data.close()
 
     if data_hdf5!=None:
