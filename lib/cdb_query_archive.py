@@ -68,25 +68,9 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD, Submitted.'.format(ve
     for time_opt in ['year','month']:
         if time_opt in dir(options) and getattr(options,time_opt):
             options.time=True
-
-    if (options.command=='certificates' and 
-        'username' in dir(options) and options.username==None):
-        options.username=raw_input('Enter Username: ')
-        
-    if 'username' in dir(options) and options.username!=None:
-        if not options.password_from_pipe:
-            options.password=getpass.getpass('Enter Credential phrase: ')
-        else:
-            timeout=1
-            i,o,e=select.select([sys.stdin],[],[],timeout)
-            if i:
-                options.password=sys.stdin.readline()
-            else:
-                print '--password_from_pipe selected but no password was piped. Exiting.'
-                return
-        certificates.retrieve_certificates(options.username,options.service,user_pass=options.password,trustroots=options.no_trustroots)
-    else:
-        options.password=None
+    
+    #Ask for username and password:
+    options=certificates.prompt_for_username_and_password(options)
 
     if options.command!='certificates':
         if options.command=='list_fields':
@@ -94,7 +78,7 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD, Submitted.'.format(ve
             #Run the command:
             getattr(apps_class,options.command)(options)
         else:
-            manager=queues_manager.CDB_queue_manager(options)
+            manager=queues_manager.CDB_queues_manager(options)
             apps_class=cdb_query_archive_class.SimpleTree(project_drs,queues_manager=manager)
             #Run the command:
             getattr(apps_class,options.command)(options)
