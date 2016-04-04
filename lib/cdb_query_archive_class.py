@@ -167,6 +167,14 @@ class SimpleTree:
         self.reduce(options)
         return
 
+    def merge(self,options):
+        output=netCDF4.Dataset(options.out_netcdf_file,'w')
+        self.load_header(options)
+        nc_Database.record_header(output,self.header)
+        for file_name in [options.in_netcdf_file,]+options.extra_netcdf_file:
+            nc_Database_utils.record_to_netcdf_file_from_file_name(options,temp_file_name,output,self.drs)
+        return
+
     def list_fields(self,options):
         fields_list=self.list_fields_local(options,options.field)
         for field in fields_list:

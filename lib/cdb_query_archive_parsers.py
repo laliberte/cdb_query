@@ -71,6 +71,7 @@ def generate_subparsers(parser,epilog,project_drs):
 
     certificates(subparsers,epilog,project_drs)
     list_fields(subparsers,epilog,project_drs)
+    merge(subparsers,epilog,project_drs)
 
     ask(subparsers,epilog,project_drs)
     validate(subparsers,epilog,project_drs)
@@ -174,6 +175,21 @@ def list_fields(subparsers,epilog,project_drs):
     excluded_slicing_arguments(exc_group,project_drs,action_type='append')
     comp_group = parser.add_argument_group('Complex Query')
     complex_slicing(comp_group,project_drs,action_type='append')
+    return
+
+def merge(subparsers,epilog,project_drs):
+    #Merge outputs from other functions
+    description=textwrap.dedent('Merge the outputs from other functions').strip()
+    parser=subparsers.add_parser('merge',
+                                            description=description,
+                                            formatter_class=argparse.RawTextHelpFormatter,
+                                            epilog=epilog
+                                           )
+    parser.add_argument('in_netcdf_file',type=absolute_path,
+                                 help='NETCDF Diagnostic paths file (input)')
+    parser.add_argument('in_extra_netcdf_files',nargs='*',
+                                 help='NETCDF extra files (input).')
+    output_arguments(parser)
     return
 
 def validate(subparsers,epilog,project_drs):

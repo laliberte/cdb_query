@@ -19,12 +19,12 @@ class CDB_queues_manager:
 
         #Create queues:
         self.queues_names=[]
-        #for name in ['ask','validate','download_raw','time_split']:
+        #for name in ['ask','validate','download_files','time_split']:
         #for name in ['ask','validate','time_split']:
         authorized_functions=['ask','validate',
-                               'download_raw','reduce_soft_links',
-                                'time_split','download_remote',
-                                'download','reduce']
+                               'download_files','reduce_soft_links',
+                                'time_split','download_opendap',
+                                'load','reduce']
         for name in authorized_functions:
             if (name in dir(options) and getattr(options,name)):
                 self.queues_names.append(name)
@@ -41,7 +41,7 @@ class CDB_queues_manager:
         if 'validate' in self.queues_names:
             self.validate_semaphores=NC4SL_queues_manager.Semaphores_data_node(self.manager,num_concurrent=5)
 
-        if 'download' in self.queues_names:
+        if set(['download_files','download_opendap']).issubset(self.queues_names):
             #Create queues and semaphores for download:
             self.download=NC4SL_queues_manager.NC4SL_queues_manager(options,processes_names,manager=self.manager)
                 
@@ -104,7 +104,7 @@ def recorder(queue_manager,project_drs,options):
         if item[1]!='record':
             consume_one_item(item[0],item[1],item[2],queue_manager,project_drs)
         elif not ('convert' in dir(options) and options.convert):
-            record_to_netcdf_file(item[2],output,project_drs)
+            nc_Databse_utils.record_to_netcdf_file(item[2],output,project_drs)
     return
 
 def consumer(queue_manager,project_drs):
@@ -122,35 +122,3 @@ def consume_one_item(counter,function_name,options,queue_manager,project_drs):
     getattr(apps_class,function_name)(options)
     return
 
-def record_to_netcdf_file(options,output,project_drs):
-    apps_class=cdb_query_archive_class.SimpleTree(project_drs)
-    apps_class.load_header(options)
-    nc_Database.record_header(output,apps_class.header)
-
-    temp_file_name=options.in_netcdf_file
-    #import subprocess
-    #subprocess.call('ncdump -h '+temp_file_name,shell=True)
-    data=netCDF4.Dataset(temp_file_name,'r')
-    data_hdf5=None
-    for item in h5py.h5f.get_obj_ids():
-        if 'name' in dir(item) and item.name==temp_file_name:
-            data_hdf5=h5py.File(item)
-
-    var=[ getattr(options,opt) for opt in project_drs.official_drs_no_version]
-    tree=zip(project_drs.official_drs_no_version,var)
-
-    if ('applying_to_soft_links' in dir(options) and
-        options.applying_to_soft_links):
-        #Do not check empty:
-        nc_Database_utils.replace_netcdf_variable_recursive(output,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=False)
-    else:
-        nc_Database_utils.replace_netcdf_variable_recursive(output,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=True)
-        data.close()
-
-    if data_hdf5!=None:
-        data_hdf5.close()
-    try:
-        os.remove(temp_file_name)
-    except OSError:
-        pass
-    return
