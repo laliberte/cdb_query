@@ -341,3 +341,27 @@ def record_in_output_directory(input_file_name,var,project_drs,options):
     else:
         os.rename(temp_file_name,'.'.join(output_file_name.split('.')[:-1])+timestamp+'.nc')
     return
+
+def record_to_netcdf_file(options,output,project_drs):
+    apps_class=SimpleTree(project_drs)
+    apps_class.load_header(options)
+    nc_Database.record_header(output,apps_class.header)
+
+    temp_file_name=options.in_netcdf_file
+    nc_Database_utils.record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_drs)
+    try:
+        os.remove(temp_file_name)
+    except OSError:
+        pass
+    return
+
+def consume_one_item(counter,function_name,options,queue_manager,project_drs):
+    #Create unique file id:
+    options.out_netcdf_file+='.'+str(counter)
+
+    #Recursively apply commands:
+    apps_class=SimpleTree(project_drs,queues_manager=queue_manager)
+    #Run the command:
+    getattr(apps_class,function_name)(options)
+    return
+

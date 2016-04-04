@@ -102,23 +102,13 @@ def recorder(queue_manager,project_drs,options):
 
     for item in iter(queue_manager.get_record,'STOP'):
         if item[1]!='record':
-            consume_one_item(item[0],item[1],item[2],queue_manager,project_drs)
+            cdb_query_archive_class.consume_one_item(item[0],item[1],item[2],queue_manager,project_drs)
         elif not ('convert' in dir(options) and options.convert):
-            nc_Databse_utils.record_to_netcdf_file(item[2],output,project_drs)
+            nc_Database_utils.record_to_netcdf_file(item[2],output,project_drs)
     return
 
 def consumer(queue_manager,project_drs):
     for item in iter(queue_manager.get_no_record,'STOP'):
-        consume_one_item(item[0],item[1],item[2],queue_manager,project_drs)
-    return
-
-def consume_one_item(counter,function_name,options,queue_manager,project_drs):
-    #Create unique file id:
-    options.out_netcdf_file+='.'+str(counter)
-
-    #Recursively apply commands:
-    apps_class=cdb_query_archive_class.SimpleTree(project_drs,queues_manager=queue_manager)
-    #Run the command:
-    getattr(apps_class,function_name)(options)
+        cdb_query_archive_class.consume_one_item(item[0],item[1],item[2],queue_manager,project_drs)
     return
 

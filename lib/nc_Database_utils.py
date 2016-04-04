@@ -66,17 +66,23 @@ def replace_netcdf_variable_recursive(output,data,level_desc,tree,hdf5=None,chec
     group_name=level_desc[1]
     if group_name==None or isinstance(group_name,list):
         for group in data.groups.keys():
-            output_grp=netcdf_utils.create_group(output,data,group)
-            try:
-                setattr(output_grp,'level_name',level_name)
-            except:
-                output_grp.setncattr('level_name',level_name)
             if len(tree)>0:
+                output_grp=netcdf_utils.create_group(output,data,group)
+                try:
+                    setattr(output_grp,'level_name',level_name)
+                except:
+                    output_grp.setncattr('level_name',level_name)
                 if hdf5!=None:
                     replace_netcdf_variable_recursive(output_grp,data.groups[group],tree[0],tree[1:],hdf5=hdf5[group],check_empty=check_empty)
                 else:
                     replace_netcdf_variable_recursive(output_grp,data.groups[group],tree[0],tree[1:],check_empty=check_empty)
-            else:
+            elif not group in output.groups.keys():
+                #Prevent collisions during merge. Replicate only when group does not exist.
+                output_grp=netcdf_utils.create_group(output,data,group)
+                try:
+                    setattr(output_grp,'level_name',level_name)
+                except:
+                    output_grp.setncattr('level_name',level_name)
                 netcdf_pointers=read_soft_links.read_netCDF_pointers(data.groups[group])
                 if hdf5!=None:
                     netcdf_pointers.replicate(output_grp,hdf5=hdf5[group],check_empty=check_empty)
@@ -84,14 +90,20 @@ def replace_netcdf_variable_recursive(output,data,level_desc,tree,hdf5=None,chec
                     netcdf_pointers.replicate(output_grp,hdf5=hdf5,check_empty=check_empty)
                     
     else:
-        output_grp=netcdf_utils.create_group(output,data,group_name)
-        try:
-            setattr(output_grp,'level_name',level_name)
-        except:
-            output_grp.setncattr('level_name',level_name)
         if len(tree)>0:
+            output_grp=netcdf_utils.create_group(output,data,group_name)
+            try:
+                setattr(output_grp,'level_name',level_name)
+            except:
+                output_grp.setncattr('level_name',level_name)
             replace_netcdf_variable_recursive(output_grp,data,tree[0],tree[1:],hdf5=hdf5,check_empty=check_empty)
-        else:
+        elif not group_name in output.groups.keys():
+            #Prevent collisions during merge. Replicate only when group does not exist.
+            output_grp=netcdf_utils.create_group(output,data,group_name)
+            try:
+                setattr(output_grp,'level_name',level_name)
+            except:
+                output_grp.setncattr('level_name',level_name)
             netcdf_pointers=read_soft_links.read_netCDF_pointers(data)
             netcdf_pointers.replicate(output_grp,hdf5=hdf5,check_empty=check_empty)
     return
@@ -108,3 +120,27 @@ def convert_dates_to_timestamps(output_tmp,time_frequency):
         return '_'+'-'.join([conversion[time_frequency](date) for date in date_axis])
     else:
         return ''
+
+
+def record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_drs):
+    data=netCDF4.Dataset(temp_file_name,'r')
+    data_hdf5=None
+    for item in h5py.h5f.get_obj_ids():
+        if 'name' in dir(item) and item.name==temp_file_name:
+            data_hdf5=h5py.File(item)
+
+    #var=[ getattr(options,opt) for opt in project_drs.official_drs_no_version]
+    var=[ None for opt in project_drs.official_drs_no_version]
+    tree=zip(project_drs.official_drs_no_version,var)
+
+    if ('applying_to_soft_links' in dir(options) and
+        options.applying_to_soft_links):
+        #Do not check empty:
+        nc_Database_utils.replace_netcdf_variable_recursive(output,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=False)
+    else:
+        nc_Database_utils.replace_netcdf_variable_recursive(output,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=True)
+        data.close()
+
+    if data_hdf5!=None:
+        data_hdf5.close()
+    return
