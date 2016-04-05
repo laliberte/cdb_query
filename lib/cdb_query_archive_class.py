@@ -144,14 +144,14 @@ class SimpleTree:
         self.put_or_process('time_split',downloads.time_split,vars_list,options)
         return
 
-    def download_remote(self,options):
+    def download_opendap(self,options):
         if self.queues_manager != None:
             data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
             for data_node in data_node_list:
                 self.queues_manager.download.semaphores.add_new_data_node(data_node)
                 self.queues_manager.download.queues.add_new_data_node(data_node)
         vars_list=self.reduce_var_list(options)
-        self.put_or_process('download_remote',downloads.download_remote,vars_list,options)
+        self.put_or_process('download_opendap',downloads.download_opendap,vars_list,options)
         return
 
     def load(self,options):
@@ -206,14 +206,16 @@ class SimpleTree:
             self.queues_manager==None or
             'serial' in dir(options) and options.serial):
             next_function_name=self.queues_manager.queues_names[self.queues_manager.queues_names.index(function_name)+1]
+
             output_file_name=function_handle(self,options,queues_manager=self.queues_manager)
 
             if ('convert' in dir(options) and options.convert and next_function_name=='record'):
                 #This is the last function in the chain. Convert and exit.
                 record_in_output_directory(output_file_name,vars_list[0],options)
             else:
-                options.in_netcdf_file=output_file_name
-                self.queues_manager.put((next_function_name,options))
+                options_copy=copy.copy(options)
+                options_copy.in_netcdf_file=output_file_name
+                self.queues_manager.put((next_function_name,options_copy))
         else:
             #Randomize to minimize strain on index nodes:
             random.shuffle(vars_list)
