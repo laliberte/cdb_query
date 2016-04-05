@@ -77,6 +77,9 @@ def generate_subparsers(parser,epilog,project_drs):
     validate(subparsers,epilog,project_drs)
 
     download_files(subparsers,epilog,project_drs)
+
+    #revalidate(subparsers,epilog,project_drs)
+
     time_split(subparsers,epilog,project_drs)
     download_opendap(subparsers,epilog,project_drs)
 
@@ -131,12 +134,13 @@ def ask(subparsers,epilog,project_drs):
                                        In this situation, cdb_query will discard ({0}) tuples that do not have variables for\n\
                                        ALL of the requested experiments'.format(','.join(project_drs.simulations_desc)))
     parser.add_argument('-s','--silent',default=False,action='store_true',help='Make not verbose.')
-    #parser.add_argument('--update',
-    #                             type=str,action='append',
-    #                             help='Update the specified file. Will only ask for simulations that were not previously found.')
 
     input_arguments_json(parser)
     output_arguments(parser)
+
+    #ask_group = parser.add_argument_group('These arguments specify the query')
+    #ask_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.base_drs,
+    #                                   help='List the field (or fields if repeated) found in the file' )
 
     manage_soft_links_parsers.certificates_arguments(parser,project_drs)
     processing_arguments(parser,project_drs)
@@ -212,9 +216,6 @@ def validate(subparsers,epilog,project_drs):
 
     input_arguments(parser)
     output_arguments(parser)
-    #parser.add_argument('--in_diagnostic_headers_file',
-    #                             help='Alternative diagnostic headers file (to modify target validate)',\
-    #                             type=str,default=None)
 
     manage_soft_links_parsers.certificates_arguments(parser,project_drs)
 
@@ -251,6 +252,32 @@ def download_files(subparsers,epilog,project_drs):
     exc_group = parser.add_argument_group('Exclusions')
     excluded_slicing_arguments(exc_group,project_drs,action_type='append')
     return
+
+#def revalidate(subparsers,epilog,project_drs):
+#    #Find Optimset Months
+#    epilog_revalidate=textwrap.dedent(epilog)
+#    parser=subparsers.add_parser('revalidate',
+#                                   description=textwrap.dedent('Take as an input the results from \'validate\',\n\
+#                                                                \'download_opendap\' or \'download_files\'.\n\
+#                                                                 Can be SLOW.'),
+#                                   epilog=epilog_revalidate,
+#                                 )
+#
+#    functions_arguments(parser,['revalidate'])
+#    revalidate_arguments(parser,project_drs)
+#
+#    input_arguments(parser)
+#    output_arguments(parser)
+#
+#    manage_soft_links_parsers.certificates_arguments(parser,project_drs)
+#
+#    data_node_group = parser.add_argument_group('Restrict search to specific data nodes')
+#    data_node_group.add_argument('--data_node',type=str,action='append',help='Consider only the specified data nodes')
+#    data_node_group.add_argument('--Xdata_node',type=str,action='append',help='Do not consider the specified data nodes')
+#
+#    convert_arguments(parser,project_drs)
+#    return
+
 
 def time_split(subparsers,epilog,project_drs):
     epilog_time_split=textwrap.dedent(epilog)

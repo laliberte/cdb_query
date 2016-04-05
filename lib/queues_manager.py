@@ -8,8 +8,6 @@ import Queue
 import numpy as np
 
 #Internal:
-import nc_Database_utils
-import nc_Database
 import cdb_query_archive_class
 import netcdf4_soft_links.queues_manager as NC4SL_queues_manager
 
@@ -104,7 +102,7 @@ def recorder(queue_manager,project_drs,options):
         if item[1]!='record':
             cdb_query_archive_class.consume_one_item(item[0],item[1],item[2],queue_manager,project_drs)
         elif not ('convert' in dir(options) and options.convert):
-            nc_Database_utils.record_to_netcdf_file(item[2],output,project_drs)
+            cdb_query_archive_class.record_to_netcdf_file(item[2],output,project_drs)
     return
 
 def consumer(queue_manager,project_drs):

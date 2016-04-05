@@ -18,10 +18,9 @@ import netcdf4_soft_links.retrieval_manager as retrieval_manager
 import ask
 import validate
 import nc_Database
+import nc_Database_utils
 import nc_Database_reduce
 import downloads
-#import nc_Database_convert
-import recovery_manager
 
 class SimpleTree:
     def __init__(self,project_drs,queues_manager=None):
@@ -119,15 +118,26 @@ class SimpleTree:
                             for field in self.drs.official_drs_no_version] for var in 
                             self.list_fields_local(options,drs_to_eliminate) ]
 
-    def download_raw(self,options):
+    def download_files(self,options):
         if self.queues_manager != None:
             data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
             for data_node in data_node_list:
-                self.queues_manager.validate_semaphores.add_new_data_node(data_node)
+                self.queues_manager.download.semaphores.add_new_data_node(data_node)
+                self.queues_manager.download.queues.add_new_data_node(data_node)
         #Recover the database meta data:
         vars_list=self.reduce_var_list(options)
-        self.put_or_process('dowload_raw',downloads.download_raw,vars_list,options)
+        self.put_or_process('dowload_raw',downloads.download_files,vars_list,options)
         return
+
+    #def revalidate(self,options):
+    #    if self.queues_manager != None:
+    #        data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
+    #        for data_node in data_node_list:
+    #            self.queues_manager.validate_semaphores.add_new_data_node(data_node)
+    #    #Recover the database meta data:
+    #    vars_list=self.reduce_var_list(options)
+    #    self.put_or_process('revalidate',downloads.revalidate,vars_list,options)
+    #    return
 
     def time_split(self,options):
         vars_list=self.reduce_var_list(options)
@@ -138,18 +148,19 @@ class SimpleTree:
         if self.queues_manager != None:
             data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
             for data_node in data_node_list:
-                self.queues_manager.validate_semaphores.add_new_data_node(data_node)
+                self.queues_manager.download.semaphores.add_new_data_node(data_node)
+                self.queues_manager.download.queues.add_new_data_node(data_node)
         vars_list=self.reduce_var_list(options)
         self.put_or_process('download_remote',downloads.download_remote,vars_list,options)
         return
 
-    def download(self,options):
+    def load(self,options):
         if self.queues_manager != None:
             data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
             for data_node in data_node_list:
                 self.queues_manager.validate_semaphores.add_new_data_node(data_node)
         vars_list=self.reduce_var_list(options)
-        self.put_or_process('download',downloads.download,vars_list,options)
+        self.put_or_process('load',downloads.load,vars_list,options)
         return
 
     def reduce(self,options):
@@ -258,6 +269,10 @@ class SimpleTree:
                 self.header=json.load(open(options.in_headers_file,'r'))['header']
             except ValueError as e:
                 print 'The input diagnostic file '+options.in_headers_file+' does not conform to JSON standard. Make sure to check its syntax'
+            ##Load header:
+            #header=dict()
+            #for att in set(self.drs.header_desc).intersection(self.Dataset.ncattrs()):
+            #    header[att]=json.loads(self.Dataset.getncattr(att))
         else:
             self.define_database(options)
             self.header=self.nc_Database.load_header()

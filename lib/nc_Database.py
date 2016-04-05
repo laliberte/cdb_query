@@ -74,7 +74,6 @@ class nc_Database:
         self.close_nc_file()
         return header
 
-
     def populate_database(self,options,find_function,semaphores=None):
         self.load_nc_file()
         self.file_expt.time='0'
@@ -192,18 +191,23 @@ class nc_Database:
 
         return output_root, temp_output_file_name
 
-    def retrieve_database(self,output,options,queues_manager=None):
+    def retrieve_database(self,output,options,queues_manager=None,retrieval_type='reduce'):
         ##Recover the database meta data:
         tree=zip(self.drs.official_drs_no_version,[ None
                             for field in self.drs.official_drs_no_version])
         self.load_nc_file()
-        if 'download' in dir(options) and options.download:
+        if retrieval_type in ['download_files', 'download_opendap']:
             nc_Database_utils.extract_netcdf_variable(output,self.Dataset,tree,options,download_semaphores=queues_manager.download.semaphores,
-                                                                                       download_queues_manager=queues_manager.download)
+                                                                                       download_queues_manager=queues_manager.download,
+                                                                                       retrieval_type=retrieval_type)
             qeues_manager.download.set_closed()
             retrieval_manager.launch_download(output,data_node_list,queues_manager.download,options)
+            if (retrieval_type=='download_files'
+                and
+                not ( 'do_not_revalidate' in dir(options) and options.do_not_revalidate)):
+                   #revalidate
         else:
-            nc_Database_utils.extract_netcdf_variable(output,self.Dataset,tree,options)
+            nc_Database_utils.extract_netcdf_variable(output,self.Dataset,tree,options,retrieval_type=retrieval_type)
         self.close_nc_file()
         return
 
