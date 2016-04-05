@@ -57,7 +57,7 @@ def retrieve_or_replicate(output_grp,data,group,retrieval_type,options,check_emp
         else:
             netcdf_pointers.replicate(output_grp,check_empty=check_empty)
     else:
-        if 'out_destination_dir' in dir(options):
+        if 'out_destination' in dir(options):
             netcdf_pointers.retrieve(output_grp,retrieval_type,filepath=options.out_destination_dir)
         else:
             netcdf_pointers.retrieve(output_grp,retrieval_type,filepath=options.out_netcdf_file)
