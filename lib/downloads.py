@@ -25,7 +25,7 @@ def download(database,retrieval_type,options,queues_manager):
             options_copy.out_destination+='/tree/var/version/'
 
     if ('swap_dir' in dir(options_copy) and options_copy.swap_dir!='.'):
-        options_copy.out_netcdf_file=options_copy.swap_dir+'/'+os.path.basename(output_file_name)
+        options_copy.out_netcdf_file=options_copy.swap_dir+'/'+os.path.basename(options_copy.out_netcdf_file)
 
     output=netCDF4.Dataset(options_copy.out_netcdf_file,'w')
     #Recover the database meta data:
@@ -42,7 +42,8 @@ def download(database,retrieval_type,options,queues_manager):
 
     #Find the data that needs to be recovered:
     database.load_database(options_copy,cdb_query_archive_class.find_simple)
-    database.nc_Database.retrieve_database(output,options_copy,queues_manager=queues_manager,retrieval_type=retrieval_type)
+    output=database.nc_Database.retrieve_database(output,options_copy,queues_manager=queues_manager,retrieval_type=retrieval_type)
+    output.close()
     database.close_database()
     return options_copy.out_netcdf_file
 

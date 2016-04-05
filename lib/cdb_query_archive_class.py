@@ -203,9 +203,11 @@ class SimpleTree:
         #This is important for the setup of the ask function:
         options.num_procs=1
         if (len(vars_list)==1 or
-            self.queues_manager==None or
             'serial' in dir(options) and options.serial):
             next_function_name=self.queues_manager.queues_names[self.queues_manager.queues_names.index(function_name)+1]
+            if 'serial' in dir(options) and options.serial):
+                #If serial, must put an expected function:
+                getattr(self.queues_manager,next_function_name+'_expected').increment()
 
             output_file_name=function_handle(self,options,queues_manager=self.queues_manager)
 

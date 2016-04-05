@@ -6,6 +6,7 @@ import multiprocessing
 
 #External but related:
 import netcdf4_soft_links.certificates as certificates
+import netcdf4_soft_links.retrieval_manager as retrieval_manager
 
 #Internal:
 import remote_archive
@@ -81,12 +82,15 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD, Submitted.'.format(ve
         else:
             #Create the queue manager:
             q_manager=queues_manager.CDB_queues_manager(options)
+            #if len(set(['download_files','download_opendap']).intersection(q_manager.queues_names))>0:
+            #    processes=retrieval_manager.start_download_processes(data_node_list,queues_manager,options)
             #Start consumer processes:
             try:
                 processes=queues_manager.start_consumer_processes(q_manager,project_drs,options)
                 apps_class=cdb_query_archive_class.SimpleTree(project_drs,queues_manager=q_manager)
                 #Run the command:
                 getattr(apps_class,options.command)(options)
+                print q_manager.record_expected.value
                 #Start recorded process:
                 queues_manager.recorder(q_manager,project_drs,options)
             finally:

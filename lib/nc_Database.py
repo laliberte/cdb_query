@@ -203,7 +203,7 @@ class nc_Database:
                                                                                        retrieval_type=retrieval_type)
             queues_manager.download.set_closed()
             data_node_list=self.list_data_nodes(options)
-            retrieval_manager.launch_download(output,data_node_list,queues_manager.download,options)
+            output=retrieval_manager.launch_download(output,data_node_list,queues_manager.download,options)
             if (retrieval_type=='download_files'
                 and
                 not ( 'do_not_revalidate' in dir(options) and options.do_not_revalidate)):
@@ -211,8 +211,9 @@ class nc_Database:
                    #revalidate
         else:
             nc_Database_utils.extract_netcdf_variable(output,self.Dataset,tree,options,retrieval_type=retrieval_type)
+        output.sync()
         self.close_nc_file()
-        return
+        return output
 
     def retrieve_dates(self,options):
         ##Recover the database meta data:
