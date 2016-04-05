@@ -41,7 +41,7 @@ class CDB_queues_manager:
 
         if len(set(['download_files','download_opendap']).intersection(self.queues_names))>0:
             #Create queues and semaphores for download:
-            self.download=NC4SL_queues_manager.NC4SL_queues_manager(options,processes_names,manager=self.manager)
+            self.download=NC4SL_queues_manager.NC4SL_queues_manager(options,consumer_processes_names(options),manager=self.manager)
                 
     def put(self,item):
         if item[0]==self.queues_names[0]:
@@ -109,4 +109,24 @@ def consumer(queue_manager,project_drs):
     for item in iter(queue_manager.get_no_record,'STOP'):
         cdb_query_archive_class.consume_one_item(item[0],item[1],item[2],queue_manager,project_drs)
     return
+
+def start_consumer_processes(queues_manager,project_drs,options):
+    processes_names=consumer_processes_names(options)
+    processes=dict()
+    for process_name in processes_names:
+        if process_name!=multiprocessing.current_process().name:
+           process_name='consumer_'+str(proc_id)
+           processes[process_name]=multiprocessing.Process(target=consumer,
+                                                           name=process_name,
+                                                           args=(queues_manager,project_drs))
+        else:
+            processes[process_name]=multiprocessing.current_process()
+    return processes
+
+def consumer_processes_names(options):
+    processes_names=[multiprocessing.current_process().name,]
+    if not ( 'serial' in dir(options) and options.serial):\
+        for proc_id in range(options.num_procs-1):
+           process_name.append('consumer_'+str(proc_id))
+    return processes_names
 

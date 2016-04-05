@@ -78,11 +78,20 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD, Submitted.'.format(ve
             #Run the command:
             getattr(apps_class,options.command)(options)
         else:
-            manager=queues_manager.CDB_queues_manager(options)
-            apps_class=cdb_query_archive_class.SimpleTree(project_drs,queues_manager=manager)
-            #Run the command:
-            getattr(apps_class,options.command)(options)
-            queues_manager.recorder(manager,project_drs,options)
+            #Create the queue manager:
+            q_manager=queues_manager.CDB_queues_manager(options)
+            #Start consumer processes:
+            try:
+                processes=queues_manager.start_consumer_processes(q_manager,project_drs,options)
+                apps_class=cdb_query_archive_class.SimpleTree(project_drs,queues_manager=q_manager)
+                #Run the command:
+                getattr(apps_class,options.command)(options)
+                #Start recorded process:
+                queues_manager.recorder(manager,project_drs,options)
+            finally:
+                for process_name in processes.keys():
+                    if process_name!=multiprocessing.current_process().name:
+                        processes[process_name].terminate()
         
 if __name__ == "__main__":
     main('CMIP5')
