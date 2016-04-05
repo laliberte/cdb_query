@@ -30,7 +30,7 @@ def extract_netcdf_variable_recursive(output,data,level_desc,tree,retrieval_type
             if ( nc_Database.is_level_name_included_and_not_excluded(level_name,options,group) and
                  nc_Database.tree_recursive_check_not_empty(options,data.groups[group])):
                 output_grp=netcdf_utils.replicate_group(output,data,group)
-                extract_retrieve_or_replicate(group,output,data,tree,retrieval_type,download_semaphores,download_queues_manager,hdf5,check_empty,options)
+                extract_retrieve_or_replicate(group,output_grp,data,tree,retrieval_type,download_semaphores,download_queues_manager,hdf5,check_empty,options)
     else:
         if (len(tree)>0 and group_name==''):
             extract_netcdf_variable_recursive(output,data,tree[0],tree[1:],retrieval_type,options,check_empty,hdf5,download_semaphores,download_queues_manager)

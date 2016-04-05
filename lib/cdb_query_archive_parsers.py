@@ -24,6 +24,8 @@ def input_arguments(parser):
 def output_arguments(parser):
     parser.add_argument('out_netcdf_file',type=absolute_path,
                                  help='NETCDF Diagnostic paths file (output)')
+    parser.add_argument('--swap_dir',type=writeable_dir,default='.',
+                                 help='Use this directory as a swap directory.')
     return
 
 def processing_arguments(parser,project_drs):
@@ -31,8 +33,6 @@ def processing_arguments(parser,project_drs):
     proc_group.add_argument('--num_procs',
                                  default=1, type=int,
                                  help='Use num_procs processes to perform the computation.')
-    proc_group.add_argument('--swap_dir',type=writeable_dir,default='.',
-                                 help='Use this directory as a swap directory.')
 
     return
 
@@ -245,6 +245,8 @@ def validate_arguments(parser,project_drs):
 
 def download_files(subparsers,epilog,project_drs):
     parser=manage_soft_links_parsers.download_files(subparsers,epilog,project_drs)
+    parser.add_argument('--swap_dir',type=writeable_dir,default='.',
+                                 help='Use this directory as a swap directory.')
     functions_arguments(parser,['download_files'])
 
     inc_group = parser.add_argument_group('Inclusions')
@@ -252,32 +254,6 @@ def download_files(subparsers,epilog,project_drs):
     exc_group = parser.add_argument_group('Exclusions')
     excluded_slicing_arguments(exc_group,project_drs,action_type='append')
     return
-
-#def revalidate(subparsers,epilog,project_drs):
-#    #Find Optimset Months
-#    epilog_revalidate=textwrap.dedent(epilog)
-#    parser=subparsers.add_parser('revalidate',
-#                                   description=textwrap.dedent('Take as an input the results from \'validate\',\n\
-#                                                                \'download_opendap\' or \'download_files\'.\n\
-#                                                                 Can be SLOW.'),
-#                                   epilog=epilog_revalidate,
-#                                 )
-#
-#    functions_arguments(parser,['revalidate'])
-#    revalidate_arguments(parser,project_drs)
-#
-#    input_arguments(parser)
-#    output_arguments(parser)
-#
-#    manage_soft_links_parsers.certificates_arguments(parser,project_drs)
-#
-#    data_node_group = parser.add_argument_group('Restrict search to specific data nodes')
-#    data_node_group.add_argument('--data_node',type=str,action='append',help='Consider only the specified data nodes')
-#    data_node_group.add_argument('--Xdata_node',type=str,action='append',help='Do not consider the specified data nodes')
-#
-#    convert_arguments(parser,project_drs)
-#    return
-
 
 def time_split(subparsers,epilog,project_drs):
     epilog_time_split=textwrap.dedent(epilog)
@@ -292,6 +268,8 @@ def time_split(subparsers,epilog,project_drs):
 
 def download_opendap(subparsers,epilog,project_drs):
     parser=manage_soft_links_parsers.download_opendap(subparsers,epilog,project_drs)
+    parser.add_argument('--swap_dir',type=writeable_dir,default='.',
+                                 help='Use this directory as a swap directory.')
     functions_arguments(parser,['download_opendap'])
 
     inc_group = parser.add_argument_group('Inclusions')
@@ -302,6 +280,8 @@ def download_opendap(subparsers,epilog,project_drs):
 
 def load(subparsers,epilog,project_drs):
     parser=manage_soft_links_parsers.load(subparsers,epilog,project_drs)
+    parser.add_argument('--swap_dir',type=writeable_dir,default='.',
+                                 help='Use this directory as a swap directory.')
     functions_arguments(parser,['load'])
 
     inc_group = parser.add_argument_group('Inclusions')
@@ -368,14 +348,14 @@ def convert_arguments(parser,project_drs):
     complex_slicing(comp_group,project_drs,action_type='append')
     return select_group
 
-def download_and_reduce(subparsers,epilog,project_drs):
+def load_and_reduce(subparsers,epilog,project_drs):
     epilog_reduce=textwrap.dedent(epilog)
-    parser=subparsers.add_parser('download_and_reduce',
-                                           description=textwrap.dedent('Take as an input a database file, download the data and reduce bash script'),
+    parser=subparsers.add_parser('load_and_reduce',
+                                           description=textwrap.dedent('Take as an input a database file, load the data and reduce bash script'),
                                            epilog=epilog_reduce
                                          )
-    functions_arguments(parser,['download','reduce'])
-    manage_soft_links_parsers.download_arguments_no_io(parser,project_drs)
+    functions_arguments(parser,['load','reduce'])
+    manage_soft_links_parsers.load_arguments_no_io(parser,project_drs)
     reduce_arguments(parser,project_drs)
     return 
 

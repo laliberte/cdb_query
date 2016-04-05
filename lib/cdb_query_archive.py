@@ -2,6 +2,7 @@
 import sys
 import select
 import getpass
+import multiprocessing
 
 #External but related:
 import netcdf4_soft_links.certificates as certificates
@@ -87,7 +88,7 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD, Submitted.'.format(ve
                 #Run the command:
                 getattr(apps_class,options.command)(options)
                 #Start recorded process:
-                queues_manager.recorder(manager,project_drs,options)
+                queues_manager.recorder(q_manager,project_drs,options)
             finally:
                 for process_name in processes.keys():
                     if process_name!=multiprocessing.current_process().name:

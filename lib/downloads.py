@@ -1,25 +1,28 @@
+#External:
+import netCDF4
+import os
+
+#Internal:
 import cdb_query_archive_class
 
 def download_files(database,options,queues_manager=None):
-    download(database,'download_files',options,output,queues_manager)
-    return
+    return download(database,'download_files',options,queues_manager)
 
 def download_opendap(database,options,queues_manager=None):
-    download(database,'download_opendap',options,queues_manager)
-    return
+    return download(database,'download_opendap',options,queues_manager)
 
 def load(database,options,queues_manager=None):
-    download(database,'load',options,queues_manager)
-    return
+    return download(database,'load',options,queues_manager)
 
 def download(database,retrieval_type,options,queues_manager):
     if 'out_destination' in dir(options):
         #Describe the tree pattern:
-        if self.drs.official_drs.index('var')>self.drs.official_drs.index('version'):
+        if database.drs.official_drs.index('var')>database.drs.official_drs.index('version'):
             options.out_destination+='/tree/version/var/'
         else:
             options.out_destination+='/tree/var/version/'
 
+    output_file_name=options.out_netcdf_file
     if ('swap_dir' in dir(options) and options.swap_dir!='.'):
         output_file_name=options.swap_dir+'/'+os.path.basename(output_file_name)
 
@@ -55,6 +58,7 @@ def download(database,retrieval_type,options,queues_manager):
 #    return output_file_name
 
 def time_split(database,options,queues_manager=None):
+    output_file_name=options.out_netcdf_file
     if ('swap_dir' in dir(options) and options.swap_dir!='.'):
         output_file_name=options.swap_dir+'/'+os.path.basename(output_file_name)
 

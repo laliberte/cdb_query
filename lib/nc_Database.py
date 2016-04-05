@@ -11,6 +11,7 @@ import numpy as np
 import netcdf4_soft_links.read_soft_links as read_soft_links
 import netcdf4_soft_links.create_soft_links as create_soft_links
 import netcdf4_soft_links.remote_netcdf as remote_netcdf
+import netcdf4_soft_links.retrieval_manager as retrieval_manager
 
 #Internal:
 import nc_Database_utils
@@ -200,7 +201,8 @@ class nc_Database:
             nc_Database_utils.extract_netcdf_variable(output,self.Dataset,tree,options,download_semaphores=queues_manager.download.semaphores,
                                                                                        download_queues_manager=queues_manager.download,
                                                                                        retrieval_type=retrieval_type)
-            qeues_manager.download.set_closed()
+            queues_manager.download.set_closed()
+            data_node_list=self.list_data_nodes(options)
             retrieval_manager.launch_download(output,data_node_list,queues_manager.download,options)
             if (retrieval_type=='download_files'
                 and

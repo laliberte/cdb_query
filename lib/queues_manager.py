@@ -18,6 +18,7 @@ class CDB_queues_manager:
         #Create queues:
         self.queues_names=[]
         #for name in ['ask','validate','download_files','time_split']:
+
         #for name in ['ask','validate','time_split']:
         authorized_functions=['ask','validate',
                                'download_files','reduce_soft_links',
@@ -125,7 +126,8 @@ def start_consumer_processes(queues_manager,project_drs,options):
 
 def consumer_processes_names(options):
     processes_names=[multiprocessing.current_process().name,]
-    if not ( 'serial' in dir(options) and options.serial):\
+    if (not ( 'serial' in dir(options) and options.serial) and
+         ( 'num_procs' in dir(options) and options.num_procs>1) ):
         for proc_id in range(options.num_procs-1):
            process_name.append('consumer_'+str(proc_id))
     return processes_names

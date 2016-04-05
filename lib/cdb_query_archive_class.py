@@ -126,7 +126,7 @@ class SimpleTree:
                 self.queues_manager.download.queues.add_new_data_node(data_node)
         #Recover the database meta data:
         vars_list=self.reduce_var_list(options)
-        self.put_or_process('dowload_raw',downloads.download_files,vars_list,options)
+        self.put_or_process('download_files',downloads.download_files,vars_list,options)
         return
 
     #def revalidate(self,options):
