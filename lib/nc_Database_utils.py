@@ -19,10 +19,10 @@ def assign_tree(output,val,sort_table,tree):
         output.variables[tree[0]][sort_table]=val
     return
 
-def extract_netcdf_variable(output,data,tree,options,check_empty=False,hdf5=None,download_semaphores=dict(),download_queues_manager=None):
-    return extract_netcdf_variable_recursive(output,data,tree[0],tree[1:],options,check_empty,hdf5,download_semaphores,download_queues_manager)
+def extract_netcdf_variable(output,data,tree,options,check_empty=False,hdf5=None,download_semaphores=dict(),download_queues_manager=None,retrieval_type='reduce'):
+    return extract_netcdf_variable_recursive(output,data,tree[0],tree[1:],retrieval_type,options,check_empty,hdf5,download_semaphores,download_queues_manager)
 
-def extract_netcdf_variable_recursive(output,data,level_desc,tree,options,check_empty,hdf5,download_semaphores,download_queues_manager):
+def extract_netcdf_variable_recursive(output,data,level_desc,tree,retrieval_type,options,check_empty,hdf5,download_semaphores,download_queues_manager):
     level_name=level_desc[0]
     group_name=level_desc[1]
     if group_name==None or isinstance(group_name,list):
@@ -30,34 +30,37 @@ def extract_netcdf_variable_recursive(output,data,level_desc,tree,options,check_
             if ( nc_Database.is_level_name_included_and_not_excluded(level_name,options,group) and
                  nc_Database.tree_recursive_check_not_empty(options,data.groups[group])):
                 output_grp=netcdf_utils.replicate_group(output,data,group)
-                extract_retrieve_or_replicate(group,output,data,tree,download_semaphores,download_queues_manager,hdf5,check_empty,options)
+                extract_retrieve_or_replicate(group,output,data,tree,retrieval_type,download_semaphores,download_queues_manager,hdf5,check_empty,options)
     else:
         if (len(tree)>0 and group_name==''):
-            extract_netcdf_variable_recursive(output,data,tree[0],tree[1:],options,check_empty,hdf5,download_semaphores,download_queues_manager)
+            extract_netcdf_variable_recursive(output,data,tree[0],tree[1:],retrieval_type,options,check_empty,hdf5,download_semaphores,download_queues_manager)
         else:
-            extract_retrieve_or_replicate(group_name,output,data,tree,download_semaphores,download_queues_manager,hdf5,check_empty,options)
+            extract_retrieve_or_replicate(group_name,output,data,tree,retrieval_type,download_semaphores,download_queues_manager,hdf5,check_empty,options)
     return
 
-def extract_retrieve_or_replicate(group_name,output,data,tree,download_semaphores,download_queues_manager,hdf5,check_empty,options):
+def extract_retrieve_or_replicate(group_name,output,data,tree,retrieval_type,download_semaphores,download_queues_manager,hdf5,check_empty,options):
     if len(tree)>0:
         if group_name in data.groups.keys():
             if hdf5!=None:
-                extract_netcdf_variable_recursive(output,data.groups[group_name],tree[0],tree[1:],options,check_empty,hdf5[group_name],download_semaphores,download_queues_manager)
+                extract_netcdf_variable_recursive(output,data.groups[group_name],tree[0],tree[1:],retrieval_type,options,check_empty,hdf5[group_name],download_semaphores,download_queues_manager)
             else:
-                extract_netcdf_variable_recursive(output,data.groups[group_name],tree[0],tree[1:],options,check_empty,hdf5,download_semaphores,download_queues_manager)
+                extract_netcdf_variable_recursive(output,data.groups[group_name],tree[0],tree[1:],retrieval_type,options,check_empty,hdf5,download_semaphores,download_queues_manager)
     else:
-        retrieve_or_replicate(output,data,group_name,options,check_empty,hdf5,download_semaphores,download_queues_manager)
+        retrieve_or_replicate(output,data,group_name,retrieval_type,options,check_empty,hdf5,download_semaphores,download_queues_manager)
     return
 
-def retrieve_or_replicate(output_grp,data,group,options,check_empty,hdf5,download_semaphores,download_queues_manager):
+def retrieve_or_replicate(output_grp,data,group,retrieval_type,options,check_empty,hdf5,download_semaphores,download_queues_manager):
     netcdf_pointers=read_soft_links.read_netCDF_pointers(data.groups[group],options=options,semaphores=download_semaphores,queues=download_queues_manager)
-    if 'download' in dir(options) and options.download:
-        netcdf_pointers.retrieve(output_grp,'retrieve_path_data',filepath=options.out_netcdf_file)
-    else:
+    if retrieval_type=='reduce':
         if hdf5!=None:
             netcdf_pointers.replicate(output_grp,check_empty=check_empty,hdf5=hdf5[group])
         else:
             netcdf_pointers.replicate(output_grp,check_empty=check_empty)
+    else:
+        if 'out_destination_dir' in dir(options):
+            netcdf_pointers.retrieve(output_grp,retrieval_type,filepath=options.out_destination_dir)
+        else:
+            netcdf_pointers.retrieve(output_grp,retrieval_type,filepath=options.out_netcdf_file)
     return
 
 def replace_netcdf_variable_recursive(output,data,level_desc,tree,hdf5=None,check_empty=False):
