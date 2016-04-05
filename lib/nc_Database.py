@@ -205,6 +205,7 @@ class nc_Database:
             if (retrieval_type=='download_files'
                 and
                 not ( 'do_not_revalidate' in dir(options) and options.do_not_revalidate)):
+                pass #Not implement yet
                    #revalidate
         else:
             nc_Database_utils.extract_netcdf_variable(output,self.Dataset,tree,options,retrieval_type=retrieval_type)
