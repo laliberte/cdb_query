@@ -39,7 +39,7 @@ class CDB_queues_manager:
         if 'validate' in self.queues_names:
             self.validate_semaphores=NC4SL_queues_manager.Semaphores_data_node(self.manager,num_concurrent=5)
 
-        if set(['download_files','download_opendap']).issubset(self.queues_names):
+        if len(set(['download_files','download_opendap']).intersection(self.queues_names))>0:
             #Create queues and semaphores for download:
             self.download=NC4SL_queues_manager.NC4SL_queues_manager(options,processes_names,manager=self.manager)
                 
