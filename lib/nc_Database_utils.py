@@ -54,7 +54,7 @@ def retrieve_or_replicate(output_grp,data,group,retrieval_type,options,check_emp
     if retrieval_type=='reduce':
         if ( ('applying_to_soft_links' in dir(options) and
               options.applying_to_soft_links) or
-             (not 'soft_links' in data.groups.keys())):
+             (not 'soft_links' in data.groups[group].groups.keys())):
             #If applying to soft links, replicate.
             #If there is no soft links, replicate.
             if hdf5!=None:

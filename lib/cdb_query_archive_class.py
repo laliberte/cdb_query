@@ -21,6 +21,7 @@ import nc_Database
 import nc_Database_utils
 import nc_Database_reduce
 import downloads
+import reduce_engine
 
 class SimpleTree:
     def __init__(self,project_drs,queues_manager=None):
@@ -155,10 +156,10 @@ class SimpleTree:
         return
 
     def load(self,options):
-        if self.queues_manager != None:
-            data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
-            for data_node in data_node_list:
-                self.queues_manager.validate_semaphores.add_new_data_node(data_node)
+        #if self.queues_manager != None:
+        #    data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
+        #    for data_node in data_node_list:
+        #        self.queues_manager.validate_semaphores.add_new_data_node(data_node)
         vars_list=self.reduce_var_list(options)
         self.put_or_process('load',downloads.load,vars_list,options)
         return
@@ -199,13 +200,18 @@ class SimpleTree:
         return fields_list
 
     def put_or_process(self,function_name,function_handle,vars_list,options):
+        #If it the first pass, start download processes, if needed:
+        if 'spin_up' in dir(options) and options.spin_up:
+            self.queues_manager.start_download_processes()
+            options.spin_up=False
+
         #Set number of processors to 1 for all child processses.
         #This is important for the setup of the ask function:
         options.num_procs=1
         if (len(vars_list)==1 or
             'serial' in dir(options) and options.serial):
             next_function_name=self.queues_manager.queues_names[self.queues_manager.queues_names.index(function_name)+1]
-            if 'serial' in dir(options) and options.serial):
+            if ('serial' in dir(options) and options.serial):
                 #If serial, must put an expected function:
                 getattr(self.queues_manager,next_function_name+'_expected').increment()
 

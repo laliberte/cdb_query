@@ -62,7 +62,7 @@ class CDB_queues_manager:
     def stop_download_processes(self):
         if (len(set(['download_files','download_opendap']).intersection(self.queues_names))>0
             and not self.serial):
-            for proc_name in self.download_processes.keys(): self.download_processes.terminate()
+            for proc_name in self.download_processes.keys(): self.download_processes[proc_name].terminate()
         return
                 
     def put(self,item):

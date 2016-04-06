@@ -299,6 +299,7 @@ def reduce(subparsers,epilog,project_drs):
                                          )
     functions_arguments(parser,['reduce'])
     reduce_arguments(parser,project_drs)
+
     return 
 
 def reduce_arguments(parser,project_drs):
@@ -310,6 +311,8 @@ def reduce_arguments(parser,project_drs):
     parser.add_argument('out_netcdf_file',
                                  help='NETCDF file (output)')
 
+    parser.add_argument('--swap_dir',type=writeable_dir,default='.',
+                                 help='Use this directory as a swap directory.')
     select_group=convert_arguments(parser,project_drs)
     select_group.add_argument('-k','--keep_field',action='append', type=str, choices=project_drs.official_drs_no_version,
                                        help='Keep these fields in the applied file.' )
