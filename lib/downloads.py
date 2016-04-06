@@ -17,12 +17,12 @@ def download_opendap(database,options,queues_manager=None):
 
 def download(database,retrieval_type,options,queues_manager):
     options_copy=copy.copy(options)
-    if 'out_destination' in dir(options):
+    if 'out_download_dir' in dir(options):
         #Describe the tree pattern:
         if database.drs.official_drs.index('var')>database.drs.official_drs.index('version'):
-            options_copy.out_destination+='/tree/version/var/'
+            options_copy.out_download_dir+='/tree/version/var/'
         else:
-            options_copy.out_destination+='/tree/var/version/'
+            options_copy.out_download_dir+='/tree/var/version/'
 
     if ('swap_dir' in dir(options_copy) and options_copy.swap_dir!='.'):
         options_copy.out_netcdf_file=options_copy.swap_dir+'/'+os.path.basename(options_copy.out_netcdf_file)
