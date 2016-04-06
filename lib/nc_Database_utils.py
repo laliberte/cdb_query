@@ -53,7 +53,7 @@ def retrieve_or_replicate(output_grp,data,group,retrieval_type,options,check_emp
     netcdf_pointers=read_soft_links.read_netCDF_pointers(data.groups[group],options=options,semaphores=download_semaphores,queues=download_queues_manager)
     if retrieval_type=='reduce':
         if ( ('reducing_soft_links_script' in dir(options) and
-              options.reducing_soft_links_script=='') or
+              options.reducing_soft_links_script!='') or
              (not 'soft_links' in data.groups[group].groups.keys())):
             #If applying to soft links, replicate.
             #If there is no soft links, replicate.
