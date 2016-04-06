@@ -133,11 +133,11 @@ def convert_dates_to_timestamps(output_tmp,time_frequency):
 
 
 def record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_drs):
+    data=netCDF4.Dataset(temp_file_name,'r')
     data_hdf5=None
     for item in h5py.h5f.get_obj_ids():
         if 'name' in dir(item) and item.name==temp_file_name:
             data_hdf5=h5py.File(item)
-    data=netCDF4.Dataset(temp_file_name,'r')
 
     #var=[ getattr(options,opt) for opt in project_drs.official_drs_no_version]
     var=[ None for opt in project_drs.official_drs_no_version]
