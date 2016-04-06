@@ -155,14 +155,14 @@ class SimpleTree:
         self.put_or_process('download_opendap',downloads.download_opendap,vars_list,options)
         return
 
-    def load(self,options):
-        #if self.queues_manager != None:
-        #    data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
-        #    for data_node in data_node_list:
-        #        self.queues_manager.validate_semaphores.add_new_data_node(data_node)
-        vars_list=self.reduce_var_list(options)
-        self.put_or_process('load',downloads.load,vars_list,options)
-        return
+    #def load(self,options):
+    #    #if self.queues_manager != None:
+    #    #    data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
+    #    #    for data_node in data_node_list:
+    #    #        self.queues_manager.validate_semaphores.add_new_data_node(data_node)
+    #    vars_list=self.reduce_var_list(options)
+    #    self.put_or_process('load',downloads.load,vars_list,options)
+    #    return
 
     def reduce(self,options):
         if (options.script=='' and 

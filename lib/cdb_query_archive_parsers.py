@@ -91,9 +91,8 @@ def generate_subparsers(parser,epilog,project_drs):
 
 def functions_arguments(parser,functions_list):
     authorized_functions=['ask','validate',
-                           'download_files','reduce_soft_links',
-                            'time_split','download_opendap',
-                            'load','reduce','convert']
+                          'download_files','reduce_soft_links',
+                          'download_opendap','reduce','convert']
     for function in authorized_functions:
         if function in functions_list:
             parser.add_argument('--'+function, default=True,help=argparse.SUPPRESS)
@@ -255,17 +254,6 @@ def download_files(subparsers,epilog,project_drs):
     excluded_slicing_arguments(exc_group,project_drs,action_type='append')
     return
 
-def time_split(subparsers,epilog,project_drs):
-    epilog_time_split=textwrap.dedent(epilog)
-    parser=subparsers.add_parser('time_split',
-                                       description=textwrap.dedent('Takes the output of validate and describe a time-splitting'),
-                                       epilog=epilog_time_split
-                                         )
-    functions_arguments(parser,['time_split'])
-    manage_soft_links_parsers.download_arguments_no_io(parser,project_drs)
-    reduce_arguments(parser,project_drs)
-    return
-
 def download_opendap(subparsers,epilog,project_drs):
     parser=manage_soft_links_parsers.download_opendap(subparsers,epilog,project_drs)
     parser.add_argument('--swap_dir',type=writeable_dir,default='.',
@@ -333,8 +321,8 @@ def convert(subparsers,epilog,project_drs):
     return
 
 def convert_arguments(parser,project_drs):
-    parser.add_argument('--reducing_to_soft_links',default=False,action='store_true',
-                                 help='When reducing an operator to soft links use this options for siginificant speed up.')
+    parser.add_argument('--reducing_soft_links_script',default='',
+                                 help='Script to apply to soft links.')
 
     processing_arguments(parser,project_drs)
 
@@ -350,17 +338,6 @@ def convert_arguments(parser,project_drs):
                                        help='Complex query fields.' )
     complex_slicing(comp_group,project_drs,action_type='append')
     return select_group
-
-def load_and_reduce(subparsers,epilog,project_drs):
-    epilog_reduce=textwrap.dedent(epilog)
-    parser=subparsers.add_parser('load_and_reduce',
-                                           description=textwrap.dedent('Take as an input a database file, load the data and reduce bash script'),
-                                           epilog=epilog_reduce
-                                         )
-    functions_arguments(parser,['load','reduce'])
-    manage_soft_links_parsers.load_arguments_no_io(parser,project_drs)
-    reduce_arguments(parser,project_drs)
-    return 
 
 def certificates(subparsers,epilog,project_drs):
     manage_soft_links_parsers.certificates(subparsers,epilog,project_drs)

@@ -30,8 +30,7 @@ class CDB_queues_manager:
         #for name in ['ask','validate','time_split']:
         authorized_functions=['ask','validate',
                                'download_files','reduce_soft_links',
-                                'time_split','download_opendap',
-                                'load','reduce']
+                                'download_opendap','reduce']
         for name in authorized_functions:
             if (name in dir(options) and getattr(options,name)):
                 self.queues_names.append(name)

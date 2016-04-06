@@ -12,8 +12,8 @@ def download_files(database,options,queues_manager=None):
 def download_opendap(database,options,queues_manager=None):
     return download(database,'download_opendap',options,queues_manager)
 
-def load(database,options,queues_manager=None):
-    return download(database,'load',options,queues_manager)
+#def load(database,options,queues_manager=None):
+#    return download(database,'load',options,queues_manager)
 
 def download(database,retrieval_type,options,queues_manager):
     options_copy=copy.copy(options)
@@ -46,18 +46,6 @@ def download(database,retrieval_type,options,queues_manager):
     output.close()
     database.close_database()
     return options_copy.out_netcdf_file
-
-#def revalidate(database,options,queues_manager=None):
-#    if ('swap_dir' in dir(options) and options.swap_dir!='.'):
-#        output_file_name=options.swap_dir+'/'+os.path.basename(output_file_name)
-#
-#    #Recover the database meta data:
-#    database.load_header(options)
-#    #Find the data that needs to be recovered:
-#    database.load_database(options,cdb_query_archive_class.find_simple)
-#    database.nc_Database.retrieve_database(output,options,queues_manager=queues_manager,retrieval_type=retrieval_type)
-#    database.close_database()
-#    return output_file_name
 
 def time_split(database,options,queues_manager=None):
     output_file_name=options.out_netcdf_file

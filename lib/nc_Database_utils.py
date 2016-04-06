@@ -52,8 +52,8 @@ def extract_retrieve_or_replicate(group_name,output,data,tree,retrieval_type,dow
 def retrieve_or_replicate(output_grp,data,group,retrieval_type,options,check_empty,hdf5,download_semaphores,download_queues_manager):
     netcdf_pointers=read_soft_links.read_netCDF_pointers(data.groups[group],options=options,semaphores=download_semaphores,queues=download_queues_manager)
     if retrieval_type=='reduce':
-        if ( ('applying_to_soft_links' in dir(options) and
-              options.applying_to_soft_links) or
+        if ( ('reducing_soft_links_script' in dir(options) and
+              options.reducing_soft_links_script=='') or
              (not 'soft_links' in data.groups[group].groups.keys())):
             #If applying to soft links, replicate.
             #If there is no soft links, replicate.
@@ -143,8 +143,8 @@ def record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_d
     var=[ None for opt in project_drs.official_drs_no_version]
     tree=zip(project_drs.official_drs_no_version,var)
 
-    if ('applying_to_soft_links' in dir(options) and
-        options.applying_to_soft_links):
+    if ('reducing_soft_links_script' in dir(options) and
+        options.reducing_soft_links_script==''):
         #Do not check empty:
         replace_netcdf_variable_recursive(output,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=False)
     else:
