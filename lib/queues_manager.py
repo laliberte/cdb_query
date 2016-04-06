@@ -10,6 +10,7 @@ import numpy as np
 #Internal:
 import cdb_query_archive_class
 import netcdf4_soft_links.queues_manager as NC4SL_queues_manager
+import netcdf4_soft_links.retrieval_manager as retrieval_manager
 
 class CDB_queues_manager:
     def __init__(self,options):
@@ -21,6 +22,10 @@ class CDB_queues_manager:
             self.serial=True
         else:
             self.serial=False
+        if ('num_dl' in dir(options) and options.num_dl):
+            self.num_dl=options.num_dl
+        else:
+            self.num_dl=1
 
         #for name in ['ask','validate','time_split']:
         authorized_functions=['ask','validate',
@@ -51,7 +56,14 @@ class CDB_queues_manager:
     def start_download_processes(self):
         if (len(set(['download_files','download_opendap']).intersection(self.queues_names))>0
             and not self.serial):
-            self.download_processes=retrieval_manager.start_download_processes_no_serial(self.download.queues.keys(),self.download_processes)
+            self.download_processes=retrieval_manager.start_download_processes_no_serial(self.download,self.num_dl,self.download_processes)
+        return
+
+    def stop_download_processes(self):
+        if (len(set(['download_files','download_opendap']).intersection(self.queues_names))>0
+            and not self.serial):
+            for proc_name in self.download_processes.keys(): self.download_processes.terminate()
+        return
                 
     def put(self,item):
         if item[0]==self.queues_names[0]:
@@ -75,15 +87,16 @@ class CDB_queues_manager:
         while self.expected_queue_size()>0:
             #Get an element from one queue, starting from the last:
             for queue_name in self.queues_names[::-1]:
+                if record:
+                    #The record worker tries to start download processes whenever it can
+                    self.start_download_processes()
+
                 #Record workers can pick from the record queue
                 if not (not record and queue_name == 'record'):
                     try:
                         return self.get_queue(queue_name,timeout)
                     except Queue.Empty:
                         pass
-                if record:
-                    #The record work tries to start download processes whenever it can
-                    self.start_download_processes()
                 #First pass, short timeout. Subsequent pass, longer:
                 if timeout==timeout_first: timeout=timeout_subsequent
         return 'STOP'
@@ -107,23 +120,25 @@ class CDB_queues_manager:
     def expected_queue_size(self):
         return np.max([getattr(self,queue_name+'_expected').value for queue_name in self.queues_names])
 
-def recorder(queues_manager,project_drs,options):
+def recorder(q_manager,project_drs,options):
+
     if not ('convert' in dir(options) and options.convert):
         output=netCDF4.Dataset(options.out_netcdf_file,'w')
 
-    for item in iter(queues_manager.get_record,'STOP'):
+    for item in iter(q_manager.get_record,'STOP'):
         if item[1]!='record':
-            cdb_query_archive_class.consume_one_item(item[0],item[1],item[2],queue_manager,project_drs)
+            cdb_query_archive_class.consume_one_item(item[0],item[1],item[2],q_manager,project_drs)
         elif not ('convert' in dir(options) and options.convert):
             cdb_query_archive_class.record_to_netcdf_file(item[2],output,project_drs)
+
     return
 
-def consumer(queue_manager,project_drs):
-    for item in iter(queue_manager.get_no_record,'STOP'):
-        cdb_query_archive_class.consume_one_item(item[0],item[1],item[2],queue_manager,project_drs)
+def consumer(q_manager,project_drs):
+    for item in iter(q_manager.get_no_record,'STOP'):
+        cdb_query_archive_class.consume_one_item(item[0],item[1],item[2],q_manager,project_drs)
     return
 
-def start_consumer_processes(queues_manager,project_drs,options):
+def start_consumer_processes(q_manager,project_drs,options):
     processes_names=consumer_processes_names(options)
     processes=dict()
     for process_name in processes_names:
@@ -131,7 +146,7 @@ def start_consumer_processes(queues_manager,project_drs,options):
            process_name='consumer_'+str(proc_id)
            processes[process_name]=multiprocessing.Process(target=consumer,
                                                            name=process_name,
-                                                           args=(queues_manager,project_drs))
+                                                           args=(q_manager,project_drs))
         else:
             processes[process_name]=multiprocessing.current_process()
     return processes

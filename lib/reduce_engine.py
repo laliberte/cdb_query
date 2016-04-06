@@ -8,19 +8,19 @@ import os
 #Internal:
 import nc_Database_utils
 
-def reduce_variable(project_drs,options,queues_manager=None):
+def reduce_variable(database,options,queues_manager=None):
     #The leaf(ves) considered here:
-    var=[getattr(options,opt) for opt in project_drs.official_drs_no_version]
-    tree=zip(project_drs.official_drs_no_version,var)
+    var=[getattr(options,opt)[0] for opt in database.drs.official_drs_no_version]
+    tree=zip(database.drs.official_drs_no_version,var)
 
     #Decide whether to add fixed variables:
-    tree_fx,options_fx=get_fixed_var_tree(project_drs,options,var)
+    tree_fx,options_fx=get_fixed_var_tree(database.drs,options,var)
 
     #Define output_file_name:
-    output_file_name=get_output_name(project_drs,options,var)
+    output_file_name=get_output_name(database.drs,options,var)
     temp_output_file_name=get_temp_output_file_name(options,output_file_name)
 
-    file_name_list=get_input_file_names(project_drs,options)
+    file_name_list=get_input_file_names(database.drs,options)
     temp_file_name_list=[]
 
     for file_name in file_name_list:
