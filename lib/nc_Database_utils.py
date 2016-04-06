@@ -76,46 +76,30 @@ def replace_netcdf_variable_recursive(output,data,level_desc,tree,hdf5=None,chec
     group_name=level_desc[1]
     if group_name==None or isinstance(group_name,list):
         for group in data.groups.keys():
-            if len(tree)>0:
-                output_grp=netcdf_utils.create_group(output,data,group)
-                try:
-                    setattr(output_grp,'level_name',level_name)
-                except:
-                    output_grp.setncattr('level_name',level_name)
-                if hdf5!=None:
-                    replace_netcdf_variable_recursive(output_grp,data.groups[group],tree[0],tree[1:],hdf5=hdf5[group],check_empty=check_empty)
-                else:
-                    replace_netcdf_variable_recursive(output_grp,data.groups[group],tree[0],tree[1:],check_empty=check_empty)
-            elif not group in output.groups.keys():
-                #Prevent collisions during merge. Replicate only when group does not exist.
-                output_grp=netcdf_utils.create_group(output,data,group)
-                try:
-                    setattr(output_grp,'level_name',level_name)
-                except:
-                    output_grp.setncattr('level_name',level_name)
-                netcdf_pointers=read_soft_links.read_netCDF_pointers(data.groups[group])
-                if hdf5!=None:
-                    netcdf_pointers.replicate(output_grp,hdf5=hdf5[group],check_empty=check_empty)
-                else:
-                    netcdf_pointers.replicate(output_grp,hdf5=hdf5,check_empty=check_empty)
+            output_grp=netcdf_utils.create_group(output,data,group)
+            if hdf5!=None:
+                replace_netcdf_variable_recursive_replicate(output_grp,data.groups[group],level_name,group,tree,hdf5=hdf5[group],check_empty=check_empty)
+            else:
+                replace_netcdf_variable_recursive_replicate(output_grp,data.groups[group],level_name,group,tree,check_empty=check_empty)
                     
     else:
-        if len(tree)>0:
-            output_grp=netcdf_utils.create_group(output,data,group_name)
-            try:
-                setattr(output_grp,'level_name',level_name)
-            except:
-                output_grp.setncattr('level_name',level_name)
-            replace_netcdf_variable_recursive(output_grp,data,tree[0],tree[1:],hdf5=hdf5,check_empty=check_empty)
-        elif not group_name in output.groups.keys():
-            #Prevent collisions during merge. Replicate only when group does not exist.
-            output_grp=netcdf_utils.create_group(output,data,group_name)
-            try:
-                setattr(output_grp,'level_name',level_name)
-            except:
-                output_grp.setncattr('level_name',level_name)
-            netcdf_pointers=read_soft_links.read_netCDF_pointers(data)
-            netcdf_pointers.replicate(output_grp,hdf5=hdf5,check_empty=check_empty)
+        output_grp=netcdf_utils.create_group(output,data,group_name)
+        replace_netcdf_variable_recursive_replicate(output_grp,data,level_name,group_name,tree,hdf5=hdf5,check_empty=check_empty)
+    return
+
+def replace_netcdf_variable_recursive_replicate(output_grp,data_grp,level_name,group_name,tree,hdf5=None,check_empty=False):
+    if len(tree)>0 or (not group_name in output_grp.groups.keys()):
+        try:
+            setattr(output_grp,'level_name',level_name)
+        except:
+            output_grp.setncattr('level_name',level_name)
+
+    if len(tree)>0:
+        replace_netcdf_variable_recursive(output_grp,data_grp,tree[0],tree[1:],hdf5=hdf5,check_empty=check_empty)
+    elif not group_name in output_grp.groups.keys():
+        #Prevent collisions during merge. Replicate only when group does not exist.
+        netcdf_pointers=read_soft_links.read_netCDF_pointers(data_grp)
+        netcdf_pointers.replicate(output_grp,hdf5=hdf5,check_empty=check_empty)
     return
 
 def convert_dates_to_timestamps(output_tmp,time_frequency):
@@ -139,8 +123,8 @@ def record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_d
         if 'name' in dir(item) and item.name==temp_file_name:
             data_hdf5=h5py.File(item)
 
-    #var=[ getattr(options,opt) for opt in project_drs.official_drs_no_version]
-    var=[ None for opt in project_drs.official_drs_no_version]
+    var=[ getattr(options,opt)[0] for opt in project_drs.official_drs_no_version]
+    #var=[ None for opt in project_drs.official_drs_no_version]
     tree=zip(project_drs.official_drs_no_version,var)
 
     if ('reducing_soft_links_script' in dir(options) and
