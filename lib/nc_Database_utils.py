@@ -110,6 +110,7 @@ def replace_netcdf_variable_recursive(output,data,level_desc,tree,hdf5=None,chec
             hdf5_grp=hdf5
         output_grp=netcdf_utils.create_group(output,data,group_name)
         replace_netcdf_variable_recursive_replicate(output_grp,data.groups[group_name],level_name,group_name,tree,hdf5=hdf5_grp,check_empty=check_empty)
+        #replace_netcdf_variable_recursive_replicate(output_grp,data,level_name,group_name,tree,hdf5=hdf5,check_empty=check_empty)
     return
 
 def replace_netcdf_variable_recursive_replicate(output_grp,data_grp,level_name,group_name,tree,hdf5=None,check_empty=False):
@@ -238,11 +239,11 @@ def convert_dates_to_timestamps(output_tmp,time_frequency):
         return ''
 
 def make_sub_dir(out_dir,group):
-    try:
-        sub_out_dir=out_dir+'/'+group
-        if not os.path.exists(sub_out_dir):
-            os.makedirs(sub_out_dir)
-    except:
-        pass
+    #try:
+    sub_out_dir=out_dir+'/'+group
+    if not os.path.exists(sub_out_dir):
+        os.makedirs(sub_out_dir)
+    #except:
+    #    pass
     return sub_out_dir
 

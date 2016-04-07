@@ -13,8 +13,8 @@ def download_files(database,options,q_manager=None):
 def download_opendap(database,options,q_manager=None):
     return download(database,'download_opendap',options,q_manager)
 
-def load(database,options,q_manager=None):
-    return download(database,'load',options,q_manager)
+#def load(database,options,q_manager=None):
+#    return download(database,'load',options,q_manager)
 
 def download(database,retrieval_type,options,q_manager):
     options_copy=copy.copy(options)

@@ -84,7 +84,11 @@ def generate_subparsers(parser,epilog,project_drs):
 
     reduce(subparsers,epilog,project_drs)
 
-    load(subparsers,epilog,project_drs)
+    av(subparsers,epilog,project_drs)
+    avd(subparsers,epilog,project_drs)
+    avdr(subparsers,epilog,project_drs)
+
+    gather(subparsers,epilog,project_drs)
 
     return
 
@@ -118,30 +122,32 @@ def ask(subparsers,epilog,project_drs):
                                          )
     functions_arguments(parser,['ask'])
 
-    parser.add_argument('--list_only_field',default=None, choices=project_drs.remote_fields,
-                              help='When this option is used, the ask function prints only the specified field \n\
-                                  for which published data COULD match the query. Does nothing to the output file.\n\
-                                  Listing separate fields is usually much quicker than the discovery step.')
+    input_arguments_json(parser)
+    output_arguments(parser)
+    parser.add_argument('-s','--silent',default=False,action='store_true',help='Make not verbose.')
+
+    manage_soft_links_parsers.certificates_arguments(parser,project_drs)
+    processing_arguments(parser,project_drs)
+
     parser.add_argument('--distrib',
                                  default=False, action='store_true',
                                  help='Distribute the search. Will likely result in a pointers originating from one node.')
-
     parser.add_argument('--related_experiments',
                                  default=False, action='store_true',
                                  help='When this option is activated, queried experiments are assumed to be related.\n\
                                        In this situation, cdb_query will discard ({0}) tuples that do not have variables for\n\
                                        ALL of the requested experiments'.format(','.join(project_drs.simulations_desc)))
-    parser.add_argument('-s','--silent',default=False,action='store_true',help='Make not verbose.')
 
-    input_arguments_json(parser)
-    output_arguments(parser)
+    parser.add_argument('--list_only_field',default=None, choices=project_drs.remote_fields,
+                              help='When this option is used, the ask function prints only the specified field \n\
+                                  for which published data COULD match the query. Does nothing to the output file.\n\
+                                  Listing separate fields is usually much quicker than the discovery step.')
 
     #ask_group = parser.add_argument_group('These arguments specify the query')
     #ask_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.base_drs,
     #                                   help='List the field (or fields if repeated) found in the file' )
 
-    manage_soft_links_parsers.certificates_arguments(parser,project_drs)
-    processing_arguments(parser,project_drs)
+    #SIMPLE SLICING:
     inc_group = parser.add_argument_group('Inclusions')
     slicing_arguments(inc_group,project_drs,action_type='append')
     exc_group = parser.add_argument_group('Exclusions (inactive in ESGF search)')
@@ -210,27 +216,29 @@ def validate(subparsers,epilog,project_drs):
                                  )
 
     functions_arguments(parser,['validate'])
-    validate_arguments(parser,project_drs)
 
     input_arguments(parser)
     output_arguments(parser)
 
     manage_soft_links_parsers.certificates_arguments(parser,project_drs)
+    processing_arguments(parser,project_drs)
 
-    data_node_group = parser.add_argument_group('Restrict search to specific data nodes')
-    data_node_group.add_argument('--data_node',type=str,action='append',help='Consider only the specified data nodes')
-    data_node_group.add_argument('--Xdata_node',type=str,action='append',help='Do not consider the specified data nodes')
-
-    convert_arguments(parser,project_drs)
-    return
-
-def validate_arguments(parser,project_drs):
     parser.add_argument('--related_experiments',
                                  default=False, action='store_true',
                                  help='When this option is activated, queried experiments are assumed to be related.\n\
                                        In this situation, cdb_query will discard ({0}) tuples that do not have variables for\n\
                                        ALL of the requested experiments'.format(','.join(project_drs.simulations_desc)))
 
+    validate_arguments(parser,project_drs)
+
+    extended_slicing_arguments(parser,project_drs)
+
+    data_node_group = parser.add_argument_group('Restrict search to specific data nodes')
+    data_node_group.add_argument('--data_node',type=str,action='append',help='Consider only the specified data nodes')
+    data_node_group.add_argument('--Xdata_node',type=str,action='append',help='Do not consider the specified data nodes')
+    return
+
+def validate_arguments(parser,project_drs):
     parser.add_argument('--no_check_availability',
                      default=False, action='store_true',
                      help='When this option is activated, checks only that the time stamp is within \n\
@@ -241,16 +249,24 @@ def validate_arguments(parser,project_drs):
                      help='When this option is activated, do not exclude models if they are missing years.')
     return
 
+def extended_slicing_arguments(parser,project_drs):
+    inc_group = parser.add_argument_group('Inclusions')
+    slicing_arguments(inc_group,project_drs,action_type='append')
+    exc_group = parser.add_argument_group('Exclusions')
+    excluded_slicing_arguments(exc_group,project_drs,action_type='append')
+    comp_group = parser.add_argument_group('Complex Query')
+    comp_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.official_drs_no_version,
+                                       help='Complex query fields.' )
+    complex_slicing(comp_group,project_drs,action_type='append')
+    return 
+
 def download_files(subparsers,epilog,project_drs):
     parser=manage_soft_links_parsers.download_files(subparsers,epilog,project_drs)
     parser.add_argument('--swap_dir',type=writeable_dir,default='.',
                                  help='Use this directory as a swap directory.')
     functions_arguments(parser,['download_files'])
 
-    inc_group = parser.add_argument_group('Inclusions')
-    slicing_arguments(inc_group,project_drs,action_type='append')
-    exc_group = parser.add_argument_group('Exclusions')
-    excluded_slicing_arguments(exc_group,project_drs,action_type='append')
+    extended_slicing_arguments(parser,project_drs)
     return
 
 def download_opendap(subparsers,epilog,project_drs):
@@ -259,22 +275,38 @@ def download_opendap(subparsers,epilog,project_drs):
                                  help='Use this directory as a swap directory.')
     functions_arguments(parser,['download_opendap'])
 
-    inc_group = parser.add_argument_group('Inclusions')
-    slicing_arguments(inc_group,project_drs,action_type='append')
-    exc_group = parser.add_argument_group('Exclusions')
-    excluded_slicing_arguments(exc_group,project_drs,action_type='append')
+    extended_slicing_arguments(parser,project_drs)
     return
 
-def load(subparsers,epilog,project_drs):
-    parser=manage_soft_links_parsers.load(subparsers,epilog,project_drs)
-    parser.add_argument('--swap_dir',type=writeable_dir,default='.',
-                                 help='Use this directory as a swap directory.')
-    functions_arguments(parser,['load'])
+def gather(subparsers,epilog,project_drs):
+    epilog_gather=textwrap.dedent(epilog)
+    #Load is essentially a special case of reduce
+    parser=subparsers.add_parser('gather',
+                                       description=textwrap.dedent('Take as an input retrieved data and load bash script'),
+                                       epilog=epilog_gather
+                                         )
+    functions_arguments(parser,['reduce'])
+    parser.add_argument('--script',default='',help=argparse.SUPPRESS)
+    
+    input_arguments(parser)
+    output_arguments(parser)
+    parser.add_argument('--out_destination',default='./',
+                             help='Destination directory for conversion.')
+    parser.add_argument('-l','--loop_through_time',action='append', type=str, choices=['year','month','day','hour'],
+                                       default=[],
+                                       help='Loop through time. This option is a bit tricky.\n\
+                                            For example, \'-l year -l month\' loops through all month, one at a time.\n\
+                                            \'-l month\', on the other hand, would loop through the 12 months, passing all years\n\
+                                            to \'reduce\'.' )
 
-    inc_group = parser.add_argument_group('Inclusions')
-    slicing_arguments(inc_group,project_drs,action_type='append')
-    exc_group = parser.add_argument_group('Exclusions')
-    excluded_slicing_arguments(exc_group,project_drs,action_type='append')
+    processing_arguments(parser,project_drs)
+
+    manage_soft_links_parsers.time_selection_arguments(parser)
+    extended_slicing_arguments(parser,project_drs)
+
+    data_node_group = parser.add_argument_group('Restrict search to specific data nodes')
+    data_node_group.add_argument('--data_node',type=str,action='append',help='Consider only the specified data nodes')
+    data_node_group.add_argument('--Xdata_node',type=str,action='append',help='Do not consider the specified data nodes')
     return
 
 def reduce(subparsers,epilog,project_drs):
@@ -284,69 +316,196 @@ def reduce(subparsers,epilog,project_drs):
                                        epilog=epilog_reduce
                                          )
     functions_arguments(parser,['reduce'])
-    select_group=reduce_arguments(parser,project_drs)
+    parser.add_argument('script',default='',help="Command-line script")
+    
+    input_arguments(parser)
+    output_arguments(parser)
+    processing_arguments(parser,project_drs)
 
+    reduce_arguments(parser,project_drs)
+
+    manage_soft_links_parsers.time_selection_arguments(parser)
+    extended_slicing_arguments(parser,project_drs)
+
+    data_node_group = parser.add_argument_group('Restrict search to specific data nodes')
+    data_node_group.add_argument('--data_node',type=str,action='append',help='Consider only the specified data nodes')
+    data_node_group.add_argument('--Xdata_node',type=str,action='append',help='Do not consider the specified data nodes')
+    return 
+
+def reduce_arguments(parser,project_drs):
+    parser.add_argument('in_extra_netcdf_files',nargs='*',
+                                 help='NETCDF extra retrieved files (input).')
+    parser.add_argument('--out_destination',default='./',
+                             help='Destination directory for conversion.')
+
+    parser.add_argument('--reducing_soft_links_script',default='',
+                                 help='Script to apply to soft links.')
+
+    select_group = parser.add_argument_group('These arguments specify the structure of the output')
+    select_group.add_argument('--add_fixed',default=False, action='store_true',help='include fixed variables')
+    select_group.add_argument('-k','--keep_field',action='append', type=str, choices=project_drs.official_drs_no_version,
+                                       default=[],
+                                       help='Keep these fields in the applied file.' )
     select_group.add_argument('-l','--loop_through_time',action='append', type=str, choices=['year','month','day','hour'],
                                        default=[],
                                        help='Loop through time. This option is a bit tricky.\n\
                                             For example, \'-l year -l month\' loops through all month, one at a time.\n\
                                             \'-l month\', on the other hand, would loop through the 12 months, passing all years\n\
                                             to \'reduce\'.' )
-    parser.add_argument('--out_destination',
-                             help='Destination directory for conversion.')
-
-    manage_soft_links_parsers.time_selection_arguments(parser)
-    return 
-
-def reduce_arguments(parser,project_drs):
-    parser.add_argument('script',default='',help="Command-line script")
-    parser.add_argument('in_netcdf_file',
-                                 help='NETCDF retrieved files (input).')
-    parser.add_argument('in_extra_netcdf_files',nargs='*',
-                                 help='NETCDF extra retrieved files (input).')
-    parser.add_argument('out_netcdf_file',
-                                 help='NETCDF file (output)')
-
-    parser.add_argument('--swap_dir',type=writeable_dir,default='.',
-                                 help='Use this directory as a swap directory.')
-    select_group=convert_arguments(parser,project_drs)
-    select_group.add_argument('-k','--keep_field',action='append', type=str, choices=project_drs.official_drs_no_version,
-                                       default=[],
-                                       help='Keep these fields in the applied file.' )
     return select_group
 
-#def convert(subparsers,epilog,project_drs):
-#    epilog_convert=textwrap.dedent(epilog)
-#    parser=subparsers.add_parser('convert',
-#                               description=textwrap.dedent('Take as an input the results from \'download\' and converts the data.'),
-#                               epilog=epilog_convert,
-#                             )
-#    functions_arguments(parser,['reduce','convert'])
-#    input_arguments(parser)
-#    parser.add_argument('out_destination',
-#                             help='Destination directory for conversion.')
-#    parser.add_argument('--script',default='',help=argparse.SUPPRESS)
-#    convert_arguments(parser,project_drs)
-#    return
+def av(subparsers,epilog,project_drs):
+    epilog_av=textwrap.dedent(epilog)
+    parser=subparsers.add_parser('av',
+                                       description=textwrap.dedent('Ask -> Validate'),
+                                       epilog=epilog_av
+                                         )
+    functions_arguments(parser,['ask','validate'])
 
-def convert_arguments(parser,project_drs):
-    parser.add_argument('--reducing_soft_links_script',default='',
-                                 help='Script to apply to soft links.')
+    #ASK
+    input_arguments_json(parser)
+    output_arguments(parser)
+    parser.add_argument('--related_experiments',
+                                 default=False, action='store_true',
+                                 help='When this option is activated, queried experiments are assumed to be related.\n\
+                                       In this situation, cdb_query will discard ({0}) tuples that do not have variables for\n\
+                                       ALL of the requested experiments'.format(','.join(project_drs.simulations_desc)))
+    parser.add_argument('--list_only_field',default=None, choices=project_drs.remote_fields,
+                              help=argparse.SUPPRESS)
 
+    manage_soft_links_parsers.certificates_arguments(parser,project_drs)
     processing_arguments(parser,project_drs)
 
-    select_group = parser.add_argument_group('These arguments specify the structure of the output')
-    select_group.add_argument('--add_fixed',default=False, action='store_true',help='include fixed variables')
+    parser.add_argument('--distrib',
+                                 default=False, action='store_true',
+                                 help='Distribute the search. Will likely result in a pointers originating from one node.')
 
-    inc_group = parser.add_argument_group('Inclusions')
-    slicing_arguments(inc_group,project_drs,action_type='append')
-    exc_group = parser.add_argument_group('Exclusions')
-    excluded_slicing_arguments(exc_group,project_drs,action_type='append')
-    comp_group = parser.add_argument_group('Complex Query')
-    comp_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.official_drs_no_version,
-                                       help='Complex query fields.' )
-    complex_slicing(comp_group,project_drs,action_type='append')
-    return select_group
+    parser.add_argument('-s','--silent',default=False,action='store_true',help='Make not verbose.')
+
+    #VALIDATE
+    validate_arguments(parser,project_drs)
+    extended_slicing_arguments(parser,project_drs)
+
+    data_node_group = parser.add_argument_group('Restrict search to specific data nodes')
+    data_node_group.add_argument('--data_node',type=str,action='append',help='Consider only the specified data nodes')
+    data_node_group.add_argument('--Xdata_node',type=str,action='append',help='Do not consider the specified data nodes')
+    return 
+
+def avd(subparsers,epilog,project_drs):
+    epilog_avd=textwrap.dedent(epilog)
+    parser=subparsers.add_parser('avd',
+                                       description=textwrap.dedent('Ask -> Validate -> Download_files -> Download_opendap'),
+                                       epilog=epilog_avd
+                                         )
+    functions_arguments(parser,['ask','validate','download_files','download_opendap'])
+
+
+    #ASK
+    parser.add_argument('script',default='',help="Command-line script")
+    input_arguments_json(parser)
+    output_arguments(parser)
+    parser.add_argument('--related_experiments',
+                                 default=False, action='store_true',
+                                 help='When this option is activated, queried experiments are assumed to be related.\n\
+                                       In this situation, cdb_query will discard ({0}) tuples that do not have variables for\n\
+                                       ALL of the requested experiments'.format(','.join(project_drs.simulations_desc)))
+    parser.add_argument('--list_only_field',default=None, choices=project_drs.remote_fields,
+                              help=argparse.SUPPRESS)
+
+    manage_soft_links_parsers.certificates_arguments(parser,project_drs)
+    processing_arguments(parser,project_drs)
+
+    parser.add_argument('--distrib',
+                                 default=False, action='store_true',
+                                 help='Distribute the search. Will likely result in a pointers originating from one node.')
+
+    parser.add_argument('-s','--silent',default=False,action='store_true',help='Make not verbose.')
+
+    #VALIDATE
+    validate_arguments(parser,project_drs)
+    extended_slicing_arguments(parser,project_drs)
+
+    data_node_group = parser.add_argument_group('Restrict search to specific data nodes')
+    data_node_group.add_argument('--data_node',type=str,action='append',help='Consider only the specified data nodes')
+    data_node_group.add_argument('--Xdata_node',type=str,action='append',help='Do not consider the specified data nodes')
+
+    #DOWNLOAD
+    serial_group = parser.add_argument_group('Specify asynchronous behavior')
+    serial_group.add_argument('--serial',default=False,action='store_true',help='Downloads the files serially.')
+    serial_group.add_argument('--num_dl',default=1,type=int,help='Number of simultaneous download from EACH data node. Default=1.')
+    if project_drs==None:
+        default_dir='.'
+    else:
+        default_dir='./'+project_drs.project
+    parser.add_argument('--out_download_dir',default='.',
+                             help='Destination directory for retrieval.')
+    parser.add_argument('--do_not_revalidate',default=False,action='store_true',
+                        help='Do not revalidate. Only advanced users will use this option.\n\
+                              Using this option might can lead to ill-defined time axes.')
+    parser.add_argument('--download_all',default=False,action='store_true',help=argparse.SUPPRESS)
+
+    manage_soft_links_parsers.time_selection_arguments(parser)
+
+    return 
+
+def avdr(subparsers,epilog,project_drs):
+    epilog_avdr=textwrap.dedent(epilog)
+    parser=subparsers.add_parser('avdr',
+                                       description=textwrap.dedent('Ask -> Validate -> Download_files -> Download_opendap -> Reduce'),
+                                       epilog=epilog_avdr
+                                         )
+    functions_arguments(parser,['ask','validate','download_files','download_opendap','reduce'])
+
+
+    #ASK
+    parser.add_argument('script',default='',help="Command-line script")
+    input_arguments_json(parser)
+    output_arguments(parser)
+    parser.add_argument('--related_experiments',
+                                 default=False, action='store_true',
+                                 help='When this option is activated, queried experiments are assumed to be related.\n\
+                                       In this situation, cdb_query will discard ({0}) tuples that do not have variables for\n\
+                                       ALL of the requested experiments'.format(','.join(project_drs.simulations_desc)))
+    parser.add_argument('--list_only_field',default=None, choices=project_drs.remote_fields,
+                              help=argparse.SUPPRESS)
+
+    manage_soft_links_parsers.certificates_arguments(parser,project_drs)
+    processing_arguments(parser,project_drs)
+
+    parser.add_argument('--distrib',
+                                 default=False, action='store_true',
+                                 help='Distribute the search. Will likely result in a pointers originating from one node.')
+
+    parser.add_argument('-s','--silent',default=False,action='store_true',help='Make not verbose.')
+
+    #VALIDATE
+    validate_arguments(parser,project_drs)
+    extended_slicing_arguments(parser,project_drs)
+
+    data_node_group = parser.add_argument_group('Restrict search to specific data nodes')
+    data_node_group.add_argument('--data_node',type=str,action='append',help='Consider only the specified data nodes')
+    data_node_group.add_argument('--Xdata_node',type=str,action='append',help='Do not consider the specified data nodes')
+
+    #DOWNLOAD
+    serial_group = parser.add_argument_group('Specify asynchronous behavior')
+    serial_group.add_argument('--serial',default=False,action='store_true',help='Downloads the files serially.')
+    serial_group.add_argument('--num_dl',default=1,type=int,help='Number of simultaneous download from EACH data node. Default=1.')
+    if project_drs==None:
+        default_dir='.'
+    else:
+        default_dir='./'+project_drs.project
+    parser.add_argument('--out_download_dir',default='.',
+                             help='Destination directory for retrieval.')
+    parser.add_argument('--do_not_revalidate',default=False,action='store_true',
+                        help='Do not revalidate. Only advanced users will use this option.\n\
+                              Using this option might can lead to ill-defined time axes.')
+    parser.add_argument('--download_all',default=False,action='store_true',help=argparse.SUPPRESS)
+
+    manage_soft_links_parsers.time_selection_arguments(parser)
+
+    #REDUCE
+    reduce_arguments(parser,project_drs)
+    return 
 
 def certificates(subparsers,epilog,project_drs):
     manage_soft_links_parsers.certificates(subparsers,epilog,project_drs)

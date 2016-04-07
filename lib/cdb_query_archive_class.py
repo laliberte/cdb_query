@@ -110,6 +110,18 @@ class SimpleTree:
         self.put_or_process('validate',validate.validate,vars_list,options,q_manager)
         return
 
+    def av(self,options,q_manager=None):
+        self.ask(options,q_manager=q_manager)
+        return
+
+    def avd(self,options,q_manager=None):
+        self.ask(options,q_manager=q_manager)
+        return
+
+    def avdr(self,options,q_manager=None):
+        self.ask(options,q_manager=q_manager)
+        return
+
     def reduce_var_list(self,options,q_manager=None):
         if ('keep_field' in dir(options) and options.keep_field!=None):
             drs_to_eliminate=[field for field in self.drs.official_drs_no_version if
@@ -121,43 +133,38 @@ class SimpleTree:
                             self.list_fields_local(options,drs_to_eliminate) ]
 
     def download_files(self,options,q_manager=None):
-        if self.queues_manager != None:
+        if q_manager != None:
             data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
             for data_node in data_node_list:
-                self.queues_manager.download.semaphores.add_new_data_node(data_node)
-                self.queues_manager.download.queues.add_new_data_node(data_node)
+                q_manager.download.semaphores.add_new_data_node(data_node)
+                q_manager.download.queues.add_new_data_node(data_node)
         #Recover the database meta data:
         vars_list=self.reduce_var_list(options)
         self.put_or_process('download_files',downloads.download_files,vars_list,options,q_manager)
         return
 
     #def revalidate(self,options,q_manager=None):
-    #    if self.queues_manager != None:
+    #    if q_manager != None:
     #        data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
     #        for data_node in data_node_list:
-    #            self.queues_manager.validate_semaphores.add_new_data_node(data_node)
+    #            q_manager.validate_semaphores.add_new_data_node(data_node)
     #    #Recover the database meta data:
     #    vars_list=self.reduce_var_list(options)
     #    self.put_or_process('revalidate',downloads.revalidate,vars_list,options,q_manager)
     #    return
 
     def download_opendap(self,options,q_manager=None):
-        if self.queues_manager != None:
+        if q_manager != None:
             data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
             for data_node in data_node_list:
-                self.queues_manager.download.semaphores.add_new_data_node(data_node)
-                self.queues_manager.download.queues.add_new_data_node(data_node)
+                q_manager.download.semaphores.add_new_data_node(data_node)
+                q_manager.download.queues.add_new_data_node(data_node)
         vars_list=self.reduce_var_list(options)
         self.put_or_process('download_opendap',downloads.download_opendap,vars_list,options,q_manager)
         return
 
-    def load(self,options,q_manager=None):
-        #if self.queues_manager != None:
-        #    data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
-        #    for data_node in data_node_list:
-        #        self.queues_manager.validate_semaphores.add_new_data_node(data_node)
-        vars_list=self.reduce_var_list(options)
-        self.put_or_process('load',downloads.load,vars_list,options,q_manager)
+    def gather(self,options,q_manager=None):
+        self.reduce(options,q_manager=q_manager)
         return
 
     def reduce(self,options,q_manager=None):
@@ -216,10 +223,13 @@ class SimpleTree:
 
             output_file_name=function_handle(self,options,q_manager=q_manager)
             if output_file_name==None:
-                #No file was written and the recorder should not expect anything:
-                q_manager.record_expected.decrement()
+                #No file was written and the next function should not expect anything:
+                getattr(q_manager,next_function_name+'_expected').decrement()
             else:
                 options_copy=copy.copy(options)
+                #Remove temporary input files if not the first function:
+                #if q_manager.queues_names.index(function_name)>0:
+                #    os.remove(options_copy.in_netcdf_file)
                 options_copy.in_netcdf_file=output_file_name
                 q_manager.put((next_function_name,options_copy))
         else:
@@ -325,9 +335,6 @@ def find_simple(pointers,file_expt,semaphores=None):
     pointers.session.commit()
     return
 
-#def remove_entry_from_dictionary(dictio,entry):
-#    return {name:dictio[name] for name in dictio.keys() if name!=entry}
-
 def rank_data_nodes(options,data_node_list,url_list):
     data_node_list_timed=[]
     data_node_timing=[]
@@ -365,8 +372,8 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs):
     options.out_netcdf_file+='.'+str(counter)
 
     #Recursively apply commands:
-    apps_class=SimpleTree(project_drs,q_manager=q_manager)
+    apps_class=SimpleTree(project_drs)
     #Run the command:
-    getattr(apps_class,function_name)(options)
+    getattr(apps_class,function_name)(options,q_manager=q_manager)
     return
 

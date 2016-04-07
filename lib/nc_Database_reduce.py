@@ -10,7 +10,8 @@ import nc_Database_utils
 
 def reduce_variable(database,options,q_manager=None):
     #The leaf(ves) considered here:
-    var=[getattr(options,opt)[0] for opt in database.drs.official_drs_no_version]
+    var=[getattr(options,opt)[0] if getattr(options,opt)!=None
+                                 else None for opt in database.drs.official_drs_no_version]
     tree=zip(database.drs.official_drs_no_version,var)
 
     #Decide whether to add fixed variables:
@@ -24,7 +25,7 @@ def reduce_variable(database,options,q_manager=None):
     temp_file_name_list=[]
 
     for file_name in file_name_list:
-        temp_file_name=get_temp_output_file_name(options,file_name)
+        temp_file_name=get_temp_input_file_name(options,file_name)
         extract_single_tree_and_file(temp_file_name,file_name,tree,tree_fx,options,options_fx,check_empty=True)
         temp_file_name_list.append(temp_file_name)
 
@@ -39,18 +40,17 @@ def reduce_variable(database,options,q_manager=None):
                 script_to_call+=' {'+str(file_id)+'}'
 
         out=subprocess.call(script_to_call.format(*temp_file_name_list),shell=True)
-
-    try:
-        for file in temp_file_name_list[:-1]:
-            os.remove(file)
-    except OSError:
-        pass
-
     #This is the last function in the chain. Convert and create soft links:
     output_file_name=nc_Database_utils.record_to_output_directory(temp_output_file_name,database.drs,options)
     try:
         os.remove(temp_output_file_name)
         os.rename(output_file_name,temp_output_file_name)
+    except OSError:
+        pass
+
+    try:
+        for file in temp_file_name_list[:-1]:
+            os.remove(file)
     except OSError:
         pass
     return temp_output_file_name
@@ -79,22 +79,6 @@ def extract_single_tree_and_data(temp_file,data,tree,tree_fx,options,options_fx,
         data_hdf5.close()
     return
 
-def get_output_name(project_drs,options,var):
-    output_file_name=options.out_netcdf_file
-    return output_file_name
-
-def get_input_file_names(project_drs,options):
-        
-    input_file_name=options.in_netcdf_file
-    file_name_list=[input_file_name,]
-    if 'in_extra_netcdf_files' in dir(options): file_name_list+=options.in_extra_netcdf_files
-    
-    if (options.script=='' and 
-        ('in_extra_netcdf_files' in dir(options) and 
-              len(options.in_extra_netcdf_files)>0) ):
-        raise InputErrorr('The identity script \'\' can only be used when no extra netcdf files are specified.')
-
-    return file_name_list
 
 def get_fixed_var_tree(project_drs,options,var):
     if not ('add_fixed' in dir(options) and options.add_fixed):
@@ -121,11 +105,11 @@ def get_fixed_var_tree(project_drs,options,var):
     return tree_fx, options_fx
     
 def get_temp_output_file_name(options,output_file_name):
-    temp_output_file_name=output_file_name
-
     #Put temp files in the swap dir:
     if ('swap_dir' in dir(options) and options.swap_dir!='.'):
-        temp_output_file_name=options.swap_dir+'/'+os.path.basename(temp_output_file_name)
+        temp_output_file_name=options.swap_dir+'/'+os.path.basename(output_file_name)
+    else:
+        temp_output_file_name=output_file_name
 
     #Create directory:
     try:
@@ -135,3 +119,37 @@ def get_temp_output_file_name(options,output_file_name):
     except:
         pass
     return temp_output_file_name
+
+def get_temp_input_file_name(options,input_file_name):
+    #Put temp files in the swap dir:
+    if ('swap_dir' in dir(options) and options.swap_dir!='.'):
+        temp_input_file_name=options.swap_dir+'/'+os.path.basename(input_file_name)
+    else:
+        temp_input_file_name=input_file_name
+
+    temp_input_file_name+='.tmp'
+
+    #Create directory:
+    try:
+        directory=os.path.dirname(temp_input_file_name)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+    except:
+        pass
+    return temp_input_file_name
+
+def get_output_name(project_drs,options,var):
+    output_file_name=options.out_netcdf_file
+    return output_file_name
+
+def get_input_file_names(project_drs,options):
+    input_file_name=options.in_netcdf_file
+    file_name_list=[input_file_name,]
+    if 'in_extra_netcdf_files' in dir(options): file_name_list+=options.in_extra_netcdf_files
+    
+    if (options.script=='' and 
+        ('in_extra_netcdf_files' in dir(options) and 
+              len(options.in_extra_netcdf_files)>0) ):
+        raise InputErrorr('The identity script \'\' can only be used when no extra netcdf files are specified.')
+
+    return file_name_list
