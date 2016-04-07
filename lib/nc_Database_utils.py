@@ -1,8 +1,12 @@
 #External:
 import netCDF4
 import h5py
+import copy
+import datetime
+import os
 
 #External but related:
+import netcdf4_soft_links.create_soft_links as create_soft_links
 import netcdf4_soft_links.read_soft_links as read_soft_links
 import netcdf4_soft_links.netcdf_utils as netcdf_utils
 import netcdf4_soft_links.remote_netcdf as remote_netcdf
@@ -119,8 +123,9 @@ def replace_netcdf_variable_recursive_replicate(output_grp,data_grp,level_name,g
             output_grp.setncattr('level_name',level_name)
     if len(tree)>0:
         replace_netcdf_variable_recursive(output_grp,data_grp,tree[0],tree[1:],hdf5=hdf5,check_empty=check_empty)
-    elif not group_name in output_grp.groups.keys():
-        #Prevent collisions during merge. Replicate only when group does not exist.
+    #elif not group_name in output_grp.groups.keys():
+    #Prevent collisions during merge. Replicate only when group does not exist.
+    else:
         netcdf_pointers=read_soft_links.read_netCDF_pointers(data_grp)
         netcdf_pointers.replicate(output_grp,hdf5=hdf5,check_empty=check_empty)
     return
@@ -133,27 +138,28 @@ def record_to_output_directory(output_file_name,project_drs,options):
         if 'name' in dir(item) and item.name==output_file_name:
             data_hdf5=h5py.File(item)
 
-    output=netCDF4.Dataset(output_file_name+'.tmp','r')
+    output=netCDF4.Dataset(output_file_name+'.tmp','w')
     if ('reducing_soft_links_script' in dir(options) and
         options.reducing_soft_links_script==''):
         #Do not check empty:
-        write_netcdf_variable_recursive(output,options.out_destination,data,database.drs.official_drs,options,hdf5=data_hdf5,check_empty=False)
+        write_netcdf_variable_recursive(output,options.out_destination,data,project_drs.official_drs,project_drs,options,hdf5=data_hdf5,check_empty=False)
     else:
-        write_netcdf_variable_recursive(output,options.out_destination,data,database.drs.official_drs,options,hdf5=data_hdf5,check_empty=True)
+        write_netcdf_variable_recursive(output,options.out_destination,data,project_drs.official_drs,project_drs,options,hdf5=data_hdf5,check_empty=True)
+    output.close()
 
     data.close()
     if data_hdf5!=None:
         data_hdf5.close()
     return output_file_name+'.tmp'
 
-def write_netcdf_variable_recursive(output,out_dir,data,tree,options,hdf5=None,check_empty=False):
-    level_name=level_desc[0]
+def write_netcdf_variable_recursive(output,out_dir,data,tree,project_drs,options,hdf5=None,check_empty=False):
+    level_name=tree[0]
     if level_name=='version':
+        version='v'+datetime.datetime.now().strftime('%Y%m%d')
         sub_out_dir=make_sub_dir(out_dir,version)
         options_copy=copy.copy(options)
-        version='v'+datetime.datetime.now().strftime('%Y%m%d')
         setattr(options_copy,level_name,[version,])
-        write_netcdf_variable_recursive_replicate(output,sub_out_dir,data,version,tree,options_copy,hdf5=hdf5,check_empty=check_empty)
+        write_netcdf_variable_recursive_replicate(output,sub_out_dir,data,version,tree,project_drs,options_copy,hdf5=hdf5,check_empty=check_empty)
     else:
         group_name=getattr(options,level_name)[0]
         if group_name==None or isinstance(group_name,list):
@@ -163,21 +169,21 @@ def write_netcdf_variable_recursive(output,out_dir,data,tree,options,hdf5=None,c
                 options_copy=copy.copy(options)
                 setattr(options_copy,level_name,[group,])
                 if hdf5!=None:
-                    write_netcdf_variable_recursive_replicate(output_grp,sub_out_dir,data.groups[group],group,tree,options_copy,hdf5=hdf5[group],check_empty=check_empty)
+                    write_netcdf_variable_recursive_replicate(output_grp,sub_out_dir,data.groups[group],group,tree,project_drs,options_copy,hdf5=hdf5[group],check_empty=check_empty)
                 else:
-                    write_netcdf_variable_recursive_replicate(output_grp,sub_out_dir,data.groups[group],group,tree,options_copy,check_empty=check_empty)
+                    write_netcdf_variable_recursive_replicate(output_grp,sub_out_dir,data.groups[group],group,tree,project_drs,options_copy,check_empty=check_empty)
                         
         else:
             sub_out_dir=make_sub_dir(out_dir,group_name)
-            output_grp=netcdf_utils.create_group(output,data,group_name)
+            #output_grp=netcdf_utils.create_group(output,data,group_name)
             options_copy=copy.copy(options)
             setattr(options_copy,level_name,[group_name,])
-            write_netcdf_variable_recursive_replicate(output_grp,sub_out_dir,data,group_name,tree,options_copy,hdf5=hdf5,check_empty=check_empty)
+            write_netcdf_variable_recursive_replicate(output,sub_out_dir,data,group_name,tree,project_drs,options_copy,hdf5=hdf5,check_empty=check_empty)
     return
 
-def write_netcdf_variable_recursive_replicate(output,sub_out_dir,data_grp,group_name,tree,options,hdf5=None,check_empty=False):
-    if len(tree)>0:
-        write_netcdf_variable_recursive(output,sub_out_dir,data_grp,tree[1:],options,hdf5=hdf5,check_empty=check_empty)
+def write_netcdf_variable_recursive_replicate(output,sub_out_dir,data_grp,group_name,tree,project_drs,options,hdf5=None,check_empty=False):
+    if len(tree)>1:
+        write_netcdf_variable_recursive(output,sub_out_dir,data_grp,tree[1:],project_drs,options,hdf5=hdf5,check_empty=check_empty)
     else:
         #Must propagate infos down to this level
         var_with_version=[getattr(options,opt)[0] for opt in project_drs.official_drs]
@@ -190,9 +196,10 @@ def write_netcdf_variable_recursive_replicate(output,sub_out_dir,data_grp,group_
             output_file_name=None
             return output_file_name
         else:
-            output_file_name+=+timestamp+'.nc'
+            output_file_name+=timestamp+'.nc'
 
-        output_data=netCDF4.Dataset(sub_out_dir+'/'+output_file_name,'w')
+        output_file_name=sub_out_dir+'/'+output_file_name
+        output_data=netCDF4.Dataset(output_file_name,'w')
 
         netcdf_pointers=read_soft_links.read_netCDF_pointers(data_grp)
         netcdf_pointers.replicate(output_data,hdf5=hdf5,check_empty=check_empty)
@@ -201,15 +208,15 @@ def write_netcdf_variable_recursive_replicate(output,sub_out_dir,data_grp,group_
         unique_file_id_list=['checksum_type','checksum','tracking_id']
         path=os.path.abspath(os.path.expanduser(os.path.expandvars(output_file_name)))
         paths_list=[{'path': '|'.join([path,]+['' for id in unique_file_id_list]),
-                     'version':options.version,
+                     'version':options.version[0],
                      'file_type':'local_file',
-                     'data_node': remote_netcdf(path,'local_file')},]
+                     'data_node': remote_netcdf.get_data_node(path,'local_file')},]
 
         netcdf_pointers=create_soft_links.create_netCDF_pointers(
                                                           paths_list,
                                                           time_frequency,options.year,options.month,
                                                           ['local_file',],
-                                                          [paths_list['data_node'],],
+                                                          [paths_list[0]['data_node'],],
                                                           record_other_vars=True)
         netcdf_pointers.record_meta_data(output,options.var)
         output.sync()
@@ -235,4 +242,5 @@ def make_sub_dir(out_dir,group):
             os.makedirs(sub_out_dir)
     except:
         pass
+    return sub_out_dir
 
