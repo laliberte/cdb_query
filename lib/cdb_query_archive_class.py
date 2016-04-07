@@ -2,6 +2,7 @@
 import netCDF4
 import copy
 import os
+import shutil
 import json
 import timeit
 import numpy as np
@@ -9,6 +10,7 @@ import multiprocessing
 import random
 import sys
 import getpass
+import datetime
 
 #External but related:
 import netcdf4_soft_links.certificates as certificates
@@ -24,13 +26,12 @@ import downloads
 import reduce_engine
 
 class SimpleTree:
-    def __init__(self,project_drs,queues_manager=None):
+    def __init__(self,project_drs):
         self.drs=project_drs
-        self.queues_manager=queues_manager
         return
 
     def ask_var_list(self,simulations_list,options):
-        if ('keep_field' in dir(options) and options.keep_field!=None):
+        if 'keep_field' in dir(options):
             drs_to_eliminate=[field for field in self.drs.simulations_desc if
                                                  not field in options.keep_field]
         else:
@@ -39,7 +40,7 @@ class SimpleTree:
                             for field in self.drs.official_drs_no_version] for var in 
                             simulations_list ]
 
-    def ask(self,options):
+    def ask(self,options,q_manager=None):
         #Load header:
         try:
             self.header=json.load(open(options.in_headers_file,'r'))['header']
@@ -79,10 +80,10 @@ class SimpleTree:
             print "This can take some time. Please abort if there are not enough simulations for your needs."
 
         vars_list=self.ask_var_list(simulations_list_no_fx,options)
-        self.put_or_process('ask',ask.ask,vars_list,options)
+        self.put_or_process('ask',ask.ask,vars_list,options,q_manager)
         return
 
-    def validate(self,options):
+    def validate(self,options,q_manager=None):
         self.load_header(options)
 
         if not 'data_node_list' in self.header.keys():
@@ -101,15 +102,15 @@ class SimpleTree:
         simulations_list_no_fx=[simulation for simulation in simulations_list if 
                                     simulation[self.drs.simulations_desc.index('ensemble')]!='r0i0p0']
 
-        if self.queues_manager != None:
+        if q_manager != None:
             for data_node in data_node_list:
-                self.queues_manager.validate_semaphores.add_new_data_node(data_node)
+                q_manager.validate_semaphores.add_new_data_node(data_node)
         #Do it by simulation, except if one simulation field should be kept for further operations:
         vars_list=self.ask_var_list(simulations_list_no_fx,options)
-        self.put_or_process('validate',validate.validate,vars_list,options)
+        self.put_or_process('validate',validate.validate,vars_list,options,q_manager)
         return
 
-    def reduce_var_list(self,options):
+    def reduce_var_list(self,options,q_manager=None):
         if ('keep_field' in dir(options) and options.keep_field!=None):
             drs_to_eliminate=[field for field in self.drs.official_drs_no_version if
                                                  not field in options.keep_field]
@@ -119,7 +120,7 @@ class SimpleTree:
                             for field in self.drs.official_drs_no_version] for var in 
                             self.list_fields_local(options,drs_to_eliminate) ]
 
-    def download_files(self,options):
+    def download_files(self,options,q_manager=None):
         if self.queues_manager != None:
             data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
             for data_node in data_node_list:
@@ -127,59 +128,57 @@ class SimpleTree:
                 self.queues_manager.download.queues.add_new_data_node(data_node)
         #Recover the database meta data:
         vars_list=self.reduce_var_list(options)
-        self.put_or_process('download_files',downloads.download_files,vars_list,options)
+        self.put_or_process('download_files',downloads.download_files,vars_list,options,q_manager)
         return
 
-    #def revalidate(self,options):
+    #def revalidate(self,options,q_manager=None):
     #    if self.queues_manager != None:
     #        data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
     #        for data_node in data_node_list:
     #            self.queues_manager.validate_semaphores.add_new_data_node(data_node)
     #    #Recover the database meta data:
     #    vars_list=self.reduce_var_list(options)
-    #    self.put_or_process('revalidate',downloads.revalidate,vars_list,options)
+    #    self.put_or_process('revalidate',downloads.revalidate,vars_list,options,q_manager)
     #    return
 
-    def time_split(self,options):
-        vars_list=self.reduce_var_list(options)
-        self.put_or_process('time_split',downloads.time_split,vars_list,options)
-        return
-
-    def download_opendap(self,options):
+    def download_opendap(self,options,q_manager=None):
         if self.queues_manager != None:
             data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
             for data_node in data_node_list:
                 self.queues_manager.download.semaphores.add_new_data_node(data_node)
                 self.queues_manager.download.queues.add_new_data_node(data_node)
         vars_list=self.reduce_var_list(options)
-        self.put_or_process('download_opendap',downloads.download_opendap,vars_list,options)
+        self.put_or_process('download_opendap',downloads.download_opendap,vars_list,options,q_manager)
         return
 
-    #def load(self,options):
-    #    #if self.queues_manager != None:
-    #    #    data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
-    #    #    for data_node in data_node_list:
-    #    #        self.queues_manager.validate_semaphores.add_new_data_node(data_node)
-    #    vars_list=self.reduce_var_list(options)
-    #    self.put_or_process('load',downloads.load,vars_list,options)
-    #    return
+    def load(self,options,q_manager=None):
+        #if self.queues_manager != None:
+        #    data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
+        #    for data_node in data_node_list:
+        #        self.queues_manager.validate_semaphores.add_new_data_node(data_node)
+        vars_list=self.reduce_var_list(options)
+        self.put_or_process('load',downloads.load,vars_list,options,q_manager)
+        return
 
-    def reduce(self,options):
+    def reduce(self,options,q_manager=None):
         if (options.script=='' and 
             ('in_extra_netcdf_files' in dir(options) and 
               len(options.in_extra_netcdf_files)>0) ):
             raise InputErrorr('The identity script \'\' can only be used when no extra netcdf files are specified.')
 
+        #Users have requested time types to be kept
+        times_list=downloads.time_split(self,options)
+
         vars_list=self.reduce_var_list(options)
-        self.put_or_process('reduce',reduce_engine.reduce_variable,vars_list,options)
+        self.put_or_process('reduce',nc_Database_reduce.reduce_variable,vars_list,options,q_manager,times_list=times_list)
         return
 
-    def convert(self,options):
-        #Convert is simply reduce with the identity script:
-        self.reduce(options)
-        return
+    #def convert(self,options):
+    #    #Convert is simply reduce with the identity script:
+    #    self.reduce(options)
+    #    return
 
-    def merge(self,options):
+    def merge(self,options,q_manager=None):
         output=netCDF4.Dataset(options.out_netcdf_file,'w')
         self.load_header(options)
         nc_Database.record_header(output,self.header)
@@ -187,7 +186,7 @@ class SimpleTree:
             nc_Database_utils.record_to_netcdf_file_from_file_name(options,temp_file_name,output,self.drs)
         return
 
-    def list_fields(self,options):
+    def list_fields(self,options,q_manager=None):
         fields_list=self.list_fields_local(options,options.field)
         for field in fields_list:
             print ','.join(field)
@@ -199,40 +198,47 @@ class SimpleTree:
         self.close_database()
         return fields_list
 
-    def put_or_process(self,function_name,function_handle,vars_list,options):
+    def put_or_process(self,function_name,function_handle,vars_list,options,q_manager,times_list=[(None,None,None,None),]):
         #If it the first pass, start download processes, if needed:
         if 'spin_up' in dir(options) and options.spin_up:
-            self.queues_manager.start_download_processes()
+            q_manager.start_download_processes()
             options.spin_up=False
 
         #Set number of processors to 1 for all child processses.
         #This is important for the setup of the ask function:
         options.num_procs=1
-        if (len(vars_list)==1 or
+        if ((len(vars_list)==1 and len(times_list)==1) or
             'serial' in dir(options) and options.serial):
-            next_function_name=self.queues_manager.queues_names[self.queues_manager.queues_names.index(function_name)+1]
+            next_function_name=q_manager.queues_names[q_manager.queues_names.index(function_name)+1]
             if ('serial' in dir(options) and options.serial):
-                #If serial, must put an expected function:
-                getattr(self.queues_manager,next_function_name+'_expected').increment()
+                #If serial, must increment the expected function:
+                getattr(q_manager,next_function_name+'_expected').increment()
 
-            output_file_name=function_handle(self,options,queues_manager=self.queues_manager)
-
-            if ('convert' in dir(options) and options.convert and next_function_name=='record'):
-                #This is the last function in the chain. Convert and exit.
-                record_in_output_directory(output_file_name,vars_list[0],options)
+            output_file_name=function_handle(self,options,q_manager=q_manager)
+            if output_file_name==None:
+                #No file was written and the recorder should not expect anything:
+                q_manager.record_expected.decrement()
             else:
                 options_copy=copy.copy(options)
                 options_copy.in_netcdf_file=output_file_name
-                self.queues_manager.put((next_function_name,options_copy))
+                q_manager.put((next_function_name,options_copy))
         else:
-            #Randomize to minimize strain on index nodes:
+            #Randomize to minimize strain on consumers:
             random.shuffle(vars_list)
             for var_id,var in enumerate(vars_list):
-                options_copy=copy.copy(options)
-                for opt_id, opt in enumerate(self.drs.official_drs_no_version):
-                    if var[opt_id]!=None:
-                        setattr(options_copy,opt,[var[opt_id],])
-                self.queues_manager.put((function_name,options_copy))
+                for time_id, time in enumerate(times_list):
+                    options_copy=copy.copy(options)
+                    for opt_id, opt in enumerate(self.drs.official_drs_no_version):
+                        if var[opt_id]!=None:
+                            setattr(options_copy,opt,[var[opt_id],])
+                    for opt_id, opt in enumerate(['year','month','day','hour']):
+                        if time[opt_id]!=None and opt in dir(options_copy):
+                            setattr(options_copy,opt,[time[opt_id],])
+                    #Find times list again:
+                    var_times_list=downloads.time_split(self,options_copy)
+                    #Submit only if the times_list is not empty:
+                    if len(var_times_list)>0:
+                        q_manager.put((function_name,options_copy))
         return
 
     def find_data_nodes_and_simulations(self,options):
@@ -319,8 +325,8 @@ def find_simple(pointers,file_expt,semaphores=None):
     pointers.session.commit()
     return
 
-def remove_entry_from_dictionary(dictio,entry):
-    return {name:dictio[name] for name in dictio.keys() if name!=entry}
+#def remove_entry_from_dictionary(dictio,entry):
+#    return {name:dictio[name] for name in dictio.keys() if name!=entry}
 
 def rank_data_nodes(options,data_node_list,url_list):
     data_node_list_timed=[]
@@ -341,32 +347,6 @@ def rank_data_nodes(options,data_node_list,url_list):
         print 'Done!'
     return list(np.array(data_node_list_timed)[np.argsort(data_node_timing)])+list(set(data_node_list).difference(data_node_list_timed))
 
-def record_in_output_directory(input_file_name,var,project_drs,options):
-    version='v'+datetime.datetime.now().strftime('%Y%m%d')
-    var_with_version=[var[project_drs.official_drs_no_version.index(opt)] if opt in project_drs.official_drs_no_version
-                     else verions for opt in project_drs.official_drs]
-
-    output_file_name=options.out_destination+'/'+'/'.join(var_with_version)+'/'+os.path.basename(input_file_name)
-    #Create directory:
-    try:
-        directory=os.path.dirname(output_file_name)
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-    except:
-        pass
-
-    time_frequency=var[project_drs.official_drs_no_version.index('time_frequency')]
-    #Get the time:
-    output_tmp=netCDF4.Dataset(temp_file_name,'r')
-    timestamp=nc_Database_utils.convert_dates_to_timestamps(output_tmp,time_frequency)
-    output_tmp.close()
-
-    if timestamp=='':
-        os.remove(temp_file_name)
-    else:
-        os.rename(temp_file_name,'.'.join(output_file_name.split('.')[:-1])+timestamp+'.nc')
-    return
-
 def record_to_netcdf_file(options,output,project_drs):
     apps_class=SimpleTree(project_drs)
     apps_class.load_header(options)
@@ -380,12 +360,12 @@ def record_to_netcdf_file(options,output,project_drs):
         pass
     return
 
-def consume_one_item(counter,function_name,options,queue_manager,project_drs):
+def consume_one_item(counter,function_name,options,q_manager,project_drs):
     #Create unique file id:
     options.out_netcdf_file+='.'+str(counter)
 
     #Recursively apply commands:
-    apps_class=SimpleTree(project_drs,queues_manager=queue_manager)
+    apps_class=SimpleTree(project_drs,q_manager=q_manager)
     #Run the command:
     getattr(apps_class,function_name)(options)
     return

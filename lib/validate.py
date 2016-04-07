@@ -179,7 +179,7 @@ def get_diag_months_list(diagnostic):
         diag_months_list=range(1,13)
     return diag_months_list
 
-def validate(database,options,queues_manager=None):
+def validate(database,options,q_manager=None):
     if 'data_node_list' in dir(database.drs):
         database.header['data_node_list']=database.drs.data_node_list
     else:
@@ -187,7 +187,7 @@ def validate(database,options,queues_manager=None):
         if len(data_node_list)>1 and not options.no_check_availability:
                 data_node_list=database.rank_data_nodes(options,data_node_list,url_list)
         database.header['data_node_list']=data_node_list
-    semaphores=queues_manager.validate_semaphores
+    semaphores=q_manager.validate_semaphores
 
     if options.no_check_availability:
         #Does not check whether files are available / queryable before proceeding.

@@ -36,7 +36,7 @@ def find_path(nc_Database,file_expt,semaphores=dict()):
 #    database.union_header()
 #    return ask_with_database(database,options)
 
-def ask(database,options,queues_manager=None):
+def ask(database,options,q_manager=None):
     return ask_with_database(database,options)
 
 def ask_with_database(database,options):
@@ -193,6 +193,7 @@ def ask_simulations_recursive(database,options,simulations_desc,async=True):
                 args_list.append((copy.copy(database),copy.copy(options_copy),simulations_desc[1:],val))
         if ('num_procs' in dir(options_copy) and options_copy.num_procs>1 and async==True and len(args_list)>0
             and not ('serial' in dir(options_copy) and options_copy.serial)):
+            print multiprocessing.current_process().name
             pool=multiprocessing.Pool(processes=min(options_copy.num_procs,len(args_list)))
             try:
                 simulations_list=[item for sublist in pool.map(wrapper_ask_simulations_recursive,args_list) for item in sublist]

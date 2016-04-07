@@ -82,20 +82,23 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD, Submitted.'.format(ve
         else:
             #Create the queue manager:
             q_manager=queues_manager.CDB_queues_manager(options)
+            processes=queues_manager.start_consumer_processes(q_manager,project_drs,options)
             try:
                 #Start consumer processes:
-                processes=queues_manager.start_consumer_processes(q_manager,project_drs,options)
-                apps_class=cdb_query_archive_class.SimpleTree(project_drs,queues_manager=q_manager)
+                apps_class=cdb_query_archive_class.SimpleTree(project_drs)
                 options.spin_up=True
                 #Run the command:
-                getattr(apps_class,options.command)(options)
+                getattr(apps_class,options.command)(options,q_manager=q_manager)
+                #Consumer processes can now terminate:
+                q_manager.set_closed()
                 #Start record process:
                 queues_manager.recorder(q_manager,project_drs,options)
             finally:
                 q_manager.stop_download_processes()
                 for process_name in processes.keys():
                     if process_name!=multiprocessing.current_process().name:
-                        processes[process_name].terminate()
+                        if processes[process_name].is_alive():
+                            processes[process_name].terminate()
         
 if __name__ == "__main__":
     main('CMIP5')

@@ -43,6 +43,9 @@ class CDB_queues_manager:
         #Create a shared counter to prevent file collisions:
         self.counter=NC4SL_queues_manager.Shared_Counter(self.manager)
 
+        #Create an event that prevents consumers from terminating:
+        self.do_not_keep_consumers_alive=self.manager.Event()
+
         #Create semaphores for validate:
         if 'validate' in self.queues_names:
             self.validate_semaphores=NC4SL_queues_manager.Semaphores_data_node(self.manager,num_concurrent=5)
@@ -64,6 +67,10 @@ class CDB_queues_manager:
             for proc_name in self.download_processes.keys(): self.download_processes[proc_name].terminate()
         return
                 
+    def set_closed(self):
+        self.do_not_keep_consumers_alive.set()
+        return
+
     def put(self,item):
         if item[0]==self.queues_names[0]:
             getattr(self,item[0]+'_expected').increment()
@@ -83,7 +90,8 @@ class CDB_queues_manager:
         timeout_subsequent=0.1
         timeout=timeout_first
 
-        while self.expected_queue_size()>0:
+        while not (self.do_not_keep_consumers_alive.is_set() and 
+                    self.expected_queue_size()==0):
             #Get an element from one queue, starting from the last:
             for queue_name in self.queues_names[::-1]:
                 if record:
@@ -120,7 +128,6 @@ class CDB_queues_manager:
         return np.max([getattr(self,queue_name+'_expected').value for queue_name in self.queues_names])
 
 def recorder(q_manager,project_drs,options):
-
     if not ('convert' in dir(options) and options.convert):
         output=netCDF4.Dataset(options.out_netcdf_file,'w')
 
@@ -142,10 +149,10 @@ def start_consumer_processes(q_manager,project_drs,options):
     processes=dict()
     for process_name in processes_names:
         if process_name!=multiprocessing.current_process().name:
-           process_name='consumer_'+str(proc_id)
            processes[process_name]=multiprocessing.Process(target=consumer,
                                                            name=process_name,
                                                            args=(q_manager,project_drs))
+           processes[process_name].start()
         else:
             processes[process_name]=multiprocessing.current_process()
     return processes
@@ -155,6 +162,6 @@ def consumer_processes_names(options):
     if (not ( 'serial' in dir(options) and options.serial) and
          ( 'num_procs' in dir(options) and options.num_procs>1) ):
         for proc_id in range(options.num_procs-1):
-           process_name.append('consumer_'+str(proc_id))
+           processes_names.append('consumer_'+str(proc_id))
     return processes_names
 

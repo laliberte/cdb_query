@@ -80,19 +80,18 @@ def generate_subparsers(parser,epilog,project_drs):
 
     #revalidate(subparsers,epilog,project_drs)
 
-    time_split(subparsers,epilog,project_drs)
     download_opendap(subparsers,epilog,project_drs)
+
+    reduce(subparsers,epilog,project_drs)
 
     load(subparsers,epilog,project_drs)
 
-    reduce(subparsers,epilog,project_drs)
-    convert(subparsers,epilog,project_drs)
     return
 
 def functions_arguments(parser,functions_list):
     authorized_functions=['ask','validate',
                           'download_files','reduce_soft_links',
-                          'download_opendap','reduce','convert']
+                          'download_opendap','reduce']
     for function in authorized_functions:
         if function in functions_list:
             parser.add_argument('--'+function, default=True,help=argparse.SUPPRESS)
@@ -278,7 +277,6 @@ def load(subparsers,epilog,project_drs):
     excluded_slicing_arguments(exc_group,project_drs,action_type='append')
     return
 
-#nc_Database PARSERS
 def reduce(subparsers,epilog,project_drs):
     epilog_reduce=textwrap.dedent(epilog)
     parser=subparsers.add_parser('reduce',
@@ -286,8 +284,18 @@ def reduce(subparsers,epilog,project_drs):
                                        epilog=epilog_reduce
                                          )
     functions_arguments(parser,['reduce'])
-    reduce_arguments(parser,project_drs)
+    select_group=reduce_arguments(parser,project_drs)
 
+    select_group.add_argument('-l','--loop_through_time',action='append', type=str, choices=['year','month','day','hour'],
+                                       default=[],
+                                       help='Loop through time. This option is a bit tricky.\n\
+                                            For example, \'-l year -l month\' loops through all month, one at a time.\n\
+                                            \'-l month\', on the other hand, would loop through the 12 months, passing all years\n\
+                                            to \'reduce\'.' )
+    parser.add_argument('--out_destination',
+                             help='Destination directory for conversion.')
+
+    manage_soft_links_parsers.time_selection_arguments(parser)
     return 
 
 def reduce_arguments(parser,project_drs):
@@ -303,22 +311,23 @@ def reduce_arguments(parser,project_drs):
                                  help='Use this directory as a swap directory.')
     select_group=convert_arguments(parser,project_drs)
     select_group.add_argument('-k','--keep_field',action='append', type=str, choices=project_drs.official_drs_no_version,
+                                       default=[],
                                        help='Keep these fields in the applied file.' )
-    return
+    return select_group
 
-def convert(subparsers,epilog,project_drs):
-    epilog_convert=textwrap.dedent(epilog)
-    parser=subparsers.add_parser('convert',
-                               description=textwrap.dedent('Take as an input the results from \'download\' and converts the data.'),
-                               epilog=epilog_convert,
-                             )
-    functions_arguments(parser,['reduce','convert'])
-    input_arguments(parser)
-    parser.add_argument('out_destination',
-                             help='Destination directory for conversion.')
-    parser.add_argument('--script',default='',help=argparse.SUPPRESS)
-    convert_arguments(parser,project_drs)
-    return
+#def convert(subparsers,epilog,project_drs):
+#    epilog_convert=textwrap.dedent(epilog)
+#    parser=subparsers.add_parser('convert',
+#                               description=textwrap.dedent('Take as an input the results from \'download\' and converts the data.'),
+#                               epilog=epilog_convert,
+#                             )
+#    functions_arguments(parser,['reduce','convert'])
+#    input_arguments(parser)
+#    parser.add_argument('out_destination',
+#                             help='Destination directory for conversion.')
+#    parser.add_argument('--script',default='',help=argparse.SUPPRESS)
+#    convert_arguments(parser,project_drs)
+#    return
 
 def convert_arguments(parser,project_drs):
     parser.add_argument('--reducing_soft_links_script',default='',

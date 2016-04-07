@@ -192,18 +192,18 @@ class nc_Database:
 
         return output_root, temp_output_file_name
 
-    def retrieve_database(self,output,options,queues_manager=None,retrieval_type='reduce'):
+    def retrieve_database(self,output,options,q_manager=None,retrieval_type='reduce'):
         ##Recover the database meta data:
         tree=zip(self.drs.official_drs_no_version,[ None
                             for field in self.drs.official_drs_no_version])
         self.load_nc_file()
         if retrieval_type in ['download_files', 'download_opendap']:
-            nc_Database_utils.extract_netcdf_variable(output,self.Dataset,tree,options,download_semaphores=queues_manager.download.semaphores,
-                                                                                       download_queues_manager=queues_manager.download,
+            nc_Database_utils.extract_netcdf_variable(output,self.Dataset,tree,options,download_semaphores=q_manager.download.semaphores,
+                                                                                       download_queues_manager=q_manager.download,
                                                                                        retrieval_type=retrieval_type)
-            queues_manager.download.set_closed()
+            q_manager.download.set_closed()
             data_node_list=self.list_data_nodes(options)
-            output=retrieval_manager.launch_download(output,data_node_list,queues_manager.download,options)
+            output=retrieval_manager.launch_download(output,data_node_list,q_manager.download,options)
             if (retrieval_type=='download_files'
                 and
                 not ( 'do_not_revalidate' in dir(options) and options.do_not_revalidate)):
@@ -308,10 +308,10 @@ def retrieve_dates_recursive(data,options):
         netcdf_pointers=read_soft_links.read_netCDF_pointers(data,options=options)
         return netcdf_pointers.date_axis[netcdf_pointers.time_restriction]
     elif len(data.groups.keys())>0:
-        return np.concatenate([ retrieve_dates_recursive(data.groups[group],options)
+        return np.unique(np.concatenate([ retrieve_dates_recursive(data.groups[group],options)
                 for group in data.groups.keys()
                 if ( is_level_name_included_and_not_excluded(data.groups[group].getncattr('level_name'),options,group) and
-                 tree_recursive_check_not_empty(options,data.groups[group])) ])
+                 tree_recursive_check_not_empty(options,data.groups[group])) ]))
 
 def tree_recursive_check_not_empty(options,data):
     if 'soft_links' in data.groups.keys():
