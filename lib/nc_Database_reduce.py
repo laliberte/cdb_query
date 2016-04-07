@@ -45,11 +45,20 @@ def reduce_variable(database,options,queues_manager=None):
             os.remove(file)
     except OSError:
         pass
+
+    #This is the last function in the chain. Convert and create soft links:
+    output_file_name=nc_Database_utils.record_to_output_directory(temp_output_file_name,self.drs,options)
+    try:
+        os.remove(temp_output_file_name)
+        os.rename(output_file_name,temp_output_file_name)
+    except OSError:
+        pass
     return temp_output_file_name
 
 def extract_single_tree_and_file(temp_file,file,tree,tree_fx,options,options_fx,check_empty=False):
     data=netCDF4.Dataset(file,'r')
     extract_single_tree_and_data(temp_file,data,tree,tree_fx,options,options_fx,check_empty=check_empty,hdf5_file=file)
+    data.close()
     return
 
 def extract_single_tree_and_data(temp_file,data,tree,tree_fx,options,options_fx,check_empty=False,hdf5_file=None):
@@ -66,7 +75,6 @@ def extract_single_tree_and_data(temp_file,data,tree,tree_fx,options,options_fx,
 
     nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree,options,check_empty=True,hdf5=data_hdf5)
     output_tmp.close()
-    data.close()
     if data_hdf5!=None:
         data_hdf5.close()
     return
