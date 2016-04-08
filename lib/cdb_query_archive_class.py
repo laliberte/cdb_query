@@ -206,6 +206,7 @@ class SimpleTree:
         return fields_list
 
     def put_or_process(self,function_name,function_handle,vars_list,options,q_manager,times_list=[(None,None,None,None),]):
+        next_function_name=q_manager.queues_names[q_manager.queues_names.index(function_name)+1]
 
         #If it the first pass, start download processes, if needed:
         if 'spin_up' in dir(options) and options.spin_up:
@@ -213,15 +214,19 @@ class SimpleTree:
             options.spin_up=False
             #Set number of processors to 1 for all child processses.
             options.num_procs=1
+            if ((len(vars_list)==1 and len(times_list)==1) or
+                'serial' in dir(options) and options.serial):
+                getattr(q_manager,next_function_name+'_expected').increment()
+
+        if len(vars_list)==0:
+            #There is no variables to find in the input. 
+            #Delete input and decrement expected fucntion.
+            getattr(q_manager,next_function_name+'_expected').decrement()
+            os.remove(options.in_netcdf_file)
 
         #This is important for the setup of the ask function:
         if ((len(vars_list)==1 and len(times_list)==1) or
             'serial' in dir(options) and options.serial):
-            next_function_name=q_manager.queues_names[q_manager.queues_names.index(function_name)+1]
-
-            if 'spin_up' in dir(options) and options.spin_up:
-                #Must increment the expected function if the spin_up application ends here:
-                getattr(q_manager,next_function_name+'_expected').increment()
 
             options_copy=copy.copy(options)
             for opt_id, opt in enumerate(self.drs.official_drs_no_version):
