@@ -206,30 +206,40 @@ class SimpleTree:
         return fields_list
 
     def put_or_process(self,function_name,function_handle,vars_list,options,q_manager,times_list=[(None,None,None,None),]):
+
         #If it the first pass, start download processes, if needed:
         if 'spin_up' in dir(options) and options.spin_up:
             q_manager.start_download_processes()
             options.spin_up=False
+            #Set number of processors to 1 for all child processses.
+            options.num_procs=1
 
-        #Set number of processors to 1 for all child processses.
         #This is important for the setup of the ask function:
-        options.num_procs=1
         if ((len(vars_list)==1 and len(times_list)==1) or
             'serial' in dir(options) and options.serial):
             next_function_name=q_manager.queues_names[q_manager.queues_names.index(function_name)+1]
-            if ('serial' in dir(options) and options.serial):
-                #If serial, must increment the expected function:
+
+            if 'spin_up' in dir(options) and options.spin_up:
+                #Must increment the expected function if the spin_up application ends here:
                 getattr(q_manager,next_function_name+'_expected').increment()
 
+            options_copy=copy.copy(options)
+            for opt_id, opt in enumerate(self.drs.official_drs_no_version):
+                if vars_list[0][opt_id]!=None:
+                    setattr(options_copy,opt,[vars_list[0][opt_id],])
+            for opt_id, opt in enumerate(['year','month','day','hour']):
+                if times_list[0][opt_id]!=None and opt in dir(options_copy):
+                    setattr(options_copy,opt,[times_list[0][opt_id],])
+
+            #Compute function:
             output_file_name=function_handle(self,options,q_manager=q_manager)
             if output_file_name==None:
                 #No file was written and the next function should not expect anything:
                 getattr(q_manager,next_function_name+'_expected').decrement()
             else:
-                options_copy=copy.copy(options)
                 #Remove temporary input files if not the first function:
-                #if q_manager.queues_names.index(function_name)>0:
-                #    os.remove(options_copy.in_netcdf_file)
+                if q_manager.queues_names.index(function_name)>0:
+                    os.remove(options_copy.in_netcdf_file)
                 options_copy.in_netcdf_file=output_file_name
                 q_manager.put((next_function_name,options_copy))
         else:
