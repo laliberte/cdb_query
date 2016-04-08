@@ -355,7 +355,8 @@ def rank_data_nodes(options,data_node_list,url_list):
     data_node_timing=[]
     for data_node_id, data_node in enumerate(data_node_list):
         url=url_list[data_node_id]
-        print 'Querying '+url+' to measure response time of data node... '
+        if not ('silent' in dir(options) and options.silent):
+            print 'Querying '+url+' to measure response time of data node... '
         #Try opening a link on the data node. If it does not work put this data node at the end.
         number_of_trials=5
         try:
@@ -366,7 +367,8 @@ def rank_data_nodes(options,data_node_list,url_list):
             data_node_list_timed.append(data_node)
         except:
             pass
-        print 'Done!'
+        if not ('silent' in dir(options) and options.silent):
+            print 'Done!'
     return list(np.array(data_node_list_timed)[np.argsort(data_node_timing)])+list(set(data_node_list).difference(data_node_list_timed))
 
 def record_to_netcdf_file(options,output,project_drs):

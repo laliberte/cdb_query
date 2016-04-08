@@ -15,10 +15,19 @@ import netcdf4_soft_links.remote_netcdf as remote_netcdf
 import nc_Database
 
 #EXTRACTIONS:
-def extract_netcdf_variable(output,data,tree,options,check_empty=False,hdf5=None,download_semaphores=dict(),download_queues_manager=None,retrieval_type='reduce'):
-    return extract_netcdf_variable_recursive(output,data,tree[0],tree[1:],retrieval_type,options,check_empty,hdf5,download_semaphores,download_queues_manager)
+def extract_netcdf_variable(output,data,tree,options,
+                            retrieval_type='reduce',
+                            check_empty=False,hdf5=None,
+                            download_semaphores=dict(),download_queues_manager=None):
+    return extract_netcdf_variable_recursive(output,data,
+                                             tree[0],tree[1:],
+                                             retrieval_type,
+                                             options,check_empty,hdf5,download_semaphores,download_queues_manager)
 
-def extract_netcdf_variable_recursive(output,data,level_desc,tree,retrieval_type,options,check_empty,hdf5,download_semaphores,download_queues_manager):
+def extract_netcdf_variable_recursive(output,data,
+                                      level_desc,tree,
+                                      retrieval_type,
+                                      options,check_empty,hdf5,download_semaphores,download_queues_manager):
     level_name=level_desc[0]
     group_name=level_desc[1]
     if group_name==None:
@@ -26,33 +35,61 @@ def extract_netcdf_variable_recursive(output,data,level_desc,tree,retrieval_type
             if ( nc_Database.is_level_name_included_and_not_excluded(level_name,options,group) and
                  nc_Database.tree_recursive_check_not_empty(options,data.groups[group])):
                 output_grp=netcdf_utils.replicate_group(output,data,group)
-                extract_retrieve_or_replicate(group,output_grp,data,tree,retrieval_type,download_semaphores,download_queues_manager,hdf5,check_empty,options)
+                extract_retrieve_or_replicate(group,output_grp,data,
+                                               tree,
+                                               retrieval_type,
+                                               options,download_semaphores,download_queues_manager,hdf5,check_empty)
     else:
         if (len(tree)>0 and group_name==''):
-            extract_netcdf_variable_recursive(output,data,tree[0],tree[1:],retrieval_type,options,check_empty,hdf5,download_semaphores,download_queues_manager)
+            extract_netcdf_variable_recursive(output,data,
+                                            tree[0],tree[1:],
+                                            retrieval_type,
+                                            options,check_empty,hdf5,download_semaphores,download_queues_manager)
         else:
-            extract_retrieve_or_replicate(group_name,output,data,tree,retrieval_type,download_semaphores,download_queues_manager,hdf5,check_empty,options)
+            extract_retrieve_or_replicate(group_name,output,data,
+                                          tree,
+                                          retrieval_type,
+                                          options,download_semaphores,download_queues_manager,hdf5,check_empty)
     return
 
-def extract_retrieve_or_replicate(group_name,output,data,tree,retrieval_type,download_semaphores,download_queues_manager,hdf5,check_empty,options):
+def extract_retrieve_or_replicate(group_name,output,data,
+                                  tree,
+                                  retrieval_type,
+                                  options,download_semaphores,download_queues_manager,hdf5,check_empty):
     if len(tree)>0:
         if group_name in data.groups.keys():
             if hdf5!=None:
                 hdf5_grp=hdf5[group_name]
             else:
                 hdf5_grp=hdf5
-            extract_netcdf_variable_recursive(output,data.groups[group_name],tree[0],tree[1:],retrieval_type,options,check_empty,hdf5_grp,download_semaphores,download_queues_manager)
+            extract_netcdf_variable_recursive(output,data.groups[group_name],
+                                              tree[0],tree[1:],
+                                              retrieval_type,
+                                              options,check_empty,hdf5_grp,download_semaphores,download_queues_manager)
     else:
-        retrieve_or_replicate(output,data,group_name,retrieval_type,options,check_empty,hdf5,download_semaphores,download_queues_manager)
+        retrieve_or_replicate(output,data,
+                              group_name,
+                              retrieval_type,
+                              options,check_empty,hdf5,download_semaphores,download_queues_manager)
     return
 
-def retrieve_or_replicate(output_grp,data,group,retrieval_type,options,check_empty,hdf5,download_semaphores,download_queues_manager):
-    netcdf_pointers=read_soft_links.read_netCDF_pointers(data.groups[group],options=options,semaphores=download_semaphores,queues=download_queues_manager)
-    if retrieval_type=='reduce':
-        if ( ('reducing_soft_links_script' in dir(options) and
-              options.reducing_soft_links_script!='') or
-             (not 'soft_links' in data.groups[group].groups.keys())):
-            #If applying to soft links, replicate.
+def retrieve_or_replicate(output_grp,data,
+                          group,
+                          retrieval_type,
+                          options,check_empty,hdf5,download_semaphores,download_queues_manager):
+    netcdf_pointers=read_soft_links.read_netCDF_pointers(data.groups[group],
+                                                        options=options,
+                                                        semaphores=download_semaphores,
+                                                        queues=download_queues_manager)
+    if retrieval_type=='reduce_soft_links':
+        #If applying to soft links, replicate.
+        if hdf5!=None:
+            hdf5_grp=hdf5[group]
+        else:
+            hdf5_grp=hdf5
+        netcdf_pointers.replicate(output_grp,check_empty=check_empty,hdf5=hdf5_grp)
+    elif retrieval_type=='reduce':
+        if (not 'soft_links' in data.groups[group].groups.keys()):
             #If there is no soft links, replicate.
             if hdf5!=None:
                 hdf5_grp=hdf5[group]
@@ -62,37 +99,38 @@ def retrieve_or_replicate(output_grp,data,group,retrieval_type,options,check_emp
         else:
             #There are soft links and they are supposed to be loaded:
             netcdf_pointers.retrieve(output_grp,'load',filepath=options.out_netcdf_file)
+    elif retrieval_type=='download_files':
+        netcdf_pointers.retrieve(output_grp,retrieval_type,filepath=options.out_download_dir)
+    elif retrieval_type=='download_opendap':
+        netcdf_pointers.retrieve(output_grp,retrieval_type,filepath=options.out_netcdf_file)
     else:
-        if 'out_destination' in dir(options):
-            netcdf_pointers.retrieve(output_grp,retrieval_type,filepath=options.out_destination)
-        else:
-            netcdf_pointers.retrieve(output_grp,retrieval_type,filepath=options.out_netcdf_file)
+        netcdf_pointers.retrieve(output_grp,retrieval_type,filepath=options.out_netcdf_file)
     return
 
 #PUT BACK IN DATABASE:
-def record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_drs):
+def record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_drs,check_empty=True):
     data=netCDF4.Dataset(temp_file_name,'r')
-    data_hdf5=None
+    hdf5=None
     for item in h5py.h5f.get_obj_ids():
         if 'name' in dir(item) and item.name==temp_file_name:
-            data_hdf5=h5py.File(item)
+            hdf5=h5py.File(item)
 
     var=[ getattr(options,opt)[0] if getattr(options,opt)!=None else None for opt in project_drs.official_drs_no_version]
     tree=zip(project_drs.official_drs_no_version,var)
 
-    if ('reducing_soft_links_script' in dir(options) and
-        options.reducing_soft_links_script==''):
-        #Do not check empty:
-        replace_netcdf_variable_recursive(output,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=False)
-    else:
-        replace_netcdf_variable_recursive(output,data,tree[0],tree[1:],hdf5=data_hdf5,check_empty=True)
+    #Do not check empty:
+    replace_netcdf_variable_recursive(output,data,
+                                       tree[0],tree[1:],
+                                       hdf5=hdf5,check_empty=check_empty)
 
     data.close()
-    if data_hdf5!=None:
-        data_hdf5.close()
+    if isinstance(hdf5,h5py.File):
+        hdf5.close()
     return
 
-def replace_netcdf_variable_recursive(output,data,level_desc,tree,hdf5=None,check_empty=False):
+def replace_netcdf_variable_recursive(output,data,
+                                      level_desc,tree,
+                                      hdf5=None,check_empty=False):
     level_name=level_desc[0]
     group_name=level_desc[1]
     if group_name==None:
@@ -102,25 +140,35 @@ def replace_netcdf_variable_recursive(output,data,level_desc,tree,hdf5=None,chec
                 hdf5_grp=hdf5[group]
             else:
                 hdf5_grp=hdf5
-            replace_netcdf_variable_recursive_replicate(output_grp,data.groups[group],level_name,group,tree,hdf5=hdf5_grp,check_empty=check_empty)
+            replace_netcdf_variable_recursive_replicate(output_grp,data.groups[group],
+                                                        level_name,group,
+                                                        tree,
+                                                        hdf5=hdf5_grp,check_empty=check_empty)
     else:
         if hdf5!=None:
             hdf5_grp=hdf5[group_name]
         else:
             hdf5_grp=hdf5
         output_grp=netcdf_utils.create_group(output,data,group_name)
-        replace_netcdf_variable_recursive_replicate(output_grp,data.groups[group_name],level_name,group_name,tree,hdf5=hdf5_grp,check_empty=check_empty)
-        #replace_netcdf_variable_recursive_replicate(output_grp,data,level_name,group_name,tree,hdf5=hdf5,check_empty=check_empty)
+        replace_netcdf_variable_recursive_replicate(output_grp,data.groups[group_name],
+                                                    level_name,group_name,
+                                                    tree,
+                                                    hdf5=hdf5_grp,check_empty=check_empty)
     return
 
-def replace_netcdf_variable_recursive_replicate(output_grp,data_grp,level_name,group_name,tree,hdf5=None,check_empty=False):
+def replace_netcdf_variable_recursive_replicate(output_grp,data_grp,
+                                                level_name,group_name,
+                                                tree,
+                                                hdf5=None,check_empty=False):
     if len(tree)>0 or (not group_name in output_grp.groups.keys()):
         try:
             setattr(output_grp,'level_name',level_name)
         except:
             output_grp.setncattr('level_name',level_name)
     if len(tree)>0:
-        replace_netcdf_variable_recursive(output_grp,data_grp,tree[0],tree[1:],hdf5=hdf5,check_empty=check_empty)
+        replace_netcdf_variable_recursive(output_grp,data_grp,
+                                          tree[0],tree[1:],
+                                          hdf5=hdf5,check_empty=check_empty)
     else:
         netcdf_pointers=read_soft_links.read_netCDF_pointers(data_grp)
         netcdf_pointers.replicate(output_grp,hdf5=hdf5,check_empty=check_empty)
@@ -130,33 +178,33 @@ def replace_netcdf_variable_recursive_replicate(output_grp,data_grp,level_name,g
 #PUT INTO FILESYSTEM DATABASE
 def record_to_output_directory(output_file_name,project_drs,options):
     data=netCDF4.Dataset(output_file_name,'r')
-    data_hdf5=None
+    hdf5=None
     for item in h5py.h5f.get_obj_ids():
         if 'name' in dir(item) and item.name==output_file_name:
-            data_hdf5=h5py.File(item)
+            hdf5=h5py.File(item)
 
     output=netCDF4.Dataset(output_file_name+'.tmp','w')
-    if ('reducing_soft_links_script' in dir(options) and
-        options.reducing_soft_links_script==''):
-        #Do not check empty:
-        write_netcdf_variable_recursive(output,options.out_destination,data,project_drs.official_drs,project_drs,options,hdf5=data_hdf5,check_empty=False)
-    else:
-        write_netcdf_variable_recursive(output,options.out_destination,data,project_drs.official_drs,project_drs,options,hdf5=data_hdf5,check_empty=True)
+    write_netcdf_variable_recursive(output,options.out_destination,data,
+                                    project_drs.official_drs,
+                                    project_drs,options,hdf5=hdf5,check_empty=True)
     output.close()
-
     data.close()
-    if data_hdf5!=None:
-        data_hdf5.close()
+    if isinstance(hdf5,h5py.File):
+        hdf5.close()
     return output_file_name+'.tmp'
 
-def write_netcdf_variable_recursive(output,out_dir,data,tree,project_drs,options,hdf5=None,check_empty=False):
+def write_netcdf_variable_recursive(output,out_dir,data,
+                                    tree,
+                                    project_drs,options,hdf5=None,check_empty=False):
     level_name=tree[0]
     if level_name=='version':
         version='v'+datetime.datetime.now().strftime('%Y%m%d')
         sub_out_dir=make_sub_dir(out_dir,version)
         options_copy=copy.copy(options)
         setattr(options_copy,level_name,[version,])
-        write_netcdf_variable_recursive_replicate(output,sub_out_dir,data,version,tree,project_drs,options_copy,hdf5=hdf5,check_empty=check_empty)
+        write_netcdf_variable_recursive_replicate(output,sub_out_dir,data,
+                                                    version,tree,
+                                                    project_drs,options_copy,hdf5=hdf5,check_empty=check_empty)
     else:
         group_name=getattr(options,level_name)[0]
         if group_name==None:
@@ -169,24 +217,27 @@ def write_netcdf_variable_recursive(output,out_dir,data,tree,project_drs,options
                     hdf5_grp=hdf5[group]
                 else:
                     hdf5_grp=hdf5
-                write_netcdf_variable_recursive_replicate(output_grp,sub_out_dir,data.groups[group],group,tree,project_drs,options_copy,hdf5_grp,check_empty=check_empty)
+                write_netcdf_variable_recursive_replicate(output_grp,sub_out_dir,data.groups[group],
+                                                            group,tree,
+                                                            project_drs,options_copy,hdf5_grp,check_empty=check_empty)
                         
         else:
-            #if hdf5!=None:
-            #    print hdf5
-            #    hdf5_grp=hdf5[group_name]
-            #else:
-            #    hdf5_grp=hdf5
             sub_out_dir=make_sub_dir(out_dir,group_name)
             output_grp=netcdf_utils.create_group(output,data,group_name)
             options_copy=copy.copy(options)
             setattr(options_copy,level_name,[group_name,])
-            write_netcdf_variable_recursive_replicate(output_grp,sub_out_dir,data,group_name,tree,project_drs,options_copy,hdf5=hdf5,check_empty=check_empty)
+            write_netcdf_variable_recursive_replicate(output_grp,sub_out_dir,data,
+                                                        group_name,tree,
+                                                        project_drs,options_copy,hdf5=hdf5,check_empty=check_empty)
     return
 
-def write_netcdf_variable_recursive_replicate(output,sub_out_dir,data_grp,group_name,tree,project_drs,options,hdf5=None,check_empty=False):
+def write_netcdf_variable_recursive_replicate(output,sub_out_dir,data_grp,
+                                                group_name,tree,
+                                                project_drs,options,hdf5=None,check_empty=False):
     if len(tree)>1:
-        write_netcdf_variable_recursive(output,sub_out_dir,data_grp,tree[1:],project_drs,options,hdf5=hdf5,check_empty=check_empty)
+        write_netcdf_variable_recursive(output,sub_out_dir,data_grp,
+                                        tree[1:],
+                                        project_drs,options,hdf5=hdf5,check_empty=check_empty)
     else:
         #Must propagate infos down to this level
         var_with_version=[getattr(options,opt)[0] for opt in project_drs.official_drs]
