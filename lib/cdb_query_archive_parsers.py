@@ -401,7 +401,6 @@ def avd(subparsers,epilog,project_drs):
 
 
     #ASK
-    parser.add_argument('script',default='',help="Command-line script")
     input_arguments_json(parser)
     output_arguments(parser)
     parser.add_argument('--related_experiments',

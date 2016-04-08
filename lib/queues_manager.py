@@ -128,15 +128,13 @@ class CDB_queues_manager:
         return np.max([getattr(self,queue_name+'_expected').value for queue_name in self.queues_names])
 
 def recorder(q_manager,project_drs,options):
-    if not ('convert' in dir(options) and options.convert):
-        output=netCDF4.Dataset(options.out_netcdf_file,'w')
+    output=netCDF4.Dataset(options.out_netcdf_file,'w')
 
     for item in iter(q_manager.get_record,'STOP'):
         if item[1]!='record':
             cdb_query_archive_class.consume_one_item(item[0],item[1],item[2],q_manager,project_drs)
-        elif not ('convert' in dir(options) and options.convert):
+        else:
             cdb_query_archive_class.record_to_netcdf_file(item[2],output,project_drs)
-
     return
 
 def consumer(q_manager,project_drs):

@@ -40,17 +40,17 @@ def reduce_variable(database,options,q_manager=None):
                 script_to_call+=' {'+str(file_id)+'}'
 
         out=subprocess.call(script_to_call.format(*temp_file_name_list),shell=True)
+    try:
+        for file in temp_file_name_list[:-1]:
+            os.remove(file)
+    except OSError:
+        pass
+
     #This is the last function in the chain. Convert and create soft links:
     output_file_name=nc_Database_utils.record_to_output_directory(temp_output_file_name,database.drs,options)
     try:
         os.remove(temp_output_file_name)
         os.rename(output_file_name,temp_output_file_name)
-    except OSError:
-        pass
-
-    try:
-        for file in temp_file_name_list[:-1]:
-            os.remove(file)
     except OSError:
         pass
     return temp_output_file_name

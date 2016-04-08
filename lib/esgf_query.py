@@ -46,6 +46,7 @@ def experiment_variable_search_recursive(slicing_args,nc_Database,search_path,fi
             only_list=[]
             for field_option in getattr(options,slicing_args[0]):
                 options_copy = copy.copy(options)
+
                 setattr(options_copy,slicing_args[0],[field_option,])
                 only_list.append(experiment_variable_search_recursive(slicing_args[1:],nc_Database,search_path,file_type_list,options_copy,
                                                          experiment,var_name,var_desc,list_level=list_level))
@@ -53,8 +54,6 @@ def experiment_variable_search_recursive(slicing_args,nc_Database,search_path,fi
         else:
             return experiment_variable_search_recursive(slicing_args[1:],nc_Database,search_path,file_type_list,options,
                                                          experiment,var_name,var_desc,list_level=list_level)
-            #return experiment_variable_search_recursive(slicing_args[1:],nc_Database,search_path,file_type_list,options,
-            #                                             experiment,var_name,var_desc,list_level=list_level)
     else:
         #When done, perform the search:
         return experiment_variable_search(nc_Database,search_path,file_type_list,options,
@@ -68,15 +67,15 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
     #Search the ESGF:
     ctx = conn.new_context(project=nc_Database.drs.project,
                         experiment=experiment)
-    #print nc_Database.drs.project, experiment
-    #ctx = conn.new_context(project='NMME',experiment='19810101')
-    #print ctx.facet_counts
-    ctx=ctx.constrain(**{field:var_desc[field_id] for field_id, field in enumerate(nc_Database.drs.var_specs)})
 
-    for field in nc_Database.drs.slicing_args.keys():
-        if field in dir(options) and getattr(options,field)!=None:
-            #This is where the lenght-one list is important:
-            ctx=ctx.constrain(**{field:getattr(options,field)[0]})
+    constraints_dict={field:var_desc[field_id] for field_id, field in enumerate(nc_Database.drs.var_specs)}
+    #This is where the lenght-one list is important:
+    constraints_dict.update(**{field:getattr(options,field)[0] for field in nc_Database.drs.slicing_args.keys()
+                                            if field in dir(options) and getattr(options,field)!=None})
+    ctx=ctx.constrain(**constraints_dict)
+    #ctx=ctx.constrain(**{field:var_desc[field_id] for field_id, field in enumerate(nc_Database.drs.var_specs)})
+    #ctx=ctx.constrain(**{field:getattr(options,field)[0] for field in nc_Database.drs.slicing_args.keys()
+    #                                        if field in dir(options) and getattr(options,field)!=None})
 
     nc_Database.file_expt.experiment=experiment
     nc_Database.file_expt.var=var_name

@@ -46,7 +46,7 @@ def ask_with_database(database,options):
     only_list.append(ask_database(database,options))
     if options.ensemble!=None:
         options_copy=copy.copy(options)
-        options_copy.ensemble='r0i0p0'
+        options_copy.ensemble=['r0i0p0',]
         only_list.append(ask_database(database,options_copy))
 
     if options.list_only_field!=None:
