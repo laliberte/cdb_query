@@ -80,6 +80,8 @@ def generate_subparsers(parser,epilog,project_drs):
 
     #revalidate(subparsers,epilog,project_drs)
 
+    reduce_soft_links(subparsers,epilog,project_drs)
+
     download_opendap(subparsers,epilog,project_drs)
 
     reduce(subparsers,epilog,project_drs)
@@ -102,6 +104,37 @@ def functions_arguments(parser,functions_list):
         else:
             parser.add_argument('--'+function, default=False,help=argparse.SUPPRESS)
 
+def ask_arguments(parser):
+    query_group = parser.add_argument_group('Scientific query setup')
+    query_group.add_argument('--expt',
+                             default='historical:1950,2005',
+                             action='append',
+                             help='An \'experiment:start_year,end_year\' triple.\n\
+                                   Note that specifiying 1<=start_year<10 means that\n\
+                                   the years are relative to the first year in the simulation.\n\
+                                   For example, \'piControl:1,101\' will find the first hundred\n\
+                                   years of the piControl experiment.')
+    query_group.add_argument('--month_list',
+                             default='1,2,3,4,5,6,7,8,9,10,11,12',
+                             help='A comma-separated list of months to be considered')
+    query_group.add_argument('--search_path_list',
+                             default='1,2,3,4,5,6,7,8,9,10,11,12',
+                             help='A comma-separated list of search paths')
+    query_group.add_argument('--var_def',
+                             default='tas:mon,atmos,Amon',
+                             action='append',
+                             help='A \'variable:time_frequency,realm,cmor_table\' tuple.')
+    query_group.add_argument('--file_type_list',
+                             default=['local_file','OPENDAP','HTTPServer'],
+                             action='append',
+                             help='A \'variable:time_frequency,realm,cmor_table\' tuple.')
+    query_gropu.add_argument('--related_experiments',
+                                 default=False, action='store_true',
+                                 help='When this option is activated, queried experiments are assumed to be related.\n\
+                                       In this situation, cdb_query will discard ({0}) tuples that do not have variables for\n\
+                                       ALL of the requested experiments'.format(','.join(project_drs.simulations_desc)))
+    return
+    
 
 #QUERY PARSERS
 def ask(subparsers,epilog,project_drs):
@@ -126,17 +159,12 @@ def ask(subparsers,epilog,project_drs):
     output_arguments(parser)
     parser.add_argument('-s','--silent',default=False,action='store_true',help='Make not verbose.')
 
-    manage_soft_links_parsers.certificates_arguments(parser,project_drs)
-    processing_arguments(parser,project_drs)
-
-    parser.add_argument('--distrib',
+    parser_group.add_argument('--distrib',
                                  default=False, action='store_true',
                                  help='Distribute the search. Will likely result in a pointers originating from one node.')
-    parser.add_argument('--related_experiments',
-                                 default=False, action='store_true',
-                                 help='When this option is activated, queried experiments are assumed to be related.\n\
-                                       In this situation, cdb_query will discard ({0}) tuples that do not have variables for\n\
-                                       ALL of the requested experiments'.format(','.join(project_drs.simulations_desc)))
+
+    manage_soft_links_parsers.certificates_arguments(parser,project_drs)
+    processing_arguments(parser,project_drs)
 
     parser.add_argument('--list_only_field',default=None, choices=project_drs.remote_fields,
                               help='When this option is used, the ask function prints only the specified field \n\
@@ -269,6 +297,40 @@ def download_files(subparsers,epilog,project_drs):
     extended_slicing_arguments(parser,project_drs)
     return
 
+def reduce_soft_links(subparsers,epilog,project_drs):
+    epilog_reduce_soft_links=textwrap.dedent(epilog)
+    parser=subparsers.add_parser('reduce_soft_links',
+                                       description=textwrap.dedent('Take as an input retrieved data and reduce_soft_links bash script'),
+                                       epilog=epilog_reduce_soft_links
+                                         )
+    functions_arguments(parser,['reduce_soft_links'])
+    parser.add_argument('reduce_soft_links_script',default='',help="Command-line script")
+    
+    input_arguments(parser)
+    output_arguments(parser)
+    processing_arguments(parser,project_drs)
+
+    reduce_soft_links_arguments(parser,project_drs)
+
+    manage_soft_links_parsers.time_selection_arguments(parser)
+    extended_slicing_arguments(parser,project_drs)
+
+    data_node_group = parser.add_argument_group('Restrict search to specific data nodes')
+    data_node_group.add_argument('--data_node',type=str,action='append',help='Consider only the specified data nodes')
+    data_node_group.add_argument('--Xdata_node',type=str,action='append',help='Do not consider the specified data nodes')
+    return 
+
+def reduce_soft_links_arguments(parser,project_drs):
+    parser.add_argument('--reducing_soft_links_script',default='',
+                                 help='Script to apply to soft links.')
+
+    select_group = parser.add_argument_group('These arguments specify the structure of the output')
+    select_group.add_argument('--add_fixed',default=False, action='store_true',help='include fixed variables')
+    select_group.add_argument('-k','--keep_field',action='append', type=str, choices=project_drs.official_drs_no_version,
+                                       default=[],
+                                       help='Keep these fields in the applied file.' )
+    return select_group
+
 def download_opendap(subparsers,epilog,project_drs):
     parser=manage_soft_links_parsers.download_opendap(subparsers,epilog,project_drs)
     parser.add_argument('--swap_dir',type=writeable_dir,default='.',
@@ -338,9 +400,6 @@ def reduce_arguments(parser,project_drs):
     parser.add_argument('--out_destination',default='./',
                              help='Destination directory for conversion.')
 
-    parser.add_argument('--reducing_soft_links_script',default='',
-                                 help='Script to apply to soft links.')
-
     select_group = parser.add_argument_group('These arguments specify the structure of the output')
     select_group.add_argument('--add_fixed',default=False, action='store_true',help='include fixed variables')
     select_group.add_argument('-k','--keep_field',action='append', type=str, choices=project_drs.official_drs_no_version,
@@ -353,6 +412,7 @@ def reduce_arguments(parser,project_drs):
                                             \'-l month\', on the other hand, would loop through the 12 months, passing all years\n\
                                             to \'reduce\'.' )
     return select_group
+
 
 def av(subparsers,epilog,project_drs):
     epilog_av=textwrap.dedent(epilog)
@@ -394,10 +454,10 @@ def av(subparsers,epilog,project_drs):
 def avd(subparsers,epilog,project_drs):
     epilog_avd=textwrap.dedent(epilog)
     parser=subparsers.add_parser('avd',
-                                       description=textwrap.dedent('Ask -> Validate -> Download_files -> Download_opendap'),
+                                       description=textwrap.dedent('Ask -> Validate -> Download_files (-> Reduce_soft_links) -> Download_opendap'),
                                        epilog=epilog_avd
                                          )
-    functions_arguments(parser,['ask','validate','download_files','download_opendap'])
+    functions_arguments(parser,['ask','validate','download_files','reduce_soft_links','download_opendap'])
 
 
     #ASK
@@ -443,6 +503,10 @@ def avd(subparsers,epilog,project_drs):
                               Using this option might can lead to ill-defined time axes.')
     parser.add_argument('--download_all',default=False,action='store_true',help=argparse.SUPPRESS)
 
+    #REDUCE SOFT LINKS
+    parser.add_argument('--reducing_soft_links_script',default='',
+                                 help='Script to apply to soft links.')
+
     manage_soft_links_parsers.time_selection_arguments(parser)
 
     return 
@@ -450,11 +514,11 @@ def avd(subparsers,epilog,project_drs):
 def avdr(subparsers,epilog,project_drs):
     epilog_avdr=textwrap.dedent(epilog)
     parser=subparsers.add_parser('avdr',
-                                       description=textwrap.dedent('Ask -> Validate -> Download_files -> Download_opendap -> Reduce'),
+                                       description=textwrap.dedent('Ask -> Validate -> Download_files (-> Reduce_soft_links)-> Download_opendap -> Reduce'),
                                        epilog=epilog_avdr
                                          )
-    functions_arguments(parser,['ask','validate','download_files','download_opendap','reduce'])
-
+    #functions_arguments(parser,['ask','validate','download_files','download_opendap','reduce'])
+    functions_arguments(parser,['ask','validate','download_files','reduce_soft_links','download_opendap','reduce'])
 
     #ASK
     parser.add_argument('script',default='',help="Command-line script")
@@ -501,6 +565,10 @@ def avdr(subparsers,epilog,project_drs):
     parser.add_argument('--download_all',default=False,action='store_true',help=argparse.SUPPRESS)
 
     manage_soft_links_parsers.time_selection_arguments(parser)
+
+    #REDUCE SOFT LINKS
+    parser.add_argument('--reducing_soft_links_script',default='',
+                                 help='Script to apply to soft links.')
 
     #REDUCE
     reduce_arguments(parser,project_drs)
