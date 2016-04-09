@@ -87,7 +87,8 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD, Submitted.'.format(ve
                 database=cdb_query_archive_class.Database_Manager(project_drs)
                 options.spin_up=True
                 #Run the command:
-                getattr(database,options.command)(options,q_manager=q_manager)
+                #getattr(database,options.command)(options,q_manager=q_manager)
+                getattr(cdb_query_archive_class,options.command)(database,options,q_manager=q_manager)
                 #Consumer processes can now terminate:
                 q_manager.set_closed()
                 #Start record process:

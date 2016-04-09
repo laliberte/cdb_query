@@ -24,174 +24,175 @@ import nc_Database_utils
 import nc_Database_reduce
 import downloads
 
+def ask_var_list(database,simulations_list,options):
+    if 'keep_field' in dir(options):
+        drs_to_eliminate=[field for field in database.drs.simulations_desc if
+                                             not field in options.keep_field]
+    else:
+        drs_to_eliminate=database.drs.simulations_desc
+    return [[ var[database.drs.simulations_desc.index(field)] if field in drs_to_eliminate else None
+                        for field in database.drs.official_drs_no_version] for var in 
+                        simulations_list ]
+
+def ask(database,options,q_manager=None):
+    #Load header:
+    database.load_header(options)
+
+    #Simplify the header:
+    database.union_header()
+
+    #Only a listing of a few fields was requested.
+    if ('list_only_field' in dir(options) and options.list_only_field!=None):
+        for field_name in ask_utils.ask(database.drs,options):
+            print field_name
+        return
+
+    #Find the simulation list:
+    #Check if a specific simulation was sliced:
+    single_simulation_requested=[]
+    for desc in database.drs.simulations_desc:
+        if (getattr(options,desc) !=None and 
+           len(getattr(options,desc))==1):
+           single_simulation_requested.append(getattr(options,desc)[0])
+    if len(single_simulation_requested)==len(database.drs.simulations_desc):
+        simulations_list=[tuple(single_simulation_requested)]
+    else:
+        simulations_list=ask_utils.ask_simulations_recursive(database,options,database.drs.simulations_desc)
+
+    #Remove fixed variable:
+    simulations_list_no_fx=[simulation for simulation in simulations_list if 
+                                simulation[database.drs.simulations_desc.index('ensemble')]!='r0i0p0']
+    if not ('silent' in dir(options) and options.silent) and len(simulations_list_no_fx)>1:
+        print "This is a list of simulations that COULD satisfy the query:"
+        for simulation in simulations_list_no_fx:
+            print ','.join(simulation)
+        print "cdb_query will now attempt to confirm that these simulations have all the requested variables."
+        print "This can take some time. Please abort if there are not enough simulations for your needs."
+    
+    vars_list=ask_var_list(database,simulations_list_no_fx,options)
+    database.put_or_process('ask',ask_utils.ask,vars_list,options,q_manager)
+    return
+
+def validate(database,options,q_manager=None):
+    database.load_header(options)
+
+    if not 'data_node_list' in database.header.keys():
+        data_node_list, url_list, simulations_list =database.find_data_nodes_and_simulations(options)
+        if len(data_node_list)>1 and not options.no_check_availability:
+            data_node_list=rank_data_nodes(options,data_node_list,url_list)
+    else:
+        simulations_list=[]
+    database.drs.data_node_list=data_node_list
+
+    #Find the atomic simulations:
+    if simulations_list==[]:
+        simulations_list=database.list_fields_local(options,database.drs.simulations_desc)
+    #Remove fixed variable:
+    simulations_list_no_fx=[simulation for simulation in simulations_list if 
+                                simulation[database.drs.simulations_desc.index('ensemble')]!='r0i0p0']
+
+    if q_manager != None:
+        for data_node in data_node_list:
+            q_manager.validate_semaphores.add_new_data_node(data_node)
+    #Do it by simulation, except if one simulation field should be kept for further operations:
+    vars_list=ask_var_list(database,simulations_list_no_fx,options)
+    database.put_or_process('validate',validate_utils.validate,vars_list,options,q_manager)
+    return
+
+def av(database,options,q_manager=None):
+    ask(database,options,q_manager=q_manager)
+    return
+
+def avd(database,options,q_manager=None):
+    ask(database,options,q_manager=q_manager)
+    return
+
+def avdr(database,options,q_manager=None):
+    ask(database,options,q_manager=q_manager)
+    return
+
+def reduce_var_list(database,options):
+    if ('keep_field' in dir(options) and options.keep_field!=None):
+        drs_to_eliminate=[field for field in database.drs.official_drs_no_version if
+                                             not field in options.keep_field]
+    else:
+        drs_to_eliminate=database.drs.official_drs_no_version
+    return [[ var[drs_to_eliminate.index(field)] if field in drs_to_eliminate else None
+                        for field in database.drs.official_drs_no_version] for var in 
+                        database.list_fields_local(options,drs_to_eliminate) ]
+
+def download_files(database,options,q_manager=None):
+    if q_manager != None:
+        data_node_list, url_list, simulations_list =database.find_data_nodes_and_simulations(options)
+        for data_node in data_node_list:
+            q_manager.download.semaphores.add_new_data_node(data_node)
+            q_manager.download.queues.add_new_data_node(data_node)
+    #Recover the database meta data:
+    vars_list=reduce_var_list(database,options)
+    database.put_or_process('download_files',downloads.download_files,vars_list,options,q_manager)
+    return
+
+#def revalidate(database,options,q_manager=None):
+#    if q_manager != None:
+#        data_node_list, url_list, simulations_list =database.find_data_nodes_and_simulations(options)
+#        for data_node in data_node_list:
+#            q_manager.validate_semaphores.add_new_data_node(data_node)
+#    #Recover the database meta data:
+#    vars_list=self.reduce_var_list(options)
+#    database.put_or_process('revalidate',downloads.revalidate,vars_list,options,q_manager)
+#    return
+
+def reduce_soft_links(database,options,q_manager=None):
+    vars_list=reduce_var_list(database,options)
+    database.put_or_process('reduce_soft_links',nc_Database_reduce.reduce_soft_links_variable,vars_list,options,q_manager)
+    return
+
+def download_opendap(database,options,q_manager=None):
+    if q_manager != None:
+        data_node_list, url_list, simulations_list =database.find_data_nodes_and_simulations(options)
+        for data_node in data_node_list:
+            q_manager.download.semaphores.add_new_data_node(data_node)
+            q_manager.download.queues.add_new_data_node(data_node)
+    vars_list=reduce_var_list(database,options)
+    database.put_or_process('download_opendap',downloads.download_opendap,vars_list,options,q_manager)
+    return
+
+def gather(database,options,q_manager=None):
+    reduce(database,options,q_manager=q_manager)
+    return
+
+def reduce(database,options,q_manager=None):
+    if (options.script=='' and 
+        ('in_extra_netcdf_files' in dir(options) and 
+          len(options.in_extra_netcdf_files)>0) ):
+        raise InputErrorr('The identity script \'\' can only be used when no extra netcdf files are specified.')
+
+    #Users have requested time types to be kept
+    times_list=downloads.time_split(database,options)
+
+    vars_list=reduce_var_list(database,options)
+    database.put_or_process('reduce',nc_Database_reduce.reduce_variable,vars_list,options,q_manager,times_list=times_list)
+    return
+
+def merge(database,options,q_manager=None):
+    output=netCDF4.Dataset(options.out_netcdf_file,'w')
+    database.load_header(options)
+    nc_Database.record_header(output,database.header)
+    for file_name in [options.in_netcdf_file,]+options.extra_netcdf_file:
+        nc_Database_utils.record_to_netcdf_file_from_file_name(options,temp_file_name,output,database.drs)
+    return
+
+def list_fields(database,options,q_manager=None):
+    fields_list=database.list_fields_local(options,options.field)
+    for field in fields_list:
+        print ','.join(field)
+    return
+
 class Database_Manager:
     def __init__(self,project_drs):
         self.drs=project_drs
         return
 
-    def ask_var_list(self,simulations_list,options):
-        if 'keep_field' in dir(options):
-            drs_to_eliminate=[field for field in self.drs.simulations_desc if
-                                                 not field in options.keep_field]
-        else:
-            drs_to_eliminate=self.drs.simulations_desc
-        return [[ var[self.drs.simulations_desc.index(field)] if field in drs_to_eliminate else None
-                            for field in self.drs.official_drs_no_version] for var in 
-                            simulations_list ]
-
-    def ask(self,options,q_manager=None):
-        #Load header:
-        self.load_header(options)
-
-        #Simplify the header:
-        self.union_header()
-
-        #Only a listing of a few fields was requested.
-        if ('list_only_field' in dir(options) and options.list_only_field!=None):
-            for field_name in ask_utils.ask(self.drs,options):
-                print field_name
-            return
-
-        #Find the simulation list:
-        #Check if a specific simulation was sliced:
-        single_simulation_requested=[]
-        for desc in self.drs.simulations_desc:
-            if (getattr(options,desc) !=None and 
-               len(getattr(options,desc))==1):
-               single_simulation_requested.append(getattr(options,desc)[0])
-        if len(single_simulation_requested)==len(self.drs.simulations_desc):
-            simulations_list=[tuple(single_simulation_requested)]
-        else:
-            simulations_list=ask_utils.ask_simulations_recursive(self,options,self.drs.simulations_desc)
-
-        #Remove fixed variable:
-        simulations_list_no_fx=[simulation for simulation in simulations_list if 
-                                    simulation[self.drs.simulations_desc.index('ensemble')]!='r0i0p0']
-        if not ('silent' in dir(options) and options.silent) and len(simulations_list_no_fx)>1:
-            print "This is a list of simulations that COULD satisfy the query:"
-            for simulation in simulations_list_no_fx:
-                print ','.join(simulation)
-            print "cdb_query will now attempt to confirm that these simulations have all the requested variables."
-            print "This can take some time. Please abort if there are not enough simulations for your needs."
-        
-        vars_list=self.ask_var_list(simulations_list_no_fx,options)
-        self.put_or_process('ask',ask_utils.ask,vars_list,options,q_manager)
-        return
-
-    def validate(self,options,q_manager=None):
-        self.load_header(options)
-
-        if not 'data_node_list' in self.header.keys():
-            data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
-            if len(data_node_list)>1 and not options.no_check_availability:
-                data_node_list=rank_data_nodes(options,data_node_list,url_list)
-        else:
-            simulations_list=[]
-        self.drs.data_node_list=data_node_list
-
-        #Find the atomic simulations:
-        if simulations_list==[]:
-            simulations_list=self.list_fields_local(options,self.drs.simulations_desc)
-        #Remove fixed variable:
-        simulations_list_no_fx=[simulation for simulation in simulations_list if 
-                                    simulation[self.drs.simulations_desc.index('ensemble')]!='r0i0p0']
-
-        if q_manager != None:
-            for data_node in data_node_list:
-                q_manager.validate_semaphores.add_new_data_node(data_node)
-        #Do it by simulation, except if one simulation field should be kept for further operations:
-        vars_list=self.ask_var_list(simulations_list_no_fx,options)
-        self.put_or_process('validate',validate_utils.validate,vars_list,options,q_manager)
-        return
-
-    def av(self,options,q_manager=None):
-        self.ask(options,q_manager=q_manager)
-        return
-
-    def avd(self,options,q_manager=None):
-        self.ask(options,q_manager=q_manager)
-        return
-
-    def avdr(self,options,q_manager=None):
-        self.ask(options,q_manager=q_manager)
-        return
-
-    def reduce_var_list(self,options):
-        if ('keep_field' in dir(options) and options.keep_field!=None):
-            drs_to_eliminate=[field for field in self.drs.official_drs_no_version if
-                                                 not field in options.keep_field]
-        else:
-            drs_to_eliminate=self.drs.official_drs_no_version
-        return [[ var[drs_to_eliminate.index(field)] if field in drs_to_eliminate else None
-                            for field in self.drs.official_drs_no_version] for var in 
-                            self.list_fields_local(options,drs_to_eliminate) ]
-
-    def download_files(self,options,q_manager=None):
-        if q_manager != None:
-            data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
-            for data_node in data_node_list:
-                q_manager.download.semaphores.add_new_data_node(data_node)
-                q_manager.download.queues.add_new_data_node(data_node)
-        #Recover the database meta data:
-        vars_list=self.reduce_var_list(options)
-        self.put_or_process('download_files',downloads.download_files,vars_list,options,q_manager)
-        return
-
-    #def revalidate(self,options,q_manager=None):
-    #    if q_manager != None:
-    #        data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
-    #        for data_node in data_node_list:
-    #            q_manager.validate_semaphores.add_new_data_node(data_node)
-    #    #Recover the database meta data:
-    #    vars_list=self.reduce_var_list(options)
-    #    self.put_or_process('revalidate',downloads.revalidate,vars_list,options,q_manager)
-    #    return
-
-    def reduce_soft_links(self,options,q_manager=None):
-        vars_list=self.reduce_var_list(options)
-        self.put_or_process('reduce_soft_links',nc_Database_reduce.reduce_soft_links_variable,vars_list,options,q_manager)
-        return
-
-    def download_opendap(self,options,q_manager=None):
-        if q_manager != None:
-            data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
-            for data_node in data_node_list:
-                q_manager.download.semaphores.add_new_data_node(data_node)
-                q_manager.download.queues.add_new_data_node(data_node)
-        vars_list=self.reduce_var_list(options)
-        self.put_or_process('download_opendap',downloads.download_opendap,vars_list,options,q_manager)
-        return
-
-    def gather(self,options,q_manager=None):
-        self.reduce(options,q_manager=q_manager)
-        return
-
-    def reduce(self,options,q_manager=None):
-        if (options.script=='' and 
-            ('in_extra_netcdf_files' in dir(options) and 
-              len(options.in_extra_netcdf_files)>0) ):
-            raise InputErrorr('The identity script \'\' can only be used when no extra netcdf files are specified.')
-
-        #Users have requested time types to be kept
-        times_list=downloads.time_split(self,options)
-
-        vars_list=self.reduce_var_list(options)
-        self.put_or_process('reduce',nc_Database_reduce.reduce_variable,vars_list,options,q_manager,times_list=times_list)
-        return
-
-    def merge(self,options,q_manager=None):
-        output=netCDF4.Dataset(options.out_netcdf_file,'w')
-        self.load_header(options)
-        nc_Database.record_header(output,self.header)
-        for file_name in [options.in_netcdf_file,]+options.extra_netcdf_file:
-            nc_Database_utils.record_to_netcdf_file_from_file_name(options,temp_file_name,output,self.drs)
-        return
-
-    def list_fields(self,options,q_manager=None):
-        fields_list=self.list_fields_local(options,options.field)
-        for field in fields_list:
-            print ','.join(field)
-            return
 
     def list_fields_local(self,options,fields_to_list):
         self.load_database(options,find_simple)
@@ -384,7 +385,7 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs):
     #Recursively apply commands:
     database=Database_Manager(project_drs)
     #Run the command:
-    getattr(database,function_name)(options,q_manager=q_manager)
-    #globals()[function_name](database,options,q_manager=q_manager)
+    #getattr(database,function_name)(options,q_manager=q_manager)
+    globals()[function_name](database,options,q_manager=q_manager)
     return
 
