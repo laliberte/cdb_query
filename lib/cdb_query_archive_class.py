@@ -144,7 +144,7 @@ def download_files(database,options,q_manager=None):
 
 def reduce_soft_links(database,options,q_manager=None):
     vars_list=reduce_var_list(database,options)
-    database.put_or_process('reduce_soft_links',nc_Database_reduce.reduce_soft_links_variable,vars_list,options,q_manager)
+    database.put_or_process('reduce_soft_links',nc_Database_reduce.reduce_soft_links,vars_list,options,q_manager)
     return
 
 def download_opendap(database,options,q_manager=None):

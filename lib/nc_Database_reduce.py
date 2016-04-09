@@ -8,10 +8,13 @@ import os
 #Internal:
 import nc_Database_utils
 
-def reduce_soft_links_variable(database,options,q_manager=None):
-    return reduce_variable(database,options,q_manager=q_manager,retrieval_function='reduce_soft_links')
+def reduce_soft_links(database,options,q_manager=None):
+    return reduce_sl_or_var(database,options,q_manager=q_manager,retrieval_function='reduce_soft_links',script=options.reduce_soft_links_script)
 
 def reduce_variable(database,options,q_manager=None,retrieval_function='reduce'):
+    return reduce_sl_or_var(database,options,q_manager=q_manager,retrieval_function='reduce',script=options.script)
+
+def reduce_sl_or_var(database,options,q_manager=None,retrieval_function='reduce',script=''):
     #The leaf(ves) considered here:
     var=[getattr(options,opt)[0] if getattr(options,opt)!=None
                                  else None for opt in database.drs.official_drs_no_version]
@@ -36,14 +39,14 @@ def reduce_variable(database,options,q_manager=None,retrieval_function='reduce')
                                     check_empty=(retrieval_function=='reduce'))
         temp_file_name_list.append(temp_file_name)
 
-    if options.script=='':
+    if script=='':
         os.rename(temp_file_name_list[0],temp_output_file_name)
     else:
         #If script is not empty, call script:
         temp_file_name_list.append(temp_output_file_name)
-        script_to_call=options.script
+        script_to_call=script
         for file_id, file in enumerate(temp_file_name_list):
-            if not '{'+str(file_id)+'}' in options.script:
+            if not '{'+str(file_id)+'}' in script:
                 script_to_call+=' {'+str(file_id)+'}'
 
         out=subprocess.call(script_to_call.format(*temp_file_name_list),shell=True)
