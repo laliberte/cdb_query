@@ -364,28 +364,3 @@ def rank_data_nodes(options,data_node_list,url_list):
             print 'Done!'
     return list(np.array(data_node_list_timed)[np.argsort(data_node_timing)])+list(set(data_node_list).difference(data_node_list_timed))
 
-def record_to_netcdf_file(options,output,project_drs):
-    database=Database_Manager(project_drs)
-    database.load_header(options)
-    nc_Database.record_header(output,database.header)
-
-    temp_file_name=options.in_netcdf_file
-    nc_Database_utils.record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_drs)
-    output.sync()
-    try:
-        os.remove(temp_file_name)
-    except OSError:
-        pass
-    return
-
-def consume_one_item(counter,function_name,options,q_manager,project_drs):
-    #Create unique file id:
-    options.out_netcdf_file+='.'+str(counter)
-
-    #Recursively apply commands:
-    database=Database_Manager(project_drs)
-    #Run the command:
-    #getattr(database,function_name)(options,q_manager=q_manager)
-    globals()[function_name](database,options,q_manager=q_manager)
-    return
-

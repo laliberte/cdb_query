@@ -9,6 +9,8 @@ import numpy as np
 
 #Internal:
 import cdb_query_archive_class
+import nc_Database
+import nc_Database_utils
 import netcdf4_soft_links.queues_manager as NC4SL_queues_manager
 import netcdf4_soft_links.retrieval_manager as retrieval_manager
 
@@ -139,15 +141,40 @@ def recorder(q_manager,project_drs,options):
 
     for item in iter(q_manager.get_record,'STOP'):
         if item[1]!='record':
-            cdb_query_archive_class.consume_one_item(item[0],item[1],item[2],q_manager,project_drs)
+            consume_one_item(item[0],item[1],item[2],q_manager,project_drs)
         else:
-            cdb_query_archive_class.record_to_netcdf_file(item[2],output,project_drs)
+            record_to_netcdf_file(item[2],output,project_drs)
     output.close()
+    return
+
+def record_to_netcdf_file(options,output,project_drs):
+    database=cdb_query_archive_class.Database_Manager(project_drs)
+    database.load_header(options)
+    nc_Database.record_header(output,database.header)
+
+    temp_file_name=options.in_netcdf_file
+    nc_Database_utils.record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_drs)
+    output.sync()
+    try:
+        os.remove(temp_file_name)
+    except OSError:
+        pass
     return
 
 def consumer(q_manager,project_drs):
     for item in iter(q_manager.get_no_record,'STOP'):
-        cdb_query_archive_class.consume_one_item(item[0],item[1],item[2],q_manager,project_drs)
+        consume_one_item(item[0],item[1],item[2],q_manager,project_drs)
+    return
+
+def consume_one_item(counter,function_name,options,q_manager,project_drs):
+    #Create unique file id:
+    options.out_netcdf_file+='.'+str(counter)
+
+    #Recursively apply commands:
+    database=cdb_query_archive_class.Database_Manager(project_drs)
+    #Run the command:
+    #getattr(database,function_name)(options,q_manager=q_manager)
+    getattr(cdb_query_archive_class,function_name)(database,options,q_manager=q_manager)
     return
 
 def start_consumer_processes(q_manager,project_drs,options):
