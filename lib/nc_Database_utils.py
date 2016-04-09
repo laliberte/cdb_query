@@ -111,9 +111,9 @@ def retrieve_or_replicate(output_grp,data,
 def record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_drs,check_empty=True):
     data=netCDF4.Dataset(temp_file_name,'r')
     hdf5=None
-    for item in h5py.h5f.get_obj_ids():
-        if 'name' in dir(item) and item.name==temp_file_name:
-            hdf5=h5py.File(item)
+    #for item in h5py.h5f.get_obj_ids():
+    #    if 'name' in dir(item) and item.name==temp_file_name:
+    #        hdf5=h5py.File(item)
 
     var=[ getattr(options,opt)[0] if getattr(options,opt)!=None else None for opt in project_drs.official_drs_no_version]
     tree=zip(project_drs.official_drs_no_version,var)
@@ -124,8 +124,8 @@ def record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_d
                                        hdf5=hdf5,check_empty=check_empty)
 
     data.close()
-    if isinstance(hdf5,h5py.File):
-        hdf5.close()
+    #if isinstance(hdf5,h5py.File):
+    #    hdf5.close()
     return
 
 def replace_netcdf_variable_recursive(output,data,
