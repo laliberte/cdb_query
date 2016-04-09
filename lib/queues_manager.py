@@ -35,6 +35,12 @@ class CDB_queues_manager:
             if (name in dir(options) and getattr(options,name)):
                 self.queues_names.append(name)
         self.queues_names.append('record')
+
+        #If reduce_soft_links_script is identity, do
+        #not pipe results through reduce_soft_links:
+        if ('reduce_soft_links_script' in dir(options) and
+            options.reduce_soft_links_script==''):
+            self.queues_names.remove('reduce_soft_links')
         
         for queue_name in self.queues_names:
             setattr(self,queue_name,self.manager.Queue())
@@ -129,12 +135,14 @@ class CDB_queues_manager:
 
 def recorder(q_manager,project_drs,options):
     output=netCDF4.Dataset(options.out_netcdf_file,'w')
+    output.set_fill_off()
 
     for item in iter(q_manager.get_record,'STOP'):
         if item[1]!='record':
             cdb_query_archive_class.consume_one_item(item[0],item[1],item[2],q_manager,project_drs)
         else:
             cdb_query_archive_class.record_to_netcdf_file(item[2],output,project_drs)
+    output.close()
     return
 
 def consumer(q_manager,project_drs):

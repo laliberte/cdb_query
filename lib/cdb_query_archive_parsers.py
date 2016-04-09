@@ -104,31 +104,52 @@ def functions_arguments(parser,functions_list):
         else:
             parser.add_argument('--'+function, default=False,help=argparse.SUPPRESS)
 
-def ask_arguments(parser):
+def ask_arguments(parser,project_drs):
     query_group = parser.add_argument_group('Scientific query setup')
-    query_group.add_argument('--expt',
-                             default='historical:1950,2005',
-                             action='append',
-                             help='An \'experiment:start_year,end_year\' triple.\n\
+    default_experiment=['historical:1950,2005',]
+    query_group.add_argument('--Experiment',
+                             default=default_experiment,
+                             nargs='*',
+                             help='A list of \'experiment:start_year,end_year\' triples.\n\
                                    Note that specifiying 1<=start_year<10 means that\n\
                                    the years are relative to the first year in the simulation.\n\
                                    For example, \'piControl:1,101\' will find the first hundred\n\
-                                   years of the piControl experiment.')
-    query_group.add_argument('--month_list',
-                             default='1,2,3,4,5,6,7,8,9,10,11,12',
-                             help='A comma-separated list of months to be considered')
-    query_group.add_argument('--search_path_list',
-                             default='1,2,3,4,5,6,7,8,9,10,11,12',
-                             help='A comma-separated list of search paths')
-    query_group.add_argument('--var_def',
-                             default='tas:mon,atmos,Amon',
-                             action='append',
-                             help='A \'variable:time_frequency,realm,cmor_table\' tuple.')
-    query_group.add_argument('--file_type_list',
-                             default=['local_file','OPENDAP','HTTPServer'],
-                             action='append',
-                             help='A \'variable:time_frequency,realm,cmor_table\' tuple.')
-    query_gropu.add_argument('--related_experiments',
+                                   years of the piControl experiment.\n\
+                                   Default {0}'.format(' '.join(default_experiment)))
+    query_group.add_argument('--Month',
+                             default=range(1,13),
+                             type=int,
+                             choices=range(1,13),
+                             nargs='*',
+                             help='Months to be considered. Default: All months.')
+    search_path_list=[
+    'https://esgf-index1.ceda.ac.uk/esg-search/',
+    'https://esgf-node.ipsl.upmc.fr/esg-search/',
+    'https://esgf-data.dkrz.de/esg-search/',
+    'https://pcmdi.llnl.gov/esg-search/',
+    'https://esgf-node.jpl.nasa.gov/esg-search/',
+    'https://esg-dn1.nsc.liu.se/esg-search/'
+    ]
+    query_group.add_argument('--Search_path',
+                             default=search_path_list,
+                             nargs='*',
+                             help='List of search paths. Can be a local directory, an ESGF index node, a FTP server.\n\
+                                   Default: {0}'.format(' '.join(search_path_list)))
+    default_var=['tas:mon,atmos,Amon',]
+    query_group.add_argument('--Var',
+                             default=default_var,
+                             nargs='*',
+                             help='A list of \'variable:time_frequency,realm,cmor_table\' tuples.\n\
+                                   Default: {0}'.format(' '.join(default_var)))
+    file_type_list=['local_file','OPENDAP','HTTPServer']
+    query_group.add_argument('--File_type',
+                             default=file_type_list,
+                             choices=file_type_list,
+                             nargs='*',
+                             help='A list of \'variable:time_frequency,realm,cmor_table\' tuples.\n\
+                                   Default: {0}'.format(' '.join(file_type_list)))
+
+    query_group.add_argument('--related_experiments',
                                  default=False, action='store_true',
                                  help='When this option is activated, queried experiments are assumed to be related.\n\
                                        In this situation, cdb_query will discard ({0}) tuples that do not have variables for\n\
@@ -141,25 +162,26 @@ def ask(subparsers,epilog,project_drs):
     #Find data
     epilog_ask=epilog
     parser=subparsers.add_parser('ask',
-                                           description=textwrap.dedent(
-                                                '''Returns pointers to models that have as a subset the requested experiments and variables.\n\
-                                                 It is good practice to check the results with \'list_fields\' before
-                                                 proceeding with \'validate\'.
-                                                 The output of \'validate\' might depend on the order of the header attribute
-                                                 \'data_node_list\' in the output file of \'ask\'. It is good practice to
-                                                 reorder this attribute before proceeding with \'validate\'.
-                                                 
-                                                 Unlike \'validate\' this function should NOT require appropriate certificates
-                                                 to function properly. If it fails it is possible the servers are down.'''),
-                                           epilog=epilog_ask
-                                         )
+                       description=textwrap.dedent(
+                            '''Returns pointers to models that have as a subset the requested experiments and variables.\n\
+                             It is good practice to check the results with \'list_fields\' before
+                             proceeding with \'validate\'.
+                             The output of \'validate\' might depend on the order of the header attribute
+                             \'data_node_list\' in the output file of \'ask\'. It is good practice to
+                             reorder this attribute before proceeding with \'validate\'.
+                             
+                             Unlike \'validate\' this function should NOT require appropriate certificates
+                             to function properly. If it fails it is possible the servers are down.'''),
+                       epilog=epilog_ask
+                     )
     functions_arguments(parser,['ask'])
-
-    input_arguments_json(parser)
-    output_arguments(parser)
     parser.add_argument('-s','--silent',default=False,action='store_true',help='Make not verbose.')
 
-    parser_group.add_argument('--distrib',
+    #input_arguments_json(parser)
+    output_arguments(parser)
+    ask_arguments(parser,project_drs)
+
+    parser.add_argument('--distrib',
                                  default=False, action='store_true',
                                  help='Distribute the search. Will likely result in a pointers originating from one node.')
 
@@ -423,13 +445,8 @@ def av(subparsers,epilog,project_drs):
     functions_arguments(parser,['ask','validate'])
 
     #ASK
-    input_arguments_json(parser)
+    ask_arguments(parser,project_drs)
     output_arguments(parser)
-    parser.add_argument('--related_experiments',
-                                 default=False, action='store_true',
-                                 help='When this option is activated, queried experiments are assumed to be related.\n\
-                                       In this situation, cdb_query will discard ({0}) tuples that do not have variables for\n\
-                                       ALL of the requested experiments'.format(','.join(project_drs.simulations_desc)))
     parser.add_argument('--list_only_field',default=None, choices=project_drs.remote_fields,
                               help=argparse.SUPPRESS)
 
@@ -461,13 +478,8 @@ def avd(subparsers,epilog,project_drs):
 
 
     #ASK
-    input_arguments_json(parser)
+    ask_arguments(parser,project_drs)
     output_arguments(parser)
-    parser.add_argument('--related_experiments',
-                                 default=False, action='store_true',
-                                 help='When this option is activated, queried experiments are assumed to be related.\n\
-                                       In this situation, cdb_query will discard ({0}) tuples that do not have variables for\n\
-                                       ALL of the requested experiments'.format(','.join(project_drs.simulations_desc)))
     parser.add_argument('--list_only_field',default=None, choices=project_drs.remote_fields,
                               help=argparse.SUPPRESS)
 
@@ -522,13 +534,8 @@ def avdr(subparsers,epilog,project_drs):
 
     #ASK
     parser.add_argument('script',default='',help="Command-line script")
-    input_arguments_json(parser)
+    ask_arguments(parser,project_drs)
     output_arguments(parser)
-    parser.add_argument('--related_experiments',
-                                 default=False, action='store_true',
-                                 help='When this option is activated, queried experiments are assumed to be related.\n\
-                                       In this situation, cdb_query will discard ({0}) tuples that do not have variables for\n\
-                                       ALL of the requested experiments'.format(','.join(project_drs.simulations_desc)))
     parser.add_argument('--list_only_field',default=None, choices=project_drs.remote_fields,
                               help=argparse.SUPPRESS)
 

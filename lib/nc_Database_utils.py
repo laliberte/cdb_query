@@ -273,7 +273,6 @@ def write_netcdf_variable_recursive_replicate(output,sub_out_dir,data_grp,
                                                           [paths_list[0]['data_node'],],
                                                           record_other_vars=True)
         netcdf_pointers.record_meta_data(output,options.var)
-        output.sync()
     return
 
 def convert_dates_to_timestamps(output_tmp,time_frequency):

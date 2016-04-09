@@ -17,15 +17,14 @@ import netcdf4_soft_links.certificates as certificates
 import netcdf4_soft_links.retrieval_manager as retrieval_manager
 
 #Internal:
-import ask
-import validate
+import ask_utils
+import validate_utils
 import nc_Database
 import nc_Database_utils
 import nc_Database_reduce
 import downloads
-import reduce_engine
 
-class SimpleTree:
+class Database_Manager:
     def __init__(self,project_drs):
         self.drs=project_drs
         return
@@ -42,18 +41,14 @@ class SimpleTree:
 
     def ask(self,options,q_manager=None):
         #Load header:
-        try:
-            self.header=json.load(open(options.in_headers_file,'r'))['header']
-        except ValueError as e:
-            print 'The input diagnostic file '+options.in_headers_file+' does not conform to JSON standard. Make sure to check its syntax'
-            raise
+        self.load_header(options)
 
         #Simplify the header:
         self.union_header()
 
         #Only a listing of a few fields was requested.
         if ('list_only_field' in dir(options) and options.list_only_field!=None):
-            for field_name in ask.ask(self.drs,options):
+            for field_name in ask_utils.ask(self.drs,options):
                 print field_name
             return
 
@@ -67,7 +62,7 @@ class SimpleTree:
         if len(single_simulation_requested)==len(self.drs.simulations_desc):
             simulations_list=[tuple(single_simulation_requested)]
         else:
-            simulations_list=ask.ask_simulations_recursive(self,options,self.drs.simulations_desc)
+            simulations_list=ask_utils.ask_simulations_recursive(self,options,self.drs.simulations_desc)
 
         #Remove fixed variable:
         simulations_list_no_fx=[simulation for simulation in simulations_list if 
@@ -78,9 +73,9 @@ class SimpleTree:
                 print ','.join(simulation)
             print "cdb_query will now attempt to confirm that these simulations have all the requested variables."
             print "This can take some time. Please abort if there are not enough simulations for your needs."
-
+        
         vars_list=self.ask_var_list(simulations_list_no_fx,options)
-        self.put_or_process('ask',ask.ask,vars_list,options,q_manager)
+        self.put_or_process('ask',ask_utils.ask,vars_list,options,q_manager)
         return
 
     def validate(self,options,q_manager=None):
@@ -89,7 +84,6 @@ class SimpleTree:
         if not 'data_node_list' in self.header.keys():
             data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
             if len(data_node_list)>1 and not options.no_check_availability:
-                #self.header['data_node_list']=rank_data_nodes(options,data_node_list,url_list)
                 data_node_list=rank_data_nodes(options,data_node_list,url_list)
         else:
             simulations_list=[]
@@ -107,7 +101,7 @@ class SimpleTree:
                 q_manager.validate_semaphores.add_new_data_node(data_node)
         #Do it by simulation, except if one simulation field should be kept for further operations:
         vars_list=self.ask_var_list(simulations_list_no_fx,options)
-        self.put_or_process('validate',validate.validate,vars_list,options,q_manager)
+        self.put_or_process('validate',validate_utils.validate,vars_list,options,q_manager)
         return
 
     def av(self,options,q_manager=None):
@@ -122,7 +116,7 @@ class SimpleTree:
         self.ask(options,q_manager=q_manager)
         return
 
-    def reduce_var_list(self,options,q_manager=None):
+    def reduce_var_list(self,options):
         if ('keep_field' in dir(options) and options.keep_field!=None):
             drs_to_eliminate=[field for field in self.drs.official_drs_no_version if
                                                  not field in options.keep_field]
@@ -153,6 +147,11 @@ class SimpleTree:
     #    self.put_or_process('revalidate',downloads.revalidate,vars_list,options,q_manager)
     #    return
 
+    def reduce_soft_links(self,options,q_manager=None):
+        vars_list=self.reduce_var_list(options)
+        self.put_or_process('reduce_soft_links',nc_Database_reduce.reduce_soft_links_variable,vars_list,options,q_manager)
+        return
+
     def download_opendap(self,options,q_manager=None):
         if q_manager != None:
             data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
@@ -180,11 +179,6 @@ class SimpleTree:
         self.put_or_process('reduce',nc_Database_reduce.reduce_variable,vars_list,options,q_manager,times_list=times_list)
         return
 
-    #def convert(self,options):
-    #    #Convert is simply reduce with the identity script:
-    #    self.reduce(options)
-    #    return
-
     def merge(self,options,q_manager=None):
         output=netCDF4.Dataset(options.out_netcdf_file,'w')
         self.load_header(options)
@@ -197,7 +191,7 @@ class SimpleTree:
         fields_list=self.list_fields_local(options,options.field)
         for field in fields_list:
             print ','.join(field)
-        return
+            return
 
     def list_fields_local(self,options,fields_to_list):
         self.load_database(options,find_simple)
@@ -222,7 +216,8 @@ class SimpleTree:
             #There is no variables to find in the input. 
             #Delete input and decrement expected fucntion.
             getattr(q_manager,next_function_name+'_expected').decrement()
-            os.remove(options.in_netcdf_file)
+            if 'in_netcdf_file' in dir(options):
+                os.remove(options.in_netcdf_file)
 
         #This is important for the setup of the ask function:
         if ((len(vars_list)==1 and len(times_list)==1) or
@@ -304,16 +299,13 @@ class SimpleTree:
         return
 
     def load_header(self,options):
-        if ('in_headers_file' in dir(options) and 
-           options.in_headers_file!=None):
-            try:
-                self.header=json.load(open(options.in_headers_file,'r'))['header']
-            except ValueError as e:
-                print 'The input diagnostic file '+options.in_headers_file+' does not conform to JSON standard. Make sure to check its syntax'
-            ##Load header:
-            #header=dict()
-            #for att in set(self.drs.header_desc).intersection(self.Dataset.ncattrs()):
-            #    header[att]=json.loads(self.Dataset.getncattr(att))
+        if ('ask' in dir(options) and options.ask):
+            self.header=dict()
+            self.header['experiment_list']={item.split(':')[0]:item.split(':')[1] for item in options.Experiment}
+            self.header['month_list']=[item for item in options.Month]
+            self.header['search_list']=[item for item in options.Search_path]
+            self.header['variable_list']={item.split(':')[0]:item.split(':')[1].split(',') for item in options.Var}
+            self.header['file_type_list']=[item for item in options.File_type]
         else:
             self.define_database(options)
             self.header=self.nc_Database.load_header()
@@ -336,9 +328,9 @@ class SimpleTree:
         if 'in_netcdf_file' in dir(options):
             self.nc_Database=nc_Database.nc_Database(self.drs,database_file=options.in_netcdf_file)
             return
-
-        self.nc_Database=nc_Database.nc_Database(self.drs)
-        return
+        else:
+            self.nc_Database=nc_Database.nc_Database(self.drs)
+            return
 
     def close_database(self):
         self.nc_Database.close_database()
@@ -372,12 +364,13 @@ def rank_data_nodes(options,data_node_list,url_list):
     return list(np.array(data_node_list_timed)[np.argsort(data_node_timing)])+list(set(data_node_list).difference(data_node_list_timed))
 
 def record_to_netcdf_file(options,output,project_drs):
-    apps_class=SimpleTree(project_drs)
-    apps_class.load_header(options)
-    nc_Database.record_header(output,apps_class.header)
+    database=Database_Manager(project_drs)
+    database.load_header(options)
+    nc_Database.record_header(output,database.header)
 
     temp_file_name=options.in_netcdf_file
     nc_Database_utils.record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_drs)
+    output.sync()
     try:
         os.remove(temp_file_name)
     except OSError:
@@ -389,8 +382,9 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs):
     options.out_netcdf_file+='.'+str(counter)
 
     #Recursively apply commands:
-    apps_class=SimpleTree(project_drs)
+    database=Database_Manager(project_drs)
     #Run the command:
-    getattr(apps_class,function_name)(options,q_manager=q_manager)
+    getattr(database,function_name)(options,q_manager=q_manager)
+    #globals()[function_name](database,options,q_manager=q_manager)
     return
 

@@ -23,19 +23,6 @@ def find_path(nc_Database,file_expt,semaphores=dict()):
     nc_Database.session.commit()
     return
 
-#def ask(project_drs,options):
-#    database=cdb_query_archive_class.SimpleTree(project_drs)
-#    #Load header:
-#    try:
-#        database.header=json.load(open(options.in_headers_file,'r'))['header']
-#    except ValueError as e:
-#        print 'The input diagnostic file '+options.in_headers_file+' does not conform to JSON standard. Make sure to check its syntax'
-#        raise
-#
-#    #Simplify the header:
-#    database.union_header()
-#    return ask_with_database(database,options)
-
 def ask(database,options,q_manager=None):
     return ask_with_database(database,options)
 

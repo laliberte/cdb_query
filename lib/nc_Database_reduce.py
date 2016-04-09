@@ -8,7 +8,10 @@ import os
 #Internal:
 import nc_Database_utils
 
-def reduce_variable(database,options,q_manager=None):
+def reduce_soft_links_variable(database,options,q_manager=None):
+    return reduce_variable(database,options,q_manager=q_manager,retrieval_function='reduce_soft_links')
+
+def reduce_variable(database,options,q_manager=None,retrieval_function='reduce'):
     #The leaf(ves) considered here:
     var=[getattr(options,opt)[0] if getattr(options,opt)!=None
                                  else None for opt in database.drs.official_drs_no_version]
@@ -26,7 +29,11 @@ def reduce_variable(database,options,q_manager=None):
 
     for file_name in file_name_list:
         temp_file_name=get_temp_input_file_name(options,file_name)
-        extract_single_tree_and_file(temp_file_name,file_name,tree,tree_fx,options,options_fx,check_empty=True)
+        extract_single_tree(temp_file_name,file_name,
+                                    tree,tree_fx,
+                                    options,options_fx,
+                                    retrieval_function==retrieval_function,
+                                    check_empty=(retrieval_function=='reduce'))
         temp_file_name_list.append(temp_file_name)
 
     if options.script=='':
@@ -46,39 +53,33 @@ def reduce_variable(database,options,q_manager=None):
     except OSError:
         pass
 
-    #This is the last function in the chain. Convert and create soft links:
-    output_file_name=nc_Database_utils.record_to_output_directory(temp_output_file_name,database.drs,options)
-    try:
-        os.remove(temp_output_file_name)
-        os.rename(output_file_name,temp_output_file_name)
-    except OSError:
-        pass
+    if retrieval_function=='reduce':
+        #This is the last function in the chain. Convert and create soft links:
+        output_file_name=nc_Database_utils.record_to_output_directory(temp_output_file_name,database.drs,options)
+        try:
+            os.remove(temp_output_file_name)
+            os.rename(output_file_name,temp_output_file_name)
+        except OSError:
+            pass
     return temp_output_file_name
 
-def extract_single_tree_and_file(temp_file,file,tree,tree_fx,options,options_fx,check_empty=False):
+def extract_single_tree(temp_file,file,tree,tree_fx,options,options_fx,check_empty=False):
     data=netCDF4.Dataset(file,'r')
-    extract_single_tree_and_data(temp_file,data,tree,tree_fx,options,options_fx,check_empty=check_empty,hdf5_file=file)
-    return
-
-def extract_single_tree_and_data(temp_file,data,tree,tree_fx,options,options_fx,check_empty=False,hdf5_file=None):
-    data_hdf5=None
-    if hdf5_file!=None:
-        for item in h5py.h5f.get_obj_ids():
-            if 'name' in dir(item) and item.name==hdf5_file:
-                data_hdf5=h5py.File(item)
+    hdf5=None
+    for item in h5py.h5f.get_obj_ids():
+        if 'name' in dir(item) and item.name==file:
+            hdf5=h5py.File(item)
 
     output_tmp=netCDF4.Dataset(temp_file,'w',format='NETCDF4',diskless=True,persist=True)
     if ('add_fixed' in dir(options) and options.add_fixed):
-        #nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree_fx,options_fx,check_empty=True)
-        nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree_fx,options_fx,check_empty=True,hdf5=data_hdf5)
+        nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree_fx,options_fx,check_empty=True,hdf5=hdf5)
 
-    nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree,options,check_empty=True,hdf5=data_hdf5)
+    nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree,options,check_empty=check_empty,hdf5=hdf5)
     output_tmp.close()
     data.close()
-    if data_hdf5!=None:
-        data_hdf5.close()
+    if isinstance(hdf5,h5py.File):
+        hdf5.close()
     return
-
 
 def get_fixed_var_tree(project_drs,options,var):
     if not ('add_fixed' in dir(options) and options.add_fixed):

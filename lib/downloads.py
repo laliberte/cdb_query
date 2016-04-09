@@ -29,6 +29,7 @@ def download(database,retrieval_type,options,q_manager):
         options_copy.out_netcdf_file=options_copy.swap_dir+'/'+os.path.basename(options_copy.out_netcdf_file)
 
     output=netCDF4.Dataset(options_copy.out_netcdf_file,'w')
+    output.set_fill_off()
     #Recover the database meta data:
     database.load_header(options_copy)
     #Check if years should be relative, eg for piControl:

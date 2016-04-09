@@ -12,7 +12,6 @@ import netcdf4_soft_links.retrieval_manager as retrieval_manager
 import remote_archive
 import cdb_query_archive_parsers
 import cdb_query_archive_class
-import nc_Database_apply
 import queues_manager
 
 
@@ -76,19 +75,19 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD, Submitted.'.format(ve
 
     if options.command!='certificates':
         if options.command=='list_fields':
-            apps_class=cdb_query_archive_class.SimpleTree(project_drs)
+            database=cdb_query_archive_class.Database_Manager(project_drs)
             #Run the command:
-            getattr(apps_class,options.command)(options)
+            getattr(database,options.command)(options)
         else:
             #Create the queue manager:
             q_manager=queues_manager.CDB_queues_manager(options)
             processes=queues_manager.start_consumer_processes(q_manager,project_drs,options)
             try:
                 #Start consumer processes:
-                apps_class=cdb_query_archive_class.SimpleTree(project_drs)
+                database=cdb_query_archive_class.Database_Manager(project_drs)
                 options.spin_up=True
                 #Run the command:
-                getattr(apps_class,options.command)(options,q_manager=q_manager)
+                getattr(database,options.command)(options,q_manager=q_manager)
                 #Consumer processes can now terminate:
                 q_manager.set_closed()
                 #Start record process:
