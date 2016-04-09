@@ -40,7 +40,7 @@ class CDB_queues_manager:
 
         #If reduce_soft_links_script is identity, do
         #not pipe results through reduce_soft_links:
-        if ('reduce_soft_links_script' in dir(options) and
+        if (not 'reduce_soft_links_script' in dir(options) or
             options.reduce_soft_links_script==''):
             self.queues_names.remove('reduce_soft_links')
         
