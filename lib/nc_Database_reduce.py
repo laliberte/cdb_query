@@ -137,7 +137,7 @@ def get_temp_input_file_name(options,input_file_name):
     else:
         temp_input_file_name=input_file_name
 
-    temp_input_file_name+='.tmp'
+    temp_input_file_name+='.pid'+str(os.getpid())
 
     #Create directory:
     try:

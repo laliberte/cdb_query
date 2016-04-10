@@ -52,15 +52,15 @@ def download(database,retrieval_type,options,q_manager):
 def time_split(database,options):
     if not ('loop_through_time' in dir(options) and len(options.loop_through_time)>0):
         return [(None,None,None,None),]
-    elif np.all([ True if (getattr(options,loop)!=None and len(getattr(options,loop))==1)
-                            else False for loop in options.loop_through_time]):
-        #The time list has already been set, do not redo it!
-        return [(None,None,None,None),]
+    #elif np.all([ True if (getattr(options,loop)!=None and len(getattr(options,loop))==1)
+    #                        else False for loop in options.loop_through_time]):
+    #    #The time list has already been set, do not redo it!
+    #    return [(None,None,None,None),]
     else:
         options_copy=copy.copy(options)
         #Do not use previous and next to determine time:
         for type in ['previous','next']:
-            if type in dir(options_copy): setattr(options,type,0)
+            if type in dir(options_copy): setattr(options_copy,type,0)
         #Recover the database meta data:
         database.load_header(options_copy)
         options_copy.min_year=None
@@ -78,9 +78,14 @@ def time_split(database,options):
         if len(dates_axis)>0:
             loop_names=['year','month','day','hour']
             time_list=recursive_time_list(dates_axis,loop_names,[ True if loop in options_copy.loop_through_time else False for loop in loop_names],[],[])
-            return list(set(time_list))
+            valid_time_list=list(set(time_list))
+            if len(valid_time_list)>0:
+                return valid_time_list
+            else:
+                return []
         else:
-            return [(None,None,None,None),]
+            #There are no dates corresponding to the slicing
+            return []
 
 def recursive_time_list(dates_axis,loop_names,loop_values,time_unit_names,time_unit_values):
     dates_axis_tmp=dates_axis

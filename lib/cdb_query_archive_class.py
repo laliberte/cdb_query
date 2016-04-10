@@ -153,8 +153,10 @@ def download_opendap(database,options,q_manager=None):
         for data_node in data_node_list:
             q_manager.download.semaphores.add_new_data_node(data_node)
             q_manager.download.queues.add_new_data_node(data_node)
+    times_list=downloads.time_split(database,options)
+
     vars_list=reduce_var_list(database,options)
-    database.put_or_process('download_opendap',downloads.download_opendap,vars_list,options,q_manager)
+    database.put_or_process('download_opendap',downloads.download_opendap,vars_list,options,q_manager,times_list=times_list)
     return
 
 def gather(database,options,q_manager=None):
@@ -213,12 +215,18 @@ class Database_Manager:
                 'serial' in dir(options) and options.serial):
                 getattr(q_manager,next_function_name+'_expected').increment()
 
-        if len(vars_list)==0:
+        if (len(vars_list)==0 or len(times_list)==0):
             #There is no variables to find in the input. 
-            #Delete input and decrement expected fucntion.
+            #Delete input and decrement expected function.
             getattr(q_manager,next_function_name+'_expected').decrement()
             if 'in_netcdf_file' in dir(options):
                 os.remove(options.in_netcdf_file)
+
+            if len(vars_list)>0:
+                if not ('silent' in dir(options) and options.silent):
+                    for var in vars_list:
+                        print ' '.join([ opt+': '+str(var[opt_id]) in enumerate(self.drs.official_drs_no_version)])
+                    print 'Were excluded because no date matched times requested'
 
         #This is important for the setup of the ask function:
         if ((len(vars_list)==1 and len(times_list)==1) or

@@ -176,8 +176,8 @@ def replace_netcdf_variable_recursive_replicate(output_grp,data_grp,
                                           hdf5=hdf5,check_empty=check_empty)
     else:
         netcdf_pointers=read_soft_links.read_netCDF_pointers(data_grp)
-        netcdf_pointers.replicate(output_grp,hdf5=hdf5,check_empty=check_empty)
-        #netcdf_pointers.append(output_grp,hdf5=hdf5,check_empty=check_empty)
+        #netcdf_pointers.replicate(output_grp,hdf5=hdf5,check_empty=check_empty)
+        netcdf_pointers.append(output_grp,hdf5=hdf5,check_empty=check_empty)
     return
 
 #PUT INTO FILESYSTEM DATABASE
