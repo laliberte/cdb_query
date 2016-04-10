@@ -400,6 +400,7 @@ def reduce(subparsers,epilog,project_drs):
                                        epilog=epilog_reduce
                                          )
     functions_arguments(parser,['reduce'])
+    parser.add_argument('-s','--silent',default=False,action='store_true',help='Make not verbose.')
     parser.add_argument('script',default='',help="Command-line script")
     
     input_arguments(parser)

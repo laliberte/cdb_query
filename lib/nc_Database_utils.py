@@ -30,7 +30,7 @@ def extract_netcdf_variable_recursive(output,data,
                                       options,check_empty,hdf5,download_semaphores,download_queues_manager):
     level_name=level_desc[0]
     group_name=level_desc[1]
-    if group_name==None:
+    if group_name==None or isinstance(group_name,list):
         for group in data.groups.keys():
             if ( nc_Database.is_level_name_included_and_not_excluded(level_name,options,group) and
                  nc_Database.tree_recursive_check_not_empty(options,data.groups[group])):
@@ -133,7 +133,7 @@ def replace_netcdf_variable_recursive(output,data,
                                       hdf5=None,check_empty=False):
     level_name=level_desc[0]
     group_name=level_desc[1]
-    if group_name==None:
+    if group_name==None or instance(group_name,list):
         for group in data.groups.keys():
             output_grp=netcdf_utils.create_group(output,data,group)
             if hdf5!=None:
@@ -150,7 +150,11 @@ def replace_netcdf_variable_recursive(output,data,
         else:
             hdf5_grp=hdf5
         output_grp=netcdf_utils.create_group(output,data,group_name)
-        replace_netcdf_variable_recursive_replicate(output_grp,data.groups[group_name],
+        if group_name in data.groups.keys():
+            data_grp=data.groups[group_name]
+        else:
+            data_grp=data
+        replace_netcdf_variable_recursive_replicate(output_grp,data_grp,
                                                     level_name,group_name,
                                                     tree,
                                                     hdf5=hdf5_grp,check_empty=check_empty)
@@ -179,18 +183,19 @@ def replace_netcdf_variable_recursive_replicate(output_grp,data_grp,
 def record_to_output_directory(output_file_name,project_drs,options):
     data=netCDF4.Dataset(output_file_name,'r')
     hdf5=None
-    for item in h5py.h5f.get_obj_ids():
-        if 'name' in dir(item) and item.name==output_file_name:
-            hdf5=h5py.File(item)
+    #for item in h5py.h5f.get_obj_ids():
+    #    if 'name' in dir(item) and item.name==output_file_name:
+    #        hdf5=h5py.File(item)
 
+    out_dir=options.out_destination
     output=netCDF4.Dataset(output_file_name+'.tmp','w')
-    write_netcdf_variable_recursive(output,options.out_destination,data,
+    write_netcdf_variable_recursive(output,out_dir,data,
                                     project_drs.official_drs,
                                     project_drs,options,hdf5=hdf5,check_empty=True)
     output.close()
     data.close()
-    if isinstance(hdf5,h5py.File):
-        hdf5.close()
+    #if isinstance(hdf5,h5py.File):
+    #    hdf5.close()
     return output_file_name+'.tmp'
 
 def write_netcdf_variable_recursive(output,out_dir,data,
@@ -206,8 +211,9 @@ def write_netcdf_variable_recursive(output,out_dir,data,
                                                     version,tree,
                                                     project_drs,options_copy,hdf5=hdf5,check_empty=check_empty)
     else:
-        group_name=getattr(options,level_name)[0]
-        if group_name==None:
+        fix_list=(lambda x: x[0] if len(x)==1 else x)
+        group_name=fix_list(getattr(options,level_name))
+        if group_name==None or isintancae(group_name,list):
             for group in data.groups.keys():
                 sub_out_dir=make_sub_dir(out_dir,group)
                 output_grp=netcdf_utils.create_group(output,data,group)
@@ -256,7 +262,7 @@ def write_netcdf_variable_recursive_replicate(output,sub_out_dir,data_grp,
         output_data=netCDF4.Dataset(output_file_name,'w')
 
         netcdf_pointers=read_soft_links.read_netCDF_pointers(data_grp)
-        netcdf_pointers.replicate(output_data,hdf5=hdf5,check_empty=check_empty)
+        netcdf_pointers.replicate(output_data,hdf5=hdf5,check_empty=check_empty,chunksize=-1)
         output_data.close()
 
         unique_file_id_list=['checksum_type','checksum','tracking_id']

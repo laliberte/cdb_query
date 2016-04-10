@@ -73,9 +73,6 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
     constraints_dict.update(**{field:getattr(options,field)[0] for field in nc_Database.drs.slicing_args.keys()
                                             if field in dir(options) and getattr(options,field)!=None})
     ctx=ctx.constrain(**constraints_dict)
-    #ctx=ctx.constrain(**{field:var_desc[field_id] for field_id, field in enumerate(nc_Database.drs.var_specs)})
-    #ctx=ctx.constrain(**{field:getattr(options,field)[0] for field in nc_Database.drs.slicing_args.keys()
-    #                                        if field in dir(options) and getattr(options,field)!=None})
 
     nc_Database.file_expt.experiment=experiment
     nc_Database.file_expt.var=var_name

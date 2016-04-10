@@ -9,14 +9,15 @@ import os
 import nc_Database_utils
 
 def reduce_soft_links(database,options,q_manager=None):
-    return reduce_sl_or_var(database,options,q_manager=q_manager,retrieval_function='reduce_soft_links',script=options.reduce_soft_links_script)
+    return reduce_sl_or_var(database,options,q_manager=q_manager,retrieval_type='reduce_soft_links',script=options.reduce_soft_links_script)
 
-def reduce_variable(database,options,q_manager=None,retrieval_function='reduce'):
-    return reduce_sl_or_var(database,options,q_manager=q_manager,retrieval_function='reduce',script=options.script)
+def reduce_variable(database,options,q_manager=None,retrieval_type='reduce'):
+    return reduce_sl_or_var(database,options,q_manager=q_manager,retrieval_type='reduce',script=options.script)
 
-def reduce_sl_or_var(database,options,q_manager=None,retrieval_function='reduce',script=''):
+def reduce_sl_or_var(database,options,q_manager=None,retrieval_type='reduce',script=''):
     #The leaf(ves) considered here:
-    var=[getattr(options,opt)[0] if getattr(options,opt)!=None
+    fix_list=(lambda x: x[0] if len(x)==1 else x)
+    var=[fix_list(getattr(options,opt)) if getattr(options,opt)!=None
                                  else None for opt in database.drs.official_drs_no_version]
     tree=zip(database.drs.official_drs_no_version,var)
 
@@ -27,7 +28,7 @@ def reduce_sl_or_var(database,options,q_manager=None,retrieval_function='reduce'
     output_file_name=get_output_name(database.drs,options,var)
     temp_output_file_name=get_temp_output_file_name(options,output_file_name)
 
-    file_name_list=get_input_file_names(database.drs,options)
+    file_name_list=get_input_file_names(database.drs,options,script)
     temp_file_name_list=[]
 
     for file_name in file_name_list:
@@ -35,8 +36,8 @@ def reduce_sl_or_var(database,options,q_manager=None,retrieval_function='reduce'
         extract_single_tree(temp_file_name,file_name,
                                     tree,tree_fx,
                                     options,options_fx,
-                                    retrieval_function==retrieval_function,
-                                    check_empty=(retrieval_function=='reduce'))
+                                    retrieval_type=retrieval_type,
+                                    check_empty=(retrieval_type=='reduce'))
         temp_file_name_list.append(temp_file_name)
 
     if script=='':
@@ -56,17 +57,22 @@ def reduce_sl_or_var(database,options,q_manager=None,retrieval_function='reduce'
     except OSError:
         pass
 
-    if retrieval_function=='reduce':
+    if retrieval_type=='reduce_soft_links':
+        output_file_name=temp_output_file_name+'.tmp'
+        output=netCDF4.Dataset(output_file_name,'w')
+        nc_Database_utils.record_to_netcdf_file_from_file_name(options,temp_output_file_name,output,database.drs)
+        output.close()
+    else:
         #This is the last function in the chain. Convert and create soft links:
         output_file_name=nc_Database_utils.record_to_output_directory(temp_output_file_name,database.drs,options)
-        try:
-            os.remove(temp_output_file_name)
-            os.rename(output_file_name,temp_output_file_name)
-        except OSError:
-            pass
+    try:
+        os.remove(temp_output_file_name)
+        os.rename(output_file_name,temp_output_file_name)
+    except OSError:
+        pass
     return temp_output_file_name
 
-def extract_single_tree(temp_file,file,tree,tree_fx,options,options_fx,check_empty=False):
+def extract_single_tree(temp_file,file,tree,tree_fx,options,options_fx,retrieval_type='reduce',check_empty=False):
     data=netCDF4.Dataset(file,'r')
     hdf5=None
     for item in h5py.h5f.get_obj_ids():
@@ -75,9 +81,9 @@ def extract_single_tree(temp_file,file,tree,tree_fx,options,options_fx,check_emp
 
     output_tmp=netCDF4.Dataset(temp_file,'w',format='NETCDF4',diskless=True,persist=True)
     if ('add_fixed' in dir(options) and options.add_fixed):
-        nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree_fx,options_fx,check_empty=True,hdf5=hdf5)
+        nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree_fx,options_fx,retrieval_type=retrieval_type,check_empty=True,hdf5=hdf5)
 
-    nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree,options,check_empty=check_empty,hdf5=hdf5)
+    nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree,options,retrieval_type=retrieval_type,check_empty=check_empty,hdf5=hdf5)
     output_tmp.close()
     data.close()
     if isinstance(hdf5,h5py.File):
@@ -146,12 +152,12 @@ def get_output_name(project_drs,options,var):
     output_file_name=options.out_netcdf_file
     return output_file_name
 
-def get_input_file_names(project_drs,options):
+def get_input_file_names(project_drs,options,script):
     input_file_name=options.in_netcdf_file
     file_name_list=[input_file_name,]
     if 'in_extra_netcdf_files' in dir(options): file_name_list+=options.in_extra_netcdf_files
     
-    if (options.script=='' and 
+    if (script=='' and 
         ('in_extra_netcdf_files' in dir(options) and 
               len(options.in_extra_netcdf_files)>0) ):
         raise InputErrorr('The identity script \'\' can only be used when no extra netcdf files are specified.')

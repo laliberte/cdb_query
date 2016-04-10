@@ -40,8 +40,9 @@ class CDB_queues_manager:
 
         #If reduce_soft_links_script is identity, do
         #not pipe results through reduce_soft_links:
-        if (not 'reduce_soft_links_script' in dir(options) or
-            options.reduce_soft_links_script==''):
+        if ((not 'reduce_soft_links_script' in dir(options) or
+            options.reduce_soft_links_script=='') and
+            'reduce_soft_links' in self.queues_names):
             self.queues_names.remove('reduce_soft_links')
         
         for queue_name in self.queues_names:
@@ -174,7 +175,11 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs):
     database=cdb_query_archive_class.Database_Manager(project_drs)
     #Run the command:
     #getattr(database,function_name)(options,q_manager=q_manager)
-    getattr(cdb_query_archive_class,function_name)(database,options,q_manager=q_manager)
+    try:
+        getattr(cdb_query_archive_class,function_name)(database,options,q_manager=q_manager)
+    except:
+        print function_name+' failed with the following options:',options
+        raise
     return
 
 def start_consumer_processes(q_manager,project_drs,options):
