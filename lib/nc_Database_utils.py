@@ -115,7 +115,8 @@ def record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_d
     #    if 'name' in dir(item) and item.name==temp_file_name:
     #        hdf5=h5py.File(item)
 
-    var=[ getattr(options,opt)[0] if getattr(options,opt)!=None else None for opt in project_drs.official_drs_no_version]
+    fix_list_to_none=(lambda x: x[0] if len(x)==1 else None)
+    var=[ fix_list_to_none(getattr(options,opt)) if getattr(options,opt)!=None else None for opt in project_drs.official_drs_no_version]
     tree=zip(project_drs.official_drs_no_version,var)
 
     #Do not check empty:
@@ -133,7 +134,7 @@ def replace_netcdf_variable_recursive(output,data,
                                       hdf5=None,check_empty=False):
     level_name=level_desc[0]
     group_name=level_desc[1]
-    if group_name==None or instance(group_name,list):
+    if group_name==None or isinstance(group_name,list):
         for group in data.groups.keys():
             output_grp=netcdf_utils.create_group(output,data,group)
             if hdf5!=None:
@@ -213,7 +214,7 @@ def write_netcdf_variable_recursive(output,out_dir,data,
     else:
         fix_list=(lambda x: x[0] if len(x)==1 else x)
         group_name=fix_list(getattr(options,level_name))
-        if group_name==None or isintancae(group_name,list):
+        if group_name==None or isinstance(group_name,list):
             for group in data.groups.keys():
                 sub_out_dir=make_sub_dir(out_dir,group)
                 output_grp=netcdf_utils.create_group(output,data,group)
@@ -278,7 +279,7 @@ def write_netcdf_variable_recursive_replicate(output,sub_out_dir,data_grp,
                                                           ['local_file',],
                                                           [paths_list[0]['data_node'],],
                                                           record_other_vars=True)
-        netcdf_pointers.record_meta_data(output,options.var)
+        netcdf_pointers.record_meta_data(output,options.var[0])
     return
 
 def convert_dates_to_timestamps(output_tmp,time_frequency):

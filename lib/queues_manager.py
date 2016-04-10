@@ -154,6 +154,7 @@ def record_to_netcdf_file(options,output,project_drs):
     nc_Database.record_header(output,database.header)
 
     temp_file_name=options.in_netcdf_file
+    #import subprocess; subprocess.Popen('ncdump -h '+temp_file_name,shell=True)
     nc_Database_utils.record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_drs)
     output.sync()
     try:
