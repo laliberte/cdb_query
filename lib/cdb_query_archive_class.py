@@ -233,7 +233,7 @@ class Database_Manager:
                     setattr(options_copy,opt,[times_list[0][opt_id],])
 
             #Compute function:
-            output_file_name=function_handle(self,options,q_manager=q_manager)
+            output_file_name=function_handle(self,options_copy,q_manager=q_manager)
             if output_file_name==None:
                 #No file was written and the next function should not expect anything:
                 getattr(q_manager,next_function_name+'_expected').decrement()
