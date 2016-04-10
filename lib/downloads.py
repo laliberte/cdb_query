@@ -52,27 +52,35 @@ def download(database,retrieval_type,options,q_manager):
 def time_split(database,options):
     if not ('loop_through_time' in dir(options) and len(options.loop_through_time)>0):
         return [(None,None,None,None),]
+    elif np.all([ True if (getattr(options,loop)!=None and len(getattr(options,loop))==1)
+                            else False for loop in options.loop_through_time]):
+        #The time list has already been set, do not redo it!
+        return [(None,None,None,None),]
     else:
+        options_copy=copy.copy(options)
+        #Do not use previous and next to determine time:
+        for type in ['previous','next']:
+            if type in dir(options_copy): setattr(options,type,0)
         #Recover the database meta data:
-        database.load_header(options)
-        options.min_year=None
+        database.load_header(options_copy)
+        options_copy.min_year=None
         if 'experiment_list' in database.header.keys():
             for experiment in database.header['experiment_list']:
                 min_year=int(database.header['experiment_list'][experiment].split(',')[0])
                 if min_year<10:
-                    options.min_year=min_year
-                    if not ('silent' in dir(options) and options.silent):
+                    options_copy.min_year=min_year
+                    if not ('silent' in dir(options_copy) and options_copy.silent):
                         print 'Using min year {0} for experiment {1}'.format(str(min_year),experiment)
         #Find the data that needs to be recovered:
-        database.load_database(options,cdb_query_archive_class.find_simple)
-        dates_axis=database.nc_Database.retrieve_dates(options)
+        database.load_database(options_copy,cdb_query_archive_class.find_simple)
+        dates_axis=database.nc_Database.retrieve_dates(options_copy)
         database.close_database()
         if len(dates_axis)>0:
             loop_names=['year','month','day','hour']
-            time_list=recursive_time_list(dates_axis,loop_names,[ True if loop in options.loop_through_time else False for loop in loop_names],[],[])
+            time_list=recursive_time_list(dates_axis,loop_names,[ True if loop in options_copy.loop_through_time else False for loop in loop_names],[],[])
             return list(set(time_list))
         else:
-            return []
+            return [(None,None,None,None),]
 
 def recursive_time_list(dates_axis,loop_names,loop_values,time_unit_names,time_unit_values):
     dates_axis_tmp=dates_axis
