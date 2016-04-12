@@ -116,7 +116,7 @@ def record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_d
         for item in h5py.h5f.get_obj_ids(types=h5py.h5f.OBJ_FILE):
             if item.name==temp_file_name:
                 hdf5=h5py.File(item)
-    except:
+    except ValueError:
         pass
 
     fix_list_to_none=(lambda x: x[0] if len(x)==1 else None)
@@ -193,7 +193,7 @@ def record_to_output_directory(output_file_name,project_drs,options):
         for item in h5py.h5f.get_obj_ids(types=h5py.h5f.OBJ_FILE):
             if 'name' in dir(item) and item.name==output_file_name:
                 hdf5=h5py.File(item)
-    except:
+    except ValueError:
         pass
 
     out_dir=options.out_destination
