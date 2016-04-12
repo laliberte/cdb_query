@@ -40,7 +40,7 @@ class CDB_queues_manager:
 
         #If reduce_soft_links_script is identity, do
         #not pipe results through reduce_soft_links:
-        if ((not 'reduce_soft_links_script' in dir(options) or
+        if (('reduce_soft_links_script' in dir(options) and 
             options.reduce_soft_links_script=='') and
             'reduce_soft_links' in self.queues_names):
             self.queues_names.remove('reduce_soft_links')
@@ -81,8 +81,6 @@ class CDB_queues_manager:
         return
 
     def put(self,item):
-        if item[0]==self.queues_names[0]:
-            getattr(self,item[0]+'_expected').increment()
         #Put the item in the right queue and give it a number:
         getattr(self,item[0]).put((self.counter.increment(),)+item)
         return
@@ -127,7 +125,7 @@ class CDB_queues_manager:
                 if item[1]!='record':
                     next_queue_name=self.queues_names[self.queues_names.index(item[1])+1]
                     getattr(self,next_queue_name+'_expected').increment()
-                #Decrement current acction:
+                #Decrement current action:
                 getattr(self,queue_name+'_expected').decrement_no_lock()
                 return item
             else:
@@ -137,6 +135,14 @@ class CDB_queues_manager:
         return np.max([getattr(self,queue_name+'_expected').value for queue_name in self.queues_names])
 
 def recorder(q_manager,project_drs,options):
+    #Start downloads
+    q_manager.start_download_processes()
+    #The consumers can now terminate:
+    q_manager.set_closed()
+
+    #Set number of processors to 1 for recoder process.
+    options.num_procs=1
+
     output=netCDF4.Dataset(options.out_netcdf_file,'w')
     output.set_fill_off()
 
@@ -145,6 +151,7 @@ def recorder(q_manager,project_drs,options):
             consume_one_item(item[0],item[1],item[2],q_manager,project_drs)
         else:
             record_to_netcdf_file(item[2],output,project_drs)
+        output.sync()
     output.close()
     return
 
@@ -154,13 +161,10 @@ def record_to_netcdf_file(options,output,project_drs):
     nc_Database.record_header(output,database.header)
 
     temp_file_name=options.in_netcdf_file
-    #import subprocess; subprocess.Popen('ncdump -h '+temp_file_name,shell=True)
+    #import subprocess; subprocess.Popen('ncdump -v time '+temp_file_name,shell=True)
     nc_Database_utils.record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_drs)
     output.sync()
-    try:
-        os.remove(temp_file_name)
-    except OSError:
-        pass
+    os.remove(temp_file_name)
     return
 
 def consumer(q_manager,project_drs):
@@ -169,17 +173,19 @@ def consumer(q_manager,project_drs):
     return
 
 def consume_one_item(counter,function_name,options,q_manager,project_drs):
+    #First copy options:
+    options_copy=copy.copy(options)
     #Create unique file id:
-    options.out_netcdf_file+='.'+str(counter)
+    options_copy.out_netcdf_file+='.'+str(counter)
 
     #Recursively apply commands:
     database=cdb_query_archive_class.Database_Manager(project_drs)
     #Run the command:
-    #getattr(database,function_name)(options,q_manager=q_manager)
+    #getattr(database,function_name)(options_copy,q_manager=q_manager)
     try:
-        getattr(cdb_query_archive_class,function_name)(database,options,q_manager=q_manager)
+        getattr(cdb_query_archive_class,function_name)(database,options_copy,q_manager=q_manager)
     except:
-        print function_name+' failed with the following options:',options
+        print function_name+' failed with the following options:',options_copy
         raise
     return
 

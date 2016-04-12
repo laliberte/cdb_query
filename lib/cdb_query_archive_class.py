@@ -103,11 +103,11 @@ def av(database,options,q_manager=None):
     ask(database,options,q_manager=q_manager)
     return
 
-def avd(database,options,q_manager=None):
+def avdr(database,options,q_manager=None):
     ask(database,options,q_manager=q_manager)
     return
 
-def avdr(database,options,q_manager=None):
+def avdrdr(database,options,q_manager=None):
     ask(database,options,q_manager=q_manager)
     return
 
@@ -127,9 +127,11 @@ def download_files(database,options,q_manager=None):
         for data_node in data_node_list:
             q_manager.download.semaphores.add_new_data_node(data_node)
             q_manager.download.queues.add_new_data_node(data_node)
+    times_list=downloads.time_split(database,options)
+
     #Recover the database meta data:
     vars_list=reduce_var_list(database,options)
-    database.put_or_process('download_files',downloads.download_files,vars_list,options,q_manager)
+    database.put_or_process('download_files',downloads.download_files,vars_list,options,q_manager,times_list=times_list)
     return
 
 #def revalidate(database,options,q_manager=None):
@@ -195,7 +197,6 @@ class Database_Manager:
         self.drs=project_drs
         return
 
-
     def list_fields_local(self,options,fields_to_list):
         self.load_database(options,find_simple)
         fields_list=self.nc_Database.list_fields(fields_to_list)
@@ -206,20 +207,19 @@ class Database_Manager:
         next_function_name=q_manager.queues_names[q_manager.queues_names.index(function_name)+1]
 
         #If it the first pass, start download processes, if needed:
-        if 'spin_up' in dir(options) and options.spin_up:
-            q_manager.start_download_processes()
-            options.spin_up=False
-            #Set number of processors to 1 for all child processses.
-            options.num_procs=1
-            if ((len(vars_list)==1 and len(times_list)==1) or
-                'serial' in dir(options) and options.serial):
-                getattr(q_manager,next_function_name+'_expected').increment()
+        #if 'spin_up' in dir(options) and options.spin_up:
+        #    q_manager.start_download_processes()
+        #    #spin_up is over
+        #    options.spin_up=False
+        #    #Set number of processors to 1 for all child processses.
+        #    options.num_procs=1
 
         if (len(vars_list)==0 or len(times_list)==0):
             #There is no variables to find in the input. 
             #Delete input and decrement expected function.
             getattr(q_manager,next_function_name+'_expected').decrement()
-            if 'in_netcdf_file' in dir(options):
+            if ('in_netcdf_file' in dir(options) and
+                q_manager.queues_names.index(function_name)>0):
                 os.remove(options.in_netcdf_file)
 
             if len(vars_list)>0:
@@ -227,31 +227,10 @@ class Database_Manager:
                     for var in vars_list:
                         print ' '.join([ opt+': '+str(var[opt_id]) in enumerate(self.drs.official_drs_no_version)])
                     print 'Were excluded because no date matched times requested'
+            return
 
-        #This is important for the setup of the ask function:
-        if ((len(vars_list)==1 and len(times_list)==1) or
+        if not ((len(vars_list)==1 and len(times_list)==1) or
             'serial' in dir(options) and options.serial):
-
-            options_copy=copy.copy(options)
-            for opt_id, opt in enumerate(self.drs.official_drs_no_version):
-                if vars_list[0][opt_id]!=None:
-                    setattr(options_copy,opt,[vars_list[0][opt_id],])
-            for opt_id, opt in enumerate(['year','month','day','hour']):
-                if times_list[0][opt_id]!=None and opt in dir(options_copy):
-                    setattr(options_copy,opt,[times_list[0][opt_id],])
-
-            #Compute function:
-            output_file_name=function_handle(self,options_copy,q_manager=q_manager)
-            if output_file_name==None:
-                #No file was written and the next function should not expect anything:
-                getattr(q_manager,next_function_name+'_expected').decrement()
-            else:
-                #Remove temporary input files if not the first function:
-                if q_manager.queues_names.index(function_name)>0:
-                    os.remove(options_copy.in_netcdf_file)
-                options_copy.in_netcdf_file=output_file_name
-                q_manager.put((next_function_name,options_copy))
-        else:
             #Randomize to minimize strain on consumers:
             random.shuffle(vars_list)
             for var_id,var in enumerate(vars_list):
@@ -263,12 +242,54 @@ class Database_Manager:
                     for opt_id, opt in enumerate(['year','month','day','hour']):
                         if time[opt_id]!=None and opt in dir(options_copy):
                             setattr(options_copy,opt,[time[opt_id],])
-                    #Find times list again:
-                    var_times_list=downloads.time_split(self,options_copy)
+
+                    if len(times_list)>1:
+                        #Find times list again:
+                        var_times_list=downloads.time_split(self,options_copy)
                     #Submit only if the times_list is not empty:
-                    if len(var_times_list)>0:
+                    if len(times_list)==1 or len(var_times_list)>0:
+                        if ('in_netcdf_file' in dir(options) and
+                            q_manager.queues_names.index(function_name)>0):
+                            #Copy input files to prevent garbage from accumulating:
+                            counter=q_manager.counter.increment()
+                            options_copy.in_netcdf_file=options.in_netcdf_file+'.'+str(counter)
+                            shutil.copyfile(options.in_netcdf_file,options_copy.in_netcdf_file)
+                        getattr(q_manager,function_name+'_expected').increment()
                         q_manager.put((function_name,options_copy))
-        return
+            getattr(q_manager,next_function_name+'_expected').decrement()
+            #Remove input file because we have created one temporary file per process:
+            if ('in_netcdf_file' in dir(options) and
+                q_manager.queues_names.index(function_name)>0):
+                os.remove(options.in_netcdf_file)
+            return
+        else:
+            #Compute single element!
+            options_copy=copy.copy(options)
+            for opt_id, opt in enumerate(self.drs.official_drs_no_version):
+                if vars_list[0][opt_id]!=None:
+                    setattr(options_copy,opt,[vars_list[0][opt_id],])
+            for opt_id, opt in enumerate(['year','month','day','hour']):
+                if times_list[0][opt_id]!=None and opt in dir(options_copy):
+                    setattr(options_copy,opt,[times_list[0][opt_id],])
+
+            #Compute function:
+            output_file_name=function_handle(self,options_copy,q_manager=q_manager)
+
+            if output_file_name==None:
+                #No file was written and the next function should not expect anything:
+                getattr(q_manager,next_function_name+'_expected').decrement()
+                if ('in_netcdf_file' in dir(options) and
+                    q_manager.queues_names.index(function_name)>0):
+                    os.remove(options.in_netcdf_file)
+                return
+            else:
+                #Remove temporary input files if not the first function:
+                if ('in_netcdf_file' in dir(options) and
+                    q_manager.queues_names.index(function_name)>0):
+                    os.remove(options_copy.in_netcdf_file)
+                options_copy.in_netcdf_file=output_file_name
+                q_manager.put((next_function_name,options_copy))
+                return
 
     def find_data_nodes_and_simulations(self,options):
         #We have to time the response of the data node.

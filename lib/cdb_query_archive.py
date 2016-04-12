@@ -3,6 +3,7 @@ import sys
 import select
 import getpass
 import multiprocessing
+import copy
 
 #External but related:
 import netcdf4_soft_links.certificates as certificates
@@ -77,20 +78,21 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD, Submitted.'.format(ve
         if options.command=='list_fields':
             database=cdb_query_archive_class.Database_Manager(project_drs)
             #Run the command:
-            getattr(database,options.command)(options)
+            getattr(cdb_query_archive_class,'list_fields')(database,options)
         else:
             #Create the queue manager:
             q_manager=queues_manager.CDB_queues_manager(options)
             processes=queues_manager.start_consumer_processes(q_manager,project_drs,options)
             try:
-                #Start consumer processes:
-                database=cdb_query_archive_class.Database_Manager(project_drs)
-                options.spin_up=True
-                #Run the command:
-                #getattr(database,options.command)(options,q_manager=q_manager)
-                getattr(cdb_query_archive_class,options.command)(database,options,q_manager=q_manager)
-                #Consumer processes can now terminate:
-                q_manager.set_closed()
+                #Start the queue consumer processes:
+
+                #Put the first command in the queue in spin_up mode:
+                #options_copy.spin_up=True
+
+                options_copy=copy.copy(options)
+                #Increment first queue and put:
+                getattr(q_manager,q_manager.queues_names[0]+'_expected').increment()
+                q_manager.put((q_manager.queues_names[0],options_copy))
                 #Start record process:
                 queues_manager.recorder(q_manager,project_drs,options)
             finally:

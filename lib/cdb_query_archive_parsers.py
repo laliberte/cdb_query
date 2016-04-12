@@ -87,8 +87,8 @@ def generate_subparsers(parser,epilog,project_drs):
     reduce(subparsers,epilog,project_drs)
 
     av(subparsers,epilog,project_drs)
-    avd(subparsers,epilog,project_drs)
     avdr(subparsers,epilog,project_drs)
+    avdrdr(subparsers,epilog,project_drs)
 
     gather(subparsers,epilog,project_drs)
 
@@ -343,7 +343,7 @@ def reduce_soft_links(subparsers,epilog,project_drs):
     return 
 
 def reduce_soft_links_arguments(parser,project_drs):
-    parser.add_argument('--reducing_soft_links_script',default='',
+    parser.add_argument('--reduce_soft_links_script',default='',
                                  help='Script to apply to soft links.')
 
     select_group = parser.add_argument_group('These arguments specify the structure of the output')
@@ -469,13 +469,16 @@ def av(subparsers,epilog,project_drs):
     data_node_group.add_argument('--Xdata_node',type=str,action='append',help='Do not consider the specified data nodes')
     return 
 
-def avd(subparsers,epilog,project_drs):
-    epilog_avd=textwrap.dedent(epilog)
-    parser=subparsers.add_parser('avd',
-                                       description=textwrap.dedent('Ask -> Validate -> Download_files (-> Reduce_soft_links) -> Download_opendap'),
-                                       epilog=epilog_avd
+def avdr(subparsers,epilog,project_drs):
+    epilog_avdr=textwrap.dedent(epilog)
+    parser=subparsers.add_parser('avdr',
+                                       #description=textwrap.dedent('Ask -> Validate -> Download_files (-> Reduce_soft_links) -> Download_opendap'),
+                                       description=textwrap.dedent('Ask -> Validate -> Download_files (-> Reduce_soft_links)'),
+                                       epilog=epilog_avdr
                                          )
-    functions_arguments(parser,['ask','validate','download_files','reduce_soft_links','download_opendap'])
+    functions_arguments(parser,['ask','validate','download_files','reduce_soft_links'])
+    #functions_arguments(parser,['ask','validate','download_files'])
+    #functions_arguments(parser,['ask','validate'])
 
 
     #ASK
@@ -517,18 +520,20 @@ def avd(subparsers,epilog,project_drs):
     parser.add_argument('--download_all',default=False,action='store_true',help=argparse.SUPPRESS)
 
     #REDUCE SOFT LINKS
-    parser.add_argument('--reducing_soft_links_script',default='',
+    parser.add_argument('--reduce_soft_links_script',default='',
                                  help='Script to apply to soft links.')
+    parser.add_argument('-k','--keep_field',action='append', type=str, choices=project_drs.official_drs_no_version,
+                                       default=[],
+                                       help='Keep these fields in the applied file.' )
 
     manage_soft_links_parsers.time_selection_arguments(parser)
-
     return 
 
-def avdr(subparsers,epilog,project_drs):
-    epilog_avdr=textwrap.dedent(epilog)
-    parser=subparsers.add_parser('avdr',
+def avdrdr(subparsers,epilog,project_drs):
+    epilog_avdrdr=textwrap.dedent(epilog)
+    parser=subparsers.add_parser('avdrdr',
                                        description=textwrap.dedent('Ask -> Validate -> Download_files (-> Reduce_soft_links)-> Download_opendap -> Reduce'),
-                                       epilog=epilog_avdr
+                                       epilog=epilog_avdrdr
                                          )
     #functions_arguments(parser,['ask','validate','download_files','download_opendap','reduce'])
     functions_arguments(parser,['ask','validate','download_files','reduce_soft_links','download_opendap','reduce'])
@@ -536,7 +541,6 @@ def avdr(subparsers,epilog,project_drs):
     #ASK
     parser.add_argument('script',default='',help="Command-line script")
     ask_arguments(parser,project_drs)
-    output_arguments(parser)
     parser.add_argument('--list_only_field',default=None, choices=project_drs.remote_fields,
                               help=argparse.SUPPRESS)
 
@@ -575,11 +579,12 @@ def avdr(subparsers,epilog,project_drs):
     manage_soft_links_parsers.time_selection_arguments(parser)
 
     #REDUCE SOFT LINKS
-    parser.add_argument('--reducing_soft_links_script',default='',
+    parser.add_argument('--reduce_soft_links_script',default='',
                                  help='Script to apply to soft links.')
 
     #REDUCE
     reduce_arguments(parser,project_drs)
+    output_arguments(parser)
     return 
 
 def certificates(subparsers,epilog,project_drs):
