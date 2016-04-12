@@ -84,9 +84,6 @@ def extract_single_tree(temp_file,file,tree,tree_fx,options,options_fx,retrieval
     except RuntimeError:
         pass
 
-    out_dir=options.out_destination
-    output=netCDF4.Dataset(output_file_name+'.tmp','w')
-
     output_tmp=netCDF4.Dataset(temp_file,'w',format='NETCDF4',diskless=True,persist=True)
     if ('add_fixed' in dir(options) and options.add_fixed):
         nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree_fx,options_fx,retrieval_type=retrieval_type,check_empty=True,hdf5=hdf5)

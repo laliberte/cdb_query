@@ -88,6 +88,7 @@ def generate_subparsers(parser,epilog,project_drs):
 
     av(subparsers,epilog,project_drs)
     avdr(subparsers,epilog,project_drs)
+    drdr(subparsers,epilog,project_drs)
     avdrdr(subparsers,epilog,project_drs)
 
     gather(subparsers,epilog,project_drs)
@@ -528,6 +529,51 @@ def avdr(subparsers,epilog,project_drs):
 
     manage_soft_links_parsers.time_selection_arguments(parser)
     return 
+
+def drdr(subparsers,epilog,project_drs):
+    epilog_drdr=textwrap.dedent(epilog)
+    parser=subparsers.add_parser('drdr',
+                                       description=textwrap.dedent('Download_files (-> Reduce_soft_links)-> Download_opendap -> Reduce'),
+                                       epilog=epilog_drdr
+                                         )
+    functions_arguments(parser,['download_files','reduce_soft_links','download_opendap','reduce'])
+
+    parser.add_argument('-s','--silent',default=False,action='store_true',help='Make not verbose.')
+    parser.add_argument('script',default='',help="Command-line script")
+    input_arguments(parser)
+
+    manage_soft_links_parsers.certificates_arguments(parser,project_drs)
+    processing_arguments(parser,project_drs)
+
+    data_node_group = parser.add_argument_group('Restrict search to specific data nodes')
+    data_node_group.add_argument('--data_node',type=str,action='append',help='Consider only the specified data nodes')
+    data_node_group.add_argument('--Xdata_node',type=str,action='append',help='Do not consider the specified data nodes')
+
+    #DOWNLOAD
+    serial_group = parser.add_argument_group('Specify asynchronous behavior')
+    serial_group.add_argument('--serial',default=False,action='store_true',help='Downloads the files serially.')
+    serial_group.add_argument('--num_dl',default=1,type=int,help='Number of simultaneous download from EACH data node. Default=1.')
+    if project_drs==None:
+        default_dir='.'
+    else:
+        default_dir='./'+project_drs.project
+    parser.add_argument('--out_download_dir',default='.',
+                             help='Destination directory for retrieval.')
+    parser.add_argument('--do_not_revalidate',default=False,action='store_true',
+                        help='Do not revalidate. Only advanced users will use this option.\n\
+                              Using this option might can lead to ill-defined time axes.')
+    parser.add_argument('--download_all',default=False,action='store_true',help=argparse.SUPPRESS)
+
+    manage_soft_links_parsers.time_selection_arguments(parser)
+
+    #REDUCE SOFT LINKS
+    parser.add_argument('--reduce_soft_links_script',default='',
+                                 help='Script to apply to soft links.')
+
+    #REDUCE
+    reduce_arguments(parser,project_drs)
+    output_arguments(parser)
+    return
 
 def avdrdr(subparsers,epilog,project_drs):
     epilog_avdrdr=textwrap.dedent(epilog)

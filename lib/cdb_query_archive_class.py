@@ -107,6 +107,10 @@ def avdr(database,options,q_manager=None):
     ask(database,options,q_manager=q_manager)
     return
 
+def drdr(database,options,q_manager=None):
+    download_files(database,options,q_manager=q_manager)
+    return
+
 def avdrdr(database,options,q_manager=None):
     ask(database,options,q_manager=q_manager)
     return
@@ -243,6 +247,13 @@ class Database_Manager:
                         if time[opt_id]!=None and opt in dir(options_copy):
                             setattr(options_copy,opt,[time[opt_id],])
 
+                    if (function_name in ['ask','validate'] and
+                        'ensemble' in self.drs.official_drs_no_version and
+                        'ensemble' in dir(options_copy) and options_copy.ensemble != None
+                        and not 'r0i0p0' in options_copy.ensemble):
+                        #Added 'fixed' variables:
+                        options_copy.ensemble.append('r0i0p0')
+
                     if len(times_list)>1:
                         #Find times list again:
                         var_times_list=downloads.time_split(self,options_copy)
@@ -271,6 +282,13 @@ class Database_Manager:
             for opt_id, opt in enumerate(['year','month','day','hour']):
                 if times_list[0][opt_id]!=None and opt in dir(options_copy):
                     setattr(options_copy,opt,[times_list[0][opt_id],])
+
+            if (function_name in ['ask','validate'] and
+                'ensemble' in self.drs.official_drs_no_version and
+                'ensemble' in dir(options_copy) and options_copy.ensemble != None
+                and not 'r0i0p0' in options_copy.ensemble):
+                #Added 'fixed' variables:
+                options_copy.ensemble.append('r0i0p0')
 
             #Compute function:
             output_file_name=function_handle(self,options_copy,q_manager=q_manager)

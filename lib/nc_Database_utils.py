@@ -118,6 +118,8 @@ def record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_d
                 hdf5=h5py.File(item)
     except ValueError:
         pass
+    except RuntimeError:
+        pass
 
     fix_list_to_none=(lambda x: x[0] if len(x)==1 else None)
     var=[ fix_list_to_none(getattr(options,opt)) if getattr(options,opt)!=None else None for opt in project_drs.official_drs_no_version]
@@ -194,6 +196,8 @@ def record_to_output_directory(output_file_name,project_drs,options):
             if 'name' in dir(item) and item.name==output_file_name:
                 hdf5=h5py.File(item)
     except ValueError:
+        pass
+    except RuntimeError:
         pass
 
     out_dir=options.out_destination
