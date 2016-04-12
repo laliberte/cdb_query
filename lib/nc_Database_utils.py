@@ -112,9 +112,12 @@ def record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_d
     data=netCDF4.Dataset(temp_file_name,'r')
     hdf5=None
     #print h5py.h5f.get_obj_ids(types=h5py.h5f.OBJ_FILE)
-    for item in h5py.h5f.get_obj_ids(types=h5py.h5f.OBJ_FILE):
-        if item.name==temp_file_name:
-            hdf5=h5py.File(item)
+    try:
+        for item in h5py.h5f.get_obj_ids(types=h5py.h5f.OBJ_FILE):
+            if item.name==temp_file_name:
+                hdf5=h5py.File(item)
+    except:
+        pass
 
     fix_list_to_none=(lambda x: x[0] if len(x)==1 else None)
     var=[ fix_list_to_none(getattr(options,opt)) if getattr(options,opt)!=None else None for opt in project_drs.official_drs_no_version]
@@ -126,7 +129,8 @@ def record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_d
                                        hdf5=hdf5,check_empty=check_empty)
 
     data.close()
-    hdf5.close()
+    if hdf5!=None:
+        hdf5.close()
     return
 
 def replace_netcdf_variable_recursive(output,data,
@@ -185,9 +189,12 @@ def replace_netcdf_variable_recursive_replicate(output_grp,data_grp,
 def record_to_output_directory(output_file_name,project_drs,options):
     data=netCDF4.Dataset(output_file_name,'r')
     hdf5=None
-    for item in h5py.h5f.get_obj_ids(types=h5py.h5f.OBJ_FILE):
-        if 'name' in dir(item) and item.name==output_file_name:
-            hdf5=h5py.File(item)
+    try:
+        for item in h5py.h5f.get_obj_ids(types=h5py.h5f.OBJ_FILE):
+            if 'name' in dir(item) and item.name==output_file_name:
+                hdf5=h5py.File(item)
+    except:
+        pass
 
     out_dir=options.out_destination
     output=netCDF4.Dataset(output_file_name+'.tmp','w')
@@ -196,7 +203,8 @@ def record_to_output_directory(output_file_name,project_drs,options):
                                     project_drs,options,hdf5=hdf5,check_empty=True)
     output.close()
     data.close()
-    hdf5.close()
+    if hdf5!=None:
+        hdf5.close()
     return output_file_name+'.tmp'
 
 def write_netcdf_variable_recursive(output,out_dir,data,
