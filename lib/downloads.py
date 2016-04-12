@@ -1,8 +1,12 @@
 #External:
 import netCDF4
 import os
+import shutil
 import copy
 import numpy as np
+
+#External but related:
+import netcdf4_soft_links.remote_netcdf as remote_netcdf
 
 #Internal:
 import cdb_query_archive_class
@@ -12,9 +16,6 @@ def download_files(database,options,q_manager=None):
 
 def download_opendap(database,options,q_manager=None):
     return download(database,'download_opendap',options,q_manager)
-
-#def load(database,options,q_manager=None):
-#    return download(database,'load',options,q_manager)
 
 def download(database,retrieval_type,options,q_manager):
     options_copy=copy.copy(options)
@@ -28,8 +29,6 @@ def download(database,retrieval_type,options,q_manager):
     if ('swap_dir' in dir(options_copy) and options_copy.swap_dir!='.'):
         options_copy.out_netcdf_file=options_copy.swap_dir+'/'+os.path.basename(options_copy.out_netcdf_file)
 
-    output=netCDF4.Dataset(options_copy.out_netcdf_file,'w')
-    output.set_fill_off()
     #Recover the database meta data:
     database.load_header(options_copy)
     #Check if years should be relative, eg for piControl:
@@ -44,38 +43,41 @@ def download(database,retrieval_type,options,q_manager):
 
     #Find the data that needs to be recovered:
     database.load_database(options_copy,cdb_query_archive_class.find_simple)
-    output=database.nc_Database.retrieve_database(output,options_copy,q_manager=q_manager,retrieval_type=retrieval_type)
-    output.close()
-    database.close_database()
+    file_type_list=[item[0] for item in database.nc_Database.list_fields(['file_type',])]
+    if not set(file_type_list).issubset(remote_netcdf.local_queryable_file_types):
+        #If the data is not all local, download
+        output=netCDF4.Dataset(options_copy.out_netcdf_file,'w')
+        output.set_fill_off()
+        output=database.nc_Database.retrieve_database(output,options_copy,q_manager=q_manager,retrieval_type=retrieval_type)
+        output.close()
+        database.close_database()
+    else:
+        #Else, simply copy:
+        shutil.copyfile(options.in_netcdf_file,options_copy.out_netcdf_file)
+        database.close_database()
     return options_copy.out_netcdf_file
 
 def time_split(database,options):
-    if not ('loop_through_time' in dir(options) and len(options.loop_through_time)>0):
-        return [(None,None,None,None),]
-    #elif np.all([ True if (getattr(options,loop)!=None and len(getattr(options,loop))==1)
-    #                        else False for loop in options.loop_through_time]):
-    #    #The time list has already been set, do not redo it!
-    #    return [(None,None,None,None),]
-    else:
-        options_copy=copy.copy(options)
-        #Do not use previous and next to determine time:
-        for type in ['previous','next']:
-            if type in dir(options_copy): setattr(options_copy,type,0)
-        #Recover the database meta data:
-        database.load_header(options_copy)
-        options_copy.min_year=None
-        if 'experiment_list' in database.header.keys():
-            for experiment in database.header['experiment_list']:
-                min_year=int(database.header['experiment_list'][experiment].split(',')[0])
-                if min_year<10:
-                    options_copy.min_year=min_year
-                    if not ('silent' in dir(options_copy) and options_copy.silent):
-                        print 'Using min year {0} for experiment {1}'.format(str(min_year),experiment)
-        #Find the data that needs to be recovered:
-        database.load_database(options_copy,cdb_query_archive_class.find_simple)
-        dates_axis=database.nc_Database.retrieve_dates(options_copy)
-        database.close_database()
-        if len(dates_axis)>0:
+    options_copy=copy.copy(options)
+    #Do not use previous and next to determine time:
+    for type in ['previous','next']:
+        if type in dir(options_copy): setattr(options_copy,type,0)
+    #Recover the database meta data:
+    database.load_header(options_copy)
+    options_copy.min_year=None
+    if 'experiment_list' in database.header.keys():
+        for experiment in database.header['experiment_list']:
+            min_year=int(database.header['experiment_list'][experiment].split(',')[0])
+            if min_year<10:
+                options_copy.min_year=min_year
+                if not ('silent' in dir(options_copy) and options_copy.silent):
+                    print 'Using min year {0} for experiment {1}'.format(str(min_year),experiment)
+    #Find the data that needs to be recovered:
+    database.load_database(options_copy,cdb_query_archive_class.find_simple)
+    dates_axis=database.nc_Database.retrieve_dates(options_copy)
+    database.close_database()
+    if len(dates_axis)>0:
+        if ('loop_through_time' in dir(options) and len(options.loop_through_time)>0):
             loop_names=['year','month','day','hour']
             time_list=recursive_time_list(dates_axis,loop_names,[ True if loop in options_copy.loop_through_time else False for loop in loop_names],[],[])
             valid_time_list=list(set(time_list))
@@ -84,8 +86,10 @@ def time_split(database,options):
             else:
                 return []
         else:
-            #There are no dates corresponding to the slicing
-            return []
+            return [(None,None,None,None),]
+    else:
+        #There are no dates corresponding to the slicing
+        return []
 
 def recursive_time_list(dates_axis,loop_names,loop_values,time_unit_names,time_unit_values):
     dates_axis_tmp=dates_axis
