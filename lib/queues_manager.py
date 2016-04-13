@@ -6,6 +6,7 @@ import os
 import multiprocessing
 import Queue
 import numpy as np
+import datetime
 
 #Internal:
 import cdb_query_archive_class
@@ -135,6 +136,8 @@ class CDB_queues_manager:
         return np.max([getattr(self,queue_name+'_expected').value for queue_name in self.queues_names])
 
 def recorder(q_manager,project_drs,options):
+    renewal_time=datetime.datetime.now()
+
     #Start downloads
     q_manager.start_download_processes()
     #The consumers can now terminate:
@@ -152,6 +155,14 @@ def recorder(q_manager,project_drs,options):
         else:
             record_to_netcdf_file(item[2],output,project_drs)
         output.sync()
+
+        if ('username' in dir(options) and 
+            options.username!=None and
+            options.password!=None and
+            datetime.datetime.now() - renewal_time > datetime.timedelta(hours=1)):
+            #Reactivate certificates every hours:
+            certificates.retrieve_certificates(options.username,options.service,user_pass=options.password)
+            renewal_time=datetime.datetime.now()
     output.close()
     return
 
