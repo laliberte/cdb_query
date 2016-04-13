@@ -51,9 +51,13 @@ def ask(database,options,q_manager=None):
     #Check if a specific simulation was sliced:
     single_simulation_requested=[]
     for desc in database.drs.simulations_desc:
-        if (getattr(options,desc) !=None and 
-           len(getattr(options,desc))==1):
-           single_simulation_requested.append(getattr(options,desc)[0])
+        if (getattr(options,desc) !=None)
+            if (len(getattr(options,desc))==1 or 
+                (desc=='ensemble' and 'r0i0p0' in getattr(options,desc)
+                 and len(getattr(options,desc))==2):
+                #Either a single simulation or two ensembles if one is r0i0p0
+                single_simulation_requested.append(getattr(options,desc)[0])
+
     if len(single_simulation_requested)==len(database.drs.simulations_desc):
         simulations_list=[tuple(single_simulation_requested)]
     else:
