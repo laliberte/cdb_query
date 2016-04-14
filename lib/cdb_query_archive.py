@@ -75,10 +75,10 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD, Submitted.'.format(ve
     options=certificates.prompt_for_username_and_password(options)
 
     if options.command!='certificates':
-        if options.command=='list_fields':
+        if options.command in ['list_fields','merge']:
             database=cdb_query_archive_class.Database_Manager(project_drs)
             #Run the command:
-            getattr(cdb_query_archive_class,'list_fields')(database,options)
+            getattr(cdb_query_archive_class,options.command)(database,options)
         else:
             #Create the queue manager:
             q_manager=queues_manager.CDB_queues_manager(options)

@@ -249,6 +249,7 @@ def merge(subparsers,epilog,project_drs):
     parser.add_argument('in_extra_netcdf_files',nargs='*',
                                  help='NETCDF extra files (input).')
     output_arguments(parser)
+    extended_slicing_arguments(parser,project_drs)
     return
 
 def validate(subparsers,epilog,project_drs):

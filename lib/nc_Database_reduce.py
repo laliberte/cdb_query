@@ -50,6 +50,7 @@ def reduce_sl_or_var(database,options,q_manager=None,retrieval_type='reduce',scr
             if not '{'+str(file_id)+'}' in script:
                 script_to_call+=' {'+str(file_id)+'}'
 
+        #print tree, script_to_call.format(*temp_file_name_list)
         out=subprocess.call(script_to_call.format(*temp_file_name_list),shell=True)
     try:
         for file in temp_file_name_list[:-1]:

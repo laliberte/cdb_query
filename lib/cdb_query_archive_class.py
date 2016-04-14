@@ -51,12 +51,12 @@ def ask(database,options,q_manager=None):
     #Check if a specific simulation was sliced:
     single_simulation_requested=[]
     for desc in database.drs.simulations_desc:
-        if (getattr(options,desc) !=None)
+        if (getattr(options,desc) !=None):
             if (len(getattr(options,desc))==1 or 
                 (desc=='ensemble' and 'r0i0p0' in getattr(options,desc)
-                 and len(getattr(options,desc))==2):
+                 and len(getattr(options,desc))==2)):
                 #Either a single simulation or two ensembles if one is r0i0p0
-                single_simulation_requested.append(getattr(options,desc)[0])
+                single_simulation_requested.append(getattr(options,desc))
 
     if len(single_simulation_requested)==len(database.drs.simulations_desc):
         simulations_list=[tuple(single_simulation_requested)]
@@ -190,8 +190,8 @@ def merge(database,options,q_manager=None):
     output=netCDF4.Dataset(options.out_netcdf_file,'w')
     database.load_header(options)
     nc_Database.record_header(output,database.header)
-    for file_name in [options.in_netcdf_file,]+options.extra_netcdf_file:
-        nc_Database_utils.record_to_netcdf_file_from_file_name(options,temp_file_name,output,database.drs)
+    for file_name in [options.in_netcdf_file,]+options.in_extra_netcdf_files:
+        nc_Database_utils.record_to_netcdf_file_from_file_name(options,file_name,output,database.drs)
     return
 
 def list_fields(database,options,q_manager=None):
@@ -243,20 +243,7 @@ class Database_Manager:
             random.shuffle(vars_list)
             for var_id,var in enumerate(vars_list):
                 for time_id, time in enumerate(times_list):
-                    options_copy=copy.copy(options)
-                    for opt_id, opt in enumerate(self.drs.official_drs_no_version):
-                        if var[opt_id]!=None:
-                            setattr(options_copy,opt,[var[opt_id],])
-                    for opt_id, opt in enumerate(['year','month','day','hour']):
-                        if time[opt_id]!=None and opt in dir(options_copy):
-                            setattr(options_copy,opt,[time[opt_id],])
-
-                    if (function_name in ['ask','validate'] and
-                        'ensemble' in self.drs.official_drs_no_version and
-                        'ensemble' in dir(options_copy) and options_copy.ensemble != None
-                        and not 'r0i0p0' in options_copy.ensemble):
-                        #Added 'fixed' variables:
-                        options_copy.ensemble.append('r0i0p0')
+                    options_copy=make_new_options_from_lists(options,var,time,function_name,self.drs.official_drs_no_version)
 
                     if len(times_list)>1:
                         #Find times list again:
@@ -279,20 +266,7 @@ class Database_Manager:
             return
         else:
             #Compute single element!
-            options_copy=copy.copy(options)
-            for opt_id, opt in enumerate(self.drs.official_drs_no_version):
-                if vars_list[0][opt_id]!=None:
-                    setattr(options_copy,opt,[vars_list[0][opt_id],])
-            for opt_id, opt in enumerate(['year','month','day','hour']):
-                if times_list[0][opt_id]!=None and opt in dir(options_copy):
-                    setattr(options_copy,opt,[times_list[0][opt_id],])
-
-            if (function_name in ['ask','validate'] and
-                'ensemble' in self.drs.official_drs_no_version and
-                'ensemble' in dir(options_copy) and options_copy.ensemble != None
-                and not 'r0i0p0' in options_copy.ensemble):
-                #Added 'fixed' variables:
-                options_copy.ensemble.append('r0i0p0')
+            options_copy=make_new_options_from_lists(options,vars_list[0],times_list[0],function_name,self.drs.official_drs_no_version)
 
             #Compute function:
             output_file_name=function_handle(self,options_copy,q_manager=q_manager)
@@ -388,6 +362,26 @@ class Database_Manager:
         self.nc_Database.close_database()
         del self.nc_Database
         return
+
+def make_new_options_from_lists(options,var_item,time_item,function_name,official_drs_no_version):
+    options_copy=copy.copy(options)
+    for opt_id, opt in enumerate(official_drs_no_version):
+        if var_item[opt_id]!=None:
+            if isinstance(var_item[opt_id],list):
+                setattr(options_copy,opt,var_item[opt_id])
+            else:
+                setattr(options_copy,opt,[var_item[opt_id],])
+    for opt_id, opt in enumerate(['year','month','day','hour']):
+        if time_item[opt_id]!=None and opt in dir(options_copy):
+            setattr(options_copy,opt,[time_item[opt_id],])
+
+    if (function_name in ['ask','validate'] and
+        'ensemble' in official_drs_no_version and
+        'ensemble' in dir(options_copy) and options_copy.ensemble != None
+        and not 'r0i0p0' in options_copy.ensemble):
+        #Added 'fixed' variables:
+        options_copy.ensemble.append('r0i0p0')
+    return options_copy
 
 def find_simple(pointers,file_expt,semaphores=None):
     pointers.session.add(file_expt)

@@ -14,6 +14,7 @@ import nc_Database
 import nc_Database_utils
 import netcdf4_soft_links.queues_manager as NC4SL_queues_manager
 import netcdf4_soft_links.retrieval_manager as retrieval_manager
+import netcdf4_soft_links.certificates as certificates
 
 class CDB_queues_manager:
     def __init__(self,options):

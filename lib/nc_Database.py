@@ -306,7 +306,8 @@ def create_tree_recursive(output_top,tree):
 def retrieve_dates_recursive(data,options):
     if 'soft_links' in data.groups.keys():
         netcdf_pointers=read_soft_links.read_netCDF_pointers(data,options=options)
-        return netcdf_pointers.date_axis[netcdf_pointers.time_restriction]
+        return netcdf_pointers.date_axis[netcdf_pointers.time_restriction][netcdf_pointers.time_restriction_sort]
+
     elif len(data.groups.keys())>0:
         return np.unique(np.concatenate([ retrieve_dates_recursive(data.groups[group],options)
                 for group in data.groups.keys()
