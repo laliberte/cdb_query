@@ -179,11 +179,16 @@ class nc_Database:
                 years_range=[ int(year) for year in header['experiment_list'][experiment].split(',')]
                 years=range(years_range[0],years_range[1]+1)
 
+            if record_function_handle=='record_paths':
+                check_dimensions=False
+            else:
+                check_dimensions=True
+
             netcdf_pointers=create_soft_links.create_netCDF_pointers(
                                                               paths_list,time_frequency,years, months,
                                                               header['file_type_list'],
                                                               header['data_node_list'],
-                                                              semaphores=semaphores)
+                                                              semaphores=semaphores,check_dimensions=check_dimensions)
 
             getattr(netcdf_pointers,record_function_handle)(output,var,username=options.username,user_pass=options.password)
 
