@@ -85,11 +85,8 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD, Submitted.'.format(ve
             processes=queues_manager.start_consumer_processes(q_manager,project_drs,options)
             try:
                 #Start the queue consumer processes:
-
-                #Put the first command in the queue in spin_up mode:
-                #options_copy.spin_up=True
-
                 options_copy=copy.copy(options)
+                options_copy.trial=0
                 #Increment first queue and put:
                 getattr(q_manager,q_manager.queues_names[0]+'_expected').increment()
                 q_manager.put((q_manager.queues_names[0],options_copy))

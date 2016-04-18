@@ -7,6 +7,7 @@ import multiprocessing
 import Queue
 import numpy as np
 import datetime
+import glob
 
 #Internal:
 import cdb_query_archive_class
@@ -59,7 +60,7 @@ class CDB_queues_manager:
 
         #Create semaphores for validate:
         if 'validate' in self.queues_names:
-            self.validate_semaphores=NC4SL_queues_manager.Semaphores_data_node(self.manager,num_concurrent=5)
+            self.validate_semaphores=NC4SL_queues_manager.Semaphores_data_node(self.manager,num_concurrent=1)
 
         if len(set(['download_files','download_opendap']).intersection(self.queues_names))>0:
             #Create queues and semaphores for download:
@@ -196,9 +197,24 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs):
     #getattr(database,function_name)(options_copy,q_manager=q_manager)
     try:
         getattr(cdb_query_archive_class,function_name)(database,options_copy,q_manager=q_manager)
+        #Reset trial counter:
+        options_copy.trial=0
     except:
-        print function_name+' failed with the following options:',options_copy
-        raise
+        if options_copy.trial<3:
+            #Put it back in the queue, increasing its trial number:
+            options_copy.trial+=1
+            next_function_name=q_manager.queues_names[q_manager.queues_names.index(function_name)+1]
+            #Decrement expectation in next function:
+            getattr(q_manager,next_function_name+'_expected').decrement()
+            #Increment expectation in current function:
+            getattr(q_manager,function_name+'_expected').increment()
+            #Delete output from previous attempt files:
+            map(os.remove,glob.glob(options_copy.netcdf_out_file+'.*'))
+            #Resubmit:
+            q_manager.put((function_name,options_copy))
+        else:
+            print function_name+' failed with the following options:',options_copy
+            raise
     return
 
 def start_consumer_processes(q_manager,project_drs,options):
