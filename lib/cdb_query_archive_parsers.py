@@ -129,7 +129,7 @@ def ask_arguments(parser,project_drs):
     'https://esgf-data.dkrz.de/esg-search/',
     'https://pcmdi.llnl.gov/esg-search/',
     'https://esgf-node.jpl.nasa.gov/esg-search/',
-    'https://esg-dn1.nsc.liu.se/esg-search/'
+    #'https://esg-dn1.nsc.liu.se/esg-search/'
     ]
     query_group.add_argument('--Search_path',
                              default=search_path_list,
