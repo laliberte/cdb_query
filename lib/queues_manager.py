@@ -3,6 +3,7 @@ import netCDF4
 import h5py
 import copy
 import os
+import sys
 import multiprocessing
 import Queue
 import numpy as np
@@ -151,38 +152,71 @@ def recorder(q_manager,project_drs,options):
     output=netCDF4.Dataset(options.out_netcdf_file,'w')
     output.set_fill_off()
 
-    for item in iter(q_manager.get_record,'STOP'):
-        if item[1]!='record':
-            consume_one_item(item[0],item[1],item[2],q_manager,project_drs)
-        else:
-            record_to_netcdf_file(item[2],output,project_drs)
-        output.sync()
-
-        if ('username' in dir(options) and 
-            options.username!=None and
-            options.password!=None and
-            datetime.datetime.now() - renewal_time > datetime.timedelta(hours=1)):
-            #Reactivate certificates every hours:
-            certificates.retrieve_certificates(options.username,options.service,user_pass=options.password)
-            renewal_time=datetime.datetime.now()
-    output.close()
-    return
-
-def record_to_netcdf_file(options,output,project_drs):
     database=cdb_query_archive_class.Database_Manager(project_drs)
     database.load_header(options)
     nc_Database.record_header(output,database.header)
 
+    output.close()
+
+    if ( 'log_files' in options and options.log_files ):
+        with open(multiprocessing.current_process().name + ".out", "w") as logger:
+            sys.stdout=logger
+            for item in iter(q_manager.get_record,'STOP'):
+                if item[1]!='record':
+                    consume_one_item(item[0],item[1],item[2],q_manager,project_drs)
+                else:
+                    record_to_netcdf_file(item[2],options.out_netcdf_file,project_drs)
+
+                if ('username' in dir(options) and 
+                    options.username!=None and
+                    options.password!=None and
+                    datetime.datetime.now() - renewal_time > datetime.timedelta(hours=1)):
+                    #Reactivate certificates every hours:
+                    certificates.retrieve_certificates(options.username,options.service,user_pass=options.password)
+                    renewal_time=datetime.datetime.now()
+    else:
+        for item in iter(q_manager.get_record,'STOP'):
+            if item[1]!='record':
+                consume_one_item(item[0],item[1],item[2],q_manager,project_drs)
+            else:
+                record_to_netcdf_file(item[2],options.out_netcdf_file,project_drs)
+
+            if ('username' in dir(options) and 
+                options.username!=None and
+                options.password!=None and
+                datetime.datetime.now() - renewal_time > datetime.timedelta(hours=1)):
+                #Reactivate certificates every hours:
+                certificates.retrieve_certificates(options.username,options.service,user_pass=options.password)
+                renewal_time=datetime.datetime.now()
+    return
+
+def record_to_netcdf_file(options,file_name,project_drs):
     temp_file_name=options.in_netcdf_file
     #import subprocess; subprocess.Popen('ncdump -v path '+temp_file_name,shell=True)
+    if ( 'log_files' in options and options.log_files ):
+        print('Recording: ',datetime.datetime.now(),options)
+    output=netCDF4.Dataset(file_name,'a')
     nc_Database_utils.record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_drs)
-    output.sync()
-    os.remove(temp_file_name)
+    output.close()
+    if ( 'log_files' in options and options.log_files ):
+        print('DONE Recording: ',datetime.datetime.now(),options)
+    #Make sure the file is gone:
+    for id in range(2):
+        try:
+            os.remove(temp_file_name)
+        except:
+            pass
     return
 
 def consumer(q_manager,project_drs):
-    for item in iter(q_manager.get_no_record,'STOP'):
-        consume_one_item(item[0],item[1],item[2],q_manager,project_drs)
+    if ( 'log_files' in options and options.log_files ):
+        with open(multiprocessing.current_process().name + ".out", "w") as logger:
+            sys.stdout=logger
+            for item in iter(q_manager.get_no_record,'STOP'):
+                consume_one_item(item[0],item[1],item[2],q_manager,project_drs)
+    else:
+        for item in iter(q_manager.get_no_record,'STOP'):
+            consume_one_item(item[0],item[1],item[2],q_manager,project_drs)
     return
 
 def consume_one_item(counter,function_name,options,q_manager,project_drs):
@@ -196,7 +230,11 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs):
     #Run the command:
     #getattr(database,function_name)(options_copy,q_manager=q_manager)
     try:
+        if ( 'log_files' in options and options.log_files ):
+            print('Process: ',datetime.datetime.now(),function_name,[(queue_name,getattr(q_manager,queue_name+'_expected').value) for queue_name in q_manager.queues_names],options_copy)
         getattr(cdb_query_archive_class,function_name)(database,options_copy,q_manager=q_manager)
+        if ( 'log_files' in options and options.log_files ):
+            print('DONE Process: ',datetime.datetime.now(),function_name,[(queue_name,getattr(q_manager,queue_name+'_expected').value) for queue_name in q_manager.queues_names],options_copy)
         #Reset trial counter:
         options_copy.trial=0
     except:
@@ -209,7 +247,13 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs):
             #Increment expectation in current function:
             getattr(q_manager,function_name+'_expected').increment()
             #Delete output from previous attempt files:
-            map(os.remove,glob.glob(options_copy.netcdf_out_file+'.*'))
+            try:
+                map(os.remove,glob.glob(options_copy.out_netcdf_file+'.*'))
+                os.remove(options_copy.out_netcdf_file)
+            except:
+                pass
+            #Reset output file:
+            options_copy.out_netcdf_file=options.out_netcdf_file
             #Resubmit:
             q_manager.put((function_name,options_copy))
         else:

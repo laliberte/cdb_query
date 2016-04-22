@@ -177,6 +177,7 @@ def ask(subparsers,epilog,project_drs):
                      )
     functions_arguments(parser,['ask'])
     parser.add_argument('-s','--silent',default=False,action='store_true',help='Make not verbose.')
+    parser.add_argument('--log_files',default=False,action='store_true',help='Create one log file per process.')
 
     #input_arguments_json(parser)
     output_arguments(parser)
@@ -404,6 +405,7 @@ def reduce(subparsers,epilog,project_drs):
                                          )
     functions_arguments(parser,['reduce'])
     parser.add_argument('-s','--silent',default=False,action='store_true',help='Make not verbose.')
+    parser.add_argument('--log_files',default=False,action='store_true',help='Create one log file per process.')
     parser.add_argument('script',default='',help="Command-line script")
     
     input_arguments(parser)
@@ -462,6 +464,7 @@ def av(subparsers,epilog,project_drs):
                                  help='Distribute the search. Will likely result in a pointers originating from one node.')
 
     parser.add_argument('-s','--silent',default=False,action='store_true',help='Make not verbose.')
+    parser.add_argument('--log_files',default=False,action='store_true',help='Create one log file per process.')
 
     #VALIDATE
     validate_arguments(parser,project_drs)
@@ -498,6 +501,7 @@ def avdr(subparsers,epilog,project_drs):
                                  help='Distribute the search. Will likely result in a pointers originating from one node.')
 
     parser.add_argument('-s','--silent',default=False,action='store_true',help='Make not verbose.')
+    parser.add_argument('--log_files',default=False,action='store_true',help='Create one log file per process.')
 
     #VALIDATE
     validate_arguments(parser,project_drs)
@@ -541,6 +545,7 @@ def drdr(subparsers,epilog,project_drs):
     functions_arguments(parser,['download_files','reduce_soft_links','download_opendap','reduce'])
 
     parser.add_argument('-s','--silent',default=False,action='store_true',help='Make not verbose.')
+    parser.add_argument('--log_files',default=False,action='store_true',help='Create one log file per process.')
     parser.add_argument('script',default='',help="Command-line script")
     input_arguments(parser)
 
@@ -601,6 +606,7 @@ def avdrdr(subparsers,epilog,project_drs):
                                  help='Distribute the search. Will likely result in a pointers originating from one node.')
 
     parser.add_argument('-s','--silent',default=False,action='store_true',help='Make not verbose.')
+    parser.add_argument('--log_files',default=False,action='store_true',help='Create one log file per process.')
 
     #VALIDATE
     validate_arguments(parser,project_drs)
