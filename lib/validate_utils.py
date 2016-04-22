@@ -122,7 +122,7 @@ def find_model_list(diagnostic,project_drs,model_list,experiment,options):
         years_list.append(years_range[1])
     time_list=[]
     for year in years_list:
-        for month in get_diag_months_list(diagnostic):
+        for month in get_diag_month_list(diagnostic):
             time_list.append(str(year).zfill(4)+str(month).zfill(2))
 
     model_list_var=copy.copy(model_list)
@@ -172,12 +172,12 @@ def find_model_list(diagnostic,project_drs,model_list,experiment,options):
            model_list_copy.remove(model)
     return model_list_copy
 
-def get_diag_months_list(diagnostic):
-    if 'months_list' in diagnostic.header.keys():
-        diag_months_list=diagnostic.header['months_list']
+def get_diag_month_list(diagnostic):
+    if 'month_list' in diagnostic.header.keys():
+        diag_month_list=diagnostic.header['month_list']
     else:
-        diag_months_list=range(1,13)
-    return diag_months_list
+        diag_month_list=range(1,13)
+    return diag_month_list
 
 def validate(database,options,q_manager=None):
     if 'data_node_list' in dir(database.drs):

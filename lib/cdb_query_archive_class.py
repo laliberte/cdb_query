@@ -30,9 +30,9 @@ def ask_var_list(database,simulations_list,options):
                                              not field in options.keep_field]
     else:
         drs_to_eliminate=database.drs.simulations_desc
-    return [[ var[database.drs.simulations_desc.index(field)] if field in drs_to_eliminate else None
-                        for field in database.drs.official_drs_no_version] for var in 
-                        simulations_list ]
+    return list(set([tuple([ var[database.drs.simulations_desc.index(field)] if field in drs_to_eliminate else None
+                        for field in database.drs.official_drs_no_version]) for var in 
+                        simulations_list ]))
 
 def ask(database,options,q_manager=None):
     #Load header:
@@ -125,9 +125,9 @@ def reduce_var_list(database,options):
                                              not field in options.keep_field]
     else:
         drs_to_eliminate=database.drs.official_drs_no_version
-    return [[ var[drs_to_eliminate.index(field)] if field in drs_to_eliminate else None
-                        for field in database.drs.official_drs_no_version] for var in 
-                        database.list_fields_local(options,drs_to_eliminate) ]
+    return list(set([tuple([ var[drs_to_eliminate.index(field)] if field in drs_to_eliminate else None
+                        for field in database.drs.official_drs_no_version]) for var in 
+                        database.list_fields_local(options,drs_to_eliminate) ]))
 
 def download_files(database,options,q_manager=None):
     if q_manager != None:
@@ -233,7 +233,7 @@ class Database_Manager:
             if len(vars_list)>0:
                 if not ('silent' in dir(options) and options.silent):
                     for var in vars_list:
-                        print ' '.join([ opt+': '+str(var[opt_id]) in enumerate(self.drs.official_drs_no_version)])
+                        print ' '.join([ opt+': '+str(var[opt_id]) for opt_id, opt in enumerate(self.drs.official_drs_no_version)])
                     print 'Were excluded because no date matched times requested'
             return
 
