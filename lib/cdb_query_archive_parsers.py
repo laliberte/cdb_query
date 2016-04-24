@@ -34,7 +34,7 @@ def processing_arguments(parser,project_drs):
                                  default=1, type=int,
                                  help='Use num_procs processes to perform the computation.')
 
-    return
+    return proc_group
 
 def slicing_arguments(parser,project_drs,exclude_args=[],action_type='store'):
     #Define the data slicing arguments in a dictionnary:
@@ -177,6 +177,7 @@ def ask(subparsers,epilog,project_drs):
                      )
     functions_arguments(parser,['ask'])
     parser.add_argument('-s','--silent',default=False,action='store_true',help='Make not verbose.')
+    parser.add_argument('--max_trial',type=int,default=3,help='Try a function that number of time because raising an exception.')
     parser.add_argument('--log_files',default=False,action='store_true',help='Create one log file per process.')
 
     #input_arguments_json(parser)
@@ -269,6 +270,9 @@ def validate(subparsers,epilog,project_drs):
                                  )
 
     functions_arguments(parser,['validate'])
+    parser.add_argument('-s','--silent',default=False,action='store_true',help='Make not verbose.')
+    parser.add_argument('--max_trial',type=int,default=3,help='Try a function that number of time because raising an exception.')
+    parser.add_argument('--log_files',default=False,action='store_true',help='Create one log file per process.')
 
     input_arguments(parser)
     output_arguments(parser)
@@ -405,12 +409,14 @@ def reduce(subparsers,epilog,project_drs):
                                          )
     functions_arguments(parser,['reduce'])
     parser.add_argument('-s','--silent',default=False,action='store_true',help='Make not verbose.')
+    parser.add_argument('--max_trial',type=int,default=3,help='Try a function that number of time because raising an exception.')
     parser.add_argument('--log_files',default=False,action='store_true',help='Create one log file per process.')
     parser.add_argument('script',default='',help="Command-line script")
     
     input_arguments(parser)
     output_arguments(parser)
-    processing_arguments(parser,project_drs)
+    proc_group=processing_arguments(parser,project_drs)
+    proc_group.add_argument('--serial',default=False,action='store_true',help='Downloads the files serially.')
 
     reduce_arguments(parser,project_drs)
 
@@ -464,6 +470,7 @@ def av(subparsers,epilog,project_drs):
                                  help='Distribute the search. Will likely result in a pointers originating from one node.')
 
     parser.add_argument('-s','--silent',default=False,action='store_true',help='Make not verbose.')
+    parser.add_argument('--max_trial',type=int,default=3,help='Try a function that number of time because raising an exception.')
     parser.add_argument('--log_files',default=False,action='store_true',help='Create one log file per process.')
 
     #VALIDATE
@@ -501,6 +508,7 @@ def avdr(subparsers,epilog,project_drs):
                                  help='Distribute the search. Will likely result in a pointers originating from one node.')
 
     parser.add_argument('-s','--silent',default=False,action='store_true',help='Make not verbose.')
+    parser.add_argument('--max_trial',type=int,default=3,help='Try a function that number of time because raising an exception.')
     parser.add_argument('--log_files',default=False,action='store_true',help='Create one log file per process.')
 
     #VALIDATE
@@ -545,6 +553,7 @@ def drdr(subparsers,epilog,project_drs):
     functions_arguments(parser,['download_files','reduce_soft_links','download_opendap','reduce'])
 
     parser.add_argument('-s','--silent',default=False,action='store_true',help='Make not verbose.')
+    parser.add_argument('--max_trial',type=int,default=3,help='Try a function that number of time because raising an exception.')
     parser.add_argument('--log_files',default=False,action='store_true',help='Create one log file per process.')
     parser.add_argument('script',default='',help="Command-line script")
     input_arguments(parser)
@@ -606,6 +615,7 @@ def avdrdr(subparsers,epilog,project_drs):
                                  help='Distribute the search. Will likely result in a pointers originating from one node.')
 
     parser.add_argument('-s','--silent',default=False,action='store_true',help='Make not verbose.')
+    parser.add_argument('--max_trial',type=int,default=3,help='Try a function that number of time because raising an exception.')
     parser.add_argument('--log_files',default=False,action='store_true',help='Create one log file per process.')
 
     #VALIDATE

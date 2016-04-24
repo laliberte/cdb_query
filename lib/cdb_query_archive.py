@@ -100,4 +100,5 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD, Submitted.'.format(ve
                             processes[process_name].terminate()
         
 if __name__ == "__main__":
+    sys.settrace
     main('CMIP5')

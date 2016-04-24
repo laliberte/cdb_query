@@ -30,9 +30,13 @@ def ask_var_list(database,simulations_list,options):
                                              not field in options.keep_field]
     else:
         drs_to_eliminate=database.drs.simulations_desc
-    return list(set([tuple([ var[database.drs.simulations_desc.index(field)] if field in drs_to_eliminate else None
+    return [ [make_list(item) for item in var_list] for var_list in 
+                set([
+                    tuple([ 
+                            tuple(sorted(set(make_list(var[database.drs.simulations_desc.index(field)])))) 
+                        if field in drs_to_eliminate else None
                         for field in database.drs.official_drs_no_version]) for var in 
-                        simulations_list ]))
+                        simulations_list ])]
 
 def ask(database,options,q_manager=None):
     #Load header:
@@ -125,9 +129,13 @@ def reduce_var_list(database,options):
                                              not field in options.keep_field]
     else:
         drs_to_eliminate=database.drs.official_drs_no_version
-    return list(set([tuple([ var[drs_to_eliminate.index(field)] if field in drs_to_eliminate else None
+    return [ [ make_list(item) for item in var_list] for var_list in 
+                set([
+                    tuple([ 
+                        tuple(sorted(set(make_list(var[drs_to_eliminate.index(field)]))))
+                        if field in drs_to_eliminate else None
                         for field in database.drs.official_drs_no_version]) for var in 
-                        database.list_fields_local(options,drs_to_eliminate) ]))
+                        database.list_fields_local(options,drs_to_eliminate) ])]
 
 def download_files(database,options,q_manager=None):
     if q_manager != None:
@@ -363,17 +371,25 @@ class Database_Manager:
         del self.nc_Database
         return
 
+def make_list(item):
+    if isinstance(item,list):
+        return item
+    elif (isinstance(item,set) or isinstance(item,tuple)):
+        return list(item)
+    else:
+        if item!=None:
+            return [item,]
+        else:
+            return None
+
 def make_new_options_from_lists(options,var_item,time_item,function_name,official_drs_no_version):
     options_copy=copy.copy(options)
     for opt_id, opt in enumerate(official_drs_no_version):
         if var_item[opt_id]!=None:
-            if isinstance(var_item[opt_id],list):
-                setattr(options_copy,opt,var_item[opt_id])
-            else:
-                setattr(options_copy,opt,[var_item[opt_id],])
+            setattr(options_copy,opt,make_list(var_item[opt_id]))
     for opt_id, opt in enumerate(['year','month','day','hour']):
         if time_item[opt_id]!=None and opt in dir(options_copy):
-            setattr(options_copy,opt,[time_item[opt_id],])
+            setattr(options_copy,opt,make_list(time_item[opt_id]))
 
     if (function_name in ['ask','validate'] and
         'ensemble' in official_drs_no_version and

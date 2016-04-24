@@ -111,17 +111,16 @@ def retrieve_or_replicate(output_grp,data,
 def record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_drs,check_empty=False):
     data=netCDF4.Dataset(temp_file_name,'r')
     hdf5=None
-    #print h5py.h5f.get_obj_ids(types=h5py.h5f.OBJ_FILE)
-    try:
-        for item in h5py.h5f.get_obj_ids(types=h5py.h5f.OBJ_FILE):
-            if item.name==temp_file_name:
-                hdf5=h5py.File(item)
-    except ValueError:
-        pass
-    except RuntimeError:
-        pass
+    #try:
+    #    for item in h5py.h5f.get_obj_ids(types=h5py.h5f.OBJ_FILE):
+    #        if item.name==temp_file_name:
+    #            hdf5=h5py.File(item)
+    #except ValueError:
+    #    pass
+    #except RuntimeError:
+    #    pass
 
-    fix_list_to_none=(lambda x: x[0] if len(x)==1 else None)
+    fix_list_to_none=(lambda x: x[0] if (x!=None and len(x)==1) else None)
     var=[ fix_list_to_none(getattr(options,opt)) if getattr(options,opt)!=None else None for opt in project_drs.official_drs_no_version]
     tree=zip(project_drs.official_drs_no_version,var)
 
@@ -191,14 +190,14 @@ def replace_netcdf_variable_recursive_replicate(output_grp,data_grp,
 def record_to_output_directory(output_file_name,project_drs,options):
     data=netCDF4.Dataset(output_file_name,'r')
     hdf5=None
-    try:
-        for item in h5py.h5f.get_obj_ids(types=h5py.h5f.OBJ_FILE):
-            if 'name' in dir(item) and item.name==output_file_name:
-                hdf5=h5py.File(item)
-    except ValueError:
-        pass
-    except RuntimeError:
-        pass
+    #try:
+    #    for item in h5py.h5f.get_obj_ids(types=h5py.h5f.OBJ_FILE):
+    #        if 'name' in dir(item) and item.name==output_file_name:
+    #            hdf5=h5py.File(item)
+    #except ValueError:
+    #    pass
+    #except RuntimeError:
+    #    pass
 
     out_dir=options.out_destination
     output=netCDF4.Dataset(output_file_name+'.tmp','w')
@@ -224,7 +223,7 @@ def write_netcdf_variable_recursive(output,out_dir,data,
                                                     version,tree,
                                                     project_drs,options_copy,hdf5=hdf5,check_empty=check_empty)
     else:
-        fix_list=(lambda x: x[0] if len(x)==1 else x)
+        fix_list=(lambda x: x[0] if (x!= None and len(x)==1) else x)
         group_name=fix_list(getattr(options,level_name))
         if group_name==None or isinstance(group_name,list):
             for group in data.groups.keys():

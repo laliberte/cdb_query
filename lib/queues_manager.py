@@ -159,35 +159,36 @@ def recorder(q_manager,project_drs,options):
     output.close()
 
     if ( 'log_files' in options and options.log_files ):
-        with open(multiprocessing.current_process().name + ".out", "w") as logger:
+        log_file_name=multiprocessing.current_process().name + ".out"
+        with open(log_file_name, "w") as logger:
             sys.stdout=logger
-            for item in iter(q_manager.get_record,'STOP'):
-                if item[1]!='record':
-                    consume_one_item(item[0],item[1],item[2],q_manager,project_drs)
-                else:
-                    record_to_netcdf_file(item[2],options.out_netcdf_file,project_drs)
-
-                if ('username' in dir(options) and 
-                    options.username!=None and
-                    options.password!=None and
-                    datetime.datetime.now() - renewal_time > datetime.timedelta(hours=1)):
-                    #Reactivate certificates every hours:
-                    certificates.retrieve_certificates(options.username,options.service,user_pass=options.password)
-                    renewal_time=datetime.datetime.now()
+            old_stdout=sys.stdout
+            old_stdout.flush()
+            try:
+                sys.stdout=logger
+                recorder_queue_consume(q_manager,project_drs,options)
+            finally:
+                sys.stdout.flush()
+                sys.stdout=old_stdout
     else:
-        for item in iter(q_manager.get_record,'STOP'):
-            if item[1]!='record':
-                consume_one_item(item[0],item[1],item[2],q_manager,project_drs)
-            else:
-                record_to_netcdf_file(item[2],options.out_netcdf_file,project_drs)
+        recorder_queue_consume(q_manager,project_drs,options)
+    return
+        
+def recorder_queue_consume(q_manager,project_drs,options):
+    renewal_time=datetime.datetime.now()
+    for item in iter(q_manager.get_record,'STOP'):
+        if item[1]!='record':
+            consume_one_item(item[0],item[1],item[2],q_manager,project_drs)
+        else:
+            record_to_netcdf_file(item[2],options.out_netcdf_file,project_drs)
 
-            if ('username' in dir(options) and 
-                options.username!=None and
-                options.password!=None and
-                datetime.datetime.now() - renewal_time > datetime.timedelta(hours=1)):
-                #Reactivate certificates every hours:
-                certificates.retrieve_certificates(options.username,options.service,user_pass=options.password)
-                renewal_time=datetime.datetime.now()
+        if ('username' in dir(options) and 
+            options.username!=None and
+            options.password!=None and
+            datetime.datetime.now() - renewal_time > datetime.timedelta(hours=1)):
+            #Reactivate certificates every hours:
+            certificates.retrieve_certificates(options.username,options.service,user_pass=options.password)
+            renewal_time=datetime.datetime.now()
     return
 
 def record_to_netcdf_file(options,file_name,project_drs):
@@ -208,15 +209,25 @@ def record_to_netcdf_file(options,file_name,project_drs):
             pass
     return
 
-def consumer(q_manager,project_drs):
+def consumer(q_manager,project_drs,options):
     if ( 'log_files' in options and options.log_files ):
-        with open(multiprocessing.current_process().name + ".out", "w") as logger:
-            sys.stdout=logger
-            for item in iter(q_manager.get_no_record,'STOP'):
-                consume_one_item(item[0],item[1],item[2],q_manager,project_drs)
+        log_file_name=multiprocessing.current_process().name + ".out"
+        with open(log_file_name, "w") as logger:
+            old_stdout=sys.stdout
+            old_stdout.flush()
+            try:
+                sys.stdout=logger
+                consumer_queue_consume(q_manager,project_drs)
+            finally:
+                sys.stdout.flush()
+                sys.stdout=old_stdout
     else:
-        for item in iter(q_manager.get_no_record,'STOP'):
-            consume_one_item(item[0],item[1],item[2],q_manager,project_drs)
+        consumer_queue_consume(q_manager,project_drs)
+    return
+
+def consumer_queue_consume(q_manager,project_drs):
+    for item in iter(q_manager.get_no_record,'STOP'):
+        consume_one_item(item[0],item[1],item[2],q_manager,project_drs)
     return
 
 def consume_one_item(counter,function_name,options,q_manager,project_drs):
@@ -238,7 +249,7 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs):
         #Reset trial counter:
         options_copy.trial=0
     except:
-        if options_copy.trial<3:
+        if options_copy.trial<options.max_trial:
             #Put it back in the queue, increasing its trial number:
             options_copy.trial+=1
             next_function_name=q_manager.queues_names[q_manager.queues_names.index(function_name)+1]
@@ -268,10 +279,10 @@ def start_consumer_processes(q_manager,project_drs,options):
         if process_name!=multiprocessing.current_process().name:
            processes[process_name]=multiprocessing.Process(target=consumer,
                                                            name=process_name,
-                                                           args=(q_manager,project_drs))
+                                                           args=(q_manager,project_drs,options))
            processes[process_name].start()
         else:
-            processes[process_name]=multiprocessing.current_process()
+           processes[process_name]=multiprocessing.current_process()
     return processes
 
 def consumer_processes_names(options):

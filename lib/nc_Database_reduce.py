@@ -50,7 +50,6 @@ def reduce_sl_or_var(database,options,q_manager=None,retrieval_type='reduce',scr
             if not '{'+str(file_id)+'}' in script:
                 script_to_call+=' {'+str(file_id)+'}'
 
-        #print tree, script_to_call.format(*temp_file_name_list)
         out=subprocess.call(script_to_call.format(*temp_file_name_list),shell=True)
     try:
         for file in temp_file_name_list[:-1]:
@@ -76,14 +75,14 @@ def reduce_sl_or_var(database,options,q_manager=None,retrieval_type='reduce',scr
 def extract_single_tree(temp_file,file,tree,tree_fx,options,options_fx,retrieval_type='reduce',check_empty=False):
     data=netCDF4.Dataset(file,'r')
     hdf5=None
-    try:
-        for item in h5py.h5f.get_obj_ids(types=h5py.h5f.OBJ_FILE):
-            if 'name' in dir(item) and item.name==file:
-                hdf5=h5py.File(item)
-    except ValueError:
-        pass
-    except RuntimeError:
-        pass
+    #try:
+    #    for item in h5py.h5f.get_obj_ids(types=h5py.h5f.OBJ_FILE):
+    #        if 'name' in dir(item) and item.name==file:
+    #            hdf5=h5py.File(item)
+    #except ValueError:
+    #    pass
+    #except RuntimeError:
+    #    pass
 
     output_tmp=netCDF4.Dataset(temp_file,'w',format='NETCDF4',diskless=True,persist=True)
     if ('add_fixed' in dir(options) and options.add_fixed):
