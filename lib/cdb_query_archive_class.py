@@ -143,10 +143,14 @@ def download_files(database,options,q_manager=None):
         for data_node in data_node_list:
             q_manager.download.semaphores.add_new_data_node(data_node)
             q_manager.download.queues.add_new_data_node(data_node)
-    times_list=downloads.time_split(database,options)
 
     #Recover the database meta data:
     vars_list=reduce_var_list(database,options)
+    if len(vars_list)==1:
+        #Users have requested time types to be kept
+        times_list=downloads.time_split(database,options)
+    else:
+        times_list=[(None,None,None,None),]
     database.put_or_process('download_files',downloads.download_files,vars_list,options,q_manager,times_list=times_list)
     return
 
@@ -171,9 +175,13 @@ def download_opendap(database,options,q_manager=None):
         for data_node in data_node_list:
             q_manager.download.semaphores.add_new_data_node(data_node)
             q_manager.download.queues.add_new_data_node(data_node)
-    times_list=downloads.time_split(database,options)
 
     vars_list=reduce_var_list(database,options)
+    if len(vars_list)==1:
+        #Users have requested time types to be kept
+        times_list=downloads.time_split(database,options)
+    else:
+        times_list=[(None,None,None,None),]
     database.put_or_process('download_opendap',downloads.download_opendap,vars_list,options,q_manager,times_list=times_list)
     return
 
@@ -187,10 +195,13 @@ def reduce(database,options,q_manager=None):
           len(options.in_extra_netcdf_files)>0) ):
         raise InputErrorr('The identity script \'\' can only be used when no extra netcdf files are specified.')
 
-    #Users have requested time types to be kept
-    times_list=downloads.time_split(database,options)
-
     vars_list=reduce_var_list(database,options)
+    if len(vars_list)==1:
+        #Users have requested time types to be kept
+        times_list=downloads.time_split(database,options)
+    else:
+        times_list=[(None,None,None,None),]
+
     database.put_or_process('reduce',nc_Database_reduce.reduce_variable,vars_list,options,q_manager,times_list=times_list)
     return
 
@@ -252,6 +263,8 @@ class Database_Manager:
             for var_id,var in enumerate(vars_list):
                 for time_id, time in enumerate(times_list):
                     options_copy=make_new_options_from_lists(options,var,time,function_name,self.drs.official_drs_no_version)
+                    #Set the priority to time_id:
+                    options_copy.priority=time_id
 
                     if len(times_list)>1:
                         #Find times list again:
