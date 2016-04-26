@@ -49,10 +49,9 @@ def download(database,retrieval_type,options,q_manager):
     if (not set(file_type_list).issubset(remote_netcdf.local_queryable_file_types) or
        is_time_slicing_requested):
         #If the data is not all local or if a time slice was requested, "download"
-        output=netCDF4.Dataset(options_copy.out_netcdf_file,'w')
-        output.set_fill_off()
-        output=database.nc_Database.retrieve_database(output,options_copy,q_manager=q_manager,retrieval_type=retrieval_type)
-        output.close()
+        with netCDF4.Dataset(options_copy.out_netcdf_file,'w') as output:
+            output.set_fill_off()
+            output=database.nc_Database.retrieve_database(output,options_copy,q_manager=q_manager,retrieval_type=retrieval_type)
         database.close_database()
     else:
         #Else, simply copy:

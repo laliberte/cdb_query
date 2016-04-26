@@ -17,14 +17,10 @@ import netcdf4_soft_links.retrieval_manager as retrieval_manager
 import nc_Database_utils
 
 class nc_Database:
-    def __init__(self,project_drs,database_file=None,database_Dataset=None):
+    def __init__(self,project_drs,database_file=None):
         #Defines the tree structure:
         self.drs=project_drs
         self.database_file=database_file
-
-        if (isinstance(database_Dataset,netCDF4.Dataset) or
-            isinstance(database_Dataset,netCDF4.Group)):
-            self.Dataset=database_Dataset
 
         self._setup_database()
         return
@@ -54,32 +50,20 @@ class nc_Database:
         return
 
     def load_nc_file(self):
-        if ( (not 'Dataset' in dir(self) ) or
-             ( 'Dataset' in dir(self) and
-                not (isinstance(self.Dataset,netCDF4.Dataset) or
-                    isinstance(self.Dataset,netCDF4.Group)) )):
-            self.Dataset=netCDF4.Dataset(self.database_file,'r')
-        return
-
-    def close_nc_file(self):
-        self.Dataset.close()
-        del self.Dataset
-        return
+        return netCDF4.Dataset(self.database_file,'r')
 
     def load_header(self):
-        self.load_nc_file()
         #Load header:
         header=dict()
-        for att in set(self.drs.header_desc).intersection(self.Dataset.ncattrs()):
-            header[att]=json.loads(self.Dataset.getncattr(att))
-        self.close_nc_file()
+        with self.load_nc_file() as dataset:
+            for att in set(self.drs.header_desc).intersection(dataset.ncattrs()):
+                header[att]=json.loads(dataset.getncattr(att))
         return header
 
     def populate_database(self,options,find_function,semaphores=None):
-        self.load_nc_file()
         self.file_expt.time='0'
-        populate_database_recursive(self,self.Dataset,options,find_function,semaphores=semaphores)
-        self.close_nc_file()
+        with self.load_nc_file() as dataset:
+            populate_database_recursive(self,dataset,options,find_function,semaphores=semaphores)
 
         #Allow complex queries:
         if ('field' in dir(options) and options.field!=[] and options.field!=None):
@@ -138,51 +122,41 @@ class nc_Database:
         if ('swap_dir' in dir(options) and options.swap_dir!='.'):
             temp_output_file_name=options.swap_dir+'/'+os.path.basename(temp_output_file_name)
 
-        output_root=netCDF4.Dataset(temp_output_file_name,
-                                      'w',format='NETCDF4',diskless=True,persist=True)
-                                      #'w',format='NETCDF4',diskless=True,persist=False)
-                                      #'w',format='NETCDF4'
-        if 'no_check_availability' in dir(options) and options.no_check_availability:
-            record_header(output_root,{val:header[val] for val in header.keys() if val!='data_node_list'})
-        else:
-            record_header(output_root,header)
-        #temp_string=''
-        #for att in self.drs.simulations_desc:
-        #    if ( att in dir(options) and
-        #         getattr(options,att)!=None):
-        #        temp_string+=att+': '+str(getattr(options,att))
-        #if len(temp_string)>0:
-        #    output_root.setncattr('cdb_query_temp',temp_string)
-                    
-
-        #Define time subset:
-        if 'months_list' in header.keys():
-            months=header['months_list']
-        else:
-            months=range(1,13)
-        
-        for tree in trees_list:
-            time_frequency=tree[drs_list.index('time_frequency')]
-            experiment=tree[drs_list.index('experiment')]
-            var=tree[drs_list.index('var')]
-            conditions=[ getattr(File_Expt,level)==value for level,value in zip(drs_list,tree)]
-            out_tuples=[ getattr(File_Expt,level) for level in drs_to_remove]
-            #Find list of paths:
-            paths_list=[{drs_name:path[drs_id] for drs_id, drs_name in enumerate(drs_to_remove)} for path in self.session.query(*out_tuples
-                                    ).filter(sqlalchemy.and_(*conditions)).distinct().all()]
-
-            output=create_tree(output_root,zip(drs_list,tree))
-            #Record data:
-            if 'missing_years' in dir(options) and options.missing_years:
-                years=None
+        with netCDF4.Dataset(temp_output_file_name,
+                                 'w',format='NETCDF4',diskless=True,persist=True) as output_root:
+            if 'no_check_availability' in dir(options) and options.no_check_availability:
+                record_header(output_root,{val:header[val] for val in header.keys() if val!='data_node_list'})
             else:
-                years_range=[ int(year) for year in header['experiment_list'][experiment].split(',')]
-                years=range(years_range[0],years_range[1]+1)
+                record_header(output_root,header)
 
-            if record_function_handle=='record_paths':
-                check_dimensions=False
+            #Define time subset:
+            if 'month_list' in header.keys():
+                months=header['month_list']
             else:
-                check_dimensions=True
+                months=range(1,13)
+            
+            for tree in trees_list:
+                time_frequency=tree[drs_list.index('time_frequency')]
+                experiment=tree[drs_list.index('experiment')]
+                var=tree[drs_list.index('var')]
+                conditions=[ getattr(File_Expt,level)==value for level,value in zip(drs_list,tree)]
+                out_tuples=[ getattr(File_Expt,level) for level in drs_to_remove]
+                #Find list of paths:
+                paths_list=[{drs_name:path[drs_id] for drs_id, drs_name in enumerate(drs_to_remove)} for path in self.session.query(*out_tuples
+                                        ).filter(sqlalchemy.and_(*conditions)).distinct().all()]
+
+                output=create_tree(output_root,zip(drs_list,tree))
+                #Record data:
+                if 'missing_years' in dir(options) and options.missing_years:
+                    years=None
+                else:
+                    years_range=[ int(year) for year in header['experiment_list'][experiment].split(',')]
+                    years=range(years_range[0],years_range[1]+1)
+
+                if record_function_handle=='record_paths':
+                    check_dimensions=False
+                else:
+                    check_dimensions=True
 
             netcdf_pointers=create_soft_links.create_netCDF_pointers(
                                                               paths_list,time_frequency,years, months,
@@ -195,36 +169,34 @@ class nc_Database:
             #Remove recorded data from database:
             self.session.query(*out_tuples).filter(sqlalchemy.and_(*conditions)).delete()
 
-        return output_root, temp_output_file_name
+        return temp_output_file_name
 
     def retrieve_database(self,output,options,q_manager=None,retrieval_type='reduce'):
         ##Recover the database meta data:
         tree=zip(self.drs.official_drs_no_version,[ None
                             for field in self.drs.official_drs_no_version])
-        self.load_nc_file()
-        if retrieval_type in ['download_files', 'download_opendap']:
-            nc_Database_utils.extract_netcdf_variable(output,self.Dataset,tree,options,download_semaphores=q_manager.download.semaphores,
-                                                                                       download_queues_manager=q_manager.download,
-                                                                                       retrieval_type=retrieval_type)
-            q_manager.download.set_closed()
-            data_node_list=self.list_data_nodes(options)
-            output=retrieval_manager.launch_download(output,data_node_list,q_manager.download,options)
-            if (retrieval_type=='download_files'
-                and
-                not ( 'do_not_revalidate' in dir(options) and options.do_not_revalidate)):
-                pass #Not implemented yet
-                   #revalidate
-        else:
-            nc_Database_utils.extract_netcdf_variable(output,self.Dataset,tree,options,retrieval_type=retrieval_type)
+        with self.load_nc_file() as dataset:
+            if retrieval_type in ['download_files', 'download_opendap']:
+                nc_Database_utils.extract_netcdf_variable(output,dataset,tree,options,download_semaphores=q_manager.download.semaphores,
+                                                                                           download_queues_manager=q_manager.download,
+                                                                                           retrieval_type=retrieval_type)
+                q_manager.download.set_closed()
+                data_node_list=self.list_data_nodes(options)
+                output=retrieval_manager.launch_download(output,data_node_list,q_manager.download,options)
+                if (retrieval_type=='download_files'
+                    and
+                    not ( 'do_not_revalidate' in dir(options) and options.do_not_revalidate)):
+                    pass #Not implemented yet
+                       #revalidate
+            else:
+                nc_Database_utils.extract_netcdf_variable(output,dataset,tree,options,retrieval_type=retrieval_type)
         output.sync()
-        self.close_nc_file()
         return output
 
     def retrieve_dates(self,options):
         ##Recover the database meta data:
-        self.load_nc_file()
-        dates_axis=retrieve_dates_recursive(self.Dataset,options)
-        self.close_nc_file()
+        with self.load_nc_file() as dataset:
+            dates_axis=retrieve_dates_recursive(dataset,options)
         return dates_axis
 
 #####################################################################

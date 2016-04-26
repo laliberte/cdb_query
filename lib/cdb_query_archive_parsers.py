@@ -129,13 +129,17 @@ def ask_arguments(parser,project_drs):
     'https://esgf-data.dkrz.de/esg-search/',
     'https://pcmdi.llnl.gov/esg-search/',
     'https://esgf-node.jpl.nasa.gov/esg-search/',
-    #'https://esg-dn1.nsc.liu.se/esg-search/'
+    'https://esg-dn1.nsc.liu.se/esg-search/'
     ]
     query_group.add_argument('--Search_path',
                              default=search_path_list,
                              nargs='*',
                              help='List of search paths. Can be a local directory, an ESGF index node, a FTP server.\n\
                                    Default: {0}'.format(' '.join(search_path_list)))
+    query_group.add_argument('--XSearch_path',
+                             default=[],
+                             nargs='*',
+                             help='List of search paths to exclude.')
     default_var=['tas:mon,atmos,Amon',]
     query_group.add_argument('--Var',
                              default=default_var,
@@ -617,6 +621,7 @@ def avdrdr(subparsers,epilog,project_drs):
     parser.add_argument('-s','--silent',default=False,action='store_true',help='Make not verbose.')
     parser.add_argument('--max_trial',type=int,default=3,help='Try a function that number of time because raising an exception.')
     parser.add_argument('--log_files',default=False,action='store_true',help='Create one log file per process.')
+    parser.add_argument('--start_server',default=False,action='store_true',help='Start a simple server so that reduce will be handled by \'reduce_from_server\'.')
 
     #VALIDATE
     validate_arguments(parser,project_drs)

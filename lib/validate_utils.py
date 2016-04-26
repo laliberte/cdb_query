@@ -194,15 +194,14 @@ def validate(database,options,q_manager=None):
         database.load_database(options,find_time_available,semaphores=semaphores)
         #Find the list of institute / model with all the months for all the years / experiments and variables requested:
         intersection(database,options)
-        dataset, output=database.nc_Database.write_database(database.header,options,'record_paths',semaphores=semaphores)
+        output=database.nc_Database.write_database(database.header,options,'record_paths',semaphores=semaphores)
     else:
         #Checks that files are available.
         database.load_database(options,find_time,semaphores=semaphores)
         #Find the list of institute / model with all the months for all the years / experiments and variables requested:
         intersection(database,options)
-        dataset, output=database.nc_Database.write_database(database.header,options,'record_meta_data',semaphores=semaphores)
+        output=database.nc_Database.write_database(database.header,options,'record_meta_data',semaphores=semaphores)
     database.close_database()
-    dataset.close()
     return output
 
 def intersection(database,options):

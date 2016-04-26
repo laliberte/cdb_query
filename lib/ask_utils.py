@@ -7,6 +7,7 @@ import random
 import sqlalchemy
 import multiprocessing
 import json
+import netCDF4
 
 #Internal:
 import ftp_query
@@ -38,15 +39,14 @@ def ask_with_database(database,options):
 
     if options.list_only_field!=None:
         output=set([item for sublist in only_list for item in sublist])
-        dataset=None
     else:
         intersection(database)
         #List data_nodes:
         database.header['data_node_list']=database.nc_Database.list_data_nodes(options)
-        dataset, output =database.nc_Database.write_database(database.header,options,'record_paths')
+        output =database.nc_Database.write_database(database.header,options,'record_paths')
         #Remove data_nodes:
-        delattr(dataset,'data_node_list')
-        dataset.close()
+        with netCDF4.Dataset(output,'a') as dataset:
+            delattr(dataset,'data_node_list')
 
     database.close_database()
     return output
@@ -180,7 +180,7 @@ def ask_simulations_recursive(database,options,simulations_desc,async=True):
                 args_list.append((copy.copy(database),copy.copy(options_copy),simulations_desc[1:],val))
         if ('num_procs' in dir(options_copy) and options_copy.num_procs>1 and async==True and len(args_list)>0
             and not ('serial' in dir(options_copy) and options_copy.serial)):
-            pool=multiprocessing.Pool(processes=min(options_copy.num_procs,len(args_list)))
+            pool=multiprocessing.Pool(processes=min(options_copy.num_procs,len(args_list),5))
             try:
                 simulations_list=[item for sublist in pool.map(wrapper_ask_simulations_recursive,args_list) for item in sublist]
             finally:

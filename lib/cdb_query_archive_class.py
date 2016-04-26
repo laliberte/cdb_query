@@ -206,11 +206,11 @@ def reduce(database,options,q_manager=None):
     return
 
 def merge(database,options,q_manager=None):
-    output=netCDF4.Dataset(options.out_netcdf_file,'w')
     database.load_header(options)
-    nc_Database.record_header(output,database.header)
-    for file_name in [options.in_netcdf_file,]+options.in_extra_netcdf_files:
-        nc_Database_utils.record_to_netcdf_file_from_file_name(options,file_name,output,database.drs)
+    with netCDF4.Dataset(options.out_netcdf_file,'w') as output:
+        nc_Database.record_header(output,database.header)
+        for file_name in [options.in_netcdf_file,]+options.in_extra_netcdf_files:
+            nc_Database_utils.record_to_netcdf_file_from_file_name(options,file_name,output,database.drs)
     return
 
 def list_fields(database,options,q_manager=None):
@@ -231,23 +231,16 @@ class Database_Manager:
         return fields_list
 
     def put_or_process(self,function_name,function_handle,vars_list,options,q_manager,times_list=[(None,None,None,None),]):
-        next_function_name=q_manager.queues_names[q_manager.queues_names.index(function_name)+1]
-
-        #If it the first pass, start download processes, if needed:
-        #if 'spin_up' in dir(options) and options.spin_up:
-        #    q_manager.start_download_processes()
-        #    #spin_up is over
-        #    options.spin_up=False
-        #    #Set number of processors to 1 for all child processses.
-        #    options.num_procs=1
 
         if (len(vars_list)==0 or len(times_list)==0):
             #There is no variables to find in the input. 
             #Delete input and decrement expected function.
-            getattr(q_manager,next_function_name+'_expected').decrement()
-            if ('in_netcdf_file' in dir(options) and
-                q_manager.queues_names.index(function_name)>0):
+            if q_manager.remove((function_name,options)):
                 os.remove(options.in_netcdf_file)
+            #getattr(q_manager,next_function_name+'_expected').decrement()
+            #if ('in_netcdf_file' in dir(options) and
+            #    q_manager.queues_names.index(function_name)>0):
+            #    os.remove(options.in_netcdf_file)
 
             if len(vars_list)>0:
                 if not ('silent' in dir(options) and options.silent):
@@ -271,18 +264,21 @@ class Database_Manager:
                         var_times_list=downloads.time_split(self,options_copy)
                     #Submit only if the times_list is not empty:
                     if len(times_list)==1 or len(var_times_list)>0:
-                        if ('in_netcdf_file' in dir(options) and
-                            q_manager.queues_names.index(function_name)>0):
-                            #Copy input files to prevent garbage from accumulating:
-                            counter=q_manager.counter.increment()
-                            options_copy.in_netcdf_file=options.in_netcdf_file+'.'+str(counter)
-                            shutil.copyfile(options.in_netcdf_file,options_copy.in_netcdf_file)
-                        getattr(q_manager,function_name+'_expected').increment()
-                        q_manager.put((function_name,options_copy))
-            getattr(q_manager,next_function_name+'_expected').decrement()
-            #Remove input file because we have created one temporary file per process:
-            if ('in_netcdf_file' in dir(options) and
-                q_manager.queues_names.index(function_name)>0):
+                        #if ('in_netcdf_file' in dir(options) and
+                        #    q_manager.queues_names.index(function_name)>0):
+                        #    #Copy input files to prevent garbage from accumulating:
+                        #    counter=q_manager.counter.increment()
+                        #    options_copy.in_netcdf_file=options.in_netcdf_file+'.'+str(counter)
+                        #    shutil.copyfile(options.in_netcdf_file,options_copy.in_netcdf_file)
+                        new_file_name=q_manager.increment_expected_and_put((function_name,options_copy))
+                        if new_file_name!='':
+                            shutil.copyfile(options.in_netcdf_file,new_file_name)
+            if q_manager.remove((function_name,options)):
+            #next_function_name=q_manager.queues_names[q_manager.queues_names.index(function_name)+1]
+            #getattr(q_manager,next_function_name+'_expected').decrement()
+            ##Remove input file because we have created one temporary file per process:
+            #if ('in_netcdf_file' in dir(options) and
+            #    q_manager.queues_names.index(function_name)>0):
                 os.remove(options.in_netcdf_file)
             return
         else:
@@ -294,18 +290,21 @@ class Database_Manager:
 
             if output_file_name==None:
                 #No file was written and the next function should not expect anything:
-                getattr(q_manager,next_function_name+'_expected').decrement()
-                if ('in_netcdf_file' in dir(options) and
-                    q_manager.queues_names.index(function_name)>0):
+                #next_function_name=q_manager.queues_names[q_manager.queues_names.index(function_name)+1]
+                #getattr(q_manager,next_function_name+'_expected').decrement()
+                #if ('in_netcdf_file' in dir(options) and
+                #    q_manager.queues_names.index(function_name)>0):
+                if q_manager.remove((function_name,options)):
                     os.remove(options.in_netcdf_file)
                 return
             else:
                 #Remove temporary input files if not the first function:
-                if ('in_netcdf_file' in dir(options) and
-                    q_manager.queues_names.index(function_name)>0):
-                    os.remove(options_copy.in_netcdf_file)
+                if 'in_netcdf_file' in dir(options):
+                    previous_in_netcdf_file=options_copy.in_netcdf_file
+                #Set to output_file
                 options_copy.in_netcdf_file=output_file_name
-                q_manager.put((next_function_name,options_copy))
+                if q_manager.put_to_next((function_name,options_copy)):
+                    os.remove(previous_in_netcdf_file)
                 return
 
     def find_data_nodes_and_simulations(self,options):
@@ -350,7 +349,7 @@ class Database_Manager:
             self.header=dict()
             self.header['experiment_list']={item.split(':')[0]:item.split(':')[1] for item in options.Experiment}
             self.header['month_list']=[item for item in options.Month]
-            self.header['search_list']=[item for item in options.Search_path]
+            self.header['search_list']=[item for item in options.Search_path if not item in options.XSearch_path]
             self.header['variable_list']={item.split(':')[0]:item.split(':')[1].split(',') for item in options.Var}
             self.header['file_type_list']=[item for item in options.File_type]
         else:

@@ -25,6 +25,7 @@ class SimpleSyncManager(managers.BaseManager):
     Subclass of `BaseManager'' it includes a subset of the 
     shared objects provided by multiprocessing.manager
     '''
+    pass
 SimpleSyncManager.register('Queue', Queue.Queue)
 SimpleSyncManager.register('PriorityQueue', Queue.PriorityQueue)
 SimpleSyncManager.register('Event', threading.Event, managers.EventProxy)
@@ -41,10 +42,13 @@ SimpleSyncManager.register('dict', dict, managers.DictProxy)
 SimpleSyncManager.register('Value', managers.Value, managers.ValueProxy)
 #SimpleSyncManager.register('Array', Array, managers.ArrayProxy)
 #SimpleSyncManager.register('Namespace', Namespace, managers.NamespaceProxy)
-    
+
+class ReduceManager(managers.BaseManager):
+    pass
 
 class CDB_queues_manager:
     def __init__(self,options):
+        #This vanilla manager seems more robust bu use the custom manager to have the PriorityQueue
         #self.manager=multiprocessing.Manager()
         self.manager=SimpleSyncManager()
         self.manager.start()
@@ -78,6 +82,7 @@ class CDB_queues_manager:
         
         for queue_name in self.queues_names:
             setattr(self,queue_name,self.manager.PriorityQueue())
+            #setattr(self,queue_name,self.manager.Queue())
             setattr(self,queue_name+'_expected',NC4SL_queues_manager.Shared_Counter(self.manager))
         
         #Create a shared counter to prevent file collisions:
@@ -111,10 +116,46 @@ class CDB_queues_manager:
         self.do_not_keep_consumers_alive.set()
         return
 
-    def put(self,item):
+    def increment_expected_and_put(self,item):
         #Put the item in the right queue and give it a number:
+        if ('in_netcdf_file' in dir(item[-1]) and
+            self.queues_names.index(item[0])>0):
+            #Copy input files to prevent garbage from accumulating:
+            counter=self.counter.increment()
+            item[-1].in_netcdf_file+='.'+str(counter)
+            new_file_name=item[-1].in_netcdf_file
+        else:
+            new_file_name=''
+        getattr(self,item[0]+'_expected').increment()
         getattr(self,item[0]).put((item[-1].priority,(self.counter.increment(),)+item))
-        return
+        return new_file_name
+
+    def put_to_next(self,item):
+        #Put the item in the next function queue and give it a number:
+        next_function_name=self.queues_names[self.queues_names.index(item[0])+1]
+        getattr(self,next_function_name).put((item[-1].priority,(self.counter.increment(),next_function_name)+item[1:]))
+        if ('in_netcdf_file' in dir(item[-1]) and
+            self.queues_names.index(item[0])>0):
+            return True
+        else:
+            return False
+
+    def remove(self,item):
+        next_function_name=self.queues_names[self.queues_names.index(item[0])+1]
+        getattr(self,next_function_name+'_expected').decrement()
+        if ('in_netcdf_file' in dir(item[-1]) and
+            self.queues_names.index(item[0])>0):
+            return True
+        else:
+            return False
+
+    def get_d_no_record(self):
+        return self.get(queues_names=[queue for queue in ['download_opendap']
+                                        if queue in self.queues_names])
+
+    def get_reduce_no_record(self):
+        return self.get(queues_names=[queue for queue in ['reduce']
+                                        if queue in self.queues_names])
 
     def get_dr_no_record(self):
         return self.get(queues_names=[queue for queue in ['download_opendap','reduce']
@@ -126,6 +167,9 @@ class CDB_queues_manager:
 
     def get_all_record(self):
         return self.get(record=True,queues_names=self.queues_names)
+
+    def get_server_record(self):
+        return self.get(record=True,queues_names=['ask','validate','download_files','reduce_soft_links','download_opendap','record'])
 
     def get(self,record=False,queues_names=[]):
         #Simple get that goes through the queues sequentially
@@ -183,14 +227,12 @@ def recorder(q_manager,project_drs,options):
     #Set number of processors to 1 for recoder process.
     options.num_procs=1
 
-    output=netCDF4.Dataset(options.out_netcdf_file,'w')
-    output.set_fill_off()
+    with netCDF4.Dataset(options.out_netcdf_file,'w') as output:
+        output.set_fill_off()
 
-    database=cdb_query_archive_class.Database_Manager(project_drs)
-    database.load_header(options)
-    nc_Database.record_header(output,database.header)
-
-    output.close()
+        database=cdb_query_archive_class.Database_Manager(project_drs)
+        database.load_header(options)
+        nc_Database.record_header(output,database.header)
 
     if ( 'log_files' in options and options.log_files ):
         log_file_name=multiprocessing.current_process().name + ".out"
@@ -210,7 +252,12 @@ def recorder(q_manager,project_drs,options):
         
 def recorder_queue_consume(q_manager,project_drs,options):
     renewal_time=datetime.datetime.now()
-    for item in iter(q_manager.get_all_record,'STOP'):
+
+    if ('start_server' in dir(options) and options.start_server):
+        get_type=getattr(q_manager,'get_server_record')
+    else:
+        get_type=getattr(q_manager,'get_all_record')
+    for item in iter(get_type,'STOP'):
         if item[1]!='record':
             consume_one_item(item[0],item[1],item[2],q_manager,project_drs)
         else:
@@ -230,9 +277,8 @@ def record_to_netcdf_file(options,file_name,project_drs):
     #import subprocess; subprocess.Popen('ncdump -v path '+temp_file_name,shell=True)
     if ( 'log_files' in options and options.log_files ):
         print('Recording: ',datetime.datetime.now(),options)
-    output=netCDF4.Dataset(file_name,'a')
-    nc_Database_utils.record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_drs)
-    output.close()
+    with netCDF4.Dataset(file_name,'a') as output:
+        nc_Database_utils.record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_drs)
     if ( 'log_files' in options and options.log_files ):
         print('DONE Recording: ',datetime.datetime.now(),options)
     #Make sure the file is gone:
@@ -265,6 +311,27 @@ def consumer_queue_consume(q_manager,project_drs):
         consume_one_item(item[0],item[1],item[2],q_manager,project_drs)
     return
 
+def reducer(q_manager,project_drs,options):
+    if ( 'log_files' in options and options.log_files ):
+        log_file_name=multiprocessing.current_process().name + ".out"
+        with open(log_file_name, "w") as logger:
+            old_stdout=sys.stdout
+            old_stdout.flush()
+            try:
+                sys.stdout=logger
+                reducer_queue_consume(q_manager,project_drs)
+            finally:
+                sys.stdout.flush()
+                sys.stdout=old_stdout
+    else:
+        reducer_queue_consume(q_manager,project_drs)
+    return
+
+def reducer_queue_consume(q_manager,project_drs):
+    for item in iter(q_manager.get_reduce_no_record,'STOP'):
+        consume_one_item(item[0],item[1],item[2],q_manager,project_drs)
+    return
+
 def consume_one_item(counter,function_name,options,q_manager,project_drs):
     #First copy options:
     options_copy=copy.copy(options)
@@ -287,11 +354,8 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs):
         if options_copy.trial<options.max_trial:
             #Put it back in the queue, increasing its trial number:
             options_copy.trial+=1
-            next_function_name=q_manager.queues_names[q_manager.queues_names.index(function_name)+1]
             #Decrement expectation in next function:
-            getattr(q_manager,next_function_name+'_expected').decrement()
-            #Increment expectation in current function:
-            getattr(q_manager,function_name+'_expected').increment()
+            q_manager.remove((function_name,options_copy))
             #Delete output from previous attempt files:
             try:
                 map(os.remove,glob.glob(options_copy.out_netcdf_file+'.*'))
@@ -300,8 +364,8 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs):
                 pass
             #Reset output file:
             options_copy.out_netcdf_file=options.out_netcdf_file
-            #Resubmit:
-            q_manager.put((function_name,options_copy))
+            #Increment expectation in current function and resubmit:
+            q_manager.increment_expected_and_put((function_name,options_copy))
         else:
             print function_name+' failed with the following options:',options_copy
             raise
@@ -324,21 +388,38 @@ def consumer_processes_names(q_manager,options):
     processes_names=[multiprocessing.current_process().name,]
     if (not ( 'serial' in dir(options) and options.serial) and
          ( 'num_procs' in dir(options) and options.num_procs>1) ):
-        avdr_types=(len(set(['ask','validate','download_files','reduce_soft_links']).intersection(q_manager.queues_names))>0)
-        dr_types=(len(set(['download_opendap','reduce']).intersection(q_manager.queues_names))>0)
+        if ('start_server' in dir(options) and options.start_server):
+            avdr_types=(len(set(['ask','validate','download_files','reduce_soft_links']).intersection(q_manager.queues_names))>0)
+            d_types=(len(set(['download_opendap']).intersection(q_manager.queues_names))>0)
 
-        if avdr_types and not dr_types:
-            for proc_id in range(options.num_procs-1):
-               processes_names.append('avdr_'+str(proc_id))
-        elif dr_types and not avdr_types:
-            for proc_id in range(options.num_procs-1):
-               processes_names.append('dr_'+str(proc_id))
-        else:
-            for proc_id in range(options.num_procs-1):
-                #One third of processes go to avdr:
-                if proc_id < (options.num_procs-1) // 3:
+            if avdr_types and not d_types:
+                for proc_id in range(options.num_procs-1):
                    processes_names.append('avdr_'+str(proc_id))
-                else:
-                   processes_names.append('dr_'+str(proc_id))
-    return processes_names
+            elif d_types and not avdr_types:
+                for proc_id in range(options.num_procs-1):
+                   processes_names.append('d_'+str(proc_id))
+            else:
+                for proc_id in range(options.num_procs-1):
+                    #One half of processes go to avdr:
+                    if proc_id < (options.num_procs-1) // 2:
+                       processes_names.append('avdr_'+str(proc_id))
+                    else:
+                       processes_names.append('d_'+str(proc_id))
+        else:
+            avdr_types=(len(set(['ask','validate','download_files','reduce_soft_links']).intersection(q_manager.queues_names))>0)
+            dr_types=(len(set(['download_opendap','reduce']).intersection(q_manager.queues_names))>0)
 
+            if avdr_types and not dr_types:
+                for proc_id in range(options.num_procs-1):
+                   processes_names.append('avdr_'+str(proc_id))
+            elif dr_types and not avdr_types:
+                for proc_id in range(options.num_procs-1):
+                   processes_names.append('dr_'+str(proc_id))
+            else:
+                for proc_id in range(options.num_procs-1):
+                    #One third of processes go to avdr:
+                    if proc_id < (options.num_procs-1) // 3:
+                       processes_names.append('avdr_'+str(proc_id))
+                    else:
+                       processes_names.append('dr_'+str(proc_id))
+    return processes_names

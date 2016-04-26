@@ -59,9 +59,8 @@ def reduce_sl_or_var(database,options,q_manager=None,retrieval_type='reduce',scr
 
     if retrieval_type=='reduce_soft_links':
         output_file_name=temp_output_file_name+'.tmp'
-        output=netCDF4.Dataset(output_file_name,'w')
-        nc_Database_utils.record_to_netcdf_file_from_file_name(options,temp_output_file_name,output,database.drs)
-        output.close()
+        with netCDF4.Dataset(output_file_name,'w') as output:
+            nc_Database_utils.record_to_netcdf_file_from_file_name(options,temp_output_file_name,output,database.drs)
     else:
         #This is the last function in the chain. Convert and create soft links:
         output_file_name=nc_Database_utils.record_to_output_directory(temp_output_file_name,database.drs,options)
@@ -73,24 +72,23 @@ def reduce_sl_or_var(database,options,q_manager=None,retrieval_type='reduce',scr
     return temp_output_file_name
 
 def extract_single_tree(temp_file,file,tree,tree_fx,options,options_fx,retrieval_type='reduce',check_empty=False):
-    data=netCDF4.Dataset(file,'r')
-    hdf5=None
-    #try:
-    #    for item in h5py.h5f.get_obj_ids(types=h5py.h5f.OBJ_FILE):
-    #        if 'name' in dir(item) and item.name==file:
-    #            hdf5=h5py.File(item)
-    #except ValueError:
-    #    pass
-    #except RuntimeError:
-    #    pass
+    with netCDF4.Dataset(file,'r') as data:
+        hdf5=None
+        try:
+            for item in h5py.h5f.get_obj_ids(types=h5py.h5f.OBJ_FILE):
+                if 'name' in dir(item) and item.name==file:
+                    hdf5=h5py.File(item)
+        except ValueError:
+            pass
+        except RuntimeError:
+            pass
 
-    output_tmp=netCDF4.Dataset(temp_file,'w',format='NETCDF4',diskless=True,persist=True)
-    if ('add_fixed' in dir(options) and options.add_fixed):
-        nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree_fx,options_fx,retrieval_type=retrieval_type,check_empty=True,hdf5=hdf5)
+        with netCDF4.Dataset(temp_file,'w',format='NETCDF4',diskless=True,persist=True) as output_tmp:
+            if ('add_fixed' in dir(options) and options.add_fixed):
+                nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree_fx,options_fx,retrieval_type=retrieval_type,check_empty=True,hdf5=hdf5)
 
-    nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree,options,retrieval_type=retrieval_type,check_empty=check_empty,hdf5=hdf5)
-    output_tmp.close()
-    data.close()
+            nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree,options,retrieval_type=retrieval_type,check_empty=check_empty,hdf5=hdf5)
+
     if hdf5!=None:
         hdf5.close()
     return

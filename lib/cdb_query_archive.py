@@ -74,11 +74,22 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD, Submitted.'.format(ve
     #Ask for username and password:
     options=certificates.prompt_for_username_and_password(options)
 
+    #Set two defaults:
+    options.trial=0
+    options.priority=0
+
     if options.command!='certificates':
         if options.command in ['list_fields','merge']:
             database=cdb_query_archive_class.Database_Manager(project_drs)
             #Run the command:
             getattr(cdb_query_archive_class,options.command)(database,options)
+        elif options.command == 'reduce_from_server':
+            #Use a server:
+            queues_manager.ReduceManager.register('get_manager')
+            reduce_manager=queues_manager.ReduceManager(address=('',50000),authkey='abracadabra')
+            reduce_manager.connect()
+            q_manager=reduce_manager.get_manager()
+            queues_manager.reducer(q_manager,project_drs,options)
         else:
             #Create the queue manager:
             q_manager=queues_manager.CDB_queues_manager(options)
@@ -86,13 +97,26 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD, Submitted.'.format(ve
             try:
                 #Start the queue consumer processes:
                 options_copy=copy.copy(options)
-                options_copy.trial=0
                 #Increment first queue and put:
-                getattr(q_manager,q_manager.queues_names[0]+'_expected').increment()
-                q_manager.put((q_manager.queues_names[0],options_copy))
-                #Start record process:
-                queues_manager.recorder(q_manager,project_drs,options)
+                q_manager.increment_expected_and_put((q_manager.queues_names[0],options_copy))
+                if ('start_server' in dir(options) and options.start_server):
+                    #Start a dedicated recorder process:
+                    processes['recorder']=multiprocessing.Process(target=queues_manager.recorder,
+                                                                   name='recorder',
+                                                                   args=(q_manager,project_drs,options))
+                    processes['recorder'].start()
+                    #Create server and serve:
+                    queues_manager.ReduceManager.register('get_manager',lambda:q_manager,['increment_expected_and_put','put_to_next','remove','get_reduce_no_record'])
+                    reduce_manager=queues_manager.ReduceManager(address=('',50000),authkey='abracadabra')
+                    reduce_server=reduce_manager.get_server()
+                    print('Serving data on :',reduce_server.address)
+                    reduce_server.serve_forever()
+                else:
+                    #Start record process:
+                    queues_manager.recorder(q_manager,project_drs,options)
             finally:
+                if ('start_server' in dir(options) and options.start_server):
+                    reduce_server.shutdown()
                 q_manager.stop_download_processes()
                 for process_name in processes.keys():
                     if process_name!=multiprocessing.current_process().name:
