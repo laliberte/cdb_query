@@ -9,7 +9,7 @@ import os
 import netcdf4_soft_links.create_soft_links as create_soft_links
 import netcdf4_soft_links.read_soft_links as read_soft_links
 import netcdf4_soft_links.netcdf_utils as netcdf_utils
-import netcdf4_soft_links.remote_netcdf as remote_netcdf
+import netcdf4_soft_links.opendap_netcdf as opendap_netcdf
 
 #Internal:
 import nc_Database
@@ -34,7 +34,7 @@ def extract_netcdf_variable_recursive(output,data,
         for group in data.groups.keys():
             if ( nc_Database.is_level_name_included_and_not_excluded(level_name,options,group) and
                  nc_Database.tree_recursive_check_not_empty(options,data.groups[group])):
-                output_grp=netcdf_utils.replicate_group(output,data,group)
+                output_grp=netcdf_utils.replicate_group(data,output,group)
                 extract_retrieve_or_replicate(group,output_grp,data,
                                                tree,
                                                retrieval_type,
@@ -140,7 +140,7 @@ def replace_netcdf_variable_recursive(output,data,
     group_name=level_desc[1]
     if group_name==None or isinstance(group_name,list):
         for group in data.groups.keys():
-            output_grp=netcdf_utils.create_group(output,data,group)
+            output_grp=netcdf_utils.create_group(data,output,group)
             if hdf5!=None:
                 hdf5_grp=hdf5[group]
             else:
@@ -150,7 +150,7 @@ def replace_netcdf_variable_recursive(output,data,
                                                         tree,
                                                         hdf5=hdf5_grp,check_empty=check_empty)
     else:
-        output_grp=netcdf_utils.create_group(output,data,group_name)
+        output_grp=netcdf_utils.create_group(data,output,group_name)
         if group_name in data.groups.keys():
             data_grp=data.groups[group_name]
             if hdf5!=None:
@@ -225,7 +225,7 @@ def write_netcdf_variable_recursive(output,out_dir,data,
         if group_name==None or isinstance(group_name,list):
             for group in data.groups.keys():
                 sub_out_dir=make_sub_dir(out_dir,group)
-                output_grp=netcdf_utils.create_group(output,data,group)
+                output_grp=netcdf_utils.create_group(data,output,group)
                 options_copy=copy.copy(options)
                 setattr(options_copy,level_name,[group,])
                 if hdf5!=None:
@@ -238,7 +238,7 @@ def write_netcdf_variable_recursive(output,out_dir,data,
                         
         else:
             sub_out_dir=make_sub_dir(out_dir,group_name)
-            output_grp=netcdf_utils.create_group(output,data,group_name)
+            output_grp=netcdf_utils.create_group(data,output,group_name)
             options_copy=copy.copy(options)
             setattr(options_copy,level_name,[group_name,])
             write_netcdf_variable_recursive_replicate(output_grp,sub_out_dir,data,
@@ -277,7 +277,7 @@ def write_netcdf_variable_recursive_replicate(output,sub_out_dir,data_grp,
         paths_list=[{'path': '|'.join([path,]+['' for id in unique_file_id_list]),
                      'version':options.version[0],
                      'file_type':'local_file',
-                     'data_node': remote_netcdf.get_data_node(path,'local_file')},]
+                     'data_node': opendap_netcdf.get_data_node(path,'local_file')},]
 
         netcdf_pointers=create_soft_links.create_netCDF_pointers(
                                                           paths_list,

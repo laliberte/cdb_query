@@ -6,7 +6,7 @@ import urllib2
 import httplib
 
 #External but related:
-import netcdf4_soft_links.remote_netcdf as remote_netcdf
+import netcdf4_soft_links.opendap_netcdf as opendap_netcdf
 
 unique_file_id_list=['checksum_type','checksum','tracking_id']
 
@@ -124,7 +124,7 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
 
 def record_url(remote_file_desc,nc_Database):
     nc_Database.file_expt.path=remote_file_desc['url']
-    nc_Database.file_expt.data_node=remote_netcdf.get_data_node(remote_file_desc['url'],remote_file_desc['file_type'])
+    nc_Database.file_expt.data_node=opendap_netcdf.get_data_node(remote_file_desc['url'],remote_file_desc['file_type'])
     for unique_file_id in unique_file_id_list:
         if remote_file_desc['file_type'] in nc_Database.drs.remote_file_types and remote_file_desc[unique_file_id]!=None:
             nc_Database.file_expt.path+='|'+remote_file_desc[unique_file_id]
