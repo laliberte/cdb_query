@@ -165,6 +165,10 @@ class CDB_queues_manager:
         return self.get(queues_names=[queue for queue in ['ask','validate','download_files','reduce_soft_links']
                                         if queue in self.queues_names])
 
+    def get_avdrd_no_record(self):
+        return self.get(queues_names=[queue for queue in ['ask','validate','download_files','reduce_soft_links','download_opendap']
+                                        if queue in self.queues_names])
+
     def get_all_record(self):
         return self.get(record=True,queues_names=self.queues_names)
 
@@ -392,22 +396,24 @@ def consumer_processes_names(q_manager,options):
     if (not ( 'serial' in dir(options) and options.serial) and
          ( 'num_procs' in dir(options) and options.num_procs>1) ):
         if ('start_server' in dir(options) and options.start_server):
-            avdr_types=(len(set(['ask','validate','download_files','reduce_soft_links']).intersection(q_manager.queues_names))>0)
-            d_types=(len(set(['download_opendap']).intersection(q_manager.queues_names))>0)
-
-            if avdr_types and not d_types:
-                for proc_id in range(options.num_procs-1):
-                   processes_names.append('avdr_'+str(proc_id))
-            elif d_types and not avdr_types:
-                for proc_id in range(options.num_procs-1):
-                   processes_names.append('d_'+str(proc_id))
-            else:
-                for proc_id in range(options.num_procs-1):
-                    #One half of processes go to avdr:
-                    if proc_id < (options.num_procs-1) // 2:
-                       processes_names.append('avdr_'+str(proc_id))
-                    else:
-                       processes_names.append('d_'+str(proc_id))
+            for proc_id in range(options.num_procs-1):
+               processes_names.append('avdrd_'+str(proc_id))
+            #avdr_types=(len(set(['ask','validate','download_files','reduce_soft_links']).intersection(q_manager.queues_names))>0)
+            #d_types=(len(set(['download_opendap']).intersection(q_manager.queues_names))>0)
+            #
+            #if avdr_types and not d_types:
+            #    for proc_id in range(options.num_procs-1):
+            #       processes_names.append('avdr_'+str(proc_id))
+            #elif d_types and not avdr_types:
+            #    for proc_id in range(options.num_procs-1):
+            #       processes_names.append('d_'+str(proc_id))
+            #else:
+            #    for proc_id in range(options.num_procs-1):
+            #        #One half of processes go to avdr:
+            #        if proc_id < (options.num_procs-1) // 2:
+            #           processes_names.append('avdr_'+str(proc_id))
+            #        else:
+            #           processes_names.append('d_'+str(proc_id))
         else:
             avdr_types=(len(set(['ask','validate','download_files','reduce_soft_links']).intersection(q_manager.queues_names))>0)
             dr_types=(len(set(['download_opendap','reduce']).intersection(q_manager.queues_names))>0)
