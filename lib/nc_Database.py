@@ -10,7 +10,7 @@ import numpy as np
 #External but related:
 import netcdf4_soft_links.read_soft_links as read_soft_links
 import netcdf4_soft_links.create_soft_links as create_soft_links
-import netcdf4_soft_links.opendap_netcdf as opendap_netcdf
+import netcdf4_soft_links.remote_netcdf as remote_netcdf
 import netcdf4_soft_links.retrieval_manager as retrieval_manager
 
 #Internal:
@@ -158,16 +158,16 @@ class nc_Database:
                 else:
                     check_dimensions=True
 
-            netcdf_pointers=create_soft_links.create_netCDF_pointers(
-                                                              paths_list,time_frequency,years, months,
-                                                              header['file_type_list'],
-                                                              header['data_node_list'],
-                                                              semaphores=semaphores,check_dimensions=check_dimensions)
+                netcdf_pointers=create_soft_links.create_netCDF_pointers(
+                                                                  paths_list,time_frequency,years, months,
+                                                                  header['file_type_list'],
+                                                                  header['data_node_list'],
+                                                                  semaphores=semaphores,check_dimensions=check_dimensions)
 
-            getattr(netcdf_pointers,record_function_handle)(output,var,username=options.username,user_pass=options.password)
+                getattr(netcdf_pointers,record_function_handle)(output,var,username=options.username,user_pass=options.password)
 
-            #Remove recorded data from database:
-            self.session.query(*out_tuples).filter(sqlalchemy.and_(*conditions)).delete()
+                #Remove recorded data from database:
+                self.session.query(*out_tuples).filter(sqlalchemy.and_(*conditions)).delete()
 
         return temp_output_file_name
 
@@ -183,14 +183,13 @@ class nc_Database:
                 q_manager.download.set_closed()
                 data_node_list=self.list_data_nodes(options)
                 output=retrieval_manager.launch_download(output,data_node_list,q_manager.download,options)
-                if (retrieval_type=='download_files'
-                    and
-                    not ( 'do_not_revalidate' in dir(options) and options.do_not_revalidate)):
-                    pass #Not implemented yet
-                       #revalidate
+                #if (retrieval_type=='download_files'
+                #    and
+                #    not ( 'do_not_revalidate' in dir(options) and options.do_not_revalidate)):
+                #    pass #Not implemented yet
+                #       #revalidate
             else:
                 nc_Database_utils.extract_netcdf_variable(output,dataset,tree,options,retrieval_type=retrieval_type)
-        output.sync()
         return output
 
     def retrieve_dates(self,options):
@@ -217,7 +216,7 @@ def populate_database_recursive(nc_Database,data,options,find_function,semaphore
                 setattr(nc_Database.file_expt,id,soft_links.variables[id][path_id])
 
             #Check if data_node was included:
-            data_node=opendap_netcdf.get_data_node(soft_links.variables['path'][path_id],
+            data_node=remote_netcdf.get_data_node(soft_links.variables['path'][path_id],
                                                     soft_links.variables['file_type'][path_id])
 
             if is_level_name_included_and_not_excluded('data_node',options,data_node):
@@ -241,7 +240,7 @@ def populate_database_recursive(nc_Database,data,options,find_function,semaphore
             setattr(nc_Database.file_expt,id,data.getncattr(id))
 
         #Check if data_node was included:
-        data_node=opendap_netcdf.get_data_node(data.getncattr('path'),
+        data_node=remote_netcdf.get_data_node(data.getncattr('path'),
                                                 data.getncattr('file_type'))
         if is_level_name_included_and_not_excluded('data_node',options,data_node):
             file_path='|'.join([data.getncattr('path'),] +
@@ -250,7 +249,7 @@ def populate_database_recursive(nc_Database,data,options,find_function,semaphore
             setattr(nc_Database.file_expt,'version',str(data.getncattr('version')))
 
             setattr(nc_Database.file_expt,'data_node',
-                        opendap_netcdf.get_data_node(nc_Database.file_expt.path,
+                        remote_netcdf.get_data_node(nc_Database.file_expt.path,
                                                       nc_Database.file_expt.file_type))
             find_function(nc_Database,copy.deepcopy(nc_Database.file_expt))
     else:
@@ -261,7 +260,7 @@ def populate_database_recursive(nc_Database,data,options,find_function,semaphore
             setattr(nc_Database.file_expt,id,'')
         if len(data.variables.keys())>0:
             setattr(nc_Database.file_expt,'data_node',
-                        opendap_netcdf.get_data_node(nc_Database.file_expt.path,
+                        remote_netcdf.get_data_node(nc_Database.file_expt.path,
                                                       nc_Database.file_expt.file_type))
             find_function(nc_Database,copy.deepcopy(nc_Database.file_expt))
     return

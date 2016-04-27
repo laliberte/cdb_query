@@ -324,6 +324,7 @@ def extended_slicing_arguments(parser,project_drs):
 
 def download_files(subparsers,epilog,project_drs):
     parser=manage_soft_links_parsers.download_files(subparsers,epilog,project_drs)
+    parser.add_argument('--max_trial',type=int,default=3,help='Try a function that number of time because raising an exception.')
     parser.add_argument('--swap_dir',type=writeable_dir,default='.',
                                  help='Use this directory as a swap directory.')
     functions_arguments(parser,['download_files'])
@@ -367,6 +368,7 @@ def reduce_soft_links_arguments(parser,project_drs):
 
 def download_opendap(subparsers,epilog,project_drs):
     parser=manage_soft_links_parsers.download_opendap(subparsers,epilog,project_drs)
+    parser.add_argument('--max_trial',type=int,default=3,help='Try a function that number of time because raising an exception.')
     parser.add_argument('--swap_dir',type=writeable_dir,default='.',
                                  help='Use this directory as a swap directory.')
     functions_arguments(parser,['download_opendap'])

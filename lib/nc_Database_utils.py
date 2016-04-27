@@ -9,7 +9,7 @@ import os
 import netcdf4_soft_links.create_soft_links as create_soft_links
 import netcdf4_soft_links.read_soft_links as read_soft_links
 import netcdf4_soft_links.netcdf_utils as netcdf_utils
-import netcdf4_soft_links.opendap_netcdf as opendap_netcdf
+import netcdf4_soft_links.remote_netcdf as remote_netcdf
 
 #Internal:
 import nc_Database
@@ -277,7 +277,7 @@ def write_netcdf_variable_recursive_replicate(output,sub_out_dir,data_grp,
         paths_list=[{'path': '|'.join([path,]+['' for id in unique_file_id_list]),
                      'version':options.version[0],
                      'file_type':'local_file',
-                     'data_node': opendap_netcdf.get_data_node(path,'local_file')},]
+                     'data_node': remote_netcdf.get_data_node(path,'local_file')},]
 
         netcdf_pointers=create_soft_links.create_netCDF_pointers(
                                                           paths_list,

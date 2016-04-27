@@ -47,7 +47,6 @@ def ask_with_database(database,options):
         #Remove data_nodes:
         with netCDF4.Dataset(output,'a') as dataset:
             delattr(dataset,'data_node_list')
-
     database.close_database()
     return output
 

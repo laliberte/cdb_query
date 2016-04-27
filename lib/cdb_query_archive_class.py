@@ -283,7 +283,10 @@ class Database_Manager:
             return
         else:
             #Compute single element!
-            options_copy=make_new_options_from_lists(options,vars_list[0],times_list[0],function_name,self.drs.official_drs_no_version)
+            if ('serial' in dir(options) and options.serial):
+                options_copy=copy.copy(options)
+            else: 
+                options_copy=make_new_options_from_lists(options,vars_list[0],times_list[0],function_name,self.drs.official_drs_no_version)
 
             #Compute function:
             output_file_name=function_handle(self,options_copy,q_manager=q_manager)

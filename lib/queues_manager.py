@@ -242,6 +242,7 @@ def recorder(q_manager,project_drs,options):
             old_stdout.flush()
             try:
                 sys.stdout=logger
+                print(multiprocessing.current_process().name+' with pid '+str(os.getpid()))
                 recorder_queue_consume(q_manager,project_drs,options)
             finally:
                 sys.stdout.flush()
@@ -297,6 +298,7 @@ def consumer(q_manager,project_drs,options):
             old_stdout.flush()
             try:
                 sys.stdout=logger
+                print(multiprocessing.current_process().name+' with pid '+str(os.getpid()))
                 consumer_queue_consume(q_manager,project_drs)
             finally:
                 sys.stdout.flush()
@@ -319,6 +321,7 @@ def reducer(q_manager,project_drs,options):
             old_stdout.flush()
             try:
                 sys.stdout=logger
+                print(multiprocessing.current_process().name+' with pid '+str(os.getpid()))
                 reducer_queue_consume(q_manager,project_drs)
             finally:
                 sys.stdout.flush()
