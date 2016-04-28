@@ -65,7 +65,8 @@ class CDB_queues_manager:
             self.num_dl=1
 
         #for name in ['ask','validate','time_split']:
-        authorized_functions=['ask','validate',
+        #authorized_functions=['ask','validate',
+        authorized_functions=['ask','validate','record_validate',
                                'download_files','reduce_soft_links',
                                 'download_opendap','reduce']
         for name in authorized_functions:
@@ -173,7 +174,8 @@ class CDB_queues_manager:
         return self.get(record=True,queues_names=self.queues_names)
 
     def get_server_record(self):
-        return self.get(record=True,queues_names=['ask','validate','download_files','reduce_soft_links','download_opendap','record'])
+        return self.get(record=True,queues_names=['ask','validate','record_validate','download_files','reduce_soft_links','download_opendap','record'])
+        #return self.get(record=True,queues_names=['ask','validate','download_files','reduce_soft_links','download_opendap','record'])
 
     def get(self,record=False,queues_names=[]):
         #Simple get that goes through the queues sequentially
@@ -190,7 +192,7 @@ class CDB_queues_manager:
                     self.start_download_processes()
 
                 #Record workers can pick from the record queue
-                if not (not record and queue_name == 'record'):
+                if not (not record and 'record' in queue_name.split('_')):
                     try:
                         return self.get_queue(queue_name,timeout)
                     except Queue.Empty:
@@ -208,7 +210,7 @@ class CDB_queues_manager:
                 #reset priority to 0:
                 item[-1].priority=0
                 #Increment future actions:
-                if item[1]!='record':
+                if 'record'!=item[1]:
                     next_queue_name=self.queues_names[self.queues_names.index(item[1])+1]
                     getattr(self,next_queue_name+'_expected').increment()
                 #Decrement current action:
@@ -233,10 +235,16 @@ def recorder(q_manager,project_drs,options):
 
     with netCDF4.Dataset(options.out_netcdf_file,'w') as output:
         output.set_fill_off()
-
         database=cdb_query_archive_class.Database_Manager(project_drs)
         database.load_header(options)
         nc_Database.record_header(output,database.header)
+
+    if 'record_validate' in q_manager.queues_names:
+        with netCDF4.Dataset(options.out_netcdf_file+'.validate','w') as output:
+            output.set_fill_off()
+            database=cdb_query_archive_class.Database_Manager(project_drs)
+            database.load_header(options)
+            nc_Database.record_header(output,database.header)
 
     if ( 'log_files' in options and options.log_files ):
         log_file_name=multiprocessing.current_process().name + ".out"
@@ -263,35 +271,46 @@ def recorder_queue_consume(q_manager,project_drs,options):
     else:
         get_type=getattr(q_manager,'get_all_record')
     for item in iter(get_type,'STOP'):
-        if item[1]!='record':
+        if not 'record' in item[1].split('_'):
             consume_one_item(item[0],item[1],item[2],q_manager,project_drs)
         else:
-            record_to_netcdf_file(item[2],options.out_netcdf_file,project_drs)
+            record_to_netcdf_file(item[0],item[1],item[2],options.out_netcdf_file,q_manager,project_drs)
 
         if ('username' in dir(options) and 
             options.username!=None and
             options.password!=None and
             datetime.datetime.now() - renewal_time > datetime.timedelta(hours=1)):
             #Reactivate certificates every hours:
-            certificates.retrieve_certificates(options.username,options.service,user_pass=options.password)
+            certificates.retrieve_certificates(options.username,options.service,user_pass=options.password,timeout=options.timeout)
             renewal_time=datetime.datetime.now()
     return
 
-def record_to_netcdf_file(options,file_name,project_drs):
+def record_to_netcdf_file(counter,function_name,options,file_name,q_manager,project_drs):
+    if len(function_name.split('_'))>1:
+        record_file_name=file_name+'.'+function_name.split('_')[1]
+    else:
+        record_file_name=file_name
+
     temp_file_name=options.in_netcdf_file
     #import subprocess; subprocess.Popen('ncdump -v path '+temp_file_name,shell=True)
     if ( 'log_files' in options and options.log_files ):
-        print('Recording: ',datetime.datetime.now(),options)
-    with netCDF4.Dataset(file_name,'a') as output:
+        print('Recording: '+record_file_name,datetime.datetime.now(),options)
+    with netCDF4.Dataset(record_file_name,'a') as output:
         nc_Database_utils.record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_drs)
     if ( 'log_files' in options and options.log_files ):
-        print('DONE Recording: ',datetime.datetime.now(),options)
-    #Make sure the file is gone:
-    for id in range(2):
-        try:
-            os.remove(temp_file_name)
-        except:
-            pass
+        print('DONE Recording: '+record_file_name,datetime.datetime.now(),options)
+
+    if len(function_name.split('_'))>1:
+        options_copy=copy.copy(options)
+        options_copy.out_netcdf_file+='.'+str(counter)
+        q_manager.put_to_next((function_name,options_copy))
+    else:
+        #Make sure the file is gone:
+        for id in range(2):
+            try:
+                os.remove(temp_file_name)
+            except:
+                pass
     return
 
 def consumer(q_manager,project_drs,options):

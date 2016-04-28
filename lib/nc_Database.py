@@ -96,7 +96,8 @@ class nc_Database:
                 if is_level_name_included_and_not_excluded('data_node',options,data_node)]
                 
     def list_paths_by_data_node(self,data_node):
-        return self.session.query(File_Expt.path).filter(File_Expt.data_node==data_node).first()[0]
+        #return self.session.query(File_Expt.path).filter(File_Expt.data_node==data_node).first()[0]
+        return self.session.query(*(File_Expt.path,File_Expt.file_type)).filter(File_Expt.data_node==data_node).first()
 
     def list_paths(self):
         #subset=tuple([File_Expt.path,File_Expt.file_type]+[getattr(File_Expt,item) for item in self.drs.official_drs])

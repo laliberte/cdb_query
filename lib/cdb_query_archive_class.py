@@ -15,6 +15,7 @@ import datetime
 #External but related:
 import netcdf4_soft_links.certificates as certificates
 import netcdf4_soft_links.retrieval_manager as retrieval_manager
+import netcdf4_soft_links.remote_netcdf as remote_netcdf
 
 #Internal:
 import ask_utils
@@ -88,6 +89,8 @@ def validate(database,options,q_manager=None):
         data_node_list, url_list, simulations_list =database.find_data_nodes_and_simulations(options)
         if len(data_node_list)>1 and not options.no_check_availability:
             data_node_list, Xdata_node_list=rank_data_nodes(options,data_node_list,url_list)
+        else:
+            Xdata_node_list=[]
     else:
         simulations_list=[]
     database.drs.data_node_list=data_node_list
@@ -324,8 +327,10 @@ class Database_Manager:
         simulations_list=self.nc_Database.list_fields(self.drs.simulations_desc)
 
         data_node_list=[item[0] for item in self.nc_Database.list_fields(['data_node'])]
-        url_list=[self.nc_Database.list_paths_by_data_node(data_node).split('|')[0].replace('fileServer','dodsC')
-                    for data_node in data_node_list ]
+        url_list=[[item.split('|')[0] for item in self.nc_Database.list_paths_by_data_node(data_node)]
+                            for data_node in data_node_list ]
+        #url_list=[self.nc_Database.list_paths_by_data_node(data_node).split('|')
+        #            for data_node in data_node_list ]
         self.close_database()
         return data_node_list,url_list, simulations_list
 
@@ -433,19 +438,20 @@ def rank_data_nodes(options,data_node_list,url_list):
     for data_node_id, data_node in enumerate(data_node_list):
         url=url_list[data_node_id]
         if not ('silent' in dir(options) and options.silent):
-            print 'Querying '+url+' to measure response time of data node... '
+            print 'Querying '+url[0]+' to measure response time of data node... '
         #Try opening a link on the data node. If it does not work remove this data node.
         number_of_trials=3
         try:
-            import_string='import cdb_query.remote_netcdf;import time;'
-            load_string='remote_data=cdb_query.remote_netcdf.remote_netCDF(\''+url+'\',[]);remote_data.is_available();time.sleep(2);'
+            import_string='import netcdf4_soft_links.remote_netcdf as remote_netcdf;import time;'
+            load_string='remote_data=remote_netcdf.remote_netCDF(\''+url[0]+'\',\''+url[1]+'\');remote_data.is_available();time.sleep(2);'
             timing=timeit.timeit(import_string+load_string,number=number_of_trials)
             data_node_timing.append(timing)
             data_node_list_timed.append(data_node)
+            if not ('silent' in dir(options) and options.silent):
+                print('Done!')
         except:
-            pass
-        if not ('silent' in dir(options) and options.silent):
-            print 'Done!'
-    return list(np.array(data_node_list_timed)[np.argsort(data_node_timing)],list(set(data_node_list).difference(data_node_list_timed))
+            if not ('silent' in dir(options) and options.silent):
+                print('Data node '+data_node+' excluded because it did not respond.')
+    return list(np.array(data_node_list_timed)[np.argsort(data_node_timing)]),list(set(data_node_list).difference(data_node_list_timed))
     #return list(np.array(data_node_list_timed)[np.argsort(data_node_timing)])+list(set(data_node_list).difference(data_node_list_timed))
 

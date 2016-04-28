@@ -4,6 +4,7 @@ import h5py
 import copy
 import subprocess
 import os
+import sys
 
 #Internal:
 import nc_Database_utils
@@ -17,6 +18,8 @@ def reduce_variable(database,options,q_manager=None,retrieval_type='reduce'):
 def reduce_sl_or_var(database,options,q_manager=None,retrieval_type='reduce',script=''):
     #The leaf(ves) considered here:
     fix_list=(lambda x: x[0] if len(x)==1 else x)
+
+    #Warning! Does not allow --serial option:
     var=[fix_list(getattr(options,opt)) if getattr(options,opt)!=None
                                  else None for opt in database.drs.official_drs_no_version]
     tree=zip(database.drs.official_drs_no_version,var)
@@ -50,7 +53,7 @@ def reduce_sl_or_var(database,options,q_manager=None,retrieval_type='reduce',scr
             if not '{'+str(file_id)+'}' in script:
                 script_to_call+=' {'+str(file_id)+'}'
 
-        out=subprocess.call(script_to_call.format(*temp_file_name_list),shell=True)
+        out=subprocess.call(script_to_call.format(*temp_file_name_list),shell=True,stdout=sys.stdout,stderr=sys.stderr)
     try:
         for file in temp_file_name_list[:-1]:
             os.remove(file)

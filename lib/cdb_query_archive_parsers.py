@@ -628,6 +628,7 @@ def avdrdr(subparsers,epilog,project_drs):
     #VALIDATE
     validate_arguments(parser,project_drs)
     extended_slicing_arguments(parser,project_drs)
+    parser.add_argument('--record_validate',default=False,action='store_true',help='Record validate results in out_netcdf_file.validate')
 
     data_node_group = parser.add_argument_group('Restrict search to specific data nodes')
     data_node_group.add_argument('--data_node',type=str,action='append',help='Consider only the specified data nodes')
