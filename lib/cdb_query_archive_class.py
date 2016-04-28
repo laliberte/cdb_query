@@ -87,14 +87,22 @@ def validate(database,options,q_manager=None):
     if not 'data_node_list' in database.header.keys():
         data_node_list, url_list, simulations_list =database.find_data_nodes_and_simulations(options)
         if len(data_node_list)>1 and not options.no_check_availability:
-            data_node_list=rank_data_nodes(options,data_node_list,url_list)
+            data_node_list, Xdata_node_list=rank_data_nodes(options,data_node_list,url_list)
     else:
         simulations_list=[]
     database.drs.data_node_list=data_node_list
 
+    #Some data_nodes might have been dropped. Restrict options accordingly:
+    options_copy=copy.copy(options)
+    options_copy.data_node=data_node_list
+    if isinstance(options_copy.Xdata_node,list):
+        options_copy.Xdata_node=list(set(options_copy.Xdata_node+Xdata_node_list))
+    else:
+        options_copy.Xdata_node=Xdata_node_list
+
     #Find the atomic simulations:
     if simulations_list==[]:
-        simulations_list=database.list_fields_local(options,database.drs.simulations_desc)
+        simulations_list=database.list_fields_local(options_copy,database.drs.simulations_desc)
     #Remove fixed variable:
     simulations_list_no_fx=[simulation for simulation in simulations_list if 
                                 simulation[database.drs.simulations_desc.index('ensemble')]!='r0i0p0']
@@ -103,8 +111,8 @@ def validate(database,options,q_manager=None):
         for data_node in data_node_list:
             q_manager.validate_semaphores.add_new_data_node(data_node)
     #Do it by simulation, except if one simulation field should be kept for further operations:
-    vars_list=ask_var_list(database,simulations_list_no_fx,options)
-    database.put_or_process('validate',validate_utils.validate,vars_list,options,q_manager)
+    vars_list=ask_var_list(database,simulations_list_no_fx,options_copy)
+    database.put_or_process('validate',validate_utils.validate,vars_list,options_copy,q_manager)
     return
 
 def av(database,options,q_manager=None):
@@ -426,8 +434,8 @@ def rank_data_nodes(options,data_node_list,url_list):
         url=url_list[data_node_id]
         if not ('silent' in dir(options) and options.silent):
             print 'Querying '+url+' to measure response time of data node... '
-        #Try opening a link on the data node. If it does not work put this data node at the end.
-        number_of_trials=5
+        #Try opening a link on the data node. If it does not work remove this data node.
+        number_of_trials=3
         try:
             import_string='import cdb_query.remote_netcdf;import time;'
             load_string='remote_data=cdb_query.remote_netcdf.remote_netCDF(\''+url+'\',[]);remote_data.is_available();time.sleep(2);'
@@ -438,5 +446,6 @@ def rank_data_nodes(options,data_node_list,url_list):
             pass
         if not ('silent' in dir(options) and options.silent):
             print 'Done!'
-    return list(np.array(data_node_list_timed)[np.argsort(data_node_timing)])+list(set(data_node_list).difference(data_node_list_timed))
+    return list(np.array(data_node_list_timed)[np.argsort(data_node_timing)],list(set(data_node_list).difference(data_node_list_timed))
+    #return list(np.array(data_node_list_timed)[np.argsort(data_node_timing)])+list(set(data_node_list).difference(data_node_list_timed))
 
