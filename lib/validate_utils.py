@@ -124,25 +124,6 @@ def obtain_time_list(diagnostic,project_drs,var_name,experiment,model):
 def find_model_list(diagnostic,project_drs,model_list,experiment,options):
     period_list = diagnostic.header['experiment_list'][experiment]
     if not isinstance(period_list,list): period_list=[period_list]
-<<<<<<< HEAD:lib/optimset.py
-    if '' in period_list:
-        consider_all_times=True
-        picontrol_min_time=False
-    else:
-        consider_all_times=False
-        years_list=[]
-        for period in period_list:
-            years_range=[int(year) for year in period.split(',')]
-            years_list.extend(range(*years_range))
-            years_list.append(years_range[1])
-        time_list=[]
-        for year in years_list:
-            for month in get_diag_months_list(diagnostic):
-                time_list.append(str(year).zfill(4)+str(month).zfill(2))
-
-        #Flag to check if the time axis is requested as relative:
-        picontrol_min_time=(years_list[0]<=10)
-=======
     years_list=[]
     for period in period_list:
         years_range=[int(year) for year in period.split(',')]
@@ -152,7 +133,6 @@ def find_model_list(diagnostic,project_drs,model_list,experiment,options):
     for year in years_list:
         for month in get_diag_month_list(diagnostic):
             time_list.append(str(year).zfill(4)+str(month).zfill(2))
->>>>>>> splitting:lib/validate_utils.py
 
     model_list_var=copy.copy(model_list)
     model_list_copy=copy.copy(model_list)
@@ -179,16 +159,6 @@ def find_model_list(diagnostic,project_drs,model_list,experiment,options):
                 time_list_var=obtain_time_list(diagnostic,project_drs,var_name,experiment,model)
                 #time_list_var=[str(int(time)-int(min_time['_'.join(model)+'_'+experiment])).zfill(6) for time in time_list_var]
                 time_list_var=[str(int(time)-int(min_time)).zfill(6) for time in time_list_var]
-<<<<<<< HEAD:lib/optimset.py
-                if not consider_all_times:
-                    if not set(time_list).issubset(time_list_var):
-                        missing_vars.append(var_name+':'+','.join(
-                                            diagnostic.header['variable_list'][var_name])+
-                                            ' for some months: '+','.join(
-                                            sorted(set(time[:4] for time in set(time_list).difference(time_list_var)))
-                                            )
-                                           )
-=======
                 if ( not ('missing_years' in dir(options) and options.missing_years) and 
                      not set(time_list).issubset(time_list_var) ):
                     missing_vars.append(var_name+':'+','.join(
@@ -197,7 +167,6 @@ def find_model_list(diagnostic,project_drs,model_list,experiment,options):
                                         sorted(set(time[:4] for time in set(time_list).difference(time_list_var)))
                                         )
                                        )
->>>>>>> splitting:lib/validate_utils.py
         if len(missing_vars)>0:
            #print('\nThe reasons why some simulations were excluded:')
            if 'experiment' in project_drs.simulations_desc:
