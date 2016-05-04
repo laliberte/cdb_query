@@ -1,34 +1,31 @@
+#External:
 import copy
 import os
-
-import nc_Database
-
-import retrieval_utils
-
 from operator import itemgetter
-
-import netcdf_utils
-
 import sqlalchemy
-
 import numpy as np
 
-import remote_netcdf
+#External but related:
+import netcdf4_soft_links.retrieval_utils as retrieval_utils
+import netcdf4_soft_links.remote_netcdf as remote_netcdf
 
+#Internal:
+import nc_Database
+import cdb_query_archive_class
 
 queryable_file_types=['OPENDAP','local_file']
 
-def find_time(pointers,file_expt,semaphores=None):
+def find_time(pointers,file_expt,semaphores=dict()):
     #Will check both availability and queryability:
     find_time_file(pointers,file_expt,semaphores=semaphores)
     return
 
-def find_time_available(pointers,file_expt,semaphores=None):
+def find_time_available(pointers,file_expt,semaphores=dict()):
     #same as find_time but keeps non-queryable files:
     find_time_file(pointers,file_expt,file_available=True,semaphores=semaphores)
     return
 
-def find_time_file(pointers,file_expt,file_available=False,semaphores=None):#session,file_expt,path_name):
+def find_time_file(pointers,file_expt,file_available=False,semaphores=dict()):#session,file_expt,path_name):
     #If the path is a remote file, we must use the time stamp
     filename=os.path.basename(file_expt.path)
     
@@ -124,9 +121,10 @@ def obtain_time_list(diagnostic,project_drs,var_name,experiment,model):
                             ).filter(sqlalchemy.and_(*conditions)).distinct().all()]
     return time_list_var
 
-def find_model_list(diagnostic,project_drs,model_list,experiment):
+def find_model_list(diagnostic,project_drs,model_list,experiment,options):
     period_list = diagnostic.header['experiment_list'][experiment]
     if not isinstance(period_list,list): period_list=[period_list]
+<<<<<<< HEAD:lib/optimset.py
     if '' in period_list:
         consider_all_times=True
         picontrol_min_time=False
@@ -144,6 +142,17 @@ def find_model_list(diagnostic,project_drs,model_list,experiment):
 
         #Flag to check if the time axis is requested as relative:
         picontrol_min_time=(years_list[0]<=10)
+=======
+    years_list=[]
+    for period in period_list:
+        years_range=[int(year) for year in period.split(',')]
+        years_list.extend(range(*years_range))
+        years_list.append(years_range[1])
+    time_list=[]
+    for year in years_list:
+        for month in get_diag_month_list(diagnostic):
+            time_list.append(str(year).zfill(4)+str(month).zfill(2))
+>>>>>>> splitting:lib/validate_utils.py
 
     model_list_var=copy.copy(model_list)
     model_list_copy=copy.copy(model_list)
@@ -170,6 +179,7 @@ def find_model_list(diagnostic,project_drs,model_list,experiment):
                 time_list_var=obtain_time_list(diagnostic,project_drs,var_name,experiment,model)
                 #time_list_var=[str(int(time)-int(min_time['_'.join(model)+'_'+experiment])).zfill(6) for time in time_list_var]
                 time_list_var=[str(int(time)-int(min_time)).zfill(6) for time in time_list_var]
+<<<<<<< HEAD:lib/optimset.py
                 if not consider_all_times:
                     if not set(time_list).issubset(time_list_var):
                         missing_vars.append(var_name+':'+','.join(
@@ -178,6 +188,16 @@ def find_model_list(diagnostic,project_drs,model_list,experiment):
                                             sorted(set(time[:4] for time in set(time_list).difference(time_list_var)))
                                             )
                                            )
+=======
+                if ( not ('missing_years' in dir(options) and options.missing_years) and 
+                     not set(time_list).issubset(time_list_var) ):
+                    missing_vars.append(var_name+':'+','.join(
+                                        diagnostic.header['variable_list'][var_name])+
+                                        ' for some months: '+','.join(
+                                        sorted(set(time[:4] for time in set(time_list).difference(time_list_var)))
+                                        )
+                                       )
+>>>>>>> splitting:lib/validate_utils.py
         if len(missing_vars)>0:
            #print('\nThe reasons why some simulations were excluded:')
            if 'experiment' in project_drs.simulations_desc:
@@ -190,38 +210,36 @@ def find_model_list(diagnostic,project_drs,model_list,experiment):
            model_list_copy.remove(model)
     return model_list_copy
 
-def get_diag_months_list(diagnostic):
-    if 'months_list' in diagnostic.header.keys():
-        diag_months_list=diagnostic.header['months_list']
+def get_diag_month_list(diagnostic):
+    if 'month_list' in diagnostic.header.keys():
+        diag_month_list=diagnostic.header['month_list']
     else:
-        diag_months_list=range(1,13)
-    return diag_months_list
+        diag_month_list=range(1,13)
+    return diag_month_list
 
-def optimset_distributed(database,options,semaphores):
-    #print 'Starting ',options.institute,options.model,options.ensemble
-    filepath=optimset(database,options,semaphores=semaphores)
-    #print 'Finished ',options.institute,options.model,options.ensemble
-    return filepath
+def validate(database,options,q_manager=None):
+    if 'data_node_list' in dir(database.drs):
+        database.header['data_node_list']=database.drs.data_node_list
+    else:
+        data_node_list, url_list, simulations_list =database.find_data_nodes_and_simulations(options)
+        if len(data_node_list)>1 and not options.no_check_availability:
+                data_node_list=database.rank_data_nodes(options,data_node_list,url_list)
+        database.header['data_node_list']=data_node_list
+    semaphores=q_manager.validate_semaphores
 
-def optimset(database,options,semaphores=None):
     if options.no_check_availability:
         #Does not check whether files are available / queryable before proceeding.
         database.load_database(options,find_time_available,semaphores=semaphores)
         #Find the list of institute / model with all the months for all the years / experiments and variables requested:
         intersection(database,options)
-        
-        dataset, output=database.nc_Database.write_database(database.header,options,'record_paths',semaphores=semaphores)
-        database.close_database()
-        dataset.close()
+        output=database.nc_Database.write_database(database.header,options,'record_paths',semaphores=semaphores)
     else:
         #Checks that files are available.
         database.load_database(options,find_time,semaphores=semaphores)
         #Find the list of institute / model with all the months for all the years / experiments and variables requested:
         intersection(database,options)
-        
-        dataset, output=database.nc_Database.write_database(database.header,options,'record_meta_data',semaphores=semaphores)
-        database.close_database()
-        dataset.close()
+        output=database.nc_Database.write_database(database.header,options,'record_meta_data',semaphores=semaphores)
+    database.close_database()
     return output
 
 def intersection(database,options):
@@ -236,10 +254,10 @@ def intersection(database,options):
 
     if not 'experiment' in database.drs.simulations_desc:
         for experiment in database.header['experiment_list'].keys():
-            model_list = find_model_list(database,database.drs,model_list,experiment)
+            model_list = find_model_list(database,database.drs,model_list,experiment,options)
         model_list_combined=model_list
     else:
-        model_list_combined=set().union(*[find_model_list(database,database.drs,model_list,experiment) 
+        model_list_combined=set().union(*[find_model_list(database,database.drs,model_list,experiment,options) 
                                            for experiment in database.header['experiment_list'].keys()])
     
     #Step two: create the new paths dictionary:

@@ -1,8 +1,13 @@
+#External:
 import os
 import glob
 import copy
-import retrieval_utils
+
+#Internal:
 import nc_Database
+
+#External but related:
+import netcdf4_soft_links.remote_netcdf as remote_netcdf
 
 class browser:
     def __init__(self,search_path,options):
@@ -18,7 +23,7 @@ class browser:
         if self.file_type in database.header['file_type_list']:
             description={
                        'file_type':self.file_type,
-                       'data_node':retrieval_utils.get_data_node(self.search_path,self.file_type),
+                       'data_node':remote_netcdf.get_data_node(self.search_path,self.file_type),
                        'time':'0'}
             file_expt_copy=copy.deepcopy(database.nc_Database.file_expt)
             for att in description.keys():
@@ -40,7 +45,7 @@ unique_file_id_list=['checksum_type','checksum','tracking_id']
 def descend_tree_recursive(database,file_expt,tree_desc,top_path,options,list_level=None,alt=False):
     if not isinstance(tree_desc,list):
         return
-
+    
     if len(tree_desc)==1:
         file_list=glob.glob(top_path+'/*.nc') 
         if len(file_list)>0:
@@ -49,7 +54,7 @@ def descend_tree_recursive(database,file_expt,tree_desc,top_path,options,list_le
                 #Add the file identifier to the path:
                 file_expt_copy.path=file
                 for unique_file_id in unique_file_id_list:
-                    #file_expt_copy.path='|'.join([file,retrieval_utils.md5_for_file(open(file,'r'))])
+                    #Add empty identifiers:
                     file_expt_copy.path+='|'
                 if alt: 
                     file_expt_copy.model_version=file_expt_copy.model.split('-')[1]

@@ -1,49 +1,349 @@
-import discover
-import optimset
-
+#External:
 import netCDF4
-import h5py
-
-import nc_Database
-
 import copy
 import os
-
+import shutil
 import json
 import timeit
-
 import numpy as np
-
 import multiprocessing
-
 import random
-
-import retrieval_utils
-
-import datetime
-import time
-
-import netcdf_utils
-
 import sys
-from StringIO import StringIO
-
-import certificates
 import getpass
+import datetime
 
-class SimpleTree:
-    def __init__(self,options,project_drs):
+#External but related:
+import netcdf4_soft_links.certificates as certificates
+import netcdf4_soft_links.retrieval_manager as retrieval_manager
+import netcdf4_soft_links.remote_netcdf as remote_netcdf
 
+#Internal:
+import ask_utils
+import validate_utils
+import nc_Database
+import nc_Database_utils
+import nc_Database_reduce
+import downloads
+
+def ask_var_list(database,simulations_list,options):
+    if 'keep_field' in dir(options):
+        drs_to_eliminate=[field for field in database.drs.simulations_desc if
+                                             not field in options.keep_field]
+    else:
+        drs_to_eliminate=database.drs.simulations_desc
+    return [ [make_list(item) for item in var_list] for var_list in 
+                set([
+                    tuple([ 
+                            tuple(sorted(set(make_list(var[database.drs.simulations_desc.index(field)])))) 
+                        if field in drs_to_eliminate else None
+                        for field in database.drs.official_drs_no_version]) for var in 
+                        simulations_list ])]
+
+def ask(database,options,q_manager=None):
+    #Load header:
+    database.load_header(options)
+
+    #Simplify the header:
+    database.union_header()
+
+    #Only a listing of a few fields was requested.
+    if ('list_only_field' in dir(options) and options.list_only_field!=None):
+        for field_name in ask_utils.ask(database.drs,options):
+            print field_name
+        return
+
+    #Find the simulation list:
+    #Check if a specific simulation was sliced:
+    single_simulation_requested=[]
+    for desc in database.drs.simulations_desc:
+        if (getattr(options,desc) !=None):
+            if (len(getattr(options,desc))==1 or 
+                (desc=='ensemble' and 'r0i0p0' in getattr(options,desc)
+                 and len(getattr(options,desc))==2)):
+                #Either a single simulation or two ensembles if one is r0i0p0
+                single_simulation_requested.append(getattr(options,desc))
+
+    if len(single_simulation_requested)==len(database.drs.simulations_desc):
+        simulations_list=[tuple(single_simulation_requested)]
+    else:
+        simulations_list=ask_utils.ask_simulations_recursive(database,options,database.drs.simulations_desc)
+
+    #Remove fixed variable:
+    simulations_list_no_fx=[simulation for simulation in simulations_list if 
+                                simulation[database.drs.simulations_desc.index('ensemble')]!='r0i0p0']
+    if not ('silent' in dir(options) and options.silent) and len(simulations_list_no_fx)>1:
+        print "This is a list of simulations that COULD satisfy the query:"
+        for simulation in simulations_list_no_fx:
+            print ','.join(simulation)
+        print "cdb_query will now attempt to confirm that these simulations have all the requested variables."
+        print "This can take some time. Please abort if there are not enough simulations for your needs."
+    
+    vars_list=ask_var_list(database,simulations_list_no_fx,options)
+    database.put_or_process('ask',ask_utils.ask,vars_list,options,q_manager)
+    return
+
+def validate(database,options,q_manager=None):
+    database.load_header(options)
+
+    if not 'data_node_list' in database.header.keys():
+        data_node_list, url_list, simulations_list =database.find_data_nodes_and_simulations(options)
+        if len(data_node_list)>1 and not options.no_check_availability:
+            data_node_list, Xdata_node_list=rank_data_nodes(options,data_node_list,url_list)
+        else:
+            Xdata_node_list=[]
+    else:
+        simulations_list=[]
+    database.drs.data_node_list=data_node_list
+
+    #Some data_nodes might have been dropped. Restrict options accordingly:
+    options_copy=copy.copy(options)
+    options_copy.data_node=data_node_list
+    if isinstance(options_copy.Xdata_node,list):
+        options_copy.Xdata_node=list(set(options_copy.Xdata_node+Xdata_node_list))
+    else:
+        options_copy.Xdata_node=Xdata_node_list
+
+    #Find the atomic simulations:
+    if simulations_list==[]:
+        simulations_list=database.list_fields_local(options_copy,database.drs.simulations_desc)
+    #Remove fixed variable:
+    simulations_list_no_fx=[simulation for simulation in simulations_list if 
+                                simulation[database.drs.simulations_desc.index('ensemble')]!='r0i0p0']
+
+    if q_manager != None:
+        for data_node in data_node_list:
+            q_manager.validate_semaphores.add_new_data_node(data_node)
+    #Do it by simulation, except if one simulation field should be kept for further operations:
+    vars_list=ask_var_list(database,simulations_list_no_fx,options_copy)
+    database.put_or_process('validate',validate_utils.validate,vars_list,options_copy,q_manager)
+    return
+
+def av(database,options,q_manager=None):
+    ask(database,options,q_manager=q_manager)
+    return
+
+def avdr(database,options,q_manager=None):
+    ask(database,options,q_manager=q_manager)
+    return
+
+def drdr(database,options,q_manager=None):
+    download_files(database,options,q_manager=q_manager)
+    return
+
+def avdrdr(database,options,q_manager=None):
+    ask(database,options,q_manager=q_manager)
+    return
+
+def reduce_var_list(database,options):
+    if ('keep_field' in dir(options) and options.keep_field!=None):
+        drs_to_eliminate=[field for field in database.drs.official_drs_no_version if
+                                             not field in options.keep_field]
+    else:
+        drs_to_eliminate=database.drs.official_drs_no_version
+    return [ [ make_list(item) for item in var_list] for var_list in 
+                set([
+                    tuple([ 
+                        tuple(sorted(set(make_list(var[drs_to_eliminate.index(field)]))))
+                        if field in drs_to_eliminate else None
+                        for field in database.drs.official_drs_no_version]) for var in 
+                        database.list_fields_local(options,drs_to_eliminate) ])]
+
+def download_files(database,options,q_manager=None):
+    if q_manager != None:
+        data_node_list, url_list, simulations_list =database.find_data_nodes_and_simulations(options)
+        for data_node in data_node_list:
+            q_manager.download.semaphores.add_new_data_node(data_node)
+            q_manager.download.queues.add_new_data_node(data_node)
+
+    #Recover the database meta data:
+    vars_list=reduce_var_list(database,options)
+    if len(vars_list)==1:
+        #Users have requested time types to be kept
+        times_list=downloads.time_split(database,options)
+    else:
+        times_list=[(None,None,None,None),]
+    database.put_or_process('download_files',downloads.download_files,vars_list,options,q_manager,times_list=times_list)
+    return
+
+#def revalidate(database,options,q_manager=None):
+#    if q_manager != None:
+#        data_node_list, url_list, simulations_list =database.find_data_nodes_and_simulations(options)
+#        for data_node in data_node_list:
+#            q_manager.validate_semaphores.add_new_data_node(data_node)
+#    #Recover the database meta data:
+#    vars_list=self.reduce_var_list(options)
+#    database.put_or_process('revalidate',downloads.revalidate,vars_list,options,q_manager)
+#    return
+
+def reduce_soft_links(database,options,q_manager=None):
+    vars_list=reduce_var_list(database,options)
+    database.put_or_process('reduce_soft_links',nc_Database_reduce.reduce_soft_links,vars_list,options,q_manager)
+    return
+
+def download_opendap(database,options,q_manager=None):
+    if q_manager != None:
+        data_node_list, url_list, simulations_list =database.find_data_nodes_and_simulations(options)
+        for data_node in data_node_list:
+            q_manager.download.semaphores.add_new_data_node(data_node)
+            q_manager.download.queues.add_new_data_node(data_node)
+
+    vars_list=reduce_var_list(database,options)
+    if len(vars_list)==1:
+        #Users have requested time types to be kept
+        times_list=downloads.time_split(database,options)
+    else:
+        times_list=[(None,None,None,None),]
+    database.put_or_process('download_opendap',downloads.download_opendap,vars_list,options,q_manager,times_list=times_list)
+    return
+
+def gather(database,options,q_manager=None):
+    reduce(database,options,q_manager=q_manager)
+    return
+
+def reduce(database,options,q_manager=None):
+    if (options.script=='' and 
+        ('in_extra_netcdf_files' in dir(options) and 
+          len(options.in_extra_netcdf_files)>0) ):
+        raise InputErrorr('The identity script \'\' can only be used when no extra netcdf files are specified.')
+
+    vars_list=reduce_var_list(database,options)
+    if len(vars_list)==1:
+        #Users have requested time types to be kept
+        times_list=downloads.time_split(database,options)
+    else:
+        times_list=[(None,None,None,None),]
+
+    database.put_or_process('reduce',nc_Database_reduce.reduce_variable,vars_list,options,q_manager,times_list=times_list)
+    return
+
+def merge(database,options,q_manager=None):
+    database.load_header(options)
+    with netCDF4.Dataset(options.out_netcdf_file,'w') as output:
+        nc_Database.record_header(output,database.header)
+        for file_name in [options.in_netcdf_file,]+options.in_extra_netcdf_files:
+            nc_Database_utils.record_to_netcdf_file_from_file_name(options,file_name,output,database.drs)
+    return
+
+def list_fields(database,options,q_manager=None):
+    fields_list=database.list_fields_local(options,options.field)
+    for field in fields_list:
+        print ','.join(field)
+    return
+
+class Database_Manager:
+    def __init__(self,project_drs):
         self.drs=project_drs
         return
+
+    def list_fields_local(self,options,fields_to_list):
+        self.load_database(options,find_simple)
+        fields_list=self.nc_Database.list_fields(fields_to_list)
+        self.close_database()
+        return fields_list
+
+    def put_or_process(self,function_name,function_handle,vars_list,options,q_manager,times_list=[(None,None,None,None),]):
+
+        if (len(vars_list)==0 or len(times_list)==0):
+            #There is no variables to find in the input. 
+            #Delete input and decrement expected function.
+            if q_manager.remove((function_name,options)):
+                os.remove(options.in_netcdf_file)
+            #getattr(q_manager,next_function_name+'_expected').decrement()
+            #if ('in_netcdf_file' in dir(options) and
+            #    q_manager.queues_names.index(function_name)>0):
+            #    os.remove(options.in_netcdf_file)
+
+            if len(vars_list)>0:
+                if not ('silent' in dir(options) and options.silent):
+                    for var in vars_list:
+                        print ' '.join([ opt+': '+str(var[opt_id]) for opt_id, opt in enumerate(self.drs.official_drs_no_version)])
+                    print 'Were excluded because no date matched times requested'
+            return
+
+        if not ((len(vars_list)==1 and len(times_list)==1) or
+            'serial' in dir(options) and options.serial):
+            #Randomize to minimize strain on consumers:
+            random.shuffle(vars_list)
+            for var_id,var in enumerate(vars_list):
+                for time_id, time in enumerate(times_list):
+                    options_copy=make_new_options_from_lists(options,var,time,function_name,self.drs.official_drs_no_version)
+                    #Set the priority to time_id:
+                    options_copy.priority=time_id
+
+                    if len(times_list)>1:
+                        #Find times list again:
+                        var_times_list=downloads.time_split(self,options_copy)
+                    #Submit only if the times_list is not empty:
+                    if len(times_list)==1 or len(var_times_list)>0:
+                        #if ('in_netcdf_file' in dir(options) and
+                        #    q_manager.queues_names.index(function_name)>0):
+                        #    #Copy input files to prevent garbage from accumulating:
+                        #    counter=q_manager.counter.increment()
+                        #    options_copy.in_netcdf_file=options.in_netcdf_file+'.'+str(counter)
+                        #    shutil.copyfile(options.in_netcdf_file,options_copy.in_netcdf_file)
+                        new_file_name=q_manager.increment_expected_and_put((function_name,options_copy))
+                        if new_file_name!='':
+                            shutil.copyfile(options.in_netcdf_file,new_file_name)
+            if q_manager.remove((function_name,options)):
+            #next_function_name=q_manager.queues_names[q_manager.queues_names.index(function_name)+1]
+            #getattr(q_manager,next_function_name+'_expected').decrement()
+            ##Remove input file because we have created one temporary file per process:
+            #if ('in_netcdf_file' in dir(options) and
+            #    q_manager.queues_names.index(function_name)>0):
+                os.remove(options.in_netcdf_file)
+            return
+        else:
+            #Compute single element!
+            if ('serial' in dir(options) and options.serial):
+                options_copy=copy.copy(options)
+            else: 
+                options_copy=make_new_options_from_lists(options,vars_list[0],times_list[0],function_name,self.drs.official_drs_no_version)
+
+            #Compute function:
+            output_file_name=function_handle(self,options_copy,q_manager=q_manager)
+
+            if output_file_name==None:
+                #No file was written and the next function should not expect anything:
+                #next_function_name=q_manager.queues_names[q_manager.queues_names.index(function_name)+1]
+                #getattr(q_manager,next_function_name+'_expected').decrement()
+                #if ('in_netcdf_file' in dir(options) and
+                #    q_manager.queues_names.index(function_name)>0):
+                if q_manager.remove((function_name,options)):
+                    os.remove(options.in_netcdf_file)
+                return
+            else:
+                #Reset trial counter:
+                options_copy.trial=0
+
+                #Remove temporary input files if not the first function:
+                if 'in_netcdf_file' in dir(options):
+                    previous_in_netcdf_file=options_copy.in_netcdf_file
+                #Set to output_file
+                options_copy.in_netcdf_file=output_file_name
+                if q_manager.put_to_next((function_name,options_copy)):
+                    os.remove(previous_in_netcdf_file)
+                return
+
+    def find_data_nodes_and_simulations(self,options):
+        #We have to time the response of the data node.
+        self.load_database(options,find_simple)
+        simulations_list=self.nc_Database.list_fields(self.drs.simulations_desc)
+
+        data_node_list=[item[0] for item in self.nc_Database.list_fields(['data_node'])]
+        url_list=[[item.split('|')[0] for item in self.nc_Database.list_paths_by_data_node(data_node)]
+                            for data_node in data_node_list ]
+        #url_list=[self.nc_Database.list_paths_by_data_node(data_node).split('|')
+        #            for data_node in data_node_list ]
+        self.close_database()
+        return data_node_list,url_list, simulations_list
 
     def union_header(self):
         #This method creates a simplified header
 
         #Create the diagnostic description dictionary:
         self.header_simple={}
-        #Find all the requested realms, frequencies and variables:
 
+        #Find all the requested realms, frequencies and variables:
         variable_list=['var_list']+[field+'_list' for field in self.drs.var_specs]
         for list_name in variable_list: self.header_simple[list_name]=[]
         for var_name in self.header['variable_list'].keys():
@@ -63,291 +363,21 @@ class SimpleTree:
         for list_name in self.header_simple.keys(): self.header_simple[list_name]=list(set(self.header_simple[list_name]))
         return
 
-    def ask(self,options):
-        #Load header:
-        try:
-            self.header=json.load(open(options.in_diagnostic_headers_file,'r'))['header']
-        except ValueError as e:
-            print 'The input diagnostic file '+options.in_diagnostic_headers_file+' does not conform to JSON standard. Make sure to check its syntax'
-            raise
-
-        if 'username' in dir(options) and options.username!=None:
-            if not options.password_from_pipe:
-                user_pass=getpass.getpass('Enter Credential phrase:')
-            else:
-                user_pass=sys.stdin.readline()
-        else:
-            user_pass=None
-        options.password=user_pass
-
-        #Simplify the header:
-        self.union_header()
-
-        if options.list_only_field!=None:
-            #Only a listing of a few fields was requested.
-            for field_name in discover.discover(self,options):
-                print field_name
-            return
-        else:
-            if ('catalogue_missing_simulations_desc' in dir(self.drs)
-               and self.drs.catalogue_missing_simulations_desc):
-                #This allows some projects to be inconsistent in their publications:
-                filepath=discover.discover(self,options)
-                try:
-                    os.rename(filepath,filepath.replace('.pid'+str(os.getpid()),''))
-                except OSError:
-                    pass
-            else:
-                #Check if this is an update and if this an update find the previous simulations list:
-                prev_simulations_list=self.load_previous_simulations(options)
-
-                simulations_list=discover.discover_simulations_recursive(self,options,self.drs.simulations_desc)
-                simulations_list=sorted(list(set(simulations_list).difference(prev_simulations_list)))
-                print "This is a list of simulations that COULD satisfy the query:"
-                for simulation in simulations_list:
-                    print ','.join(simulation)
-                print "cdb_query will now attempt to confirm that these simulations have all the requested variables."
-                print "This can take some time. Please abort if there are not enough simulations for your needs."
-
-                import random
-                random.shuffle(simulations_list)
-
-                manager=multiprocessing.Manager()
-                output=distributed_recovery(discover.discover,self,options,simulations_list,manager)
-
-                #Close dataset
-                output.close()
-        return
-
-    def load_previous_simulations(self,options):
-        prev_simulations_list=[]
-        if ('update' in dir(options) and
-             getattr(options,'update')!=None):
-             for update_file in options.update:
-                 #There is an update file:
-                 options_copy=copy.copy(options)
-                 options_copy.in_diagnostic_netcdf_file=update_file
-                 #Load the header to update:
-                 self.define_database(options_copy)
-                 old_header=self.nc_Database.load_header()
-                 self.close_database()
-                 if remove_entry_from_dictionary(self.header,'search_list')==remove_entry_from_dictionary(old_header,'search_list'):
-                    prev_simulations_list.extend(self.list_fields_local(options_copy,self.drs.simulations_desc))
-        if len(prev_simulations_list)>0:
-            print 'Updating, not considering the following simulations:'
-            for simulation in prev_simulations_list:
-                print ','.join(simulation)
-        return sorted(prev_simulations_list)
-
-    def validate(self,options):
-        self.load_header(options)
-        #if options.data_nodes!=None:
-        #    self.header['data_node_list']=options.data_nodes
-
-        if 'username' in dir(options) and options.username!=None:
-            if not options.password_from_pipe:
-                user_pass=getpass.getpass('Enter Credential phrase:')
-                #Get certificates if requested by user:
-            else:
-                user_pass=sys.stdin.readline()
-
-            certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass,trustroots=options.no_trustroots)
-        else:
-            user_pass=None
-        options.password=user_pass
-
-        if not 'data_node_list' in self.header.keys():
-            data_node_list, url_list, simulations_list =self.find_data_nodes_and_simulations(options)
-            if len(data_node_list)>1 and not options.no_check_availability:
-                self.header['data_node_list']=self.rank_data_nodes(options,data_node_list,url_list)
-            else:
-                self.header['data_node_list']=data_node_list
-        else:
-            simulations_list=[]
-
-        if options.num_procs==1:
-            filepath=optimset.optimset(self,options)
-            try:
-                os.rename(filepath,filepath.replace('.pid'+str(os.getpid()),''))
-            except OSError:
-                pass
-        else:
-            #Find the atomic simulations:
-            if simulations_list==[]:
-                simulations_list=self.list_fields_local(options,self.drs.simulations_desc)
-
-            #Randomize the list:
-            import random
-            random.shuffle(simulations_list)
-
-            #for simulation in simulations_list:
-            #    #if simulation[-1]!='r0i0p0':
-            #    print '_'.join(simulation)
-            #print "Validating"
-
-            manager=multiprocessing.Manager()
-            semaphores=dict()
-            for data_node in  self.header['data_node_list']:
-                semaphores[data_node]=manager.Semaphore(5)
-            #semaphores=[]
-            #original_stderr = sys.stderr
-            #sys.stderr = NullDevice()
-            output=distributed_recovery(optimset.optimset_distributed,self,options,simulations_list,manager,args=(semaphores,),user_pass=user_pass)
-            #sys.stderr = original_stderr
-            #Close datasets:
-            output.close()
-        return
-
-    def download(self,options):
-
-        output=netCDF4.Dataset(options.out_diagnostic_netcdf_file,'w')
-        retrieval_function='retrieve_path_data'
-        self.remote_retrieve_and_download(options,output,retrieval_function)
-        return
-
-    def download_raw(self,options):
-        output=options.out_destination
-
-        #Describe the tree pattern:
-        if self.drs.official_drs.index('var')>self.drs.official_drs.index('version'):
-            output+='/tree/version/var/'
-        else:
-            output+='/tree/var/version/'
-            
-        retrieval_function='retrieve_path'
-        self.remote_retrieve_and_download(options,output,retrieval_function)
-        return
-
-    def remote_retrieve_and_download(self,options,output,retrieval_function):
-        if 'username' in dir(options) and options.username!=None:
-            if not options.password_from_pipe:
-                user_pass=getpass.getpass('Enter Credential phrase:')
-            else:
-                user_pass=sys.stdin.readline().rstrip()
-            #Get certificates if requested by user:
-            certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass,trustroots=options.no_trustroots)
-        else:
-            user_pass=None
-
-        options.user_pass=user_pass
-
-        #Recover the database meta data:
-        self.load_header(options)
-        self.load_database(options,find_simple)
-
-        #Find data node list:
-        data_node_list=[item[0] for item in self.nc_Database.list_fields(['data_node'])]
-        paths_list=self.nc_Database.list_paths()
-        self.close_database()
-
-        queues=define_queues(options,data_node_list)
-        #Redefine data nodes:
-        data_node_list=queues.keys()
-        data_node_list.remove('end')
-
-        #Check if years should be relative, eg for piControl:
-        options.min_year=None
-        if 'experiment_list' in self.header.keys():
-            for experiment in self.header['experiment_list']:
-                min_year=int(self.header['experiment_list'][experiment].split(',')[0])
-                if min_year<10:
-                    options.min_year=min_year
-                    print 'Using min year {0} for experiment {1}'.format(str(min_year),experiment)
-
-        #Start the retrieval workers:
-        if not ('serial' in dir(options) and options.serial):
-            processes=dict()
-            for data_node in data_node_list:
-                processes[data_node]=multiprocessing.Process(target=worker_retrieve, args=(queues[data_node], queues['end']))
-                processes[data_node].start()
-
-        #Find the data that needs to be recovered:
-        self.define_database(options)
-        self.nc_Database.retrieve_database(options,output,queues,getattr(retrieval_utils,retrieval_function))
-        self.close_database()
-
-        #Launch the retrieval/monitoring:
-        launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_function,options,user_pass=user_pass)
-        return
-
-    def find_data_nodes_and_simulations(self,options):
-        #We have to time the response of the data node.
-        self.load_database(options,find_simple)
-        simulations_list=self.nc_Database.list_fields(self.drs.simulations_desc)
-
-        data_node_list=[item[0] for item in self.nc_Database.list_fields(['data_node'])]
-        url_list=[self.nc_Database.list_paths_by_data_node(data_node).split('|')[0].replace('fileServer','dodsC')
-                    for data_node in data_node_list ]
-        self.close_database()
-        return data_node_list,url_list, simulations_list
-
-    def rank_data_nodes(self,options,data_node_list,url_list):
-        data_node_list_timed=[]
-        data_node_timing=[]
-        for data_node_id, data_node in enumerate(data_node_list):
-            url=url_list[data_node_id]
-            print 'Querying '+url+' to measure response time of data node... '
-            #Try opening a link on the data node. If it does not work put this data node at the end.
-            number_of_trials=5
-            try:
-                import_string='import cdb_query.remote_netcdf;import time;'
-                load_string='remote_data=cdb_query.remote_netcdf.remote_netCDF(\''+url+'\',[]);remote_data.is_available();time.sleep(2);'
-                timing=timeit.timeit(import_string+load_string,number=number_of_trials)
-                data_node_timing.append(timing)
-                data_node_list_timed.append(data_node)
-            except:
-                pass
-            print 'Done!'
-        return list(np.array(data_node_list_timed)[np.argsort(data_node_timing)])+list(set(data_node_list).difference(data_node_list_timed))
-
-    def list_fields(self,options):
-        fields_list=self.list_fields_local(options,options.field)
-        for field in fields_list:
-            print ','.join(field)
-        return
-
-    def list_fields_local(self,options,fields_to_list):
-        self.load_database(options,find_simple)
-        fields_list=self.nc_Database.list_fields(fields_to_list)
-        self.close_database()
-        return fields_list
-
-    def define_database(self,options):
-        if 'in_diagnostic_netcdf_file' in dir(options):
-            self.nc_Database=nc_Database.nc_Database(self.drs,database_file=options.in_diagnostic_netcdf_file)
-        else:
-            self.nc_Database=nc_Database.nc_Database(self.drs)
-        return
-
     def load_header(self,options):
-        if ('in_diagnostic_headers_file' in dir(options) and 
-           options.in_diagnostic_headers_file!=None):
-            try:
-                self.header=json.load(open(options.in_diagnostic_headers_file,'r'))['header']
-            except ValueError as e:
-                print 'The input diagnostic file '+options.in_diagnostic_headers_file+' does not conform to JSON standard. Make sure to check its syntax'
-            #for field_to_limit in ['experiment_list','variable_list']:
-            #    if (field_to_limit in dir(options) and
-            #        getattr(options,field_to_limit)!=None):
-            #        setattr(options,field_to_limit,
-            #                list(set(getattr(option,field_to_limit)).intersection(self.header[field_to_limit].keys())))
-            #    else:
-            #        setattr(options,field_to_limit,
-            #                self.header[field_to_limit].keys())
+        if ('ask' in dir(options) and options.ask):
+            self.header=dict()
+            self.header['experiment_list']={item.split(':')[0]:item.split(':')[1] for item in options.Experiment}
+            self.header['month_list']=[item for item in options.Month]
+            self.header['search_list']=[item for item in options.Search_path if not item in options.XSearch_path]
+            self.header['variable_list']={item.split(':')[0]:item.split(':')[1].split(',') for item in options.Var}
+            self.header['file_type_list']=[item for item in options.File_type]
         else:
             self.define_database(options)
             self.header=self.nc_Database.load_header()
             self.close_database()
         return
-
-    def record_header(self,options,output):
-        self.define_database(options)
-        self.header=self.nc_Database.load_header()
-        self.nc_Database.record_header(output,self.header)
-        self.close_database()
-        return
-
-    def load_database(self,options,find_function,semaphores=None):
+        
+    def load_database(self,options,find_function,semaphores=dict()):
         self.define_database(options)
         if 'header' in dir(self):
             self.nc_Database.header=self.header
@@ -359,195 +389,72 @@ class SimpleTree:
             self.nc_Database.populate_database(options_copy,find_function,semaphores=semaphores)
         return
 
+    def define_database(self,options):
+        if 'in_netcdf_file' in dir(options):
+            self.nc_Database=nc_Database.nc_Database(self.drs,database_file=options.in_netcdf_file)
+            return
+        else:
+            self.nc_Database=nc_Database.nc_Database(self.drs)
+            return
+
     def close_database(self):
         self.nc_Database.close_database()
         del self.nc_Database
         return
 
-class NullDevice():
-    def write(self, s):
-        pass
-
-
-def distributed_recovery(function_handle,database,options,simulations_list,manager,args=tuple(),user_pass=None):
-
-    renewal_time = datetime.datetime.now()
-    #Open output file:
-    output_file_name=options.out_diagnostic_netcdf_file
-    output_root=netCDF4.Dataset(output_file_name,'w',format='NETCDF4')
-
-    simulations_list_no_fx=[simulation for simulation in simulations_list if 
-                                simulation[database.drs.simulations_desc.index('ensemble')]!='r0i0p0']
-
-    queue_result=manager.Queue()
-    #queue_output=manager.Queue()
-    #Set up the discovery simulation per simulation:
-    args_list=[]
-    for simulation_id,simulation in enumerate(simulations_list_no_fx):
-        options_copy=copy.copy(options)
-        for desc_id, desc in enumerate(database.drs.simulations_desc):
-            setattr(options_copy,desc,simulation[desc_id])
-        args_list.append((function_handle,copy.copy(database),options_copy)+args+(queue_result,))
-    
-    #Span up to options.num_procs processes and each child process analyzes only one simulation
-    #pool=multiprocessing.Pool(processes=options.num_procs,initializer=initializer,initargs=[queue_output],maxtasksperchild=1)
-    if options.num_procs>1:
-        pool=multiprocessing.Pool(processes=options.num_procs,maxtasksperchild=1)
-
-    #try:
-    if options.num_procs>1:
-        #result=pool.map_async(worker_query,args_list,chunksize=1)
-        result=pool.map(worker_query,args_list,chunksize=1)
-    for arg in args_list:
-        renewal_time=record_in_output(renewal_time,arg,queue_result,output_root,database,options,user_pass=user_pass)
-    #finally:
-    if options.num_procs>1:
-        pool.terminate()
-        pool.join()
-    return output_root
-
-def record_in_output(renewal_time,arg,queue,output_root,database,options,user_pass=None):
-    if options.num_procs==1:
-        result=worker_query(arg)
-    filename=queue.get(1e20)
-    source_data=netCDF4.Dataset(filename,'r')
-    source_data_hdf5=None
-    for item in h5py.h5f.get_obj_ids():
-        if 'name' in dir(item) and item.name==filename:
-            source_data_hdf5=h5py.File(item)
-    nc_Database.record_to_file(output_root,source_data,source_data_hdf5)
-    source_data.close()
-    if source_data_hdf5!=None:
-        source_data_hdf5.close()
-    try:
-        os.remove(filename)
-    except OSError:
-        pass
-    output_root.sync()
-
-    renewal_elapsed_time=datetime.datetime.now() - renewal_time
-    if ('username' in dir(options) and 
-        options.username!=None and
-        user_pass!=None and
-        renewal_elapsed_time > datetime.timedelta(hours=1)):
-        #Reactivate certificates:
-        certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass)
-        renewal_time=datetime.datetime.now()
-    return renewal_time
-
-
-def print_recursive(data):
-    print data
-    for group in data.groups.keys():
-        print group
-        print_recursive(data.groups[group])
-    return
-
-def worker_query(tuple):
-    result=tuple[0](*tuple[1:-1])
-    sys.stdout.flush()
-    sys.stderr.flush()
-    tuple[-1].put(result)
-    return
-
-class MyStringIO(StringIO):
-    def __init__(self, queue, *args, **kwargs):
-        StringIO.__init__(self, *args, **kwargs)
-        self.queue = queue
-    def flush(self):
-        self.queue.put((multiprocessing.current_process().name, self.getvalue()))
-        self.truncate(0)
-
-def initializer(queue):
-     sys.stderr = sys.stdout = MyStringIO(queue)
-
-def worker_retrieve(input, output):
-    for tuple in iter(input.get, 'STOP'):
-        result = tuple[0](tuple[1],tuple[2])
-        output.put(result)
-    output.put('STOP')
-    return
-
-def launch_download_and_remote_retrieve(output,data_node_list,queues,retrieval_function,options,user_pass=None):
-    #Second step: Process the queues:
-    #print datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    start_time = datetime.datetime.now()
-    renewal_time = datetime.datetime.now()
-    print('Remaining retrieval from data nodes:')
-    queues_size=dict()
-    for data_node in data_node_list:
-        queues_size[data_node]=queues[data_node].qsize()
-    string_to_print=['0'.zfill(len(str(queues_size[data_node])))+'/'+str(queues_size[data_node])+' paths from "'+data_node+'"' for
-                        data_node in data_node_list]
-    print ' | '.join(string_to_print)
-    print 'Progress: '
-
-    if 'serial' in dir(options) and options.serial:
-        for data_node in data_node_list:
-            queues[data_node].put('STOP')
-            worker_retrieve(queues[data_node], queues['end'])
-            for tuple in iter(queues['end'].get, 'STOP'):
-                renewal_time=progress_report(options,retrieval_function,output,tuple,queues,queues_size,data_node_list,start_time,renewal_time,user_pass=user_pass)
-        
+def make_list(item):
+    if isinstance(item,list):
+        return item
+    elif (isinstance(item,set) or isinstance(item,tuple)):
+        return list(item)
     else:
-        for data_node in data_node_list:
-            queues[data_node].put('STOP')
-        #processes=dict()
-        #for data_node in data_node_list:
-        #    queues[data_node].put('STOP')
-        #    processes[data_node]=multiprocessing.Process(target=worker_retrieve, args=(queues[data_node], queues['end']))
-        #    processes[data_node].start()
+        if item!=None:
+            return [item,]
+        else:
+            return None
 
-        for data_node in data_node_list:
-            for tuple in iter(queues['end'].get, 'STOP'):
-                renewal_time=progress_report(options,retrieval_function,output,tuple,queues,queues_size,data_node_list,start_time,renewal_time,user_pass=user_pass)
+def make_new_options_from_lists(options,var_item,time_item,function_name,official_drs_no_version):
+    options_copy=copy.copy(options)
+    for opt_id, opt in enumerate(official_drs_no_version):
+        if var_item[opt_id]!=None:
+            setattr(options_copy,opt,make_list(var_item[opt_id]))
+    for opt_id, opt in enumerate(['year','month','day','hour']):
+        if time_item[opt_id]!=None and opt in dir(options_copy):
+            setattr(options_copy,opt,make_list(time_item[opt_id]))
 
+    if (function_name in ['ask','validate'] and
+        'ensemble' in official_drs_no_version and
+        'ensemble' in dir(options_copy) and options_copy.ensemble != None
+        and not 'r0i0p0' in options_copy.ensemble):
+        #Added 'fixed' variables:
+        options_copy.ensemble.append('r0i0p0')
+    return options_copy
 
-    if retrieval_function=='retrieve_path_data':
-        output.close()
-
-    print
-    print('Done!')
-    #print datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    return
-
-def progress_report(options,retrieval_function,output,tuple,queues,queues_size,data_node_list,start_time,renewal_time,user_pass=None):
-    elapsed_time = datetime.datetime.now() - start_time
-    renewal_elapsed_time=datetime.datetime.now() - renewal_time
-    if retrieval_function=='retrieve_path':
-        #print '\t', queues['end'].get()
-        if tuple!=None:
-            print '\t', tuple
-            print str(elapsed_time)
-    elif retrieval_function=='retrieve_path_data':
-        netcdf_utils.assign_tree(output,*tuple)
-        output.sync()
-        string_to_print=[str(queues_size[data_node]-queues[data_node].qsize()).zfill(len(str(queues_size[data_node])))+
-                         '/'+str(queues_size[data_node]) for
-                            data_node in data_node_list]
-        print str(elapsed_time)+', '+' | '.join(string_to_print)+'\r',
-
-    #Maintain certificates:
-    if ('username' in dir(options) and 
-        options.username!=None and
-        user_pass!=None and
-        renewal_elapsed_time > datetime.timedelta(hours=1)):
-        #Reactivate certificates:
-        certificates.retrieve_certificates(options.username,options.service,user_pass=user_pass)
-        renewal_time=datetime.datetime.now()
-    return renewal_time
-        
 def find_simple(pointers,file_expt,semaphores=None):
     pointers.session.add(file_expt)
     pointers.session.commit()
     return
 
-def define_queues(options,data_node_list):
-    queues={data_node : multiprocessing.Queue() for data_node in data_node_list}
-    queues['end']= multiprocessing.Queue()
-    if 'source_dir' in dir(options) and options.source_dir!=None:
-        queues[retrieval_utils.get_data_node(options.source_dir,'local_file')]=multiprocessing.Queue()
-    return queues
+def rank_data_nodes(options,data_node_list,url_list):
+    data_node_list_timed=[]
+    data_node_timing=[]
+    for data_node_id, data_node in enumerate(data_node_list):
+        url=url_list[data_node_id]
+        if not ('silent' in dir(options) and options.silent):
+            print 'Querying '+url[0]+' to measure response time of data node... '
+        #Try opening a link on the data node. If it does not work remove this data node.
+        number_of_trials=3
+        try:
+            import_string='import netcdf4_soft_links.remote_netcdf as remote_netcdf;import time;'
+            load_string='remote_data=remote_netcdf.remote_netCDF(\''+url[0]+'\',\''+url[1]+'\');remote_data.is_available();time.sleep(2);'
+            timing=timeit.timeit(import_string+load_string,number=number_of_trials)
+            data_node_timing.append(timing)
+            data_node_list_timed.append(data_node)
+            if not ('silent' in dir(options) and options.silent):
+                print('Done!')
+        except:
+            if not ('silent' in dir(options) and options.silent):
+                print('Data node '+data_node+' excluded because it did not respond.')
+    return list(np.array(data_node_list_timed)[np.argsort(data_node_timing)]),list(set(data_node_list).difference(data_node_list_timed))
+    #return list(np.array(data_node_list_timed)[np.argsort(data_node_timing)])+list(set(data_node_list).difference(data_node_list_timed))
 
-def remove_entry_from_dictionary(dictio,entry):
-    return {name:dictio[name] for name in dictio.keys() if name!=entry}

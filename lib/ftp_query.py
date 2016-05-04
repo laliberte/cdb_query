@@ -1,17 +1,19 @@
-import os
-import glob
+#External:
 import copy
-import retrieval_utils
+import ftplib
+
+#Internal:
 import nc_Database
 
-import ftplib
+#External but related:
+import netcdf4_soft_links.remote_netcdf as remote_netcdf
 
 class browser:
     def __init__(self,search_path,options):
         self.file_type='FTPServer'
         self.options=options
         self.search_path=search_path.rstrip('/')
-        self.data_node=retrieval_utils.get_data_node(self.search_path,self.file_type)
+        self.data_node=remote_netcdf.get_data_node(self.search_path,self.file_type)
         if (self.options.username!=None and 
             'password' in dir(self.options) and
             self.options.password!=None):
@@ -76,7 +78,7 @@ def descend_tree_recursive(database,file_expt,tree_desc,top_path,options,ftp,lis
                 #Add the file identifier to the path:
                 file_expt_copy.path=top_path+'/'+file
                 for unique_file_id in unique_file_id_list:
-                    #file_expt_copy.path='|'.join([file,retrieval_utils.md5_for_file(open(file,'r'))])
+                    #Add empty unique identifiers:
                     file_expt_copy.path+='|'
                 if alt: 
                     file_expt_copy.model_version=file_expt_copy.model.split('-')[1]
