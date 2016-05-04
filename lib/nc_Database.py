@@ -193,6 +193,27 @@ class nc_Database:
                 nc_Database_utils.extract_netcdf_variable(output,dataset,tree,options,retrieval_type=retrieval_type)
         return output
 
+    def retrieve_database(self,output,options,q_manager=None,retrieval_type='reduce'):
+        ##Recover the database meta data:
+        tree=zip(self.drs.official_drs_no_version,[ None
+                            for field in self.drs.official_drs_no_version])
+        with self.load_nc_file() as dataset:
+            if retrieval_type in ['download_files', 'download_opendap']:
+                nc_Database_utils.extract_netcdf_variable(output,dataset,tree,options,download_semaphores=q_manager.download.semaphores,
+                                                                                           download_queues_manager=q_manager.download,
+                                                                                           retrieval_type=retrieval_type)
+                q_manager.download.set_closed()
+                data_node_list=self.list_data_nodes(options)
+                output=retrieval_manager.launch_download(output,data_node_list,q_manager.download,options)
+                #if (retrieval_type=='download_files'
+                #    and
+                #    not ( 'do_not_revalidate' in dir(options) and options.do_not_revalidate)):
+                #    pass #Not implemented yet
+                #       #revalidate
+            else:
+                nc_Database_utils.extract_netcdf_variable(output,dataset,tree,options,retrieval_type=retrieval_type)
+        return output
+
     def retrieve_dates(self,options):
         ##Recover the database meta data:
         with self.load_nc_file() as dataset:

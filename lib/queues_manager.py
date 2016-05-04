@@ -367,33 +367,30 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs):
     #Recursively apply commands:
     database=cdb_query_archive_class.Database_Manager(project_drs)
     #Run the command:
-    #getattr(database,function_name)(options_copy,q_manager=q_manager)
+    options_save=copy.copy(options)
     try:
         if ( 'log_files' in options and options.log_files ):
             print('Process: ',datetime.datetime.now(),function_name,[(queue_name,getattr(q_manager,queue_name+'_expected').value) for queue_name in q_manager.queues_names],options_copy)
         getattr(cdb_query_archive_class,function_name)(database,options_copy,q_manager=q_manager)
         if ( 'log_files' in options and options.log_files ):
             print('DONE Process: ',datetime.datetime.now(),function_name,[(queue_name,getattr(q_manager,queue_name+'_expected').value) for queue_name in q_manager.queues_names],options_copy)
-        #Reset trial counter:
-        options_copy.trial=0
     except:
-        if options_copy.trial<options.max_trial:
-            #Put it back in the queue, increasing its trial number:
-            options_copy.trial+=1
+        if options.trial<options.max_trial:
             #Decrement expectation in next function:
             q_manager.remove((function_name,options_copy))
             #Delete output from previous attempt files:
             try:
-                map(os.remove,glob.glob(options_copy.out_netcdf_file+'.*'))
-                os.remove(options_copy.out_netcdf_file)
+                map(os.remove,glob.glob(options_save.out_netcdf_file+'.*'))
+                os.remove(options_save.out_netcdf_file)
             except:
                 pass
-            #Reset output file:
-            options_copy.out_netcdf_file=options.out_netcdf_file
+
+            #Put it back in the queue, increasing its trial number:
+            options_save.trial+=1
             #Increment expectation in current function and resubmit:
-            q_manager.increment_expected_and_put((function_name,options_copy))
+            q_manager.increment_expected_and_put((function_name,options_save))
         else:
-            print function_name+' failed with the following options:',options_copy
+            print function_name+' failed with the following options:',options_save
             raise
     return
 

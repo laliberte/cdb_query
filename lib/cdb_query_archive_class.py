@@ -312,6 +312,9 @@ class Database_Manager:
                     os.remove(options.in_netcdf_file)
                 return
             else:
+                #Reset trial counter:
+                options_copy.trial=0
+
                 #Remove temporary input files if not the first function:
                 if 'in_netcdf_file' in dir(options):
                     previous_in_netcdf_file=options_copy.in_netcdf_file
