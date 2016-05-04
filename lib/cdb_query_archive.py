@@ -37,7 +37,7 @@ def main(project):
     import textwrap
 
     #Option parser
-    version_num='1.7rc1'
+    version_num='1.9'
     description=textwrap.dedent('''\
     This script queries a {0} archive. It can query:
     1. a local POSIX-based archive that follows the {0} DRS

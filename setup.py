@@ -14,7 +14,7 @@ from setuptools import setup, find_packages
 package_name='cdb_query'
 setup(
        name = package_name,
-       version = "1.7rc1",
+       version = "1.9",
        packages=[package_name],
        package_dir = {package_name: 'lib'},
 #
