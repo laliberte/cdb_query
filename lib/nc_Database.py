@@ -50,6 +50,7 @@ class nc_Database:
         return
 
     def load_nc_file(self):
+        print self.database_file
         return netCDF4.Dataset(self.database_file,'r')
 
     def load_header(self):

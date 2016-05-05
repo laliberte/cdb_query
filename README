@@ -12,7 +12,7 @@ on distributed exascale data archives" G8 Research Initiative grant. http://proj
 This version is a major rewrite from earlier versions.
 
 Frederic Laliberte, Paul J. Kushner
-Univerity of Toronto, 2014
+Univerity of Toronto, 2016
 
 The Natural Sciences and Engineering Research Council of Canada (NSERC/CRSNG) funded 
 FBL and PJK during this project.
@@ -24,6 +24,9 @@ F. Laliberté, Juckes, M., Denvil, S., Kushner, P. J., Bull. Amer. Meteor. Soc.,
 
 Version History
 ---------------
+
+1.9: Major overhaul. Code ready for new ESGF version. CMIP5 works but other projects might not.
+     Last version before a LTS version.
 
 1.6: Split the source code in two. Some of the heavy lifiting is now provided
      by the netcdf4_soft_links package.
