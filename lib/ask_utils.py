@@ -70,7 +70,8 @@ def ask_database(database,options):
             browser=None
 
         if browser!=None:
-            only_list.append(browser.descend_tree(database,list_level=options.list_only_field))
+            if browser.test_valid():
+                only_list.append(browser.descend_tree(database,list_level=options.list_only_field))
             browser.close()
     return [item for sublist in only_list for item in sublist]
 

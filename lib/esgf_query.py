@@ -15,6 +15,17 @@ class browser:
         self.options=options
         self.search_path=search_path
 
+    def test_valid(self):
+        request = urllib2.Request(self.search_path+'search')
+        #Try to connect with timeout:
+        try:
+            urllib2.Request(request,timeout=60)
+            return True
+        except:
+            return False
+
+        
+
     def close(self):
         return
 

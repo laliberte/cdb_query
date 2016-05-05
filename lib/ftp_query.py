@@ -29,6 +29,9 @@ class browser:
         self.ftp.close()
         return
 
+    def test_valid(self):
+        return True
+
     def descend_tree(self,database,list_level=None):
         only_list=[]
         if self.file_type in database.header['file_type_list']:
