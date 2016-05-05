@@ -72,6 +72,8 @@ def ask_database(database,options):
         if browser!=None:
             if browser.test_valid():
                 only_list.append(browser.descend_tree(database,list_level=options.list_only_field))
+            else:
+                print('Search_path '+search_path+' is not accessible. It will not be considered.')
             browser.close()
     return [item for sublist in only_list for item in sublist]
 
