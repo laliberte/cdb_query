@@ -19,12 +19,10 @@ class browser:
         request = urllib2.Request(self.search_path+'search')
         #Try to connect with timeout:
         try:
-            urllib2.Request(request,timeout=60)
+            urllib2.Request(request,timeout=10)
             return True
         except:
             return False
-
-        
 
     def close(self):
         return
