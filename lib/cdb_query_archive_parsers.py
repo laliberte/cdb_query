@@ -33,6 +33,9 @@ def processing_arguments(parser,project_drs):
     proc_group.add_argument('--num_procs',
                                  default=1, type=int,
                                  help='Use num_procs processes to perform the computation.')
+    proc_group.add_argument('--fraction_avdr',
+                                 default=3, type=int,
+                                 help='1/fraction_avdr gives the fraction of processes devoted to avdr functions.')
 
     return proc_group
 

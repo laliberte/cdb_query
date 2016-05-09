@@ -170,10 +170,13 @@ class CDB_queues_manager:
         return self.get(queues_names=[queue for queue in ['ask','validate','download_files','reduce_soft_links','download_opendap']
                                         if queue in self.queues_names])
 
+    def get_limited_record(self):
+        return self.get(record=True,queues_names=['record_validate','record'])
+
     def get_all_record(self):
         return self.get(record=True,queues_names=self.queues_names)
 
-    def get_server_record(self):
+    def get_all_server_record(self):
         return self.get(record=True,queues_names=['ask','validate','record_validate','download_files','reduce_soft_links','download_opendap','record'])
         #return self.get(record=True,queues_names=['ask','validate','download_files','reduce_soft_links','download_opendap','record'])
 
@@ -266,8 +269,10 @@ def recorder(q_manager,project_drs,options):
 def recorder_queue_consume(q_manager,project_drs,options):
     renewal_time=datetime.datetime.now()
 
-    if ('start_server' in dir(options) and options.start_server):
-        get_type=getattr(q_manager,'get_server_record')
+    if options.num_procs>1:
+        get_type=getattr(q_manager,'get_limited_record')
+    elif ('start_server' in dir(options) and options.start_server):
+        get_type=getattr(q_manager,'get_all_server_record')
     else:
         get_type=getattr(q_manager,'get_all_record')
     for item in iter(get_type,'STOP'):
@@ -441,10 +446,21 @@ def consumer_processes_names(q_manager,options):
                 for proc_id in range(options.num_procs-1):
                    processes_names.append('dr_'+str(proc_id))
             else:
-                for proc_id in range(options.num_procs-1):
-                    #One third of processes go to avdr:
-                    if proc_id < (options.num_procs-1) // 3:
-                       processes_names.append('avdr_'+str(proc_id))
+                if options.num_procs-1<options.fraction_avdr:
+                   processes_names.append('avdrdr_'+str(proc_id))
+                else:
+                    if options.fraction_avdr>1:
+                        for proc_id in range(options.num_procs-1):
+                            #options.fraction_avdr of processes go to avdr:
+                            if proc_id < (options.num_procs-1) // options.fraction_avdr:
+                               processes_names.append('avdr_'+str(proc_id))
+                            else:
+                               processes_names.append('dr_'+str(proc_id))
                     else:
-                       processes_names.append('dr_'+str(proc_id))
+                        #Assign first process to dr and remanining to avdr:
+                        for proc_id in range(options.num_procs-1):
+                            if proc_id==0:
+                               processes_names.append('dr_'+str(proc_id))
+                            else:
+                               processes_names.append('avdr_'+str(proc_id))
     return processes_names
