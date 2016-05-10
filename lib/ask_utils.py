@@ -34,7 +34,7 @@ def ask(database,options,q_manager=None):
 
     if options.list_only_field!=None:
         #If --list_only_field has been specified, output this list:
-        output=set([item for sublist in only_list for item in sublist])
+        output=set(only_list)
     else:
         #Find the intersection of the database, so that all the requested variables are available:
         intersection(database)
@@ -199,7 +199,7 @@ def ask_simulations_recursive(database,options,simulations_desc,async=True):
     Function to recursively find possible simulation list
     '''
     options_copy=copy.copy(options)
-    if is instance(simulations_desc,list) and len(simulations_desc)>1:
+    if isinstance(simulations_desc,list) and len(simulations_desc)>1:
         #--list_only_field set to first simulations_desc.
         options_copy.list_only_field=simulations_desc[0]
 

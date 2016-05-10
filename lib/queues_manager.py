@@ -233,9 +233,6 @@ def recorder(q_manager,project_drs,options):
     #The consumers can now terminate:
     q_manager.set_closed()
 
-    #Set number of processors to 1 for recoder process.
-    options.num_procs=1
-
     with netCDF4.Dataset(options.out_netcdf_file,'w') as output:
         output.set_fill_off()
         database=cdb_query_archive_class.Database_Manager(project_drs)
@@ -270,11 +267,13 @@ def recorder_queue_consume(q_manager,project_drs,options):
     renewal_time=datetime.datetime.now()
 
     if options.num_procs>1:
+        #get_type=getattr(q_manager,'get_all_record')
         get_type=getattr(q_manager,'get_limited_record')
     elif ('start_server' in dir(options) and options.start_server):
         get_type=getattr(q_manager,'get_all_server_record')
     else:
         get_type=getattr(q_manager,'get_all_record')
+
     for item in iter(get_type,'STOP'):
         if not 'record' in item[1].split('_'):
             consume_one_item(item[0],item[1],item[2],q_manager,project_drs)

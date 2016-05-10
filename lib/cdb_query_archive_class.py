@@ -5,6 +5,7 @@ import os
 import shutil
 import json
 import timeit
+import time
 import numpy as np
 import multiprocessing
 import random
@@ -88,7 +89,7 @@ def validate(database,options,q_manager=None):
     if not 'data_node_list' in database.header.keys():
         data_node_list, url_list, simulations_list =database.find_data_nodes_and_simulations(options)
         if len(data_node_list)>1 and not options.no_check_availability:
-            data_node_list, Xdata_node_list=rank_data_nodes(options,data_node_list,url_list)
+            data_node_list, Xdata_node_list=rank_data_nodes(options,data_node_list,url_list,q_manager)
         else:
             Xdata_node_list=[]
     else:
@@ -435,26 +436,43 @@ def find_simple(pointers,file_expt,semaphores=None):
     pointers.session.commit()
     return
 
-def rank_data_nodes(options,data_node_list,url_list):
+def rank_data_nodes(options,data_node_list,url_list,q_manager):
     data_node_list_timed=[]
     data_node_timing=[]
     for data_node_id, data_node in enumerate(data_node_list):
         url=url_list[data_node_id]
         if not ('silent' in dir(options) and options.silent):
             print 'Querying '+url[0]+' to measure response time of data node... '
-        #Try opening a link on the data node. If it does not work remove this data node.
-        number_of_trials=3
-        try:
-            import_string='import netcdf4_soft_links.remote_netcdf as remote_netcdf;import time;'
-            load_string='remote_data=remote_netcdf.remote_netCDF(\''+url[0]+'\',\''+url[1]+'\');remote_data.is_available();time.sleep(2);'
-            timing=timeit.timeit(import_string+load_string,number=number_of_trials)
-            data_node_timing.append(timing)
-            data_node_list_timed.append(data_node)
-            if not ('silent' in dir(options) and options.silent):
-                print('Done!')
-        except:
+
+        with Timer() as timed_exec:
+            remote_data=remote_netcdf.remote_netCDF(url[0],url[1])
+        
+        if timed_exec>options.timeout:
             if not ('silent' in dir(options) and options.silent):
                 print('Data node '+data_node+' excluded because it did not respond.')
+        else:
+            #Try opening a link on the data node. If it does not work remove this data node.
+            number_of_trials=3
+            try:
+                import_string='import netcdf4_soft_links.remote_netcdf as remote_netcdf;import time;'
+                load_string='remote_data=remote_netcdf.remote_netCDF(\''+url[0]+'\',\''+url[1]+'\');remote_data.is_available();time.sleep(2);'
+                timing=timeit.timeit(import_string+load_string,number=number_of_trials)
+                data_node_timing.append(timing)
+                data_node_list_timed.append(data_node)
+                if not ('silent' in dir(options) and options.silent):
+                    print('Done!')
+            except:
+                if not ('silent' in dir(options) and options.silent):
+                    print('Data node '+data_node+' excluded because it did not respond.')
     return list(np.array(data_node_list_timed)[np.argsort(data_node_timing)]),list(set(data_node_list).difference(data_node_list_timed))
     #return list(np.array(data_node_list_timed)[np.argsort(data_node_timing)])+list(set(data_node_list).difference(data_node_list_timed))
 
+#http://preshing.com/20110924/timing-your-code-using-pythons-with-statement/
+class Timer:    
+    def __enter__(self):
+        self.start = time.clock()
+        return self
+
+    def __exit__(self, *args):
+        self.end = time.clock()
+        self.interval = self.end - self.start
