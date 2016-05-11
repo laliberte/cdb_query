@@ -118,7 +118,6 @@ def validate(database,options,q_manager=None):
             q_manager.validate_semaphores.add_new_data_node(data_node)
     #Do it by simulation, except if one simulation field should be kept for further operations:
     vars_list=ask_var_list(database,simulations_list_no_fx,options_copy)
-    if len(vars_list)==1: raise Exception
     database.put_or_process('validate',validate_utils.validate,vars_list,options_copy,q_manager)
     return
 
