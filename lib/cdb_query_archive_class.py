@@ -88,12 +88,14 @@ def validate(database,options,q_manager=None):
 
     if not 'data_node_list' in database.header.keys():
         data_node_list, url_list, simulations_list =database.find_data_nodes_and_simulations(options)
-        if len(data_node_list)>1 and not options.no_check_availability:
+        if not options.no_check_availability:
             data_node_list, Xdata_node_list=rank_data_nodes(options,data_node_list,url_list,q_manager)
         else:
             Xdata_node_list=[]
     else:
         simulations_list=[]
+        data_node_list=database.header['data_node_list']
+        Xdata_node_list=[]
     database.drs.data_node_list=data_node_list
 
     #Some data_nodes might have been dropped. Restrict options accordingly:
@@ -116,6 +118,7 @@ def validate(database,options,q_manager=None):
             q_manager.validate_semaphores.add_new_data_node(data_node)
     #Do it by simulation, except if one simulation field should be kept for further operations:
     vars_list=ask_var_list(database,simulations_list_no_fx,options_copy)
+    if len(vars_list)==1: raise Exception
     database.put_or_process('validate',validate_utils.validate,vars_list,options_copy,q_manager)
     return
 
@@ -249,10 +252,6 @@ class Database_Manager:
             #Delete input and decrement expected function.
             if q_manager.remove((function_name,options)):
                 os.remove(options.in_netcdf_file)
-            #getattr(q_manager,next_function_name+'_expected').decrement()
-            #if ('in_netcdf_file' in dir(options) and
-            #    q_manager.queues_names.index(function_name)>0):
-            #    os.remove(options.in_netcdf_file)
 
             if len(vars_list)>0:
                 if not ('silent' in dir(options) and options.silent):
@@ -276,21 +275,10 @@ class Database_Manager:
                         var_times_list=downloads.time_split(self,options_copy)
                     #Submit only if the times_list is not empty:
                     if len(times_list)==1 or len(var_times_list)>0:
-                        #if ('in_netcdf_file' in dir(options) and
-                        #    q_manager.queues_names.index(function_name)>0):
-                        #    #Copy input files to prevent garbage from accumulating:
-                        #    counter=q_manager.counter.increment()
-                        #    options_copy.in_netcdf_file=options.in_netcdf_file+'.'+str(counter)
-                        #    shutil.copyfile(options.in_netcdf_file,options_copy.in_netcdf_file)
                         new_file_name=q_manager.increment_expected_and_put((function_name,options_copy))
                         if new_file_name!='':
                             shutil.copyfile(options.in_netcdf_file,new_file_name)
             if q_manager.remove((function_name,options)):
-            #next_function_name=q_manager.queues_names[q_manager.queues_names.index(function_name)+1]
-            #getattr(q_manager,next_function_name+'_expected').decrement()
-            ##Remove input file because we have created one temporary file per process:
-            #if ('in_netcdf_file' in dir(options) and
-            #    q_manager.queues_names.index(function_name)>0):
                 os.remove(options.in_netcdf_file)
             return
         else:
@@ -445,17 +433,20 @@ def rank_data_nodes(options,data_node_list,url_list,q_manager):
             print 'Querying '+url[0]+' to measure response time of data node... '
 
         with Timer() as timed_exec:
-            remote_data=remote_netcdf.remote_netCDF(url[0],url[1])
-        
-        if timed_exec>options.timeout:
+            is_available=remote_netcdf.remote_netCDF(url[0],url[1],semaphores=q_manager.validate_semaphores).is_available(num_trials=1)
+
+        if not is_available:
             if not ('silent' in dir(options) and options.silent):
-                print('Data node '+data_node+' excluded because it did not respond.')
+                if timed_exec.interval>options.timeout:
+                    print('Data node '+data_node+' excluded because it did not respond (timeout).')
+                else:
+                    print('Data node '+data_node+' excluded because it did not respond.')
         else:
             #Try opening a link on the data node. If it does not work remove this data node.
             number_of_trials=3
             try:
                 import_string='import netcdf4_soft_links.remote_netcdf as remote_netcdf;import time;'
-                load_string='remote_data=remote_netcdf.remote_netCDF(\''+url[0]+'\',\''+url[1]+'\');remote_data.is_available();time.sleep(2);'
+                load_string='remote_data=remote_netcdf.remote_netCDF(\''+url[0]+'\',\''+url[1]+'\');remote_data.is_available(num_trials=1);time.sleep(0.1);'
                 timing=timeit.timeit(import_string+load_string,number=number_of_trials)
                 data_node_timing.append(timing)
                 data_node_list_timed.append(data_node)

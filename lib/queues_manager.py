@@ -11,6 +11,7 @@ import threading
 import numpy as np
 import datetime
 import glob
+import shutil
 
 #Internal:
 import cdb_query_archive_class
@@ -226,8 +227,6 @@ class CDB_queues_manager:
         return np.max([getattr(self,queue_name+'_expected').value for queue_name in restricted_queues_names])
 
 def recorder(q_manager,project_drs,options):
-    renewal_time=datetime.datetime.now()
-
     #Start downloads
     q_manager.start_download_processes()
     #The consumers can now terminate:
@@ -365,13 +364,14 @@ def reducer_queue_consume(q_manager,project_drs):
 def consume_one_item(counter,function_name,options,q_manager,project_drs):
     #First copy options:
     options_copy=copy.copy(options)
+    options_save=copy.copy(options)
+
     #Create unique file id:
     options_copy.out_netcdf_file+='.'+str(counter)
 
     #Recursively apply commands:
     database=cdb_query_archive_class.Database_Manager(project_drs)
     #Run the command:
-    options_save=copy.copy(options)
     try:
         if ( 'log_files' in options and options.log_files ):
             print('Process: ',datetime.datetime.now(),function_name,[(queue_name,getattr(q_manager,queue_name+'_expected').value) for queue_name in q_manager.queues_names],options_copy)
@@ -392,7 +392,9 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs):
             #Put it back in the queue, increasing its trial number:
             options_save.trial+=1
             #Increment expectation in current function and resubmit:
-            q_manager.increment_expected_and_put((function_name,options_save))
+            new_file_name=q_manager.increment_expected_and_put((function_name,options_save))
+            if new_file_name!='':
+                shutil.copyfile(options.in_netcdf_file,new_file_name)
         else:
             print function_name+' failed with the following options:',options_save
             raise
