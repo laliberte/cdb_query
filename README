@@ -11,7 +11,7 @@ on distributed exascale data archives" G8 Research Initiative grant. http://proj
 
 This version is a major rewrite from earlier versions.
 
-Frederic Laliberte, Paul J. Kushner
+Frederic B. Laliberte, Paul J. Kushner
 Univerity of Toronto, 2016
 
 The Natural Sciences and Engineering Research Council of Canada (NSERC/CRSNG) funded 
@@ -20,10 +20,13 @@ FBL and PJK during this project.
 
 If using this code to retrieve and process data from the ESGF please cite:
 Efficient, robust and timely analysis of Earth System Models: a database-query approach
-F. Laliberté, Juckes, M., Denvil, S., Kushner, P. J., Bull. Amer. Meteor. Soc., Submitted.
+F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD.
 
 Version History
 ---------------
+
+1.9.5: Last major version before release 2.0. Future versions before release 2.0 will be minor bugfixes.
+       Interface can be expected to be stable for the forseeable future.
 
 1.9: Major overhaul. Code ready for new ESGF version. CMIP5 works but other projects might not.
      Last version before a LTS version.
