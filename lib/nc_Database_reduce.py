@@ -9,13 +9,13 @@ import sys
 #Internal:
 import nc_Database_utils
 
-def reduce_soft_links(database,options,q_manager=None):
-    return reduce_sl_or_var(database,options,q_manager=q_manager,retrieval_type='reduce_soft_links',script=options.reduce_soft_links_script)
+def reduce_soft_links(database,options,q_manager=None,sessions=dict()):
+    return reduce_sl_or_var(database,options,q_manager=q_manager,sessions=sessions,retrieval_type='reduce_soft_links',script=options.reduce_soft_links_script)
 
-def reduce_variable(database,options,q_manager=None,retrieval_type='reduce'):
-    return reduce_sl_or_var(database,options,q_manager=q_manager,retrieval_type='reduce',script=options.script)
+def reduce_variable(database,options,q_manager=None,sessions=dict(),retrieval_type='reduce'):
+    return reduce_sl_or_var(database,options,q_manager=q_manager,sessions=sessions,retrieval_type='reduce',script=options.script)
 
-def reduce_sl_or_var(database,options,q_manager=None,retrieval_type='reduce',script=''):
+def reduce_sl_or_var(database,options,q_manager=None,sessions=dict(),retrieval_type='reduce',script=''):
     #The leaf(ves) considered here:
     fix_list=(lambda x: x[0] if len(x)==1 else x)
 
@@ -34,12 +34,18 @@ def reduce_sl_or_var(database,options,q_manager=None,retrieval_type='reduce',scr
     file_name_list=get_input_file_names(database.drs,options,script)
     temp_file_name_list=[]
 
+    if 'validate' in sessions.keys():
+        session=sessions['validate']
+    else:
+        session=None
+
     for file_name in file_name_list:
         temp_file_name=get_temp_input_file_name(options,file_name)
         extract_single_tree(temp_file_name,file_name,
                                     tree,tree_fx,
                                     options,options_fx,
                                     retrieval_type=retrieval_type,
+                                    session=session,
                                     check_empty=(retrieval_type=='reduce'))
         temp_file_name_list.append(temp_file_name)
 
@@ -74,7 +80,7 @@ def reduce_sl_or_var(database,options,q_manager=None,retrieval_type='reduce',scr
         pass
     return temp_output_file_name
 
-def extract_single_tree(temp_file,file,tree,tree_fx,options,options_fx,retrieval_type='reduce',check_empty=False):
+def extract_single_tree(temp_file,file,tree,tree_fx,options,options_fx,session=None,retrieval_type='reduce',check_empty=False):
     with netCDF4.Dataset(file,'r') as data:
         hdf5=None
         try:
@@ -88,9 +94,9 @@ def extract_single_tree(temp_file,file,tree,tree_fx,options,options_fx,retrieval
 
         with netCDF4.Dataset(temp_file,'w',format='NETCDF4',diskless=True,persist=True) as output_tmp:
             if ('add_fixed' in dir(options) and options.add_fixed):
-                nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree_fx,options_fx,retrieval_type=retrieval_type,check_empty=True,hdf5=hdf5)
+                nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree_fx,options_fx,session=session,retrieval_type=retrieval_type,check_empty=True,hdf5=hdf5)
 
-            nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree,options,retrieval_type=retrieval_type,check_empty=check_empty,hdf5=hdf5)
+            nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree,options,session=session,retrieval_type=retrieval_type,check_empty=check_empty,hdf5=hdf5)
 
     if hdf5!=None:
         hdf5.close()

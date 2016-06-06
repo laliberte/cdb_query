@@ -1,5 +1,7 @@
 import copy
 
+available_projects=['CMIP5','CORDEX','NMME','LFRTIP']
+
 class DRS:
     def __init__(self,project):
         self.project=project

@@ -23,14 +23,3 @@ and follow their instructions. `cdb_query` has only been tested on linux machine
     $ conda install netcdf4 h5py
 
 .. warning:: Do not use `conda` to install other packages BEFORE you have made sure that `cdb_query` is working properly.
-
-- As of November 2015, the following Anaconda distribution works with `cdb_query`::
-    
-    $ conda install anaconda=2.4.0
-    $ conda install curl="7.38.0 0"
-    $ conda install libnetcdf="4.3.2 1"
-    $ conda install hdf5="1.8.14 0"
-    $ conda install h5py="2.5.0 np19py27_2"
-    $ conda install netcdf4="1.1.8 np19py27_0"
-
-

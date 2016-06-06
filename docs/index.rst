@@ -14,6 +14,5 @@ Contents:
    intro
    install
    recipes 
-   commands
    install_nco
 

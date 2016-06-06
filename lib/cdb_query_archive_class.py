@@ -40,7 +40,7 @@ def ask_var_list(database,simulations_list,options):
                         for field in database.drs.official_drs_no_version]) for var in 
                         simulations_list ])]
 
-def ask(database,options,q_manager=None):
+def ask(database,options,q_manager=None,sessions=dict()):
     #Load header:
     database.load_header(options)
 
@@ -80,10 +80,10 @@ def ask(database,options,q_manager=None):
         print "This can take some time. Please abort if there are not enough simulations for your needs."
     
     vars_list=ask_var_list(database,simulations_list_no_fx,options)
-    database.put_or_process('ask',ask_utils.ask,vars_list,options,q_manager)
+    database.put_or_process('ask',ask_utils.ask,vars_list,options,q_manager,sessions)
     return
 
-def validate(database,options,q_manager=None):
+def validate(database,options,q_manager=None,sessions=dict()):
     database.load_header(options)
 
     if not 'data_node_list' in database.header.keys():
@@ -118,22 +118,22 @@ def validate(database,options,q_manager=None):
             q_manager.validate_semaphores.add_new_data_node(data_node)
     #Do it by simulation, except if one simulation field should be kept for further operations:
     vars_list=ask_var_list(database,simulations_list_no_fx,options_copy)
-    database.put_or_process('validate',validate_utils.validate,vars_list,options_copy,q_manager)
+    database.put_or_process('validate',validate_utils.validate,vars_list,options_copy,q_manager,sessions)
     return
 
-def av(database,options,q_manager=None):
+def av(database,options,q_manager=None,sessions=dict()):
     ask(database,options,q_manager=q_manager)
     return
 
-def avdr(database,options,q_manager=None):
+def avdr(database,options,q_manager=None,sessions=dict()):
     ask(database,options,q_manager=q_manager)
     return
 
-def drdr(database,options,q_manager=None):
+def drdr(database,options,q_manager=None,sessions=dict()):
     download_files(database,options,q_manager=q_manager)
     return
 
-def avdrdr(database,options,q_manager=None):
+def avdrdr(database,options,q_manager=None,sessions=dict()):
     ask(database,options,q_manager=q_manager)
     return
 
@@ -151,7 +151,7 @@ def reduce_var_list(database,options):
                         for field in database.drs.official_drs_no_version]) for var in 
                         database.list_fields_local(options,drs_to_eliminate) ])]
 
-def download_files(database,options,q_manager=None):
+def download_files(database,options,q_manager=None,sessions=dict()):
     if q_manager != None:
         data_node_list, url_list, simulations_list =database.find_data_nodes_and_simulations(options)
         for data_node in data_node_list:
@@ -165,25 +165,25 @@ def download_files(database,options,q_manager=None):
         times_list=downloads.time_split(database,options)
     else:
         times_list=[(None,None,None,None),]
-    database.put_or_process('download_files',downloads.download_files,vars_list,options,q_manager,times_list=times_list)
+    database.put_or_process('download_files',downloads.download_files,vars_list,options,q_manager,sessions,times_list=times_list)
     return
 
-#def revalidate(database,options,q_manager=None):
+#def revalidate(database,options,q_manager=None,sessions=dict()):
 #    if q_manager != None:
 #        data_node_list, url_list, simulations_list =database.find_data_nodes_and_simulations(options)
 #        for data_node in data_node_list:
 #            q_manager.validate_semaphores.add_new_data_node(data_node)
 #    #Recover the database meta data:
 #    vars_list=self.reduce_var_list(options)
-#    database.put_or_process('revalidate',downloads.revalidate,vars_list,options,q_manager)
+#    database.put_or_process('revalidate',downloads.revalidate,vars_list,options,q_manager,sessions)
 #    return
 
-def reduce_soft_links(database,options,q_manager=None):
+def reduce_soft_links(database,options,q_manager=None,sessions=dict()):
     vars_list=reduce_var_list(database,options)
-    database.put_or_process('reduce_soft_links',nc_Database_reduce.reduce_soft_links,vars_list,options,q_manager)
+    database.put_or_process('reduce_soft_links',nc_Database_reduce.reduce_soft_links,vars_list,options,q_manager,sessions)
     return
 
-def download_opendap(database,options,q_manager=None):
+def download_opendap(database,options,q_manager=None,sessions=dict()):
     if q_manager != None:
         data_node_list, url_list, simulations_list =database.find_data_nodes_and_simulations(options)
         for data_node in data_node_list:
@@ -196,14 +196,14 @@ def download_opendap(database,options,q_manager=None):
         times_list=downloads.time_split(database,options)
     else:
         times_list=[(None,None,None,None),]
-    database.put_or_process('download_opendap',downloads.download_opendap,vars_list,options,q_manager,times_list=times_list)
+    database.put_or_process('download_opendap',downloads.download_opendap,vars_list,options,q_manager,sessions,times_list=times_list)
     return
 
-def gather(database,options,q_manager=None):
+def gather(database,options,q_manager=None,sessions=dict()):
     reduce(database,options,q_manager=q_manager)
     return
 
-def reduce(database,options,q_manager=None):
+def reduce(database,options,q_manager=None,sessions=dict()):
     if (options.script=='' and 
         ('in_extra_netcdf_files' in dir(options) and 
           len(options.in_extra_netcdf_files)>0) ):
@@ -216,10 +216,10 @@ def reduce(database,options,q_manager=None):
     else:
         times_list=[(None,None,None,None),]
 
-    database.put_or_process('reduce',nc_Database_reduce.reduce_variable,vars_list,options,q_manager,times_list=times_list)
+    database.put_or_process('reduce',nc_Database_reduce.reduce_variable,vars_list,options,q_manager,sessions,times_list=times_list)
     return
 
-def merge(database,options,q_manager=None):
+def merge(database,options,q_manager=None,sessions=dict()):
     database.load_header(options)
     with netCDF4.Dataset(options.out_netcdf_file,'w') as output:
         nc_Database.record_header(output,database.header)
@@ -227,7 +227,7 @@ def merge(database,options,q_manager=None):
             nc_Database_utils.record_to_netcdf_file_from_file_name(options,file_name,output,database.drs)
     return
 
-def list_fields(database,options,q_manager=None):
+def list_fields(database,options,q_manager=None,sessions=dict()):
     fields_list=database.list_fields_local(options,options.field)
     for field in fields_list:
         print ','.join(field)
@@ -244,7 +244,7 @@ class Database_Manager:
         self.close_database()
         return fields_list
 
-    def put_or_process(self,function_name,function_handle,vars_list,options,q_manager,times_list=[(None,None,None,None),]):
+    def put_or_process(self,function_name,function_handle,vars_list,options,q_manager,sessions,times_list=[(None,None,None,None),]):
 
         if (len(vars_list)==0 or len(times_list)==0):
             #There is no variables to find in the input. 
@@ -288,7 +288,7 @@ class Database_Manager:
                 options_copy=make_new_options_from_lists(options,vars_list[0],times_list[0],function_name,self.drs.official_drs_no_version)
 
             #Compute function:
-            output_file_name=function_handle(self,options_copy,q_manager=q_manager)
+            output_file_name=function_handle(self,options_copy,q_manager=q_manager,sessions=sessions)
 
             if output_file_name==None:
                 #No file was written and the next function should not expect anything:
@@ -365,16 +365,16 @@ class Database_Manager:
             self.close_database()
         return
         
-    def load_database(self,options,find_function,semaphores=dict()):
+    def load_database(self,options,find_function,time_slices=dict(),semaphores=dict(),session=None,remote_netcdf_kwargs=dict()):
         self.define_database(options)
         if 'header' in dir(self):
             self.nc_Database.header=self.header
-        self.nc_Database.populate_database(options,find_function,semaphores=semaphores)
+        self.nc_Database.populate_database(options,find_function,time_slices=time_slices,semaphores=semaphores,session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
         if 'ensemble' in dir(options) and options.ensemble!=None:
             #Always include r0i0p0 when ensemble was sliced:
             options_copy=copy.copy(options)
             options_copy.ensemble='r0i0p0'
-            self.nc_Database.populate_database(options_copy,find_function,semaphores=semaphores)
+            self.nc_Database.populate_database(options_copy,find_function,semaphores=semaphores,session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
         return
 
     def define_database(self,options):
@@ -418,10 +418,6 @@ def make_new_options_from_lists(options,var_item,time_item,function_name,officia
         options_copy.ensemble.append('r0i0p0')
     return options_copy
 
-def find_simple(pointers,file_expt,semaphores=None):
-    pointers.session.add(file_expt)
-    pointers.session.commit()
-    return
 
 def rank_data_nodes(options,data_node_list,url_list,q_manager):
     data_node_list_timed=[]
@@ -455,7 +451,6 @@ def rank_data_nodes(options,data_node_list,url_list,q_manager):
                 if not ('silent' in dir(options) and options.silent):
                     print('Data node '+data_node+' excluded because it did not respond.')
     return list(np.array(data_node_list_timed)[np.argsort(data_node_timing)]),list(set(data_node_list).difference(data_node_list_timed))
-    #return list(np.array(data_node_list_timed)[np.argsort(data_node_timing)])+list(set(data_node_list).difference(data_node_list_timed))
 
 #http://preshing.com/20110924/timing-your-code-using-pythons-with-statement/
 class Timer:    
@@ -466,3 +461,8 @@ class Timer:
     def __exit__(self, *args):
         self.end = time.clock()
         self.interval = self.end - self.start
+
+def find_simple(pointers,file_expt,time_slices=dict(),semaphores=None,session=None,remote_netcdf_kwargs=dict()):
+    pointers.session.add(file_expt)
+    pointers.session.commit()
+    return

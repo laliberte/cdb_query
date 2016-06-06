@@ -42,10 +42,11 @@ setup(
         #package_data = {package_name : ['lib/*.sh']},
         entry_points = {
                   'console_scripts': [
-                           'cdb_query_CMIP5= cdb_query.cdb_query_archive:main_CMIP5',
-                           'cdb_query_CORDEX= cdb_query.cdb_query_archive:main_CORDEX',
-                           'cdb_query_NMME= cdb_query.cdb_query_archive:main_NMME',
-                           'cdb_query_LRFTIP= cdb_query.cdb_query_archive:main_LRFTIP'
+                           'cdb_query= cdb_query.cdb_query_archive:main',
+                           #'cdb_query_CMIP5= cdb_query.cdb_query_archive:main_CMIP5',
+                           #'cdb_query_CORDEX= cdb_query.cdb_query_archive:main_CORDEX',
+                           #'cdb_query_NMME= cdb_query.cdb_query_archive:main_NMME',
+                           #'cdb_query_LRFTIP= cdb_query.cdb_query_archive:main_LRFTIP'
                                      ],
                        }
     )

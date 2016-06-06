@@ -60,10 +60,10 @@ class nc_Database:
                 header[att]=json.loads(dataset.getncattr(att))
         return header
 
-    def populate_database(self,options,find_function,semaphores=None):
+    def populate_database(self,options,find_function,time_slices=dict(),semaphores=dict(),session=None,remote_netcdf_kwargs=dict()):
         self.file_expt.time='0'
         with self.load_nc_file() as dataset:
-            populate_database_recursive(self,dataset,options,find_function,semaphores=semaphores)
+            populate_database_recursive(self,dataset,options,find_function,time_slices=time_slices,semaphores=semaphores,session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
 
         #Allow complex queries:
         if ('field' in dir(options) and options.field!=[] and options.field!=None):
@@ -104,7 +104,7 @@ class nc_Database:
         subset=tuple([File_Expt.path,]+[getattr(File_Expt,item) for item in self.drs.official_drs])
         return sorted(list(set(self.list_subset(subset))))
 
-    def write_database(self,header,options,record_function_handle,semaphores=dict()):
+    def write_database(self,header,options,record_function_handle,semaphores=dict(),session=None,remote_netcdf_kwargs=dict()):
         #List all the trees:
         drs_list=copy.copy(self.drs.base_drs)
 
@@ -163,7 +163,9 @@ class nc_Database:
                                                                   paths_list,time_frequency,years, months,
                                                                   header['file_type_list'],
                                                                   header['data_node_list'],
-                                                                  semaphores=semaphores,check_dimensions=check_dimensions)
+                                                                  semaphores=semaphores,check_dimensions=check_dimensions,
+                                                                  session=session,
+                                                                  remote_netcdf_kwargs=remote_netcdf_kwargs)
 
                 getattr(netcdf_pointers,record_function_handle)(output,var,username=options.username,user_pass=options.password)
 
@@ -172,14 +174,16 @@ class nc_Database:
 
         return temp_output_file_name
 
-    def retrieve_database(self,output,options,q_manager=None,retrieval_type='reduce'):
+    def retrieve_database(self,output,options,q_manager=None,session=None,retrieval_type='reduce'):
         ##Recover the database meta data:
         tree=zip(self.drs.official_drs_no_version,[ None
                             for field in self.drs.official_drs_no_version])
         with self.load_nc_file() as dataset:
             if retrieval_type in ['download_files', 'download_opendap']:
+                q_manager.download.set_opened()
                 nc_Database_utils.extract_netcdf_variable(output,dataset,tree,options,download_semaphores=q_manager.download.semaphores,
                                                                                            download_queues_manager=q_manager.download,
+                                                                                           session=session,
                                                                                            retrieval_type=retrieval_type)
                 q_manager.download.set_closed()
                 data_node_list=self.list_data_nodes(options)
@@ -193,26 +197,6 @@ class nc_Database:
                 nc_Database_utils.extract_netcdf_variable(output,dataset,tree,options,retrieval_type=retrieval_type)
         return output
 
-    def retrieve_database(self,output,options,q_manager=None,retrieval_type='reduce'):
-        ##Recover the database meta data:
-        tree=zip(self.drs.official_drs_no_version,[ None
-                            for field in self.drs.official_drs_no_version])
-        with self.load_nc_file() as dataset:
-            if retrieval_type in ['download_files', 'download_opendap']:
-                nc_Database_utils.extract_netcdf_variable(output,dataset,tree,options,download_semaphores=q_manager.download.semaphores,
-                                                                                           download_queues_manager=q_manager.download,
-                                                                                           retrieval_type=retrieval_type)
-                q_manager.download.set_closed()
-                data_node_list=self.list_data_nodes(options)
-                output=retrieval_manager.launch_download(output,data_node_list,q_manager.download,options)
-                #if (retrieval_type=='download_files'
-                #    and
-                #    not ( 'do_not_revalidate' in dir(options) and options.do_not_revalidate)):
-                #    pass #Not implemented yet
-                #       #revalidate
-            else:
-                nc_Database_utils.extract_netcdf_variable(output,dataset,tree,options,retrieval_type=retrieval_type)
-        return output
 
     def retrieve_dates(self,options):
         ##Recover the database meta data:
@@ -227,7 +211,7 @@ class nc_Database:
 #####################################################################
 file_unique_id_list=['checksum_type','checksum','tracking_id']
 
-def populate_database_recursive(nc_Database,data,options,find_function,semaphores=None):
+def populate_database_recursive(nc_Database,data,options,find_function,time_slices=dict(),semaphores=dict(),session=None,remote_netcdf_kwargs=dict()):
     if 'soft_links' in data.groups.keys():
         soft_links=data.groups['soft_links']
         paths=soft_links.variables['path'][:]
@@ -247,13 +231,17 @@ def populate_database_recursive(nc_Database,data,options,find_function,semaphore
                 setattr(nc_Database.file_expt,'path',file_path)
                 setattr(nc_Database.file_expt,'version','v'+str(soft_links.variables['version'][path_id]))
                 setattr(nc_Database.file_expt,'data_node',data_node)
-                find_function(nc_Database,copy.deepcopy(nc_Database.file_expt),semaphores=semaphores)
+                find_function(nc_Database,copy.deepcopy(nc_Database.file_expt),time_slices=time_slices,
+                                                                    semaphores=semaphores,
+                                                                    session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
     elif len(data.groups.keys())>0:
         for group in data.groups.keys():
             level_name=data.groups[group].getncattr('level_name')
             if is_level_name_included_and_not_excluded(level_name,options,group):
                 setattr(nc_Database.file_expt,data.groups[group].getncattr('level_name'),group)
-                populate_database_recursive(nc_Database,data.groups[group],options,find_function,semaphores=semaphores)
+                populate_database_recursive(nc_Database,data.groups[group],options,find_function,time_slices=time_slices,
+                                                                    semaphores=semaphores,
+                                                                    session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
     elif 'path' in data.ncattrs():
         #for fx variables:
         #id_list=['file_type','search']
@@ -273,7 +261,8 @@ def populate_database_recursive(nc_Database,data,options,find_function,semaphore
             setattr(nc_Database.file_expt,'data_node',
                         remote_netcdf.get_data_node(nc_Database.file_expt.path,
                                                       nc_Database.file_expt.file_type))
-            find_function(nc_Database,copy.deepcopy(nc_Database.file_expt))
+            find_function(nc_Database,copy.deepcopy(nc_Database.file_expt),time_slices=time_slices,
+                                                        semaphores=semaphores,session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
     else:
         #for retrieved datasets:
         #id_list=['file_type','search','path','version']
@@ -314,7 +303,15 @@ def retrieve_dates_recursive(data,options):
 
 def tree_recursive_check_not_empty(options,data):
     if 'soft_links' in data.groups.keys():
-        return True
+        remote_data=read_soft_links.read_netCDF_pointers(data,options=options)
+        if remote_data.time_var!=None:
+            #Check if time slice is leading to zero time dimension:
+            if np.any(remote_data.time_restriction):
+                return True
+            else:
+                return False
+        else:
+            return True
     elif len(data.groups.keys())>0:
         empty_list=[]
         for group in data.groups.keys():

@@ -10,24 +10,26 @@ import netcdf4_soft_links.create_soft_links as create_soft_links
 import netcdf4_soft_links.read_soft_links as read_soft_links
 import netcdf4_soft_links.netcdf_utils as netcdf_utils
 import netcdf4_soft_links.remote_netcdf as remote_netcdf
+import netcdf4_soft_links.requests_sessions as requests_sessions
 
 #Internal:
 import nc_Database
 
 #EXTRACTIONS:
 def extract_netcdf_variable(output,data,tree,options,
+                            session=None,
                             retrieval_type='reduce',
                             check_empty=False,hdf5=None,
                             download_semaphores=dict(),download_queues_manager=None):
     return extract_netcdf_variable_recursive(output,data,
                                              tree[0],tree[1:],
                                              retrieval_type,
-                                             options,check_empty,hdf5,download_semaphores,download_queues_manager)
+                                             options,check_empty,hdf5,download_semaphores,download_queues_manager,session)
 
 def extract_netcdf_variable_recursive(output,data,
                                       level_desc,tree,
                                       retrieval_type,
-                                      options,check_empty,hdf5,download_semaphores,download_queues_manager):
+                                      options,check_empty,hdf5,download_semaphores,download_queues_manager,session):
     level_name=level_desc[0]
     group_name=level_desc[1]
     if group_name==None or isinstance(group_name,list):
@@ -38,24 +40,24 @@ def extract_netcdf_variable_recursive(output,data,
                 extract_retrieve_or_replicate(group,output_grp,data,
                                                tree,
                                                retrieval_type,
-                                               options,download_semaphores,download_queues_manager,hdf5,check_empty)
+                                               options,download_semaphores,download_queues_manager,hdf5,check_empty,session)
     else:
         if (len(tree)>0 and group_name==''):
             extract_netcdf_variable_recursive(output,data,
                                             tree[0],tree[1:],
                                             retrieval_type,
-                                            options,check_empty,hdf5,download_semaphores,download_queues_manager)
+                                            options,check_empty,hdf5,download_semaphores,download_queues_manager,session)
         else:
             extract_retrieve_or_replicate(group_name,output,data,
                                           tree,
                                           retrieval_type,
-                                          options,download_semaphores,download_queues_manager,hdf5,check_empty)
+                                          options,download_semaphores,download_queues_manager,hdf5,check_empty,session)
     return
 
 def extract_retrieve_or_replicate(group_name,output,data,
                                   tree,
                                   retrieval_type,
-                                  options,download_semaphores,download_queues_manager,hdf5,check_empty):
+                                  options,download_semaphores,download_queues_manager,hdf5,check_empty,session):
     if len(tree)>0:
         if group_name in data.groups.keys():
             if hdf5!=None:
@@ -65,22 +67,29 @@ def extract_retrieve_or_replicate(group_name,output,data,
             extract_netcdf_variable_recursive(output,data.groups[group_name],
                                               tree[0],tree[1:],
                                               retrieval_type,
-                                              options,check_empty,hdf5_grp,download_semaphores,download_queues_manager)
+                                              options,check_empty,hdf5_grp,download_semaphores,download_queues_manager,session)
     else:
         retrieve_or_replicate(output,data,
                               group_name,
                               retrieval_type,
-                              options,check_empty,hdf5,download_semaphores,download_queues_manager)
+                              options,check_empty,hdf5,download_semaphores,download_queues_manager,session)
     return
 
 def retrieve_or_replicate(output_grp,data,
                           group,
                           retrieval_type,
-                          options,check_empty,hdf5,download_semaphores,download_queues_manager):
+                          options,check_empty,hdf5,download_semaphores,download_queues_manager,session):
+
+    remote_netcdf_kwargs=dict()
+    if 'validate_cache' in dir(options) and getattr(options,'validate_cache'):
+        remote_netcdf_kwargs['cache']=getattr(options,'validate_cache').split(',')[0]
+        if len(getattr(options,'validate_cache').split(','))>1:
+            remote_netcdf_kwargs['expire_after']=datetime.timedelta(hours=float(getattr(options,'validate_cache').split(',')[1]))
     netcdf_pointers=read_soft_links.read_netCDF_pointers(data.groups[group],
                                                         options=options,
                                                         semaphores=download_semaphores,
-                                                        queues=download_queues_manager)
+                                                        queues=download_queues_manager,
+                                                        session=session,**remote_netcdf_kwargs)
     if retrieval_type=='reduce_soft_links':
         #If applying to soft links, replicate.
         if hdf5!=None:
@@ -295,18 +304,20 @@ def convert_dates_to_timestamps(output_tmp,time_frequency):
     conversion['day']=(lambda x: str(x.year).zfill(4)+str(x.month).zfill(2)+str(x.day).zfill(2))
     conversion['6hr']=(lambda x: str(x.year).zfill(4)+str(x.month).zfill(2)+str(x.day).zfill(2)+str(x.hour).zfill(2)+str(x.minute).zfill(2)+str(x.second).zfill(2))
     conversion['3hr']=(lambda x: str(x.year).zfill(4)+str(x.month).zfill(2)+str(x.day).zfill(2)+str(x.hour).zfill(2)+str(x.minute).zfill(2)+str(x.second).zfill(2))
-    if time_frequency!='fx' and len(output_tmp.variables['time'])>0:
+    if ( time_frequency!='fx' 
+         and 'time' in output_tmp.variables.keys() 
+         and len(output_tmp.variables['time'])>0 ):
         date_axis=netcdf_utils.get_date_axis(output_tmp.variables['time'])[[0,-1]]
         return '_'+'-'.join([conversion[time_frequency](date) for date in date_axis])
     else:
         return ''
 
 def make_sub_dir(out_dir,group):
-    #try:
-    sub_out_dir=out_dir+'/'+group
-    if not os.path.exists(sub_out_dir):
-        os.makedirs(sub_out_dir)
-    #except:
-    #    pass
+    try:
+        sub_out_dir=out_dir+'/'+group
+        if not os.path.exists(sub_out_dir):
+            os.makedirs(sub_out_dir)
+    except OSError:
+        pass
     return sub_out_dir
 

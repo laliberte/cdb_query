@@ -1,9 +1,12 @@
 #External:
 import copy
 import warnings
-from pyesgf.search import SearchConnection
-import urllib2
+#from pyesgf.search import SearchConnection
+from pyesgf_connection import SearchConnection
+import socket
+import requests
 import httplib
+import datetime
 
 #External but related:
 import netcdf4_soft_links.remote_netcdf as remote_netcdf
@@ -11,18 +14,30 @@ import netcdf4_soft_links.remote_netcdf as remote_netcdf
 unique_file_id_list=['checksum_type','checksum','tracking_id']
 
 class browser:
-    def __init__(self,search_path,options):
+    def __init__(self,search_path,options,session=None):
         self.options=options
+        self.session=session
         self.search_path=search_path
 
     def test_valid(self):
-        request = urllib2.Request(self.search_path+'search')
         #Try to connect with timeout:
         try:
-            urllib2.urlopen(request,timeout=10)
-            return True
-        except Exception as e:
-            return False
+            get_kwargs={'timeout':20,'stream':True,'allow_redirects':True}
+            if self.session!=None:
+                response=self.session.get(self.search_path+'search',**get_kwargs)
+            else:
+                response=requests.get(self.search_path+'search',**get_kwargs)
+            test=response.ok
+            response.close()
+        except requests.exceptions.ReadTimeout as e:
+            test=False
+            pass
+        except requests.exceptions.ConnectionError as e:
+            test=False
+            pass
+        return test
+        #except Exception as e:
+        #    return False
 
     def close(self):
         return
@@ -43,11 +58,11 @@ class browser:
         for var_name in lists_to_loop['variable_list']:
             for experiment in lists_to_loop['experiment_list']:
                 only_list.append(experiment_variable_search_recursive(database.nc_Database.drs.slicing_args.keys(),database.nc_Database,self.search_path,database.header['file_type_list'],self.options,
-                                            experiment,var_name,database.header['variable_list'][var_name],list_level=list_level))
+                                            experiment,var_name,database.header['variable_list'][var_name],list_level=list_level,session=self.session))
         return [item for sublist in only_list for item in sublist]
 
 def experiment_variable_search_recursive(slicing_args,nc_Database,search_path,file_type_list,options,
-                                        experiment,var_name,var_desc,list_level=None):
+                                        experiment,var_name,var_desc,list_level=None,session=None):
     if isinstance(slicing_args,list) and len(slicing_args)>0:
         #Go down slicing arguments:
         if ( slicing_args[0] in dir(options) and 
@@ -66,12 +81,22 @@ def experiment_variable_search_recursive(slicing_args,nc_Database,search_path,fi
     else:
         #When done, perform the search:
         return experiment_variable_search(nc_Database,search_path,file_type_list,options,
-                                         experiment,var_name,var_desc,list_level=list_level)
+                                         experiment,var_name,var_desc,list_level=list_level,session=session)
 
 def experiment_variable_search(nc_Database,search_path,file_type_list,options,
-                                experiment,var_name,var_desc,list_level=None):
+                                experiment,var_name,var_desc,list_level=None,session=None):
     #Assumes that all slicing arguments in options are length-one list:
-    conn = SearchConnection(search_path, distrib=options.distrib)
+    conn_kwargs={'distrib':options.distrib}
+    #conn = SearchConnection(search_path, distrib=options.distrib,cache='esgf_query')
+
+    if session != None:
+        conn=SearchConnection(search_path, session=session)
+    else:
+        if 'ask_cache' in dir(options) and options.ask_cache:
+            conn_kwargs['cache']=options.ask_cache.split(',')[0]
+            if len(options.ask_cache.split(','))>1:
+                conn_kwargs['expire_after']=datetime.timedelta(hours=float(options.ask_cache.split(',')[1]))
+        conn=SearchConnection(search_path, **conn_kwargs)
 
     #Search the ESGF:
     ctx = conn.new_context(project=nc_Database.drs.project,
@@ -90,7 +115,6 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
         setattr(nc_Database.file_expt,field,var_desc[field_id])
 
     if list_level!=None:
-        import socket
         try:
             return ctx.facet_counts[list_level].keys()
         except socket.error as e:
@@ -99,25 +123,18 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
             return []
         except httplib.BadStatusLine as e:
             return []
-        except urllib2.HTTPError as e:
+        except requests.HTTPError as e:
             print search_path+' is not responding. '
             print e
             print 'This is not fatal. Data broadcast by '+search_path+' will simply NOT be considered.'
-            #print search_path+' is not responding. '+e.strerror
             return []
-        except urllib2.URLError as e:
-            print search_path+' is not responding. '
-            print e
-            print 'This is not fatal. Data broadcast by '+search_path+' will simply NOT be considered.'
-            #print search_path+' is not responding. '+e.strerror
-            return []
-        except Exception as e:
-            print search_path+' is not responding. '
-            print e
-            print 'This is not fatal. Data broadcast by '+search_path+' will simply NOT be considered.'
         except KeyError as e:
             #list_level is not available. Happens when nodes are not configured to handle data from the MIP.
             return []
+        #except Exception as e:
+        #    print search_path+' is not responding. '
+        #    print e
+        #    print 'This is not fatal. Data broadcast by '+search_path+' will simply NOT be considered.'
     else:
         file_list_remote=[]
         file_list_found=[]
@@ -171,11 +188,6 @@ def get_urls(drs,result,file_type_list,var_name):
         fil = fil_ctx.search(variable=var_name)
         for item in fil:
             file_list_remote.extend(get_url_remote(item,file_type_list,drs))
-        #except:
-        #    if shard_name==None:
-        #         warnings.warn('An unknown shard is unresponsive at the moment'.format(shard_name))
-        #    else:
-        #        warnings.warn('Shard {0} is unresponsive at the moment'.format(shard_name))
         
     return file_list_remote
 

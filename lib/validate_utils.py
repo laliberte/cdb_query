@@ -4,9 +4,9 @@ import os
 from operator import itemgetter
 import sqlalchemy
 import numpy as np
+import datetime
 
 #External but related:
-import netcdf4_soft_links.retrieval_utils as retrieval_utils
 import netcdf4_soft_links.remote_netcdf as remote_netcdf
 
 #Internal:
@@ -15,17 +15,19 @@ import cdb_query_archive_class
 
 queryable_file_types=['OPENDAP','local_file']
 
-def find_time(pointers,file_expt,semaphores=dict()):
+def find_time(pointers,file_expt,time_slices=dict(),semaphores=dict(),session=None,remote_netcdf_kwargs=dict()):
     #Will check both availability and queryability:
-    find_time_file(pointers,file_expt,semaphores=semaphores)
+    find_time_file(pointers,file_expt,time_slices=time_slices,semaphores=semaphores,
+                                                    session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
     return
 
-def find_time_available(pointers,file_expt,semaphores=dict()):
+def find_time_available(pointers,file_expt,time_slices=dict(),semaphores=dict(),session=None,remote_netcdf_kwargs=dict()):
     #same as find_time but keeps non-queryable files:
-    find_time_file(pointers,file_expt,file_available=True,semaphores=semaphores)
+    find_time_file(pointers,file_expt,file_available=True,time_slices=time_slices,semaphores=semaphores,
+                                                            session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
     return
 
-def find_time_file(pointers,file_expt,file_available=False,semaphores=dict()):#session,file_expt,path_name):
+def find_time_file(pointers,file_expt,file_available=False,time_slices=dict(),semaphores=dict(),session=None,remote_netcdf_kwargs=dict()):
     #If the path is a remote file, we must use the time stamp
     filename=os.path.basename(file_expt.path)
     
@@ -36,11 +38,11 @@ def find_time_file(pointers,file_expt,file_available=False,semaphores=dict()):#s
         return
     else:
         time_stamp=filename.replace('.nc','').split('_')[-1].split('|')[0]
-    #time_stamp[0] == 'r':
 
     if not file_expt.experiment in pointers.header['experiment_list']:
         return
 
+    #Find the years that were requested:
     years_requested=[int(year) for year in pointers.header['experiment_list'][file_expt.experiment].split(',')]
     years_list_requested=range(*years_requested)
     years_list_requested.append(years_requested[1])
@@ -58,28 +60,37 @@ def find_time_file(pointers,file_expt,file_available=False,semaphores=dict()):#s
     years_list=range(*years_range)
     years_list.append(years_range[1])
 
+    #Tweaked to allow for relative years:
     if not picontrol_min_time: years_list=[ year for year in years_list if year in years_list_requested]
 
+    #Time was further sliced:
+    if ('year' in time_slices.keys() and
+         time_slices['year']!=None):
+        years_list=[year for year in years_list if year in time_slices['year']]
+
+    months_list=range(1,13)
+    if ('month' in time_slices.keys() and
+        time_slices['month']!=None):
+        months_list=[month for month in months_list if month in time_slices['month']]
+
     #Record in the database:
+    checked_availability=False
     for year_id,year in enumerate(years_list):
-        if year_id==0:
-            #Check availability / queryability:
-            if not file_available:
-                if file_expt.file_type in queryable_file_types: 
+        for month in months_list:
+            if  ( not ( (year==years_range[0] and month<months_range[0]) or
+                     (year==years_range[1] and month>months_range[1])   ) ):
+                if (not file_available and
+                   not checked_availability):
+                    checked_availability=True
                     if file_expt.file_type in ['local_file']:
                         file_available=True
                     else:
-                        remote_data=remote_netcdf.remote_netCDF(file_expt.path.split('|')[0],file_expt.file_type,semaphores)
+                        remote_data=remote_netcdf.remote_netCDF(file_expt.path.split('|')[0],
+                                                                file_expt.file_type,
+                                                                semaphores=semaphores,
+                                                                session=session,
+                                                                **remote_netcdf_kwargs)
                         file_available=remote_data.is_available()
-                else:
-                    if file_expt.file_type in ['FTPServer']:
-                        file_available=True
-                    else:
-                        file_available = retrieval_utils.check_file_availability(file_expt.path.split('|')[0])
-
-        for month in range(1,13):
-            if  ( not ( (year==years_range[0] and month<months_range[0]) or
-                     (year==years_range[1] and month>months_range[1])   ) ):
                 attribute_time(pointers,file_expt,file_available,year,month)
     return
 
@@ -113,6 +124,16 @@ def obtain_time_list(diagnostic,project_drs,var_name,experiment,model):
     return time_list_var
 
 def find_model_list(diagnostic,project_drs,model_list,experiment,options):
+    #Time slices:
+    time_slices=dict()
+    if ( 'record_validate' in dir(options) and
+         not options.record_validate):
+         #Slice time unless the validate step should be recorded:
+         for time_type in ['month','year']:
+            if time_type in dir(options):
+                time_slices[time_type]=getattr(options,time_type)
+
+    #Determine the requested time list:
     period_list = diagnostic.header['experiment_list'][experiment]
     if not isinstance(period_list,list): period_list=[period_list]
     years_list=[]
@@ -122,8 +143,16 @@ def find_model_list(diagnostic,project_drs,model_list,experiment,options):
         years_list.append(years_range[1])
     time_list=[]
     for year in years_list:
-        for month in get_diag_month_list(diagnostic):
-            time_list.append(str(year).zfill(4)+str(month).zfill(2))
+        if ( ( 'year' in time_slices.keys() and
+                   (time_slices['year']==None or
+                  year in time_slices['year'])) or
+              (not 'year' in time_slices.keys())):
+            for month in get_diag_month_list(diagnostic):
+                if ( ( 'month' in time_slices.keys() and
+                        (time_slices['month']==None or
+                          month in time_slices['month'])) or
+                     (not 'month' in time_slices.keys())):
+                    time_list.append(str(year).zfill(4)+str(month).zfill(2))
 
     model_list_var=copy.copy(model_list)
     model_list_copy=copy.copy(model_list)
@@ -147,13 +176,29 @@ def find_model_list(diagnostic,project_drs,model_list,experiment,options):
             #min_time['_'.join(model)+'_'+experiment]=0
             min_time=0
 
-        for var_name in diagnostic.header['variable_list'].keys():
-            if not diagnostic.header['variable_list'][var_name][0] in ['fx','clim']:
+        var_names_no_fx=[var_name for var_name in diagnostic.header['variable_list'].keys()
+                            if not diagnostic.header['variable_list'][var_name][0] in ['fx','clim']]
+        if 'missing_years' in dir(options) and options.missing_years:
+            #When missing years are allowed, ensure that all variables have the same times!
+            valid_times=dict()
+            for var_name in var_names_no_fx:
                 time_list_var=obtain_time_list(diagnostic,project_drs,var_name,experiment,model)
-                #time_list_var=[str(int(time)-int(min_time['_'.join(model)+'_'+experiment])).zfill(6) for time in time_list_var]
                 time_list_var=[str(int(time)-int(min_time)).zfill(6) for time in time_list_var]
-                if ( not ('missing_years' in dir(options) and options.missing_years) and 
-                     not set(time_list).issubset(time_list_var) ):
+                valid_times[var_name]=set(time_list).intersection(time_list_var)
+            for var_name in var_names_no_fx:
+                for var_name_to_compare in var_names_no_fx:
+                    if (var_name!=var_name_to_compare and
+                        valid_times[var_name]!=valid_times[var_name_to_compare]):
+                        missing_vars.append(var_name+':'+','.join(
+                                            diagnostic.header['variable_list'][var_name])+
+                                            ' for some months ')
+                        break
+        else:
+            #When missing years are not allowed, ensure that all variables have the requested times!
+            for var_name in var_names_no_fx:
+                time_list_var=obtain_time_list(diagnostic,project_drs,var_name,experiment,model)
+                time_list_var=[str(int(time)-int(min_time)).zfill(6) for time in time_list_var]
+                if not set(time_list).issubset(time_list_var):
                     missing_vars.append(var_name+':'+','.join(
                                         diagnostic.header['variable_list'][var_name])+
                                         ' for some months: '+','.join(
@@ -179,7 +224,7 @@ def get_diag_month_list(diagnostic):
         diag_month_list=range(1,13)
     return diag_month_list
 
-def validate(database,options,q_manager=None):
+def validate(database,options,q_manager=None,sessions=dict()):
     if 'data_node_list' in dir(database.drs):
         database.header['data_node_list']=database.drs.data_node_list
     else:
@@ -187,20 +232,37 @@ def validate(database,options,q_manager=None):
         if len(data_node_list)>1 and not options.no_check_availability:
                 data_node_list=database.rank_data_nodes(options,data_node_list,url_list)
         database.header['data_node_list']=data_node_list
+
     semaphores=q_manager.validate_semaphores
+    remote_netcdf_kwargs=dict()
+    if 'validate_cache' in dir(options) and options.validate_cache:
+        remote_netcdf_kwargs['cache']=options.validate_cache.split(',')[0]
+        if len(options.validate_cache.split(','))>1:
+            remote_netcdf_kwargs['expire_after']=datetime.timedelta(hours=float(options.validate_cache.split(',')[1]))
+    if 'validate' in sessions.keys():
+        session=sessions['validate']
+    else:
+        session=None
+
+    time_slices=dict()
+    if ( 'record_validate' in dir(options) and
+         not options.record_validate):
+         for time_type in ['month','year']:
+            if time_type in dir(options):
+                time_slices[time_type]=getattr(options,time_type)
 
     if options.no_check_availability:
         #Does not check whether files are available / queryable before proceeding.
-        database.load_database(options,find_time_available,semaphores=semaphores)
+        database.load_database(options,find_time_available,time_slices=time_slices,semaphores=semaphores,session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
         #Find the list of institute / model with all the months for all the years / experiments and variables requested:
         intersection(database,options)
-        output=database.nc_Database.write_database(database.header,options,'record_paths',semaphores=semaphores)
+        output=database.nc_Database.write_database(database.header,options,'record_paths',semaphores=semaphores,session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
     else:
         #Checks that files are available.
-        database.load_database(options,find_time,semaphores=semaphores)
+        database.load_database(options,find_time,time_slices=time_slices,semaphores=semaphores,session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
         #Find the list of institute / model with all the months for all the years / experiments and variables requested:
         intersection(database,options)
-        output=database.nc_Database.write_database(database.header,options,'record_meta_data',semaphores=semaphores)
+        output=database.nc_Database.write_database(database.header,options,'record_meta_data',semaphores=semaphores,session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
     database.close_database()
     return output
 

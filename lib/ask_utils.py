@@ -20,7 +20,7 @@ import cdb_query_archive_class
 #   ROUTINES AND FUNCTIONS TO QUERY A DATABASE (LOCAL, FTP, ESGF)
 #
 
-def ask(database,options,q_manager=None):
+def ask(database,options,q_manager=None,sessions=dict()):
     '''
     Function to query a database. All components are passed through the `options`,
     the result of a parsed command line string.
@@ -30,7 +30,12 @@ def ask(database,options,q_manager=None):
 
     #Perform the query. The output is a list of possible
     #fields in --list_only_field has been specified:
-    only_list=ask_database(database,options)
+    if 'ask' in sessions.keys():
+        session=session=sessions['ask']
+    else:
+        session=None
+
+    only_list=ask_database(database,options,session=session)
 
     if options.list_only_field!=None:
         #If --list_only_field has been specified, output this list:
@@ -51,7 +56,7 @@ def ask(database,options,q_manager=None):
     #Return --list_only_field or output filename:
     return output
 
-def ask_database(database,options):
+def ask_database(database,options,session=None):
     '''
     Function that loops through search paths to complete the query.
     '''
@@ -71,7 +76,7 @@ def ask_database(database,options):
             browser=ftp_query.browser(search_path,options)
         elif ('http' in search_path and 'esg-search' in search_path):
             #ESGF catalogue archive query
-            browser=esgf_query.browser(search_path,options)
+            browser=esgf_query.browser(search_path,options,session=session)
         else:
             browser=None
 
@@ -219,6 +224,7 @@ def ask_simulations_recursive(database,options,simulations_desc,async=True):
                 args_list.append((copy.copy(database),copy.copy(options_copy),simulations_desc[1:],val))
                 setattr(options_copy,simulations_desc[0],None)
             elif (val in getattr(options_copy,simulations_desc[0])):
+                #val was already sliced:
                 args_list.append((copy.copy(database),copy.copy(options_copy),simulations_desc[1:],val))
         if ('num_procs' in dir(options_copy) and options_copy.num_procs>1 and async==True and len(args_list)>0
             and not ('serial' in dir(options_copy) and options_copy.serial)):
@@ -239,7 +245,7 @@ def ask_simulations_recursive(database,options,simulations_desc,async=True):
         options_copy.list_only_field=None
     return simulations_list
 
-def find_path(nc_Database,file_expt,semaphores=dict()):
+def find_path(nc_Database,file_expt,time_slices=dict(),semaphores=dict(),session=None,remote_netcdf_kwargs=dict()):
     for val in dir(file_expt):
         if val[0]!='_' and val!='case_id':
             getattr(file_expt,val)

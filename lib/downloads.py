@@ -11,13 +11,13 @@ import netcdf4_soft_links.remote_netcdf as remote_netcdf
 #Internal:
 import cdb_query_archive_class
 
-def download_files(database,options,q_manager=None):
-    return download(database,'download_files',options,q_manager)
+def download_files(database,options,q_manager=None,sessions=dict()):
+    return download(database,'download_files',options,q_manager,sessions)
 
-def download_opendap(database,options,q_manager=None):
-    return download(database,'download_opendap',options,q_manager)
+def download_opendap(database,options,q_manager=None,sessions=dict()):
+    return download(database,'download_opendap',options,q_manager,sessions)
 
-def download(database,retrieval_type,options,q_manager):
+def download(database,retrieval_type,options,q_manager,sessions):
     options_copy=copy.copy(options)
     if 'out_download_dir' in dir(options):
         #Describe the tree pattern:
@@ -28,6 +28,11 @@ def download(database,retrieval_type,options,q_manager):
 
     if ('swap_dir' in dir(options_copy) and options_copy.swap_dir!='.'):
         options_copy.out_netcdf_file=options_copy.swap_dir+'/'+os.path.basename(options_copy.out_netcdf_file)
+
+    if 'validate' in sessions.keys():
+        session=sessions['validate']
+    else:
+        session=None
 
     #Recover the database meta data:
     database.load_header(options_copy)
@@ -51,7 +56,7 @@ def download(database,retrieval_type,options,q_manager):
         #If the data is not all local or if a time slice was requested, "download"
         with netCDF4.Dataset(options_copy.out_netcdf_file,'w') as output:
             output.set_fill_off()
-            output=database.nc_Database.retrieve_database(output,options_copy,q_manager=q_manager,retrieval_type=retrieval_type)
+            output=database.nc_Database.retrieve_database(output,options_copy,q_manager=q_manager,session=session,retrieval_type=retrieval_type)
         database.close_database()
     else:
         #Else, simply copy:

@@ -12,7 +12,7 @@ Core requirements
 -----------------
 
 * Python 2.7.x.
-* A recent version of the netCDF4 library. Ideally, it would be of the 4.3.1 vintage.
+* A recent version of the netCDF4 library.
 * ESGF certificates.
 
 Before proceeding further, are you willing to use a 3rd party Linux Distribution (Free for Academic Use)?
@@ -53,25 +53,9 @@ actions a user should take is
 
 5. Register for `CMIP5 Research`. You do not need to download data.
 
-6. Follow these links one after the other. You might be warned of untrusted certificates. Proceed anyway. You will then be prompted to enter your `openid` followed by
-   your `password`. This will bring you to a page asking you to register your account. Once you register a file should start downloading. 
-   You can stop the transfer and repeat these steps for the next link.
-
-       a. http://esg.bnu.edu.cn/thredds/fileServer/cmip5/BNU/BNU-ESM/1pctCO2/3hr/atmos/clt/r1i1p1/clt_3hr_BNU-ESM_1pctCO2_r1i1p1_196101010000-199012312100.nc
-       b. http://cmip3.dkrz.de/thredds/fileServer/cmip5/output1/BCC/bcc-csm1-1/rcp45/day/atmos/day/r1i1p1/v20120705/ta/ta_day_bcc-csm1-1_rcp45_r1i1p1_20060101-20251231.nc
-       c. http://albedo2.dkrz.de/thredds/fileServer/cmip5/output1/LASG-CESS/FGOALS-g2/rcp45/day/atmos/day/r1i1p1/v1/ta/ta_day_FGOALS-g2_rcp45_r1i1p1_20060101-20061231.nc
-       d. http://esgf-data1.ceda.ac.uk/thredds/fileServer/esg_dataroot/cmip5/output1/IPSL/IPSL-CM5B-LR/rcp45/day/atmos/day/r1i1p1/v20120430/ta/ta_day_IPSL-CM5B-LR_rcp45_r1i1p1_20060101-20151231.nc
-       e. http://vesg.ipsl.fr/thredds/fileServer/esg_dataroot/CMIP5/output1/IPSL/IPSL-CM5B-LR/rcp45/day/atmos/day/r1i1p1/v20120430/ta/ta_day_IPSL-CM5B-LR_rcp45_r1i1p1_20960101-21001231.nc
-       f. http://pcmdi9.llnl.gov/thredds/fileServer/cmip5_css02_data/cmip5/output1/NCAR/CCSM4/rcp45/day/atmos/day/r6i1p1/hus/1/hus_day_CCSM4_rcp45_r6i1p1_20060101-20091231.nc
-       g. http://bmbf-ipcc-ar5.dkrz.de/thredds/fileServer/cmip5/output1/MPI-M/MPI-ESM-MR/rcp45/day/atmos/day/r2i1p1/v20120628/ta/ta_day_MPI-ESM-MR_rcp45_r2i1p1_21000101-21001231.nc
-       h. http://esg.cnrm-game-meteo.fr/thredds/fileServer/esg_dataroot1/CMIP5/output1/CNRM-CERFACS/CNRM-CM5/rcp45/day/atmos/day/r1i1p1/v20121001/ta/ta_day_CNRM-CM5_rcp45_r1i1p1_20960101-21001231.nc
-       i. http://esgf.extra.cea.fr/thredds/fileServer/CORDEX/output/EUR-44/IPSL-INERIS/IPSL-IPSL-CM5A-MR/historical/r1i1p1/IPSL-INERIS-WRF331F/v1/mon/pr/v20140301/pr_EUR-44_IPSL-IPSL-CM5A-MR_historical_r1i1p1_IPSL-INERIS-WRF331F_v1_mon_200101-200512.nc
-
 7. Run the following command::
 
-        $ cdb_query_CMIP5 certificates username registering_service
-
-   where the ``registering_service`` is ``badc``.
+        $ cdb_query CMIP5 certificates
 
 8. Edit your ``.bash_profile``. Add these two lines to your ``.bash_profile``::
 
@@ -81,7 +65,6 @@ actions a user should take is
    and source your ``.bash_profile``::
 
     $ source ~/.bash_profile
-
 
 Alternatively, if you would like to use another registering service, please follow the instructions on how to install the :ref:`install-certs`
 
@@ -95,25 +78,6 @@ Some of the recipes make use of `NCO`. These recipes were tested using version 4
 netcdf libraries built from `anaconda` and from :ref:`install-source`. Please consult the project's webpage for information on how to install: http://nco.sourceforge.net/.
 
 These recipes were tested using the `NCO` built using the BASH script found in :ref:`install-nco`
-
-NcView
-^^^^^^
-With all the libraries properly installed, `NcView` is now easy to install::
-    
-    $ wget ftp://cirrus.ucsd.edu/pub/ncview/ncview-2.1.2.tar.gz
-    $ tar xvfz ncview-2.1.2.tar.gz
-    $ cd ncview-2.1.2
-    $ ./configure --with-netcdf_incdir=$HOME/anaconda/include/ \
-                  --with-netcdf_libname=libnetcdf.so.7 \
-                  --with-netcdf_libdir=$HOME/anaconda/lib/ \
-                  --with-udunits2_incdir=$HOME/local/nco-4.4.3/udunits-2.1.24/include \
-                  --with-udunits2_libdir=$HOME/local/nco-4.4.3/udunits-2.1.24/lib \
-                  --prefix=$HOME/anaconda/ncview-2.1.2 \
-                  --with-nc-config=$HOME/bin/nc-config 
-    $ make
-    $ make install
-
-This installation installs `NcView` in ``$HOME/local/ncview-2.1.2/bin`` and this directory should be added to your path.
 
 Climate Data Operators (CDO)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
