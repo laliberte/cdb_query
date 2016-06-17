@@ -117,7 +117,7 @@ def validate(database,options,q_manager=None,sessions=dict()):
         for data_node in data_node_list:
             q_manager.validate_semaphores.add_new_data_node(data_node)
             #Add the data nodes if downloads are required
-            if len(set(['download_files','download_opendap']).intersection(queues_manager.queues_names))>0:
+            if len(set(['download_files','download_opendap']).intersection(q_manager.queues_names))>0:
                 q_manager.download.semaphores.add_new_data_node(data_node)
                 q_manager.download.queues.add_new_data_node(data_node)
 
