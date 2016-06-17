@@ -116,6 +116,11 @@ def validate(database,options,q_manager=None,sessions=dict()):
     if q_manager != None:
         for data_node in data_node_list:
             q_manager.validate_semaphores.add_new_data_node(data_node)
+            #Add the data nodes if downloads are required
+            if len(set(['download_files','download_opendap']).intersection(queues_manager.queues_names))>0:
+                q_manager.download.semaphores.add_new_data_node(data_node)
+                q_manager.download.queues.add_new_data_node(data_node)
+
     #Do it by simulation, except if one simulation field should be kept for further operations:
     vars_list=ask_var_list(database,simulations_list_no_fx,options_copy)
     database.put_or_process('validate',validate_utils.validate,vars_list,options_copy,q_manager,sessions)
@@ -215,7 +220,6 @@ def reduce(database,options,q_manager=None,sessions=dict()):
         times_list=downloads.time_split(database,options)
     else:
         times_list=[(None,None,None,None),]
-
     database.put_or_process('reduce',nc_Database_reduce.reduce_variable,vars_list,options,q_manager,sessions,times_list=times_list)
     return
 
