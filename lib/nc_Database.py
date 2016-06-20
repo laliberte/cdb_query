@@ -294,22 +294,24 @@ def retrieve_dates_recursive(data,options):
     if 'soft_links' in data.groups.keys():
         netcdf_pointers=read_soft_links.read_netCDF_pointers(data,options=options)
         return netcdf_pointers.date_axis[netcdf_pointers.time_restriction][netcdf_pointers.time_restriction_sort]
-
     elif len(data.groups.keys())>0:
         return np.unique(np.concatenate([ retrieve_dates_recursive(data.groups[group],options)
                 for group in data.groups.keys()
                 if ( is_level_name_included_and_not_excluded(data.groups[group].getncattr('level_name'),options,group) and
-                 tree_recursive_check_not_empty(options,data.groups[group])) ]))
+                 tree_recursive_check_not_empty(options,data.groups[group],check=False)) ]))
 
-def tree_recursive_check_not_empty(options,data):
+def tree_recursive_check_not_empty(options,data,check=True):
     if 'soft_links' in data.groups.keys():
-        remote_data=read_soft_links.read_netCDF_pointers(data,options=options)
-        if remote_data.time_var!=None:
-            #Check if time slice is leading to zero time dimension:
-            if np.any(remote_data.time_restriction):
-                return True
+        if check:
+            remote_data=read_soft_links.read_netCDF_pointers(data,options=options)
+            if remote_data.time_var!=None:
+                #Check if time slice is leading to zero time dimension:
+                if np.any(remote_data.time_restriction):
+                    return True
+                else:
+                    return False
             else:
-                return False
+                return True
         else:
             return True
     elif len(data.groups.keys())>0:
@@ -317,7 +319,7 @@ def tree_recursive_check_not_empty(options,data):
         for group in data.groups.keys():
             level_name=data.groups[group].getncattr('level_name')
             if is_level_name_included_and_not_excluded(level_name,options,group):
-                empty_list.append(tree_recursive_check_not_empty(options,data.groups[group]))
+                empty_list.append(tree_recursive_check_not_empty(options,data.groups[group],check=check))
         return any(empty_list)
     else:
         if len(data.variables.keys())>0:

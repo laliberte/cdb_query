@@ -151,6 +151,7 @@ def ask_shared_arguments(parser,project_drs):
                              choices=file_type_list,
                              nargs='*',
                              help='A list of \'variable:time_frequency,realm,cmor_table\' tuples.\n\
+                                   This list is ordered. The first listed file types will be selected first in the validate step.\n\
                                    Default: {0}'.format(' '.join(file_type_list)))
 
     query_group.add_argument('--distrib',

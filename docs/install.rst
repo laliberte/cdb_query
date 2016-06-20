@@ -53,11 +53,11 @@ actions a user should take is
 
 5. Register for `CMIP5 Research`. You do not need to download data.
 
-7. Run the following command::
+6. Run the following command::
 
         $ cdb_query CMIP5 certificates
 
-8. Edit your ``.bash_profile``. Add these two lines to your ``.bash_profile``::
+7. Edit your ``.bash_profile``. Add these two lines to your ``.bash_profile``::
 
     export X509_CERT_DIR=$HOME/.esg4/certificates
     export X509_USER_PROXY=$HOME/.esg4/credentials.pem

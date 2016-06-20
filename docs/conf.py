@@ -91,7 +91,7 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'alabaster'
+html_theme = 'sphinx_rtd_theme'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -179,7 +179,7 @@ htmlhelp_basename = 'cdb_querydoc'
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'cdb_query.tex', u'cdb\\_query Documentation',
-   u'Frédéric Laliberté, Paul J. Kushner', 'manual'),
+   u'Freéec Laliberté,e, Paul J. Kushner', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -212,5 +212,5 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'cdb_query', u'cdb_query Documentation',
-     [u'Frédéric Laliberté, Paul J. Kushner'], 1)
+     [u'Frederic Laliberte, Paul J. Kushner'], 1)
 ]
