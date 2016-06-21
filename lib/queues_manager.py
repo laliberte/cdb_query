@@ -301,7 +301,7 @@ def recorder_queue_consume(q_manager,project_drs,original_options):
     renewal_time=datetime.datetime.now()
     sessions=create_sessions(original_options,q_manager=q_manager)
 
-    if original_options.num_procs>1:
+    if 'num_procs' in dir(original_options) and original_options.num_procs>1:
         #get_type=getattr(q_manager,'get_all_record')
         get_type=getattr(q_manager,'get_limited_record')
     elif ('start_server' in dir(original_options) and original_options.start_server):

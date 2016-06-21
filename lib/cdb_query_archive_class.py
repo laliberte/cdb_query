@@ -101,7 +101,7 @@ def validate(database,options,q_manager=None,sessions=dict()):
     #Some data_nodes might have been dropped. Restrict options accordingly:
     options_copy=copy.copy(options)
     options_copy.data_node=data_node_list
-    if isinstance(options_copy.Xdata_node,list):
+    if 'Xdata_node' in dir(options_copy) and isinstance(options_copy.Xdata_node,list):
         options_copy.Xdata_node=list(set(options_copy.Xdata_node+Xdata_node_list))
     else:
         options_copy.Xdata_node=Xdata_node_list
@@ -124,22 +124,6 @@ def validate(database,options,q_manager=None,sessions=dict()):
     #Do it by simulation, except if one simulation field should be kept for further operations:
     vars_list=ask_var_list(database,simulations_list_no_fx,options_copy)
     database.put_or_process('validate',validate_utils.validate,vars_list,options_copy,q_manager,sessions)
-    return
-
-def av(database,options,q_manager=None,sessions=dict()):
-    ask(database,options,q_manager=q_manager)
-    return
-
-def avdr(database,options,q_manager=None,sessions=dict()):
-    ask(database,options,q_manager=q_manager)
-    return
-
-def drdr(database,options,q_manager=None,sessions=dict()):
-    download_files(database,options,q_manager=q_manager)
-    return
-
-def avdrdr(database,options,q_manager=None,sessions=dict()):
-    ask(database,options,q_manager=q_manager)
     return
 
 def reduce_var_list(database,options):

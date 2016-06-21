@@ -353,6 +353,7 @@ def generate_subparsers(parser,epilog,project_drs):
                                    manage_soft_links_parsers.certificates_arguments,
                                    basic_slicing,
                                    complex_slicing_with_fields,
+                                   manage_soft_links_parsers.data_node_restriction,
                                    manage_soft_links_parsers.time_selection_arguments,
                                    validate_shared_arguments,
                                    related_experiments,

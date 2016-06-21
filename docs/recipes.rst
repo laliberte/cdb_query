@@ -16,10 +16,10 @@ The command ``cdb_query CMIP5`` contains several commands:
 .. hint:: The variable descriptions (time_frequency, realm, cmor_table, ...) for the CMIP5 can be found
           in files http://cmip-pcmdi.llnl.gov/cmip5/docs/standard_output.pdf, http://cmip-pcmdi.llnl.gov/cmip5/docs/standard_output.xls.
 
-..
-    .. tas ONDJF CMIP5
-    .. include:: recipe01.rst
+.. tas ONDJF CMIP5
+.. include:: recipe01.rst
 
+..
     .. pr JJAS France CORDEX
     .. include:: recipe02.rst
 

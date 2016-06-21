@@ -65,6 +65,10 @@ def download(database,retrieval_type,options,q_manager,sessions):
     return options_copy.out_netcdf_file
 
 def time_split(database,options):
+    if set(options.time_frequency).issubset(['fx','clim']):
+        #Some time frequencies should not be time split:
+        return [(None,None,None,None),]
+
     options_copy=copy.copy(options)
     #Do not use previous and next to determine time:
     for type in ['previous','next']:

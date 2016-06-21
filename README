@@ -25,6 +25,8 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD.
 Version History
 ---------------
 
+1.9.6: Minor bug fixes.
+
 1.9.5: Last major version before release 2.0. Future versions before release 2.0 will be minor bugfixes.
        Interface can be expected to be stable for the forseeable future.
 
