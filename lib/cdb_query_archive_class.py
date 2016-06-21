@@ -148,7 +148,9 @@ def download_files(database,options,q_manager=None,sessions=dict()):
             q_manager.download.queues.add_new_data_node(data_node)
 
     #Recover the database meta data:
-    vars_list=reduce_var_list(database,options)
+    #vars_list=reduce_var_list(database,options)
+    vars_list=[ [make_list(None) for item in database.drs.official_drs_no_version] ] 
+
     if len(vars_list)==1:
         #Users have requested time types to be kept
         times_list=downloads.time_split(database,options)
@@ -156,16 +158,6 @@ def download_files(database,options,q_manager=None,sessions=dict()):
         times_list=[(None,None,None,None),]
     database.put_or_process('download_files',downloads.download_files,vars_list,options,q_manager,sessions,times_list=times_list)
     return
-
-#def revalidate(database,options,q_manager=None,sessions=dict()):
-#    if q_manager != None:
-#        data_node_list, url_list, simulations_list =database.find_data_nodes_and_simulations(options)
-#        for data_node in data_node_list:
-#            q_manager.validate_semaphores.add_new_data_node(data_node)
-#    #Recover the database meta data:
-#    vars_list=self.reduce_var_list(options)
-#    database.put_or_process('revalidate',downloads.revalidate,vars_list,options,q_manager,sessions)
-#    return
 
 def reduce_soft_links(database,options,q_manager=None,sessions=dict()):
     vars_list=reduce_var_list(database,options)
@@ -179,7 +171,11 @@ def download_opendap(database,options,q_manager=None,sessions=dict()):
             q_manager.download.semaphores.add_new_data_node(data_node)
             q_manager.download.queues.add_new_data_node(data_node)
 
-    vars_list=reduce_var_list(database,options)
+    if ( not 'script' in dir(options) or options.script==''):
+        #No reduction: do not split in variables...
+        vars_list=[ [make_list(None) for item in database.drs.official_drs_no_version] ] 
+    else:
+        vars_list=reduce_var_list(database,options)
     if len(vars_list)==1:
         #Users have requested time types to be kept
         times_list=downloads.time_split(database,options)
