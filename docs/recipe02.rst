@@ -1,23 +1,28 @@
-Speeding up the discovery and optimset procedure (CMIP5)
---------------------------------------------------------
-The discovery step can be slow, especially when using a distributed discovery (``--distrib``).
-This can be sped up by querying the archive institute per institute AND do it asynchronously.
+Speeding things up 
+------------------
+The ``ask`` and ``validate`` steps can be slow.
+They can be sped up by querying the archive simulation per simulation AND do it asynchronously.
 
 Asynchronous discovery
 ^^^^^^^^^^^^^^^^^^^^^^
-The `ask` and `validate` commands provides a basic multi-threaded implementation::
+The `ask` and `validate` commands provides a basic multi-processing implementation::
 
-    $ cdb_query_CMIP5 ask --num_procs=5 \
-                             tas_ONDJF.hdr \
-                             tas_ONDJF_pointers.{}.nc \
-    $ cdb_query_CMIP5 validate --num_procs=5 \
+    $ cdb_query CMIP5 ask --num_procs=5 \
+                             ... \
+                             tas_ONDJF_pointers.nc 
+    $ cdb_query CMIP5 validate --num_procs=5 \
                              tas_ONDJF_pointers.nc \
                              tas_ONDJF_pointers.validate.nc
 
 This command uses 5 processes and queries the archive simulation per simulation.
 
-.. warning:: The asynchronous optimset might not work on your system. This is will
-             depend on whether your certificates are detected within the asynchronous
-             threads. To verify this, it is suggested that to perform a test with and
-             without asynchronous discovery and make sure that the results are the same.
-             Note that the output files sizes may differ significantly.
+Asynchronous downloads
+^^^^^^^^^^^^^^^^^^^^^^
+The `download_files` and `download_opendap` commands also provides a basic multi-processing implementation.
+By default, data from different data nodes is retrieved in parallel. One can allow more than one simultaneous
+download per data node ::
+
+    $ cdb_query CMIP5 download_files --num_dl=5 ...
+    $ cdb_query CMIP5 download_opendap --num_dl=5 ...
+
+These commands now allow 5 simulataneous download per data node. 

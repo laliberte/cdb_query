@@ -18,11 +18,12 @@ The command ``cdb_query CMIP5`` contains several commands:
 
 .. tas ONDJF CMIP5
 .. include:: recipe01.rst
+.. include:: recipe02.rst
+
+.. pr JJAS France CORDEX
+.. include:: recipe03.rst
 
 ..
-    .. pr JJAS France CORDEX
-    .. include:: recipe02.rst
-
     .. remapping
     .. include:: recipe03.rst
 

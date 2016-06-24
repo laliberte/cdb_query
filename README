@@ -22,10 +22,18 @@ If using this code to retrieve and process data from the ESGF please cite:
 Efficient, robust and timely analysis of Earth System Models: a database-query approach
 F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD.
 
+Current ESGF Project Compatibility
+----------------------------------
+- CMIP5 (full, tested)
+- CORDEX (full, not completely tested)
+
+
 Version History
 ---------------
 
-1.9.6: Minor bug fixes.
+1.9.7.x: Code now compatible with CORDEX. Minor bug fixes.
+
+1.9.6.x: Minor bug fixes.
 
 1.9.5: Last major version before release 2.0. Future versions before release 2.0 will be minor bugfixes.
        Interface can be expected to be stable for the forseeable future.

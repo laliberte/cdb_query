@@ -1,8 +1,8 @@
+from __future__ import nested_scopes, generators, division, absolute_import, with_statement, print_function, unicode_literals
+
 #External:
 import copy
 import warnings
-#from pyesgf.search import SearchConnection
-from pyesgf_connection import SearchConnection
 import socket
 import requests
 import httplib
@@ -10,6 +10,9 @@ import datetime
 
 #External but related:
 import netcdf4_soft_links.remote_netcdf as remote_netcdf
+
+#Internal:
+from .pyesgf_connection import SearchConnection
 
 unique_file_id_list=['checksum_type','checksum','tracking_id']
 
@@ -85,6 +88,12 @@ def experiment_variable_search_recursive(slicing_args,nc_Database,search_path,fi
 
 def experiment_variable_search(nc_Database,search_path,file_type_list,options,
                                 experiment,var_name,var_desc,list_level=None,session=None):
+    nc_Database.file_expt.experiment=experiment
+    nc_Database.file_expt.var=var_name
+    nc_Database.file_expt.time=0
+    for field_id, field in enumerate(nc_Database.drs.var_specs):
+        setattr(nc_Database.file_expt,field,var_desc[field_id])
+
     #Assumes that all slicing arguments in options are length-one list:
     conn_kwargs={'distrib':options.distrib}
     #conn = SearchConnection(search_path, distrib=options.distrib,cache='esgf_query')
@@ -99,42 +108,55 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
         conn=SearchConnection(search_path, **conn_kwargs)
 
     #Search the ESGF:
-    ctx = conn.new_context(project=nc_Database.drs.project,
-                        experiment=experiment)
+    top_ctx = conn.new_context(project=nc_Database.drs.project,
+                        experiment=experiment,variable=var_name)
 
     constraints_dict={field:var_desc[field_id] for field_id, field in enumerate(nc_Database.drs.var_specs)}
     #This is where the lenght-one list is important:
+    #First constrain using fields that are not related to simulation_desc:
     constraints_dict.update(**{field:getattr(options,field)[0] for field in nc_Database.drs.slicing_args.keys()
-                                            if field in dir(options) and getattr(options,field)!=None})
-    ctx=ctx.constrain(**constraints_dict)
-
-    nc_Database.file_expt.experiment=experiment
-    nc_Database.file_expt.var=var_name
-    nc_Database.file_expt.time=0
-    for field_id, field in enumerate(nc_Database.drs.var_specs):
-        setattr(nc_Database.file_expt,field,var_desc[field_id])
+                                            if field in dir(options) and getattr(options,field)!=None and not field in nc_Database.drs.simulations_desc})
+    if 'aliases' in dir(nc_Database.drs):
+        #Go down the simulation description and ensure that at each level an aliases could be used
+        #This implementation does not allwo for aliases in variable descriptions
+        constraints_dict.update(**{field:getattr(options,field)[0] for field in nc_Database.drs.slicing_args.keys()
+                                                if field in dir(options) and 
+                                                   getattr(options,field)!=None and 
+                                                   field in nc_Database.drs.simulations_desc and
+                                                   not field in nc_Database.drs.aliases.keys()})
+        for field in  nc_Database.drs.simulations_desc:
+            if ( field in dir(options) and 
+                 getattr(options,field)!=None and 
+                 field in nc_Database.drs.aliases.keys()):
+                ctx=top_ctx.constrain(**constraints_dict)
+                try:
+                    constraints_dict.update(**{allow_aliases(nc_Database.drs,field,ctx.facet_counts.keys()):getattr(options,field)[0]})
+                except KeyError:
+                    pass
+    else:
+        #If no aliases, simply extend constraints to simulations_desc:
+        constraints_dict.update(**{field:getattr(options,field)[0] for field in nc_Database.drs.slicing_args.keys()
+                                                if field in dir(options) and getattr(options,field)!=None and field in nc_Database.drs.simulations_desc})
+    #Consstrain with an adequate constraints dict
+    ctx=top_ctx.constrain(**constraints_dict)
 
     if list_level!=None:
         try:
-            return ctx.facet_counts[list_level].keys()
+            return ctx.facet_counts[allow_aliases(nc_Database.drs,list_level,ctx.facet_counts.keys())].keys()
         except socket.error as e:
-            print search_path+' is not responding. '+e.strerror
-            print 'This is not fatal. Data broadcast by '+search_path+' will simply NOT be considered.'
+            print(search_path+' is not responding. '+e.strerror)
+            print('This is not fatal. Data broadcast by '+search_path+' will simply NOT be considered.')
             return []
         except httplib.BadStatusLine as e:
             return []
         except requests.HTTPError as e:
-            print search_path+' is not responding. '
-            print e
-            print 'This is not fatal. Data broadcast by '+search_path+' will simply NOT be considered.'
+            print(search_path+' is not responding. ')
+            print(e)
+            print('This is not fatal. Data broadcast by '+search_path+' will simply NOT be considered.')
             return []
-        except KeyError as e:
+        except (KeyError, ValueError) as e:
             #list_level is not available. Happens when nodes are not configured to handle data from the MIP.
             return []
-        #except Exception as e:
-        #    print search_path+' is not responding. '
-        #    print e
-        #    print 'This is not fatal. Data broadcast by '+search_path+' will simply NOT be considered.'
     else:
         file_list_remote=[]
         file_list_found=[]
@@ -147,6 +169,22 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
 
         map(lambda x: record_url(x,nc_Database),file_list_remote)
         return []
+
+def allow_aliases(project_drs,key,available_keys):
+    # Check if aliases are allowed and return compatible alias.
+    aliases=find_aliases(project_drs,key)
+    if available_keys!=None:
+        compatible_keys=set(aliases).intersection(available_keys)
+        return compatible_keys.pop()
+    else:
+        return key
+
+def find_aliases(project_drs,key):
+    if ('aliases' in dir(project_drs) and
+        key in project_drs.aliases.keys()):
+        return project_drs.aliases[key]
+    else:
+        return [key,]
 
 def record_url(remote_file_desc,nc_Database):
     nc_Database.file_expt.path=remote_file_desc['url']
@@ -223,21 +261,24 @@ def create_file_info_dict(key,item,drs):
         try:
             if val=='var':
                 #this is a temporary fix to a poor design decision on my part.
-                #to really fix this, will have to change names 'var' to variables.
+                #to really fix this, will have to change names 'var' to 'variable'.
                 file_info[val]=item.json['variable']
             elif val=='version':
-                #Version is poorly implemented... Try a fix:
-                version=item.json['instance_id'].split('.')[-3]
-                #Previous fix. Does not work for CORDEX
-                #version=item.json['id'].split('.')[9]
+                if 'version' in item.json.keys():
+                    version=item.json[val]
+                else:
+                    #Version is poorly implemented... Try a fix:
+                    version=item.json['instance_id'].split('.')[-3]
                 if version[0]=='v':
                     file_info[val]=version
-            elif val=='model_version':
-                file_info[val]='v'+item.json['version']
+                else:
+                    file_info[val]='v'+version
+            #elif val=='model_version':
+            #    file_info[val]='v'+item.json['version']
             elif val=='ensemble' and drs.project in ['NMME']:
                 file_info[val]=item.json['instance_id'].split('_')[-2]
             else:
-                file_info[val]=item.json[val]
+                file_info[val]=item.json[allow_aliases(drs,val,item.json.keys())]
 
             if isinstance(file_info[val],list): file_info[val]=str(file_info[val][0])
         except:

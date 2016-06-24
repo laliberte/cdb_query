@@ -1,6 +1,7 @@
+#from __future__ import nested_scopes, generators, division, absolute_import, with_statement, print_function, unicode_literals
+
 #External:
 import copy
-import nc_Database
 from operator import itemgetter
 import os
 import random
@@ -10,10 +11,7 @@ import json
 import netCDF4
 
 #Internal:
-import ftp_query
-import filesystem_query
-import esgf_query
-import cdb_query_archive_class
+import nc_Database, ftp_query, filesystem_query, esgf_query, cdb_query_archive_class
 
 
 #################################################################
@@ -215,6 +213,8 @@ def ask_simulations_recursive(database,options,simulations_desc,async=True):
         args_list=[]
 
         #Loop through the listed fields:
+        #if len(output)>0:
+        #    print(output)
         for val in output:
             if (getattr(options_copy,simulations_desc[0]) == None):
                 #Slice the next ask with this value.

@@ -307,6 +307,11 @@ surface temperature in the amip experiment from simulation CNRM-CERFACS,CNRM-CM5
                     tas_ONDJF_pointers.validate.197901.retrieved.CNRM-CERFACS_CNRM-CM5_r1i1p1.nc
     $ ncview tas_ONDJF_pointers.validate.197901.retrieved.CNRM-CERFACS_CNRM-CM5_r1i1p1.nc
 
+.. note::
+    The ``ncks`` command can be slow. For some unknown reasons NCO version 4.5.3 and earlier with netCDF version 4.3.3.1 and earlier
+    does not seem optimized for highly hierarchical files. At the moment, there are no indications that more recent versions have fixed
+    this issue.
+
 BASH script
 ^^^^^^^^^^^
 This recipe is summarized in the following BASH script::
@@ -339,7 +344,7 @@ This recipe is summarized in the following BASH script::
 
     #CHOOSE:
         # *1* Retrieve files:
-            #cdb_query CMIP5 download_raw \
+            #cdb_query CMIP5 download_files \
             #                    --download_all_files \
             #                    --username=BADC_USERNAME \
             #                    --out_download_dir=./in/CMIP5/ \
@@ -363,8 +368,9 @@ This recipe is summarized in the following BASH script::
             #   ncview tas_ONDJF_pointers.validate.197901.retrieved.CNRM-CERFACS_CNRM-CM5_r1i1p1.nc
 
             #Convert hierarchical file to files on filesystem:
+            #Identity reduction simply copies the data to disk
             cdb_query CMIP5 reduce \
-                                '' \ #Identity reduction simply copies the data to disk
+                                '' \
                                 --out_destination=./out/CMIP5/ \
                                 tas_ONDJF_pointers.validate.197901.retrieved.nc \
                                 tas_ONDJF_pointers.validate.197901.retrieved.converted.nc

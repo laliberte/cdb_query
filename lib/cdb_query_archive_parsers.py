@@ -199,7 +199,7 @@ def reduce_soft_links_chained_arguments(parser,project_drs):
 
     return 
 
-def reduce_soft_links_process_arguments(parser,project_drs):
+def reduce_soft_links_script_process_arguments(parser,project_drs):
     parser.add_argument('reduce_soft_links_script',default='',help="Command-line script")
     return
 
@@ -216,7 +216,7 @@ def reduce_process_arguments(parser,project_drs):
                                  help='NETCDF extra retrieved files (input).')
     return 
 
-def reduce_shared_arguments(parser,project_drs):
+def reduce_script_shared_arguments(parser,project_drs):
     parser.add_argument('script',default='',help="Command-line script")
     parser.add_argument('--out_destination',default='./',
                              help='Destination directory for conversion.')
@@ -332,6 +332,7 @@ def generate_subparsers(parser,epilog,project_drs):
                        basic_control_arguments,
                        processing_arguments,
                        manage_soft_links_parsers.certificates_arguments,
+                       manage_soft_links_parsers.serial_arguments,
                        basic_slicing,
                        ask_shared_arguments,
                        related_experiments,
@@ -351,6 +352,7 @@ def generate_subparsers(parser,epilog,project_drs):
                                    basic_control_arguments,
                                    processing_arguments,
                                    manage_soft_links_parsers.certificates_arguments,
+                                   manage_soft_links_parsers.serial_arguments,
                                    basic_slicing,
                                    complex_slicing_with_fields,
                                    manage_soft_links_parsers.data_node_restriction,
@@ -368,6 +370,7 @@ def generate_subparsers(parser,epilog,project_drs):
     arguments_handles['download_files']=[
                             basic_control_arguments,
                             manage_soft_links_parsers.certificates_arguments,
+                            manage_soft_links_parsers.serial_arguments,
                             basic_slicing,
                             complex_slicing_with_fields,
                             fields_selection,
@@ -386,12 +389,14 @@ def generate_subparsers(parser,epilog,project_drs):
                                             basic_slicing,
                                             complex_slicing_with_fields,
                                             fields_selection,
+                                            manage_soft_links_parsers.serial_arguments,
                                             manage_soft_links_parsers.data_node_restriction,
                                             manage_soft_links_parsers.time_selection_arguments,
                                             ]
-    start_arguments_handles['reduce_soft_links']=[input_arguments,]
-    process_arguments_handles['reduce_soft_links']=[reduce_soft_links_process_arguments,output_arguments]
+    start_arguments_handles['reduce_soft_links']=[input_arguments]
+    process_arguments_handles['reduce_soft_links']=[reduce_soft_links_script_process_arguments,output_arguments]
     chained_arguments_handles['reduce_soft_links']=[reduce_soft_links_chained_arguments]
+
     description['download_opendap']=textwrap.dedent('''Take as an input the results from \'validate\',
                                 \'download_files\' or \'reduce_soft_links\'\n\
                                 and returns a soft links file with the opendap data filling the database.\n\
@@ -403,6 +408,7 @@ def generate_subparsers(parser,epilog,project_drs):
                             complex_slicing_with_fields,
                             manage_soft_links_parsers.time_selection_arguments,
                             manage_soft_links_parsers.data_node_restriction,
+                            manage_soft_links_parsers.serial_arguments,
                             fields_selection,
                             manage_soft_links_parsers.download_opendap_arguments_no_io,
                             manage_soft_links_parsers.download_arguments_no_io,
@@ -419,8 +425,9 @@ def generate_subparsers(parser,epilog,project_drs):
                                  fields_selection,
                                  manage_soft_links_parsers.time_selection_arguments,
                                  manage_soft_links_parsers.data_node_restriction,
+                                 manage_soft_links_parsers.serial_arguments,
                                  loop_control,
-                                 reduce_shared_arguments,
+                                 reduce_script_shared_arguments,
                                  ]
     start_arguments_handles['reduce']=[input_arguments]
     process_arguments_handles['reduce']=[reduce_process_arguments,output_arguments]
@@ -486,6 +493,11 @@ def create_process_subparser(subparsers,project_drs,functions_list,previous_argu
     parser.prog=' '.join(parser.prog.split(' ')[:-1])
 
     arguments_attributed=[]
+    for argument in previous_arguments_handles:
+        if (not argument in arguments_attributed and
+            'script' in argument.func_name.split('_')):
+            argument(parser,project_drs)
+            arguments_attributed.append(argument)
     for argument in previous_arguments_handles:
         if not argument in arguments_attributed:
             argument(parser,project_drs)

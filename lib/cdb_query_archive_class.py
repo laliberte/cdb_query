@@ -49,8 +49,8 @@ def ask(database,options,q_manager=None,sessions=dict()):
 
     #Only a listing of a few fields was requested.
     if ('list_only_field' in dir(options) and options.list_only_field!=None):
-        for field_name in ask_utils.ask(database.drs,options):
-            print field_name
+        for field_name in ask_utils.ask(database,options):
+            print(field_name)
         return
 
     #Find the simulation list:
@@ -113,19 +113,21 @@ def validate(database,options,q_manager=None,sessions=dict()):
     simulations_list_no_fx=[simulation for simulation in simulations_list if 
                                 simulation[database.drs.simulations_desc.index('ensemble')]!='r0i0p0']
 
+    #Activate queues and semaphores:
     if q_manager != None:
         for data_node in data_node_list:
-            q_manager.validate_semaphores.add_new_data_node(data_node)
+            if len(set(['validate']).intersection(q_manager.queues_names))>0:
+                q_manager.validate_semaphores.add_new_data_node(data_node)
             #Add the data nodes if downloads are required
             if len(set(['download_files','download_opendap']).intersection(q_manager.queues_names))>0:
                 q_manager.download.semaphores.add_new_data_node(data_node)
                 q_manager.download.queues.add_new_data_node(data_node)
 
-    #Do it by simulation, except if one simulation field should be kept for further operations:
     vars_list=ask_var_list(database,simulations_list_no_fx,options_copy)
     database.put_or_process('validate',validate_utils.validate,vars_list,options_copy,q_manager,sessions)
     return
 
+#Do it by simulation, except if one simulation field should be kept for further operations:
 def reduce_var_list(database,options):
     if ('keep_field' in dir(options) and options.keep_field!=None):
         drs_to_eliminate=[field for field in database.drs.official_drs_no_version if
@@ -146,6 +148,9 @@ def download_files(database,options,q_manager=None,sessions=dict()):
         for data_node in data_node_list:
             q_manager.download.semaphores.add_new_data_node(data_node)
             q_manager.download.queues.add_new_data_node(data_node)
+        if multiprocessing.current_process().name == 'MainProcess':
+            #If this is the main process, can start download processes:
+            q_manager.start_download_processes()
 
     #Recover the database meta data:
     #vars_list=reduce_var_list(database,options)
@@ -170,6 +175,9 @@ def download_opendap(database,options,q_manager=None,sessions=dict()):
         for data_node in data_node_list:
             q_manager.download.semaphores.add_new_data_node(data_node)
             q_manager.download.queues.add_new_data_node(data_node)
+        if multiprocessing.current_process().name == 'MainProcess':
+            #If this is the main process, can start download processes:
+            q_manager.start_download_processes()
 
     if ( not 'script' in dir(options) or options.script==''):
         #No reduction: do not split in variables...

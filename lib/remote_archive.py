@@ -1,6 +1,7 @@
 import copy
 
-available_projects=['CMIP5','CORDEX','NMME','LFRTIP']
+#available_projects=['CMIP5','CORDEX','NMME','LFRTIP']
+available_projects=['CMIP5','CORDEX']
 
 class DRS:
     def __init__(self,project):
@@ -15,19 +16,19 @@ class DRS:
 
         self.var_specs=['time_frequency']
         #self.simulations_desc=['domain','institute','driving_model','model_version','model','ensemble']
-        self.simulations_desc=['domain','institute','driving_model','model','ensemble']
+        self.simulations_desc=['domain','institute','driving_model','rcm_model','rcm_version','ensemble']
 
         self.header_desc=['search_list','file_type_list','months_list','data_node_list','experiment_list','variable_list']
 
-        self.filename_drs=['var','domain','driving_model','experiment','ensemble','model','version','time_frequency']
+        self.filename_drs=['var','domain','driving_model','experiment','ensemble','rcm_model','version','time_frequency']
         self.official_drs=[
               'domain',
               'institute',
               'driving_model',
               'experiment',
               'ensemble',
-              'model',
-              'model_version',
+              'rcm_model',
+              'rcm_version',
               'time_frequency',
               'var',
               'version'
@@ -47,15 +48,18 @@ class DRS:
               'driving_model': [str,'Drinving model name'],
               'experiment': [str,'Experiment name'],
               'ensemble': [str,'RIP identifier, e.g. r1i1p1'],
-              'model': [str,'Model name'],
+              'rcm_model': [str,'RCM model name'],
+              'rcm_version': [str,'RCM model version'],
               'time_frequency': [str,'Frequency, e.g. day'],
               'var': [str,'Variable name, e.g. tas']
               }
               #'file_type': [str,'File type: '+','.join(self.file_types)]
         self.discover_exclude_args=['experiment','var','time_frequency','year','month','file_type']
 
-        self.remote_fields=['institute','model','model_version','ensemble','driving_model','domain','file_type','version']
+        self.remote_fields=['institute','rcm_model','rcm_version','ensemble','driving_model','domain','file_type','version']
         self.known_fields=['experiment','var'] + self.var_specs
+
+        self.aliases={'rcm_model':['rcm_name','rcm_model','model']}
 
         self.alt_base_drs=[
               'domain',
@@ -63,7 +67,8 @@ class DRS:
               'driving_model',
               'experiment',
               'ensemble',
-              'model',
+              'rcm_model',
+              'rcm_version',
               'time_frequency',
               'var',
               'version',
