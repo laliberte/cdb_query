@@ -153,8 +153,12 @@ def download_files(database,options,q_manager=None,sessions=dict()):
             q_manager.start_download_processes()
 
     #Recover the database meta data:
-    #vars_list=reduce_var_list(database,options)
-    vars_list=[ [make_list(None) for item in database.drs.official_drs_no_version] ] 
+    if ( not 'script' in dir(options) or options.script==''):
+        #No reduction: do not split in variables...
+        vars_list=[ [make_list(None) for item in database.drs.official_drs_no_version] ] 
+    else:
+        vars_list=reduce_var_list(database,options)
+
 
     if len(vars_list)==1:
         #Users have requested time types to be kept
@@ -184,6 +188,7 @@ def download_opendap(database,options,q_manager=None,sessions=dict()):
         vars_list=[ [make_list(None) for item in database.drs.official_drs_no_version] ] 
     else:
         vars_list=reduce_var_list(database,options)
+
     if len(vars_list)==1:
         #Users have requested time types to be kept
         times_list=downloads.time_split(database,options)
