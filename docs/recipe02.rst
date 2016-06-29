@@ -1,5 +1,5 @@
-Speeding things up 
-------------------
+2. Speeding things up 
+---------------------
 The ``ask`` and ``validate`` steps can be slow.
 They can be sped up by querying the archive simulation per simulation AND do it asynchronously.
 

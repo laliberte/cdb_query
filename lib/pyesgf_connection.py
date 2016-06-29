@@ -43,7 +43,7 @@ from pyesgf.search.exceptions import EsgfSearchException
 from pyesgf.multidict import MultiDict
 from pyesgf.util import urlencode
 
-import netcdf4_soft_links.sessions as sessions
+import netcdf4_soft_links.requests_sessions as requests_sessions
 
 #This file is adapted from esgf-pyclient.
 class SearchConnection(object):
@@ -90,7 +90,7 @@ class SearchConnection(object):
             ):
             self.session=self.passed_session
         else:
-            self.session=sessions.create_single_session(cache=self.cache,expire_after=self.expire_after)
+            self.session=requests_sessions.create_single_session(cache=self.cache,expire_after=self.expire_after)
         return
             
     def __enter__(self):

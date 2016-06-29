@@ -1,5 +1,5 @@
-Retrieving surface temperature for ONDJF (CMIP5)
-------------------------------------------------
+1. Retrieving surface temperature for ONDJF (CMIP5)
+---------------------------------------------------
 
 .. hint:: Don't forget to use the extensive command-line helps ``cdb_query -h``, ``cdb_query CMIP5 -h``, etc.
 
@@ -314,14 +314,17 @@ surface temperature in the amip experiment from simulation CNRM-CERFACS,CNRM-CM5
 
 BASH script
 ^^^^^^^^^^^
-This recipe is summarized in the following BASH script::
+This recipe is summarized in the following BASH script. The ``--password_from_pipe`` option is introduced to fully automatize the script::
 
     #!/bin/bash
 
+    BADC_USERNAME="your badc username"
+    BADC_PASSWORD="your badc password"
     #Discover data:
     cdb_query CMIP5 ask --Month 1 2 10 11 12 \
                           --Var tas:day,atmos,day orog:fx,atmos,fx \
                           --Experiment amip:1979,2004 \
+                          --num_procs=10 \
                           tas_ONDJF_pointers.nc
 
     #List simulations:
@@ -331,8 +334,10 @@ This recipe is summarized in the following BASH script::
                                 tas_ONDJF_pointers.nc
 
     #Find optimal set of simulations:
-    cdb_query CMIP5 validate \
-                             --username=BADC_USERNAME \
+    echo $BADC_PASSWORD | cdb_query CMIP5 validate \
+                             --username=$BADC_USERNAME \
+                             --password_from_pipe \
+                              --num_procs=10 \
                              tas_ONDJF_pointers.nc \
                              tas_ONDJF_pointers.validate.nc
 
@@ -353,8 +358,9 @@ This recipe is summarized in the following BASH script::
 
         # *2* Retrieve to netCDF:
             #Retrieve the first month:
-            cdb_query CMIP5 download_opendap --year=1979 --month=1 \
-                                --username=BADC_USERNAME \
+            echo $BADC_PASSWORD | cdb_query CMIP5 download_opendap --year=1979 --month=1 \
+                                --username=$BADC_USERNAME \
+                                --password_from_pipe \
                                 tas_ONDJF_pointers.validate.nc \
                                 tas_ONDJF_pointers.validate.197901.retrieved.nc
 

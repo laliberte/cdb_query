@@ -181,8 +181,7 @@ class nc_Database:
         with self.load_nc_file() as dataset:
             if retrieval_type in ['download_files', 'download_opendap']:
                 q_manager.download.set_opened()
-                nc_Database_utils.extract_netcdf_variable(output,dataset,tree,options,download_semaphores=q_manager.download.semaphores,
-                                                                                           download_queues_manager=q_manager.download,
+                nc_Database_utils.extract_netcdf_variable(output,dataset,tree,options,q_manager=q_manager.download,
                                                                                            session=session,
                                                                                            retrieval_type=retrieval_type)
                 q_manager.download.set_closed()
@@ -292,7 +291,8 @@ def create_tree_recursive(output_top,tree):
 
 def retrieve_dates_recursive(data,options):
     if 'soft_links' in data.groups.keys():
-        netcdf_pointers=read_soft_links.read_netCDF_pointers(data,options=options)
+        options_dict={opt: getattr(options,opt) for opt in ['previous','next','year','month','day','hour'] if opt in dir(options)}
+        netcdf_pointers=read_soft_links.read_netCDF_pointers(data,**options_dict)
         return netcdf_pointers.date_axis[netcdf_pointers.time_restriction][netcdf_pointers.time_restriction_sort]
     elif len(data.groups.keys())>0:
         return np.unique(np.concatenate([ retrieve_dates_recursive(data.groups[group],options)
@@ -303,7 +303,8 @@ def retrieve_dates_recursive(data,options):
 def tree_recursive_check_not_empty(options,data,check=True):
     if 'soft_links' in data.groups.keys():
         if check:
-            remote_data=read_soft_links.read_netCDF_pointers(data,options=options)
+            options_dict={opt: getattr(options,opt) for opt in ['previous','next','year','month','day','hour'] if opt in dir(options)}
+            remote_data=read_soft_links.read_netCDF_pointers(data,options_dict)
             if remote_data.time_var!=None:
                 #Check if time slice is leading to zero time dimension:
                 if np.any(remote_data.time_restriction):

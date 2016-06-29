@@ -1,5 +1,5 @@
-Retrieving precipitation for JJAS over France (CORDEX)
-------------------------------------------------------
+3. Retrieving precipitation for JJAS over France (CORDEX)
+---------------------------------------------------------
 
 Specifying the discovery
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -24,6 +24,7 @@ to find what domains are available ::
     AFR-44
     WAS-44
     NAM-44
+
 Here the ``--list_only_field=domain`` option lists all available domains. The result is an (unsorted) list of domain
 identifiers. The European domains (``EUR-11`` and ``EUR-44``) are what we want. For the sake of this recipe,
 we are going to limit our discovery to the higher resolution data ``EUR-11``
@@ -160,6 +161,7 @@ Retrieving the data: `wget`
 
     $ cdb_query CORDEX download_files --out_download_dir=./in/CMIP5/ \
                                     --username=BADC_USERNAME \
+                                    --download_all_files \
                                     pr_JJAS_France_pointers.validate.nc \
                                     pr_JJAS_France_pointers.validate.files.nc
 
@@ -257,7 +259,9 @@ The amount of time required for the download is not substantially improved for s
                                              --username=BADC_USERNAME \
                                              pr_JJAS_France_pointers.validate.nc \
                                              pr_JJAS_France_pointers.validate.June.retrieved.nc
-
+    real    43m45.656s
+    user    21m59.345s
+    sys 8m53.251s
 
 BASH script
 ^^^^^^^^^^^
@@ -267,7 +271,8 @@ This recipe is summarized in the following BASH script::
     #Change to set number of processes to use:
     NUM_PROCS=10
     #Specify your BADC username (linked to your openid):
-    #BADC_USERNAME=
+    BADC_USERNAME="your badc username"
+    BADC_PASSWORD="your badc password"
 
     #Discover data:
     cdb_query CORDEX ask --Experiment historical:1979,2004 --Var pr:day \
@@ -280,8 +285,9 @@ This recipe is summarized in the following BASH script::
                                -f rcm_model -f rcm_version -f ensemble pr_JJAS_France_pointers.nc
 
     #Validate simulations:
-    cdb_query CORDEX validate \
+    echo $BADC_PASSWORD | cdb_query CORDEX validate \
                 --username=$BADC_USERNAME \
+                --password_from_pipe \
                 --num_procs=${NUM_PROCS} \
                 pr_JJAS_France_pointers.nc \
                 pr_JJAS_France_pointers.validate.nc
@@ -289,13 +295,15 @@ This recipe is summarized in the following BASH script::
         # *1* Retrieve files:
             #cdb_query CORDEX download_files --out_download_dir=./in/CMIP5/ \
             #                    --username=$BADC_USERNAME \
+            #                    --download_all_files \
             #                    pr_JJAS_France_pointers.validate.nc \
             #                    pr_JJAS_France_pointers.validate.files.nc
 
         # *2* Retrieve to netCDF:
             #Retrieve one month:
-            cdb_query CORDEX download_opendap --year=1979 --month=6 \
+            echo $BADC_PASSWORD | cdb_query CORDEX download_opendap --year=1979 --month=6 \
                                --username=$BADC_USERNAME \
+                               --password_from_pipe \
                                pr_JJAS_France_pointers.validate.nc \
                                pr_JJAS_France_pointers.validate.197906.retrieved.nc
             

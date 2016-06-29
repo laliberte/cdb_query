@@ -23,6 +23,8 @@ The command ``cdb_query CMIP5`` contains several commands:
 .. pr JJAS France CORDEX
 .. include:: recipe03.rst
 
+.. Chaining
+.. include:: recipe04.rst
 ..
     .. remapping
     .. include:: recipe03.rst

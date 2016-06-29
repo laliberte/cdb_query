@@ -36,7 +36,7 @@ setup(
             "Topic :: Scientific/Engineering :: Mathematics"
         ],
         long_description=read('README'),
-        install_requires = ['numpy','h5py','netCDF4','sqlalchemy','esgf-pyclient','netcdf4_soft_links>=0.5.4'],
+        install_requires = ['numpy','h5py','netCDF4','sqlalchemy','esgf-pyclient','netcdf4_soft_links>=0.5.5'],
         zip_safe=False,
         # other arguments here...
         #package_data = {package_name : ['lib/*.sh']},
