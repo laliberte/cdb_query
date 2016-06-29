@@ -31,7 +31,7 @@ Current ESGF Project Compatibility
 Version History
 ---------------
 
-1.9.7.x: Code now compatible with CORDEX. Minor bug fixes.
+1.9.7.x: Code now compatible with CORDEX. Minor bug fixes. Import error fixes. Minor API changes.
 
 1.9.6.x: Minor bug fixes.
 
