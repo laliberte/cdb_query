@@ -266,7 +266,6 @@ def create_file_info_dict(key,item,drs):
                 else:
                     #Version is poorly implemented... Try a fix:
                     version=item.json['instance_id'].split('.')[-3]
-                print(version)
                 if version[0]=='v':
                     file_info[val]=version
                 else:
