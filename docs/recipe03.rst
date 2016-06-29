@@ -285,10 +285,13 @@ This recipe is summarized in the following BASH script::
                                -f rcm_model -f rcm_version -f ensemble pr_JJAS_France_pointers.nc
 
     #Validate simulations:
+    #Exclude data_node http://esgf2.dkrz.de because it is on a tape archive (slow)
+    #If you do not exclude it, it will likely be excluded because of its slow
     echo $BADC_PASSWORD | cdb_query CORDEX validate \
                 --username=$BADC_USERNAME \
                 --password_from_pipe \
                 --num_procs=${NUM_PROCS} \
+                --Xdata_node=http://esgf2.dkrz.de \
                 pr_JJAS_France_pointers.nc \
                 pr_JJAS_France_pointers.validate.nc
     #CHOOSE:

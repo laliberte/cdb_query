@@ -248,9 +248,6 @@ def create_file_info_dict(key,item,drs):
     file_info=dict()
     file_info['file_type']=key
     try:
-        #if key=='OPeNDAP':
-        #    file_info['url']=item.urls['HTTPServer'][0][0].replace('fileServer','dodsC')
-        #else:
         if key=='OPENDAP':
             file_info['url']=item.urls[key][0][0].replace('.html','')
         else:
@@ -269,6 +266,7 @@ def create_file_info_dict(key,item,drs):
                 else:
                     #Version is poorly implemented... Try a fix:
                     version=item.json['instance_id'].split('.')[-3]
+                print(version)
                 if version[0]=='v':
                     file_info[val]=version
                 else:

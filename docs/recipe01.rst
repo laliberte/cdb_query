@@ -333,11 +333,15 @@ This recipe is summarized in the following BASH script. The ``--password_from_pi
                                 -f ensemble \
                                 tas_ONDJF_pointers.nc
 
-    #Find optimal set of simulations:
+    #Validate simulations:
+    #Exclude data_node http://esgf2.dkrz.de because it is on a tape archive (slow)
+    #If you do not exclude it, it will likely be excluded because of its slow
+    #response time.
     echo $BADC_PASSWORD | cdb_query CMIP5 validate \
                              --username=$BADC_USERNAME \
                              --password_from_pipe \
-                              --num_procs=10 \
+                             --num_procs=10 \
+                             --Xdata_node=http://esgf2.dkrz.de \
                              tas_ONDJF_pointers.nc \
                              tas_ONDJF_pointers.validate.nc
 
