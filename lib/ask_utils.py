@@ -197,6 +197,12 @@ def wrapper_ask_simulations_recursive(args):
     '''
     return [(args[-1],)+item for item in ask_simulations_recursive(*args[:-1],async=False)]
 
+def wrapper_ask_simulations_recursive_async(args):
+    '''
+    Wrapper to make ask_simulations_recursive pickable.
+    '''
+    return [(args[-1],)+item for item in ask_simulations_recursive(*args[:-1],async=True)]
+
 def ask_simulations_recursive(database,options,simulations_desc,async=True):
     '''
     Function to recursively find possible simulation list
@@ -226,7 +232,10 @@ def ask_simulations_recursive(database,options,simulations_desc,async=True):
             elif (val in getattr(options_copy,simulations_desc[0])):
                 #val was already sliced:
                 args_list.append((copy.copy(database),copy.copy(options_copy),simulations_desc[1:],val))
-        if ('num_procs' in dir(options_copy) and options_copy.num_procs>1 and async==True and len(args_list)>0
+        if len(args_list)==1:
+            #If there is only one argument, go down recursive and allow asynchroneous behavior further down:
+            simulations_list=[item for sublist in map(wrapper_ask_simulations_recursive_async,args_list) for item in sublist]
+        elif ('num_procs' in dir(options_copy) and options_copy.num_procs>1 and async==True and len(args_list)>0
             and not ('serial' in dir(options_copy) and options_copy.serial)):
             #Use at most 5 processors in multiprocessing was requested (siginifcant speed up):
             pool=multiprocessing.Pool(processes=min(options_copy.num_procs,len(args_list),5))
@@ -236,7 +245,7 @@ def ask_simulations_recursive(database,options,simulations_desc,async=True):
                 pool.terminate()
                 pool.join()
         else:
-            #Only use multiprocessing for the first level:
+            #Only use multiprocessing for the first level with len(args_list)>1:
             simulations_list=[item for sublist in map(wrapper_ask_simulations_recursive,args_list) for item in sublist]
     else:
         #Recursion termination condition:
