@@ -74,8 +74,8 @@ If the data looks OK, then one can use the validate file to bypass the ``ask`` a
                       --out_destination=./out/CMIP5/ \
                       --num_procs=10 \
                       --reduce_soft_links_script='nc4sl --lonlatbox -150.0 -50.0 20.0 55.0' \
-                      'cdo -sellonlatbox,-124.78,-66.95,24.74,49.34 
-                           -remapbil,newgrid_atmos.cdo 
+                      'cdo -sellonlatbox,-124.78,-66.95,24.74,49.34  \
+                           -remapbil,newgrid_atmos.cdo \
                            -selgrid,lonlat,curvilinear,gaussian,unstructured ' \
                       us_pr_tas_MAM_pointers.validate.200003.retrieved.converted.nc.validate \
                       us_pr_tas_MAM_pointers.validate.retrieved.converted.nc
