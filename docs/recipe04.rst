@@ -19,6 +19,7 @@ With operator chaining, recipe 1 could be written::
                       --Month 1 2 10 11 12 \
                       --Var tas:day,atmos,day orog:fx,atmos,fx \
                       --Experiment amip:1979,2004 \
+                      --Xdata_node=http://esgf2.dkrz.de \
                       --username=$BADC_USERNAME \
                       --year=1979 --month=1 \
                       --out_destination=./out/CMIP5/ \
@@ -29,9 +30,10 @@ With operator chaining, recipe 1 could be written::
 
 It does:
 
-#. Finds ONDJF ``tas`` for ``amip``.
+#. Finds ONDJF ``tas`` and fixed variable ``orog`` for ``amip``.
+#. Excludes (``--Xdata_node=http://esgf2.dkrz.de``) data node ``http://esgf2.dkrz.de`` because it is a tape archive and tends to be slow.
 #. Retrieve certificates (``--username=$BADC_USERNAME``). It will prompt for your password.
-#. Record the result of ``validate`` to ``tas_ONDJF_pointers.validate.197901.retrieved.converted.nc.validate``.
+#. Record the result (``--record_validate``) of ``validate`` to ``tas_ONDJF_pointers.validate.197901.retrieved.converted.nc.validate``.
 #. Does this using 10 processes ``--num_procs=10``.
 #. Download only January 1979.
 #. Converts (the empty script ``''`` passed to ``reduce``) the data to the CMIP5 DRS to directory ``./out/CMIP5/``.
@@ -52,6 +54,7 @@ With operator chaining, recipe 3 could be written::
                       --username=$BADC_USERNAME \
                       --year=1979 --month=6 \
                       --out_destination=./out_France/CORDEX/ \
+                      --Xdata_node=http://esgf2.dkrz.de \
                       --record_validate \
                       --num_procs=10 \
                       --reduce_soft_links_script='nc4sl subset --lonlatbox -5.0 10.0 40.0 53.0' \
@@ -61,10 +64,11 @@ With operator chaining, recipe 3 could be written::
 It does:
 
 #. Finds JJAS ``pr`` for ``historical``.
+#. Excludes (``--Xdata_node=http://esgf2.dkrz.de``) data node ``http://esgf2.dkrz.de`` because it is a tape archive and tends to be slow.
 #. Retrieve certificates (``--username=$BADC_USERNAME``). It will prompt for your password.
-#. Record the result of ``validate`` to ``pr_JJAS_France_pointers.validate.France.retrieved.converted.nc.validate``.
+#. Record the result (``--record_validate``) of ``validate`` to ``pr_JJAS_France_pointers.validate.France.retrieved.converted.nc.validate``.
 #. Does this using 10 processes ``--num_procs=10``.
 #. Download only June 1979.
-#. Converts (the empty script ``''`` passed to ``reduce``) the data to the CMIP5 DRS to directory ``./out/CORDEX/``.
+#. Converts (the empty script ``''`` passed to ``reduce``) the data to the CMIP5 DRS to directory ``./out_France/CORDEX/``.
 
 .. note:: From now on, recipes will be presented as chained operators.
