@@ -35,7 +35,7 @@ It does:
 #. Retrieve certificates (``--username=$BADC_USERNAME``). It will prompt for your password.
 #. Record the result (``--record_validate``) of ``validate`` to ``tas_ONDJF_pointers.validate.197901.retrieved.converted.nc.validate``.
 #. Does this using 10 processes ``--num_procs=10``.
-#. Download only January 1979.
+#. Download only January 1979 (``--year=1979 --month=1``).
 #. Converts (the empty script ``''`` passed to ``reduce``) the data to the CMIP5 DRS to directory ``./out/CMIP5/``.
 
 
@@ -68,7 +68,7 @@ It does:
 #. Retrieve certificates (``--username=$BADC_USERNAME``). It will prompt for your password.
 #. Record the result (``--record_validate``) of ``validate`` to ``pr_JJAS_France_pointers.validate.France.retrieved.converted.nc.validate``.
 #. Does this using 10 processes ``--num_procs=10``.
-#. Download only June 1979.
+#. Download only June 1979 (``--year=1979 --month=6``).
 #. Converts (the empty script ``''`` passed to ``reduce``) the data to the CMIP5 DRS to directory ``./out_France/CORDEX/``.
 
 .. note:: From now on, recipes will be presented as chained operators.

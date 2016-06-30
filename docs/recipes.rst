@@ -25,10 +25,11 @@ The command ``cdb_query CMIP5`` contains several commands:
 
 .. Chaining
 .. include:: recipe04.rst
-..
-    .. remapping
-    .. include:: recipe03.rst
 
+.. Remapping
+.. include:: recipe05.rst
+
+..
     .. picontrol
     .. include:: recipe04.rst
 
