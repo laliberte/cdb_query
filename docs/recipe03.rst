@@ -296,9 +296,11 @@ This recipe is summarized in the following BASH script::
                 pr_JJAS_France_pointers.validate.nc
     #CHOOSE:
         # *1* Retrieve files:
-            #cdb_query CORDEX download_files --out_download_dir=./in/CMIP5/ \
+            #echo $BADC_PASSWORD | cdb_query CORDEX download_files \ 
+            #                    --out_download_dir=./in/CMIP5/ \
             #                    --username=$BADC_USERNAME \
             #                    --download_all_files \
+            #                    --password_from_pipe \
             #                    pr_JJAS_France_pointers.validate.nc \
             #                    pr_JJAS_France_pointers.validate.files.nc
 
@@ -323,13 +325,15 @@ This recipe is summarized in the following BASH script::
                             pr_JJAS_France_pointers.validate.France.nc
 
             #We then retrieve the whole time series over France:
-            cdb_query_CORDEX download_opendap \
+            echo $BADC_PASSWORD | cdb_query_CORDEX download_opendap \
                                  --username=$BADC_USERNAME \
+                                 --password_from_pipe \
                                  pr_JJAS_France_pointers.validate.France.nc \
                                  pr_JJAS_France_pointers.validate.France.retrieved.nc
 
             #Convert to filesystem:
-            cdb_query CORDEX reduce --out_destination=./out/CORDEX/ '' \
+            cdb_query CORDEX reduce --out_destination=./out/CORDEX/ \
+                                     '' \
                                      pr_JJAS_France_pointers.validate.France.retrieved.nc
                                      pr_JJAS_France_pointers.validate.France.retrieved.converted.nc
 

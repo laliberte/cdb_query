@@ -353,9 +353,10 @@ This recipe is summarized in the following BASH script. The ``--password_from_pi
 
     #CHOOSE:
         # *1* Retrieve files:
-            #cdb_query CMIP5 download_files \
+            #echo $BADC_PASSWORD | cdb_query CMIP5 download_files \
             #                    --download_all_files \
-            #                    --username=BADC_USERNAME \
+            #                    --username=$BADC_USERNAME \
+            #                    --password_from_pipe \
             #                    --out_download_dir=./in/CMIP5/ \
             #                    tas_ONDJF_pointers.validate.nc \
             #                    tas_ONDJF_pointers.validate.downloaded.nc 
@@ -369,15 +370,20 @@ This recipe is summarized in the following BASH script. The ``--password_from_pi
                                 tas_ONDJF_pointers.validate.197901.retrieved.nc
 
             #Pick one simulation:
-            ncks -G : -g /CNRM-CERFACS/CNRM-CM5/amip/day/atmos/day/r1i1p1/tas \
+            #Note: this can be VERY slow!
+            ncks -G :8 -g /CNRM-CERFACS/CNRM-CM5/amip/day/atmos/day/r1i1p1/tas \
                tas_ONDJF_pointers.validate.197901.retrieved.nc \
+               tas_ONDJF_pointers.validate.197901.retrieved.CNRM-CERFACS_CNRM-CM5_r1i1p1.nc
+            #Remove soft_links informations:
+            ncks -L 0 -O -x -g soft_links \
+               tas_ONDJF_pointers.validate.197901.retrieved.CNRM-CERFACS_CNRM-CM5_r1i1p1.nc \
                tas_ONDJF_pointers.validate.197901.retrieved.CNRM-CERFACS_CNRM-CM5_r1i1p1.nc
             
             #Look at it:
             #When done, look at it. A good tool for that is ncview:
             #   ncview tas_ONDJF_pointers.validate.197901.retrieved.CNRM-CERFACS_CNRM-CM5_r1i1p1.nc
 
-            #Convert hierarchical file to files on filesystem:
+            #Convert hierarchical file to files on filesystem (much faster than ncks):
             #Identity reduction simply copies the data to disk
             cdb_query CMIP5 reduce \
                                 '' \
