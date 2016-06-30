@@ -106,16 +106,17 @@ def record_validate(parser,project_drs):
 
 def ask_shared_arguments(parser,project_drs):
     query_group = parser.add_argument_group('Scientific query setup')
-    default_experiment=['historical:1950,2005',]
+    default_experiment={'CMIP5':tuple(['historical:1950,2005',]),
+                        'CORDEX':tuple(['historical:1979,2005',])}
     query_group.add_argument('--Experiment',
-                             default=default_experiment,
+                             default=list(default_experiment[project_drs.project]),
                              nargs='*',
                              help='A list of \'experiment:start_year,end_year\' triples.\n\
                                    Note that specifiying 1<=start_year<10 means that\n\
                                    the years are relative to the first year in the simulation.\n\
                                    For example, \'piControl:1,101\' will find the first hundred\n\
                                    years of the piControl experiment.\n\
-                                   Default {0}'.format(' '.join(default_experiment)))
+                                   Default {0}'.format(' '.join(default_experiment[project_drs.project])))
     query_group.add_argument('--Month',
                              default=range(1,13),
                              type=int,
@@ -139,12 +140,13 @@ def ask_shared_arguments(parser,project_drs):
                              default=[],
                              nargs='*',
                              help='List of search paths to exclude.')
-    default_var=['tas:mon,atmos,Amon',]
+    default_var={'CMIP5':tuple(['tas:mon,atmos,Amon',]),
+                 'CORDEX':tuple(['tas:mon',])}
     query_group.add_argument('--Var',
-                             default=default_var,
+                             default=list(default_var[project_drs.project]),
                              nargs='*',
-                             help='A list of \'variable:time_frequency,realm,cmor_table\' tuples.\n\
-                                   Default: {0}'.format(' '.join(default_var)))
+                             help='A list of \'variable:{1}\' tuples.\n\
+                                   Default: {0}'.format(' '.join(default_var[project_drs.project]),','.join(project_drs.var_specs)))
     file_type_list=['local_file','OPENDAP','HTTPServer']
     query_group.add_argument('--File_type',
                              default=file_type_list,
