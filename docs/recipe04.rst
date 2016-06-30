@@ -14,11 +14,12 @@ but for the user it is fairly transparent (except when there is an error message
 
 With operator chaining, recipe 1 could be written::
 
+    $ BADC_USERNAME="your badc username"
     $ cdb_query CMIP5 ask validate download_opendap reduce \
                       --Month 1 2 10 11 12 \
                       --Var tas:day,atmos,day orog:fx,atmos,fx \
                       --Experiment amip:1979,2004 \
-                      --username=BADC_USERNAME \
+                      --username=$BADC_USERNAME \
                       --year=1979 --month=1 \
                       --out_destination=./out/CMIP5/ \
                       --record_validate \
@@ -29,7 +30,7 @@ With operator chaining, recipe 1 could be written::
 It does:
 
 #. Finds ONDJF ``tas`` for ``amip``.
-#. Retrieve certificates (``--username=BADC_USERNAME``).
+#. Retrieve certificates (``--username=$BADC_USERNAME``). It will prompt for your password.
 #. Record the result of ``validate`` to ``tas_ONDJF_pointers.validate.197901.retrieved.converted.nc.validate``.
 #. Does this using 10 processes ``--num_procs=10``.
 #. Download only January 1979.
@@ -45,9 +46,10 @@ but for the user it is fairly transparent (except when there is an error message
 
 With operator chaining, recipe 3 could be written::
 
+    $ BADC_USERNAME="your badc username"
     $ cdb_query CORDEX ask validate reduce_soft_links download_opendap reduce \ 
                       --Experiment historical:1979,2004 --Var pr:day --Month 6 7 8 9 \
-                      --username=BADC_USERNAME \
+                      --username=$BADC_USERNAME \
                       --year=1979 --month=6 \
                       --out_destination=./out/CORDEX/ \
                       --record_validate \
@@ -59,7 +61,7 @@ With operator chaining, recipe 3 could be written::
 It does:
 
 #. Finds JJAS ``pr`` for ``historical``.
-#. Retrieve certificates (``--username=BADC_USERNAME``).
+#. Retrieve certificates (``--username=$BADC_USERNAME``). It will prompt for your password.
 #. Record the result of ``validate`` to ``pr_JJAS_France_pointers.validate.France.retrieved.converted.nc.validate``.
 #. Does this using 10 processes ``--num_procs=10``.
 #. Download only June 1979.
