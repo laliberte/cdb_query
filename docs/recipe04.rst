@@ -51,7 +51,7 @@ With operator chaining, recipe 3 could be written::
                       --Experiment historical:1979,2004 --Var pr:day --Month 6 7 8 9 \
                       --username=$BADC_USERNAME \
                       --year=1979 --month=6 \
-                      --out_destination=./out/CORDEX/ \
+                      --out_destination=./out_France/CORDEX/ \
                       --record_validate \
                       --num_procs=10 \
                       --reduce_soft_links_script='nc4sl subset --lonlatbox -5.0 10.0 40.0 53.0' \

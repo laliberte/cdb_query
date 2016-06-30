@@ -160,12 +160,12 @@ Validating the set of simulations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. warning::
     From now on it is assumed that the user has installed appropriate certificates to retrieve data from the ESGF CMIP5 archive.
-    Simply passing ``--username=BADC_USERNAME`` will take care of this.
+    Simply passing ``--username=$BADC_USERNAME`` will take care of this.
     
 To narrow down our results to the simulations that satisfy ALL the requested criteria, we can use  ::
 
     $ cdb_query CMIP5 validate \
-                --username=BADC_USERNAME \
+                --username=$BADC_USERNAME \
                 --Xdata_node=http://esgf2.dkrz.de \
                 --num_procs=10 \
                 tas_ONDJF_pointers.nc \
@@ -295,7 +295,7 @@ To retrieve the first month of daily data::
     $ cdb_query CMIP5 download_opendap \
                             --year=1979 \
                             --month=1 \
-                            --username=BADC_USERNAME \
+                            --username=$BADC_USERNAME \
                             tas_ONDJF_pointers.validate.nc \
                             tas_ONDJF_pointers.validate.197901.retrieved.nc 
 
@@ -390,3 +390,6 @@ This recipe is summarized in the following BASH script. The ``--password_from_pi
                                 --out_destination=./out/CMIP5/ \
                                 tas_ONDJF_pointers.validate.197901.retrieved.nc \
                                 tas_ONDJF_pointers.validate.197901.retrieved.converted.nc
+
+            #The files can be found in ./out/CMIP5/:
+            #find ./out/CMIP5/ -name '*.nc'

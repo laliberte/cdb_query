@@ -119,7 +119,7 @@ Validating the simulations
 To narrow down our results to the simulations that satisfy ALL the requested criteria, we can use  ::
 
         $ cdb_query CORDEX validate \
-                        --username=BADC_USERNAME \
+                        --username=$BADC_USERNAME \
                         --num_procs=10 \
                         pr_JJAS_France_pointers.nc \
                         pr_JJAS_France_pointers.validate.nc
@@ -160,7 +160,7 @@ Retrieving the data: `wget`
 `cdb_query CORDEX` includes built-in functionality for retrieving the paths. It is used as follows ::
 
     $ cdb_query CORDEX download_files --out_download_dir=./in/CMIP5/ \
-                                    --username=BADC_USERNAME \
+                                    --username=$BADC_USERNAME \
                                     --download_all_files \
                                     pr_JJAS_France_pointers.validate.nc \
                                     pr_JJAS_France_pointers.validate.files.nc
@@ -180,7 +180,7 @@ Retrieving the data: `OPeNDAP`
 We retrieve the first month::
 
     $ cdb_query CORDEX download_opendap --year=1979 --month=6 \
-                                   --username=BADC_USERNAME \
+                                   --username=$BADC_USERNAME \
                                    pr_JJAS_France_pointers.validate.nc \
                                    pr_JJAS_France_pointers.validate.197906.retrieved.nc 
 
@@ -232,7 +232,7 @@ In the second method, the subsetting can be performed asynchronously (``--num_pr
 Finally, we retrieve the subsetted data::
     
     $ cdb_query CORDEX download_opendap --year=1979 --month=6 \
-                                   --username=BADC_USERNAME \
+                                   --username=$BADC_USERNAME \
                                    pr_JJAS_France_pointers.validate.France.nc \
                                    pr_JJAS_France_pointers.validate.France.197906.retrieved.nc 
 
@@ -325,14 +325,15 @@ This recipe is summarized in the following BASH script::
                             pr_JJAS_France_pointers.validate.France.nc
 
             #We then retrieve the whole time series over France:
-            echo $BADC_PASSWORD | cdb_query_CORDEX download_opendap \
+            echo $BADC_PASSWORD | cdb_query CORDEX download_opendap \
                                  --username=$BADC_USERNAME \
                                  --password_from_pipe \
                                  pr_JJAS_France_pointers.validate.France.nc \
                                  pr_JJAS_France_pointers.validate.France.retrieved.nc
 
             #Convert to filesystem:
-            cdb_query CORDEX reduce --out_destination=./out/CORDEX/ \
+            cdb_query CORDEX reduce --out_destination=./out_France/CORDEX/ \
+                                    --num_procs=${NUM_PROCS} \
                                      '' \
                                      pr_JJAS_France_pointers.validate.France.retrieved.nc
                                      pr_JJAS_France_pointers.validate.France.retrieved.converted.nc
