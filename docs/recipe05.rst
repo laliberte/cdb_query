@@ -41,8 +41,8 @@ With operator chaining, in a BASH script::
                       --num_procs=10 \
                       --year=2000 --month=3 \
                       --reduce_soft_links_script='nc4sl --lonlatbox -150.0 -50.0 20.0 55.0' \
-                      'cdo -sellonlatbox,-124.78,-66.95,24.74,49.34 
-                           -remapbil,newgrid_atmos.cdo 
+                      'cdo -sellonlatbox,-124.78,-66.95,24.74,49.34 \
+                           -remapbil,newgrid_atmos.cdo \
                            -selgrid,lonlat,curvilinear,gaussian,unstructured ' \
                       us_pr_tas_MAM_pointers.validate.200003.retrieved.converted.nc
 It does:
