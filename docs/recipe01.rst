@@ -14,6 +14,25 @@ The script is run using::
                           --model=CanAM4 --model=CCSM4 --model=GISS-E2-R --model=MRI-CGCM3 \
                           --num_procs=10 \
                           tas_ONDJF_pointers.nc 
+    This is a list of simulations that COULD satisfy the query:
+    NCAR,CCSM4,r7i1p1,amip
+    NCAR,CCSM4,r2i1p1,amip
+    NCAR,CCSM4,r1i1p1,amip
+    NCAR,CCSM4,r4i1p1,amip
+    NCAR,CCSM4,r3i1p1,amip
+    NCAR,CCSM4,r5i1p1,amip
+    CCCMA,CanAM4,r2i1p1,amip
+    CCCMA,CanAM4,r1i1p1,amip
+    CCCMA,CanAM4,r4i1p1,amip
+    CCCMA,CanAM4,r3i1p1,amip
+    MRI,MRI-CGCM3,r4i1p2,amip
+    MRI,MRI-CGCM3,r2i1p1,amip
+    MRI,MRI-CGCM3,r1i1p1,amip
+    MRI,MRI-CGCM3,r3i1p1,amip
+    NASA-GISS,GISS-E2-R,r6i1p1,amip
+    NASA-GISS,GISS-E2-R,r6i1p3,amip
+    cdb_query will now attempt to confirm that these simulations have all the requested variables.
+    This can take some time. Please abort if there are not enough simulations for your needs.
 
 Obtaining the tentative list of simulations should be very quick (a few seconds to a minute) but confirming that these simulations have all the requested
 variables should take a few minutes, depending on your connection to the ESGF node. It returns a self-descriptive netCDF4 file 
@@ -47,17 +66,18 @@ For example, if we want to know how many different simulations were made availab
     NCAR,CCSM4,r5i1p1
     NCAR,CCSM4,r7i1p1
 
-This test was run on June 20, 2016 and these results represent the data presented by the ESGF node on that day.
+This test was run on July 2nd, 2016 and these results represent the data presented by the ESGF node on that day.
 The r0i0p0 ensemble name is the ensemble associated with fixed (time_frequency=fx) variables and its presence suggests that these three institutes have provided the requested orog variable.
-These results also indicate that IPSL and MOHC have both provided six simulations. 
+These results also indicate that models CanAM4, MRI-CGCM3 and CCSM4 provided 4, 3 and 6 simulations,respectively.
 
 If this list of models is satisfying, we next check the paths  ::
     
     $ cdb_query CMIP5 list_fields -f path tas_ONDJF_pointers.nc
-    http://esgf-data1.ceda.ac.uk/thredds/dodsC/esg_dataroot/cmip5/output1/CCCma/CanAM4/amip/day/atmos/day/r1i1p1/v2/tas/tas_day_CanAM4_amip_r1i1p1_19790101-20091231.nc|SHA256|2c6e198cdeb24ecf64368d29235e2a1bde0a4bfa2
-    faa968581d9ec0ea6a89591|015de642-b49a-4463-bbf6-549a2d47cf69
-    http://esgf-data1.ceda.ac.uk/thredds/dodsC/esg_dataroot/cmip5/output1/CCCma/CanAM4/amip/day/atmos/day/r2i1p1/v1/tas/tas_day_CanAM4_amip_r2i1p1_19790101-20091231.nc|SHA256|ad5d5f04aa213ad02e7bd72f204c5e535878eabd8
-    981f35960a42bdb22e1264c|7f7dbf72-4ed9-4b0b-85b9-4dc30de7f805
+    ...
+    http://esgf-data1.ceda.ac.uk/thredds/fileServer/esg_dataroot/cmip5/output1/NCAR/CCSM4/amip/fx/atmos/fx/r0i0p0/v20130312/orog/orog_fx_CCSM4_amip_
+    r0i0p0.nc|SHA256|87b29a7d2731e6b028d81b07edbe84c3f06e1321986401482f8c5d76d5361516|2b43ce02-7124-40bd-8ae4-0961e399e9ec
+    http://esgf-data1.diasjp.net/thredds/fileServer/esg_dataroot/cmip5/output1/MRI/MRI-CGCM3/amip/day/atmos/day/r1i1p1/v20120701/tas/tas_day_MRI-CGCM3_am
+    ip_r1i1p1_19790101-19881231.nc|SHA256|804f3325a2b0e29bad14e5773a7216c2893a5200fba62ffa83db992b9765b283|e95dd229-1e36-4e8a-9e50-8797e2a136a2
     ...
 
 We consider the first path. It is constituted of two parts. The first part begins with ``http://esgf-data1.ceda.ac.uk/...`` and 
@@ -65,8 +85,8 @@ ends a the vertical line. This is a `wget` link. The second part, separated by v
 The checksum is as published on the EGSF website. The file found at the other end of the `wget` link can be
 expected to have the same checksum.
 
-The string that precedes ``/thredds/...`` in the `wget` link is the `data node`. Here, we have one data node: 
-``http://esgf-data1.ceda.ac.uk``. Retrieving two files from two different data nodes at the same time should
+The string that precedes ``/thredds/...`` in the `wget` link is the `data node`. Here, we have two data nodes: 
+``http://esgf-data1.ceda.ac.uk`` and ``http://esgf-data1.diasjp.net``. Retrieving two files from two different data nodes at the same time should
 not hinder the transfer of one another.
 
 .. hint::
@@ -115,10 +135,6 @@ Again, this file can be queried for simulations::
     NCAR,CCSM4,r5i1p1
     NCAR,CCSM4,r7i1p1
 
-We can see that only some of the NOAA-GFDL simulations were excluded. 
-This means that the other simulations they had ALL the variables for ALL the months of ALL the years for the amip
-experiment.
-
 Retrieving the data: `wget`
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -126,8 +142,9 @@ Retrieving the data: `wget`
 
     $ cdb_query CMIP5 download_files \
                     --download_all_files \
+                    --username=$BADC_USERNAME \
                     --out_download_dir=./in/CMIP5/ \
-                    tas_ONDJF_pointers.validate.nc \ 
+                    tas_ONDJF_pointers.validate.nc \
                     tas_ONDJF_pointers.validate.downloaded.nc
 
 It downloads the paths listed in ``tas_ONDJF_pointers.validate.nc`` to ``./in/CMIP5/`` and records the soft links to the local data in ``tas_ONDJF_pointers.validate.downloaded.nc``.
