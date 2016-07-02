@@ -9,6 +9,8 @@ import numpy as np
 #External but related:
 import netcdf4_soft_links.manage_soft_links_parsers as manage_soft_links_parsers
 
+file_type_list=['local_file','OPENDAP','HTTPServer']
+
 def absolute_path(path):
     return os.path.abspath(os.path.expanduser(os.path.expandvars(path)))
 
@@ -106,23 +108,21 @@ def record_validate(parser,project_drs):
 
 def ask_shared_arguments(parser,project_drs):
     query_group = parser.add_argument_group('Scientific query setup')
-    default_experiment={'CMIP5':tuple(['historical:1950,2005',]),
-                        'CORDEX':tuple(['historical:1979,2005',])}
+    default_experiment={'CMIP5':tuple(['historical:1950-2005',]),
+                        'CORDEX':tuple(['historical:1979-2005',])}
     query_group.add_argument('--ask_experiment',
                              default=list(default_experiment[project_drs.project]),
-                             action='append'
-                             help='A list of \'experiment:start_year,end_year\' triples.\n\
+                             type=csv_list,
+                             help='Comma-separated list of \'experiment:start_year-end_year\' triples.\n\
                                    Note that specifiying 1<=start_year<10 means that\n\
                                    the years are relative to the first year in the simulation.\n\
-                                   For example, \'piControl:1,101\' will find the first hundred\n\
-                                   years of the piControl experiment.\n\
+                                   For example, \'piControl:1-101\' will find the first hundred\n\
+                                   years of the piControl experiment. Can be repeated for multiple experiments.\n\
                                    Default {0}'.format(' '.join(default_experiment[project_drs.project])))
     query_group.add_argument('--ask_month',
                              default=range(1,13),
-                             type=int,
-                             choices=range(1,13),
-                             action='append',
-                             help='Months to be considered. Default: All months.')
+                             type=int_list,
+                             help='Comma-separated list of months to be considered. Default: All months.')
     search_path_list=[
     'https://esgf-index1.ceda.ac.uk/esg-search/',
     'https://esgf-node.ipsl.upmc.fr/esg-search/',
@@ -133,28 +133,26 @@ def ask_shared_arguments(parser,project_drs):
     ]
     query_group.add_argument('--search_path',
                              default=search_path_list,
-                             action='append',
-                             help='List of search paths. Can be a local directory, an ESGF index node, a FTP server.\n\
-                                   Default: {0}'.format(' '.join(search_path_list)))
+                             type=csv_list,
+                             help='Comma-separated list of search paths. Can be a local directory, an ESGF index node, a FTP server.\n\
+                                   Default: {0}'.format(','.join(search_path_list)))
     query_group.add_argument('--Xsearch_path',
                              default=[],
-                             action='append',
-                             help='List of search paths to exclude.')
-    default_var={'CMIP5':tuple(['tas:mon,atmos,Amon',]),
+                             help='Comma-separated list of search paths to exclude.')
+    default_var={'CMIP5':tuple(['tas:mon-atmos-Amon',]),
                  'CORDEX':tuple(['tas:mon',])}
     query_group.add_argument('--ask_var',
                              default=list(default_var[project_drs.project]),
-                             action='append',
-                             help='A list of \'variable:{1}\' tuples.\n\
-                                   Default: {0}'.format(' '.join(default_var[project_drs.project]),','.join(project_drs.var_specs)))
-    file_type_list=['local_file','OPENDAP','HTTPServer']
+                             type=csv_list,
+                             help='Comma-separated list of \'variable:{1}\' tuples.\n\
+                                   Default: {0}'.format(','.join(default_var[project_drs.project]),'-'.join(project_drs.var_specs)))
     query_group.add_argument('--ask_file_type',
-                             default=file_type_list,
+                             default=[],
                              choices=file_type_list,
                              action='append',
-                             help='A list of \'variable:time_frequency,realm,cmor_table\' tuples.\n\
-                                   This list is ordered. The first listed file types will be selected first in the validate step.\n\
-                                   Default: {0}'.format(' '.join(file_type_list)))
+                             help='A file type. Can be repeated.\n\
+                                   This list is ordered. The first specified file type will be selected first in the validate step.\n\
+                                   Default: {0}'.format(','.join(file_type_list)))
 
     query_group.add_argument('--distrib',
                                  default=False, action='store_true',
@@ -520,3 +518,6 @@ def writeable_dir(prospective_dir):
 
 def int_list(input):
     return [ int(item) for item in input.split(',')]
+
+def csv_list(input):
+    return [ item for item in input.split(',')]

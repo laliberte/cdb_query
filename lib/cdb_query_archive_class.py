@@ -25,6 +25,7 @@ import nc_Database
 import nc_Database_utils
 import nc_Database_reduce
 import downloads
+import cdb_query_archive_parsers
 
 def ask_var_list(database,simulations_list,options):
     if 'keep_field' in dir(options):
@@ -351,11 +352,15 @@ class Database_Manager:
     def load_header(self,options):
         if ('ask' in dir(options) and options.ask):
             self.header=dict()
-            self.header['experiment_list']={item.split(':')[0]:item.split(':')[1] for item in options.ask_experiment}
+            self.header['experiment_list']={item.split(':')[0]:item.split(':')[1].replace('-',',') for item in options.ask_experiment}
             self.header['month_list']=[item for item in options.ask_month]
             self.header['search_list']=[item for item in options.search_path if not item in options.Xsearch_path]
-            self.header['variable_list']={item.split(':')[0]:item.split(':')[1].split(',') for item in options.ask_var}
-            self.header['file_type_list']=[item for item in options.ask_file_type]
+            self.header['variable_list']={item.split(':')[0]:item.split(':')[1].split('-') for item in options.ask_var}
+            #Need to do this to allwo choices:
+            if len(options.ask_file_type)==0:
+                self.header['file_type_list']=cdb_query_archive_parsers.file_type_list
+            else:
+                self.header['file_type_list']=[item for item in options.ask_file_type]
         else:
             self.define_database(options)
             self.header=self.nc_Database.load_header()

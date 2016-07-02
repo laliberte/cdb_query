@@ -29,9 +29,9 @@ With operator chaining, in a BASH script::
     BADC_PASSWORD="your badc password"
     #latlon box -124.78 -66.95 24.74 49.34 is continental us
     echo $BADC_PASSWORD | cdb_query CMIP5 ask validate reduce_soft_links download_opendap reduce \
-                      --Month 3 4 5 \
-                      --Var tas:mon,atmos,Amon pr:mon,atmos,Amon \
-                      --Experiment historical:1950,2005 rcp85:2006,2050 \
+                      --ask_month=3,4,5 \
+                      --ask_var=tas:mon-atmos-Amon,pr:mon-atmos-Amon \
+                      --ask_xperiment=historical:1950-2005,rcp85:2006-2050 \
                       --related_experiments \
                       --Xdata_node=http://esgf2.dkrz.de \
                       --username=$BADC_USERNAME \

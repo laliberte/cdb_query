@@ -16,9 +16,9 @@ With operator chaining, recipe 1 could be written::
 
     $ BADC_USERNAME="your badc username"
     $ cdb_query CMIP5 ask validate download_opendap reduce \
-                      --Month 1 2 10 11 12 \
-                      --Var tas:day,atmos,day orog:fx,atmos,fx \
-                      --Experiment amip:1979,2004 \
+                      --ask_month=1,2,10,11,12 \
+                      --ask_var=tas:day,atmos,day,orog:fx-atmos-fx \
+                      --ask_experiment=amip:1979-2004 \
                       --Xdata_node=http://esgf2.dkrz.de \
                       --username=$BADC_USERNAME \
                       --year=1979 --month=1 \
@@ -50,7 +50,7 @@ With operator chaining, recipe 3 could be written::
 
     $ BADC_USERNAME="your badc username"
     $ cdb_query CORDEX ask validate reduce_soft_links download_opendap reduce \ 
-                      --Experiment historical:1979,2004 --Var pr:day --Month 6 7 8 9 \
+                      --ask_experiment=historical:1979-2004 --ask_var=pr:day --ask_month=6,7,8,9 \
                       --username=$BADC_USERNAME \
                       --year=1979 --month=6 \
                       --out_destination=./out_France/CORDEX/ \

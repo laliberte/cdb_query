@@ -8,7 +8,9 @@ This relies on the idea that all queries are for a experiment list and a variabl
 has however another important component that one might want to query: its domain. The first step is thus
 to find what domains are available ::
 
-    $ cdb_query CORDEX ask --Experiment historical:1979,2004 --Var pr:day --Month 6 7 8 9 \
+    $ cdb_query CORDEX ask --ask_experiment=historical:1979-2004 \
+                           --ask_var=pr:day \
+                           --ask_month=6,7,8,9 \
                            --list_only_field=domain \
                            pr_JJAS_France_pointers.nc
     MNA-44
@@ -33,34 +35,18 @@ Discovering the data
 ^^^^^^^^^^^^^^^^^^^^
 The script is run using::
 
-    $ cdb_query CORDEX ask --Experiment historical:1979,2004 --Var pr:day --Month 6 7 8 9 \
+    $ cdb_query CORDEX ask --ask_experiment=historical:1979-2004 \
+                           --ask_var=pr:day \
+                           --month=6,7,8,9 \
                            --domain=EUR-11 \
+                           --driving_model=ICHEC-EC-EARTH \
                            --num_procs=10 \
                            pr_JJAS_France_pointers.nc
     This is a list of simulations that COULD satisfy the query:
-    EUR-11,IPSL-INERIS,IPSL-IPSL-CM5A-MR,WRF331F,v1,r1i1p1,historical
-    EUR-11,DMI,NCC-NorESM1-M,HIRHAM5,v1,r1i1p1,historical
     EUR-11,DMI,ICHEC-EC-EARTH,HIRHAM5,v1,r3i1p1,historical
-    EUR-11,CLMcom,MOHC-HadGEM2-ES,CCLM4-8-17,v1,r1i1p1,historical
-    EUR-11,CLMcom,CNRM-CERFACS-CNRM-CM5,CCLM4-8-17,v1,r1i1p1,historical
     EUR-11,CLMcom,ICHEC-EC-EARTH,CCLM4-8-17,v1,r12i1p1,historical
-    EUR-11,CLMcom,MPI-M-MPI-ESM-LR,CCLM4-8-17,v1,r1i1p1,historical
-    EUR-11,KNMI,MOHC-HadGEM2-ES,RACMO22E,v2,r1i1p1,historical
     EUR-11,KNMI,ICHEC-EC-EARTH,RACMO22E,v1,r1i1p1,historical
-    EUR-11,HMS,CNRM-CERFACS-CNRM-CM5,ALADIN52,v1,r1i1p1,historical
-    EUR-11,SMHI,CCCma-CanESM2,RCA4,v1,r1i1p1,historical
-    EUR-11,SMHI,MIROC-MIROC5,RCA4,v1,r1i1p1,historical
-    EUR-11,SMHI,IPSL-IPSL-CM5A-MR,RCA4,v1,r1i1p1,historical
-    EUR-11,SMHI,MPI-M-MPI-ESM-LR,RCA4,v1,r1i1p1,historical
-    EUR-11,SMHI,CNRM-CERFACS-CNRM-CM5,RCA4,v1,r1i1p1,historical
     EUR-11,SMHI,ICHEC-EC-EARTH,RCA4,v1,r12i1p1,historical
-    EUR-11,SMHI,NOAA-GFDL-GFDL-ESM2M,RCA4,v1,r1i1p1,historical
-    EUR-11,SMHI,MOHC-HadGEM2-ES,RCA4,v1,r1i1p1,historical
-    EUR-11,SMHI,CSIRO-QCCCE-CSIRO-Mk3-6-0,RCA4,v1,r1i1p1,historical
-    EUR-11,SMHI,NCC-NorESM1-M,RCA4,v1,r1i1p1,historical
-    EUR-11,MPI-CSC,MPI-M-MPI-ESM-LR,REMO2009,v1,r2i1p1,historical
-    EUR-11,MPI-CSC,MPI-M-MPI-ESM-LR,REMO2009,v1,r1i1p1,historical
-    EUR-11,CNRM,CNRM-CERFACS-CNRM-CM5,ALADIN53,v1,r1i1p1,historical
     cdb_query will now attempt to confirm that these simulations have all the requested variables.
     This can take some time. Please abort if there are not enough simulations for your needs.
 
@@ -78,23 +64,10 @@ For example, if we want to know how many different simulations were made availab
     
     $ cdb_query CORDEX list_fields -f domain -f driving_model -f institute \
                                    -f rcm_model -f rcm_version -f ensemble pr_JJAS_France_pointers.nc
-    EUR-11,CNRM-CERFACS-CNRM-CM5,CLMcom,CCLM4-8-17,v1,r1i1p1
-    EUR-11,CNRM-CERFACS-CNRM-CM5,CNRM,ALADIN53,v1,r1i1p1
-    EUR-11,CNRM-CERFACS-CNRM-CM5,SMHI,RCA4,v1,r1i1p1
     EUR-11,ICHEC-EC-EARTH,CLMcom,CCLM4-8-17,v1,r12i1p1
     EUR-11,ICHEC-EC-EARTH,DMI,HIRHAM5,v1,r3i1p1
     EUR-11,ICHEC-EC-EARTH,KNMI,RACMO22E,v1,r1i1p1
     EUR-11,ICHEC-EC-EARTH,SMHI,RCA4,v1,r12i1p1
-    EUR-11,IPSL-IPSL-CM5A-MR,IPSL-INERIS,WRF331F,v1,r1i1p1
-    EUR-11,IPSL-IPSL-CM5A-MR,SMHI,RCA4,v1,r1i1p1
-    EUR-11,MOHC-HadGEM2-ES,CLMcom,CCLM4-8-17,v1,r1i1p1
-    EUR-11,MOHC-HadGEM2-ES,KNMI,RACMO22E,v2,r1i1p1
-    EUR-11,MOHC-HadGEM2-ES,SMHI,RCA4,v1,r1i1p1
-    EUR-11,MPI-M-MPI-ESM-LR,CLMcom,CCLM4-8-17,v1,r1i1p1
-    EUR-11,MPI-M-MPI-ESM-LR,MPI-CSC,REMO2009,v1,r1i1p1
-    EUR-11,MPI-M-MPI-ESM-LR,MPI-CSC,REMO2009,v1,r2i1p1
-    EUR-11,MPI-M-MPI-ESM-LR,SMHI,RCA4,v1,r1i1p1
-    EUR-11,NCC-NorESM1-M,DMI,HIRHAM5,v1,r1i1p1
 
 This test was run on June 23, 2016 and these results represent the data presented by the ESGF on that day.
 
@@ -133,23 +106,10 @@ Again, this file can be queried for simulations::
 
     $ cdb_query CORDEX list_fields -f domain -f driving_model -f institute \
                                    -f rcm_model -f rcm_version -f ensemble pr_JJAS_France_pointers.validate.nc
-    EUR-11,CNRM-CERFACS-CNRM-CM5,CLMcom,CCLM4-8-17,v1,r1i1p1
-    EUR-11,CNRM-CERFACS-CNRM-CM5,CNRM,ALADIN53,v1,r1i1p1
-    EUR-11,CNRM-CERFACS-CNRM-CM5,SMHI,RCA4,v1,r1i1p1
     EUR-11,ICHEC-EC-EARTH,CLMcom,CCLM4-8-17,v1,r12i1p1
     EUR-11,ICHEC-EC-EARTH,DMI,HIRHAM5,v1,r3i1p1
     EUR-11,ICHEC-EC-EARTH,KNMI,RACMO22E,v1,r1i1p1
     EUR-11,ICHEC-EC-EARTH,SMHI,RCA4,v1,r12i1p1
-    EUR-11,IPSL-IPSL-CM5A-MR,IPSL-INERIS,WRF331F,v1,r1i1p1
-    EUR-11,IPSL-IPSL-CM5A-MR,SMHI,RCA4,v1,r1i1p1
-    EUR-11,MOHC-HadGEM2-ES,CLMcom,CCLM4-8-17,v1,r1i1p1
-    EUR-11,MOHC-HadGEM2-ES,KNMI,RACMO22E,v2,r1i1p1
-    EUR-11,MOHC-HadGEM2-ES,SMHI,RCA4,v1,r1i1p1
-    EUR-11,MPI-M-MPI-ESM-LR,CLMcom,CCLM4-8-17,v1,r1i1p1
-    EUR-11,MPI-M-MPI-ESM-LR,MPI-CSC,REMO2009,v1,r1i1p1
-    EUR-11,MPI-M-MPI-ESM-LR,MPI-CSC,REMO2009,v1,r2i1p1
-    EUR-11,MPI-M-MPI-ESM-LR,SMHI,RCA4,v1,r1i1p1
-    EUR-11,NCC-NorESM1-M,DMI,HIRHAM5,v1,r1i1p1
 
 We can see that no simulations were excluded. This means that they had ALL the variables for ALL the months of ALL the years for the historical
 experiment.
@@ -275,10 +235,11 @@ This recipe is summarized in the following BASH script::
     BADC_PASSWORD="your badc password"
 
     #Discover data:
-    cdb_query CORDEX ask --Experiment historical:1979,2004 --Var pr:day \
-                       --domain=EUR-11 \
-                       --num_procs=${NUM_PROCS} \
-                       pr_JJAS_France_pointers.nc 
+    cdb_query CORDEX ask --ask_experiment=historical:1979,2004 \
+                         --ask_var=pr:day \
+                         --domain=EUR-11 \
+                         --num_procs=${NUM_PROCS} \
+                         pr_JJAS_France_pointers.nc 
 
     #List simulations:
     cdb_query CORDEX list_fields -f domain -f driving_model -f institute \
