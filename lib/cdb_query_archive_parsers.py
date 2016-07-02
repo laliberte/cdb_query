@@ -108,20 +108,20 @@ def ask_shared_arguments(parser,project_drs):
     query_group = parser.add_argument_group('Scientific query setup')
     default_experiment={'CMIP5':tuple(['historical:1950,2005',]),
                         'CORDEX':tuple(['historical:1979,2005',])}
-    query_group.add_argument('--Experiment',
+    query_group.add_argument('--ask_experiment',
                              default=list(default_experiment[project_drs.project]),
-                             nargs='*',
+                             action='append'
                              help='A list of \'experiment:start_year,end_year\' triples.\n\
                                    Note that specifiying 1<=start_year<10 means that\n\
                                    the years are relative to the first year in the simulation.\n\
                                    For example, \'piControl:1,101\' will find the first hundred\n\
                                    years of the piControl experiment.\n\
                                    Default {0}'.format(' '.join(default_experiment[project_drs.project])))
-    query_group.add_argument('--Month',
+    query_group.add_argument('--ask_month',
                              default=range(1,13),
                              type=int,
                              choices=range(1,13),
-                             nargs='*',
+                             action='append',
                              help='Months to be considered. Default: All months.')
     search_path_list=[
     'https://esgf-index1.ceda.ac.uk/esg-search/',
@@ -131,27 +131,27 @@ def ask_shared_arguments(parser,project_drs):
     'https://esgf-node.jpl.nasa.gov/esg-search/',
     'https://esg-dn1.nsc.liu.se/esg-search/'
     ]
-    query_group.add_argument('--Search_path',
+    query_group.add_argument('--search_path',
                              default=search_path_list,
-                             nargs='*',
+                             action='append',
                              help='List of search paths. Can be a local directory, an ESGF index node, a FTP server.\n\
                                    Default: {0}'.format(' '.join(search_path_list)))
-    query_group.add_argument('--XSearch_path',
+    query_group.add_argument('--Xsearch_path',
                              default=[],
-                             nargs='*',
+                             action='append',
                              help='List of search paths to exclude.')
     default_var={'CMIP5':tuple(['tas:mon,atmos,Amon',]),
                  'CORDEX':tuple(['tas:mon',])}
-    query_group.add_argument('--Var',
+    query_group.add_argument('--ask_var',
                              default=list(default_var[project_drs.project]),
-                             nargs='*',
+                             action='append',
                              help='A list of \'variable:{1}\' tuples.\n\
                                    Default: {0}'.format(' '.join(default_var[project_drs.project]),','.join(project_drs.var_specs)))
     file_type_list=['local_file','OPENDAP','HTTPServer']
-    query_group.add_argument('--File_type',
+    query_group.add_argument('--ask_file_type',
                              default=file_type_list,
                              choices=file_type_list,
-                             nargs='*',
+                             action='append',
                              help='A list of \'variable:time_frequency,realm,cmor_table\' tuples.\n\
                                    This list is ordered. The first listed file types will be selected first in the validate step.\n\
                                    Default: {0}'.format(' '.join(file_type_list)))

@@ -351,11 +351,11 @@ class Database_Manager:
     def load_header(self,options):
         if ('ask' in dir(options) and options.ask):
             self.header=dict()
-            self.header['experiment_list']={item.split(':')[0]:item.split(':')[1] for item in options.Experiment}
-            self.header['month_list']=[item for item in options.Month]
-            self.header['search_list']=[item for item in options.Search_path if not item in options.XSearch_path]
-            self.header['variable_list']={item.split(':')[0]:item.split(':')[1].split(',') for item in options.Var}
-            self.header['file_type_list']=[item for item in options.File_type]
+            self.header['experiment_list']={item.split(':')[0]:item.split(':')[1] for item in options.ask_experiment}
+            self.header['month_list']=[item for item in options.ask_month]
+            self.header['search_list']=[item for item in options.search_path if not item in options.Xsearch_path]
+            self.header['variable_list']={item.split(':')[0]:item.split(':')[1].split(',') for item in options.ask_var}
+            self.header['file_type_list']=[item for item in options.ask_file_type]
         else:
             self.define_database(options)
             self.header=self.nc_Database.load_header()
