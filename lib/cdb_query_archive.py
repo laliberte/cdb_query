@@ -110,7 +110,6 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD'.format(version_num)
             options.time=True
     
     #Set two defaults:
-    options.trial=0
     options.priority=0
 
     if options.command!='certificates':

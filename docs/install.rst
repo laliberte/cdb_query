@@ -40,10 +40,10 @@ Obtaining ESGF certificates
 This package allows you to obtain and manage ESGF certificates transparently. The only
 actions a user should take is 
 
-1. Register at http://badc.nerc.ac.uk/reg/user_register_info.html. 
+1. Register at https://services.ceda.ac.uk/cedasite/register/info/.
    When registering, you will create a `password` and `username`.
 
-2. Go to http://badc.nerc.ac.uk/mybadc. Login using your `username` and `password`.
+2. Go to https://services.ceda.ac.uk. Login using your `username` and `password`.
    Your `openid` will be listed here. You will receive an email with instructions. Disregard it for the moment.
 
 3. Go to https://esgf-data1.ceda.ac.uk/esg-orp/home.htm and login with your `openid` using your `password`.

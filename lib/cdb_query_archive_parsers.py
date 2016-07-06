@@ -51,7 +51,7 @@ def functions_arguments(parser,functions_list):
 
 def basic_control_arguments(parser,project_drs):
     parser.add_argument('-s','--silent',default=False,action='store_true',help='Make not verbose.')
-    parser.add_argument('--max_trial',type=int,default=3,help='Try a function that number of time because raising an exception. Default: 3.')
+    parser.add_argument('--trial',type=int,default=3,help='Try a function that number of time because raising an exception. Default: 3.')
     parser.add_argument('--not_failsafe',default=False,action='store_true',help='Disable the failsafe feature.')
     parser.add_argument('--log_files',default=False,action='store_true',help='Create one log file per process.')
     parser.add_argument('--swap_dir',type=writeable_dir,default='.',
