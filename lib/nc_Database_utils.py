@@ -154,7 +154,7 @@ def replace_netcdf_variable_recursive(output,data,
     group_name=level_desc[1]
     if group_name==None or isinstance(group_name,list):
         for group in data.groups.keys():
-            if nc_Database.tree_recursive_check_not_empty(options,data.groups[group]):
+            if nc_Database.tree_recursive_check_not_empty(options,data.groups[group],slicing=False):
                 output_grp=netcdf_utils.create_group(data,output,group)
                 if hdf5!=None:
                     hdf5_grp=hdf5[group]

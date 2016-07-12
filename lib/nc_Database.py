@@ -294,7 +294,7 @@ def retrieve_dates_recursive(data,options):
         options_dict={opt: getattr(options,opt) for opt in ['previous','next','year','month','day','hour'] if opt in dir(options)}
         remote_data=read_soft_links.read_netCDF_pointers(data,**options_dict)
         if check_soft_links_size(remote_data) and remote_data.time_var!=None:
-            return remote_data.date_axis[netcdf_pointers.time_restriction][netcdf_pointers.time_restriction_sort]
+            return remote_data.date_axis[remote_data.time_restriction][remote_data.time_restriction_sort]
         else:
             return np.array([])
     elif len(data.groups.keys())>0:
@@ -313,7 +313,7 @@ def check_soft_links_size(remote_data):
     else:
         return True
 
-def tree_recursive_check_not_empty(options,data,check=True):
+def tree_recursive_check_not_empty(options,data,check=True,slicing=True):
     if 'soft_links' in data.groups.keys():
         if check:
             options_dict={opt: getattr(options,opt) for opt in ['previous','next','year','month','day','hour'] if opt in dir(options)}
@@ -322,12 +322,15 @@ def tree_recursive_check_not_empty(options,data,check=True):
         else:
             return True
     elif len(data.groups.keys())>0:
-        empty_list=[]
-        for group in data.groups.keys():
-            level_name=data.groups[group].getncattr('level_name')
-            if is_level_name_included_and_not_excluded(level_name,options,group):
-                empty_list.append(tree_recursive_check_not_empty(options,data.groups[group],check=check))
-        return any(empty_list)
+        if slicing:
+            empty_list=[]
+            for group in data.groups.keys():
+                level_name=data.groups[group].getncattr('level_name')
+                if is_level_name_included_and_not_excluded(level_name,options,group):
+                    empty_list.append(tree_recursive_check_not_empty(options,data.groups[group],check=check))
+            return any(empty_list)
+        else:
+            return True
     else:
         if len(data.variables.keys())>0:
             return True
