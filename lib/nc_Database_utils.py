@@ -140,7 +140,7 @@ def record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_d
 
         #Do not check empty:
         replace_netcdf_variable_recursive(output,data,
-                                           tree[0],tree[1:],
+                                           tree[0],tree[1:],options,
                                            hdf5=hdf5,check_empty=check_empty)
 
     if hdf5!=None:
@@ -148,7 +148,7 @@ def record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_d
     return
 
 def replace_netcdf_variable_recursive(output,data,
-                                      level_desc,tree,
+                                      level_desc,tree,options,
                                       hdf5=None,check_empty=False):
     level_name=level_desc[0]
     group_name=level_desc[1]
@@ -162,9 +162,9 @@ def replace_netcdf_variable_recursive(output,data,
                     hdf5_grp=hdf5
                 replace_netcdf_variable_recursive_replicate(output_grp,data.groups[group],
                                                             level_name,group,
-                                                            tree,
+                                                            tree,options,
                                                             hdf5=hdf5_grp,check_empty=check_empty)
-    elif nc_Database.tree_recursive_check_not_empty(options,data.groups[group_name]):
+    else:
         output_grp=netcdf_utils.create_group(data,output,group_name)
         if group_name in data.groups.keys():
             data_grp=data.groups[group_name]
@@ -177,13 +177,13 @@ def replace_netcdf_variable_recursive(output,data,
             hdf5_grp=hdf5
         replace_netcdf_variable_recursive_replicate(output_grp,data_grp,
                                                     level_name,group_name,
-                                                    tree,
+                                                    tree,options,
                                                     hdf5=hdf5_grp,check_empty=check_empty)
     return
 
 def replace_netcdf_variable_recursive_replicate(output_grp,data_grp,
                                                 level_name,group_name,
-                                                tree,
+                                                tree,options,
                                                 hdf5=None,check_empty=False):
     if len(tree)>0 or (not group_name in output_grp.groups.keys()):
         try:
@@ -192,7 +192,7 @@ def replace_netcdf_variable_recursive_replicate(output_grp,data_grp,
             output_grp.setncattr('level_name',level_name)
     if len(tree)>0:
         replace_netcdf_variable_recursive(output_grp,data_grp,
-                                          tree[0],tree[1:],
+                                          tree[0],tree[1:],options,
                                           hdf5=hdf5,check_empty=check_empty)
     else:
         netcdf_pointers=read_soft_links.read_netCDF_pointers(data_grp)
