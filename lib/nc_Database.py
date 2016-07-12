@@ -292,27 +292,33 @@ def create_tree_recursive(output_top,tree):
 def retrieve_dates_recursive(data,options):
     if 'soft_links' in data.groups.keys():
         options_dict={opt: getattr(options,opt) for opt in ['previous','next','year','month','day','hour'] if opt in dir(options)}
-        netcdf_pointers=read_soft_links.read_netCDF_pointers(data,**options_dict)
-        return netcdf_pointers.date_axis[netcdf_pointers.time_restriction][netcdf_pointers.time_restriction_sort]
+        remote_data=read_soft_links.read_netCDF_pointers(data,**options_dict)
+        if check_soft_links_size(remote_data) and remote_data.time_var!=None:
+            return remote_data.date_axis[netcdf_pointers.time_restriction][netcdf_pointers.time_restriction_sort]
+        else:
+            return np.array([])
     elif len(data.groups.keys())>0:
         return np.unique(np.concatenate([ retrieve_dates_recursive(data.groups[group],options)
                 for group in data.groups.keys()
                 if ( is_level_name_included_and_not_excluded(data.groups[group].getncattr('level_name'),options,group) and
                  tree_recursive_check_not_empty(options,data.groups[group],check=False)) ]))
 
+def check_soft_links_size(remote_data):
+    if remote_data.time_var!=None:
+        #Check if time slice is leading to zero time dimension:
+        if np.any(remote_data.time_restriction):
+            return True
+        else:
+            return False
+    else:
+        return True
+
 def tree_recursive_check_not_empty(options,data,check=True):
     if 'soft_links' in data.groups.keys():
         if check:
             options_dict={opt: getattr(options,opt) for opt in ['previous','next','year','month','day','hour'] if opt in dir(options)}
-            remote_data=read_soft_links.read_netCDF_pointers(data,options_dict)
-            if remote_data.time_var!=None:
-                #Check if time slice is leading to zero time dimension:
-                if np.any(remote_data.time_restriction):
-                    return True
-                else:
-                    return False
-            else:
-                return True
+            remote_data=read_soft_links.read_netCDF_pointers(data,**options_dict)
+            return check_soft_links_size(remote_data)
         else:
             return True
     elif len(data.groups.keys())>0:
