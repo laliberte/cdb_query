@@ -96,12 +96,12 @@ Validating the set of simulations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. warning::
     From now on it is assumed that the user has installed appropriate certificates to retrieve data from the ESGF CMIP5 archive.
-    Simply passing ``--username=$BADC_USERNAME`` will take care of this.
+    Simply passing ``--username=$CEDA_USERNAME`` will take care of this.
     
 To narrow down our results to the simulations that satisfy ALL the requested criteria, we can use  ::
 
     $ cdb_query CMIP5 validate \
-                --username=$BADC_USERNAME \
+                --username=$CEDA_USERNAME \
                 --Xdata_node=http://esgf2.dkrz.de \
                 --num_procs=10 \
                 tas_ONDJF_pointers.nc \
@@ -142,7 +142,7 @@ Retrieving the data: `wget`
 
     $ cdb_query CMIP5 download_files \
                     --download_all_files \
-                    --username=$BADC_USERNAME \
+                    --username=$CEDA_USERNAME \
                     --out_download_dir=./in/CMIP5/ \
                     tas_ONDJF_pointers.validate.nc \
                     tas_ONDJF_pointers.validate.downloaded.nc
@@ -165,7 +165,7 @@ To retrieve the first month of daily data::
     $ cdb_query CMIP5 download_opendap \
                             --year=1979 \
                             --month=1 \
-                            --username=$BADC_USERNAME \
+                            --username=$CEDA_USERNAME \
                             tas_ONDJF_pointers.validate.nc \
                             tas_ONDJF_pointers.validate.197901.retrieved.nc 
 
@@ -188,8 +188,8 @@ This recipe is summarized in the following BASH script. The ``--password_from_pi
 
     #!/bin/bash
 
-    BADC_USERNAME="your badc username"
-    BADC_PASSWORD="your badc password"
+    CEDA_USERNAME="your badc username"
+    CEDA_PASSWORD="your badc password"
     #Discover data:
     cdb_query CMIP5 ask --ask_month=1,2,10,11,12 \
                         --ask_var=tas:day-atmos-day,orog:fx-atmos-fx \
@@ -207,8 +207,8 @@ This recipe is summarized in the following BASH script. The ``--password_from_pi
     #Exclude data_node http://esgf2.dkrz.de because it is on a tape archive (slow)
     #If you do not exclude it, it will likely be excluded because of its slow
     #response time.
-    echo $BADC_PASSWORD | cdb_query CMIP5 validate \
-                                --username=$BADC_USERNAME \
+    echo $CEDA_PASSWORD | cdb_query CMIP5 validate \
+                                --username=$CEDA_USERNAME \
                                 --password_from_pipe \
                                 --num_procs=10 \
                                 --Xdata_node=http://esgf2.dkrz.de \
@@ -223,9 +223,9 @@ This recipe is summarized in the following BASH script. The ``--password_from_pi
 
     #CHOOSE:
         # *1* Retrieve files:
-            #echo $BADC_PASSWORD | cdb_query CMIP5 download_files \
+            #echo $CEDA_PASSWORD | cdb_query CMIP5 download_files \
             #                    --download_all_files \
-            #                    --username=$BADC_USERNAME \
+            #                    --username=$CEDA_USERNAME \
             #                    --password_from_pipe \
             #                    --out_download_dir=./in/CMIP5/ \
             #                    tas_ONDJF_pointers.validate.nc \
@@ -233,8 +233,8 @@ This recipe is summarized in the following BASH script. The ``--password_from_pi
 
         # *2* Retrieve to netCDF:
             #Retrieve the first month:
-            echo $BADC_PASSWORD | cdb_query CMIP5 download_opendap --year=1979 --month=1 \
-                                --username=$BADC_USERNAME \
+            echo $CEDA_PASSWORD | cdb_query CMIP5 download_opendap --year=1979 --month=1 \
+                                --username=$CEDA_USERNAME \
                                 --password_from_pipe \
                                 tas_ONDJF_pointers.validate.nc \
                                 tas_ONDJF_pointers.validate.197901.retrieved.nc

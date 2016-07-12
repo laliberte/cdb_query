@@ -1,161 +1,52 @@
-Retrieve sea surface temperature and sea level pressure from pre-industrial and remap to a fixed grid
------------------------------------------------------------------------------------------------------
+6. Retrieving DJF monthly atmospheric data over a latitude band (CMIP5)
+-----------------------------------------------------------------------
 
-.. hint:: Some experiments are not following a set calendar and it thus become difficult to ensure
-          that all requested years are available. For those experiments, it is suggested to
-          use 1 as a starting year and your desired length as ending year. In the following example,
-          we use 1 and 499 for a 498 years time series. In this example, `cdb_query` will find
-          the first 498 years time series published. It will discard experiments that have less than
-          498 years. 
-
-.. warning:: The following example can take more than a day to complete!
-
-THe following is an example script for finding, retrieving and remapping data::
+The following BASH script recovers several variables over a latitude band::
 
     #!/bin/bash
-    cat > tos_slp_picontrol.hdr <<EndOfHDR
-    {
-    "header":{
-    "search_list":
-        [   
-        "http://esgf-index1.ceda.ac.uk/esg-search/",
-        "http://pcmdi9.llnl.gov/esg-search/",
-        "http://esgf-data.dkrz.de/esg-search/",
-        "http://esgdata.gfdl.noaa.gov/esg-search/",
-        "http://esgf-node.ipsl.fr/esg-search/",
-        "http://esg-datanode.jpl.nasa.gov/esg-search/"
-        ],  
-    "file_type_list":
-        [   
-        "HTTPServer"
-        ],  
-    "variable_list":
-        {   
-        "tos":["mon","ocean","Omon"],
-        "psl":["mon","atmos","Amon"],
-        "areacello":["fx","ocean","fx"]
-        },  
-    "experiment_list":
-        {   
-        "piControl":"1,499"
-        }   
-    }
-    }
-    EndOfHDR
-    #Make search dir otherwise result in error:
-    mkdir -p ./in/CMIP5
-    #Discover data:
-    echo -n "Discovering data: "
-    date
-    cdb_query_CMIP5 ask --num_procs=5 \
-                            tos_slp_picontrol.hdr \
-                            tos_slp_picontrol.hdr.pointers.nc
 
-    #List simulations:
-    cdb_query_CMIP5 list_fields -f institute \
-                                -f model \
-                                -f ensemble \
-                                tos_slp_picontrol.hdr.pointers.nc
-
-
-    #Find optimal set of simulations:
-    echo -n "Finding optimal set: "
-    date
-    cdb_query_CMIP5 validate --num_procs=5\
-                             tos_slp_picontrol.hdr.pointers.nc \
-                             tos_slp_picontrol.hdr.pointers.validate.nc
-
-    #List simulations:
-    cdb_query_CMIP5 list_fields -f institute \
-                                -f model \
-                                -f ensemble \
-                                tos_slp_picontrol.hdr.pointers.validate.nc
-
-    #REMAPPING HISTORICAL DATA
-    cat >> newgrid_atmos.cdo <<EndOfGrid
-    gridtype  = lonlat
-    gridsize  = 55296
-    xname     = lon
-    xlongname = longitude
-    xunits    = degrees_east
-    yname     = lat
-    ylongname = latitude
-    yunits    = degrees_north
-    xsize     = 288
-    ysize     = 192
-    xfirst    = 0
-    xinc      = 1.25
-    yfirst    = -90
-    yinc      = 0.94240837696
-    EndOfGrid
-
-    FILE_NAME="tos_slp_picontrol.hdr.pointers.validate"
-    EXPERIMENT=piControl
-    YEAR_START=1
-    YEAR_END=499
-    #Retrieve first month:
-    cdb_query_CMIP5 download --experiment=$EXPERIMENT \
-                                    --year=$YEAR_START \
-                                    --month=1 \
-                                    $FILE_NAME.nc \
-                                    $FILE_NAME.0-0.retrieved.nc
-
-
-    #Compute the remapping weigths:
-    #Next is a loop over variables in $FILE_NAME.0-0.retrieved.nc. It is equivalent to:
+    #This script discovers and retrieves the geopotential height (zg), meridional wind (va) and
+    #atmospheric temperature (ta) at the monthly frequency (mon) from the atmospheric realm (atmos)
+    #and from monthly atmospheric mean CMOR table (Amon) for years 1979 to 2005 of experiment
+    #historical and years 2006 to 2015 for experiment rcp85.
     #
-    # cdo gendis,newgrid_atmos.cdo $FILE_NAME.0-0.retrieved.nc $FILE_NAME.0-0.retrieved.weigths.nc
+    #A ramdisk (/dev/shm/) swap directory is used (--swap_dir option)
+    #Data node http://esgf2.dkrz.de is excluded because it is a tape archive
+    #(and therefore too slow for the type of multiple concurrent requests that are required)
     #
-    # if the the files were not hierarchical netcdf4 files.
-    #
-    # This is is accomplished with 10 simultaneous processes
-    #
-    cdb_query_CMIP5 apply --num_procs=10 \
-                            -s 'cdo gendis,newgrid_atmos.cdo' \
-                            $FILE_NAME.0-0.retrieved.nc \
-                            $FILE_NAME.0-0.retrieved.weigths.nc
+    #The data is reduced to a latitude band (55.0 to 60.0) using the 
+    #--reduce_soft_links_script='ncrcat -d lat 55.0 60.0' option and the reduce_soft_links command.
 
+    #The results are stored in:
+    #   1) a validate file (${OUT_FILE}.validate), 
+    #   2) a directory tree under ${OUT_DIR} and
+    #   3) a pointer file ${OUT_FILE} that can be used in a further reduce step.
 
-    echo -n "Starting remapping "
-    date
-    for YEAR in $(seq $YEAR_START $YEAR_END); do 
-        cdb_query_CMIP5 download \
-                            --experiment=$EXPERIMENT \
-                            --year=$YEAR \
-                            $FILE_NAME.nc \
-                            $FILE_NAME.$YEAR.retrieved.nc
-        #Next is a loop over variables in $FILE_NAME.0-0.retrieved.nc. It is equivalent to:
-        #
-        # cdo cdo remap,newgrid_atmos.cdo,$FILE_NAME.0-0.retrieved.weigths.nc $FILE_NAME.$YEAR.retrieved.nc \
-        #                                  $FILE_NAME.$YEAR.retrieved.remap.nc 
-        #
-        # if the the files were not hierarchical netcdf4 files.
-        #
-        cdb_query_CMIP5 apply \
-                        --experiment=$EXPERIMENT \
-                        --num_procs=5 \
-                        -s 'cdo -s remap,newgrid_atmos.cdo,{1}' \
-                        $FILE_NAME.$YEAR.retrieved.nc \
-                        $FILE_NAME.0-0.retrieved.weigths.nc \
-                        $FILE_NAME.$YEAR.retrieved.remap.nc
-        rm $FILE_NAME.$YEAR.retrieved.nc
-    done
+    #Use 5 processors:
+    NUM_PROCS=5
+    CEDA_USERNAME="your CEDA username"
+    CEDA_PASSWORD="your CEDA password"
 
-    echo -n "Done remapping "
-    date
+    SWAP_DIR="/dev/shm/lat_band/"
+    OUT_FILE="DJF_lat_band.nc"
+    OUT_DIR="out_lat_band/"
 
-    #Concatenate the results:
-
-    #First list the files:
-    FILE_LIST=$(for YEAR in $(seq 1 499); do 
-                    echo $FILE_NAME.$YEAR.retrieved.remap.nc; 
-                done)
-
-    #Then apply a mergetime operator:
-    cdb_query_CMIP5 apply 'cdo mergetime' \
-                    $FILE_LIST \
-                    $FILE_NAME.0001-0499.retrieved.remap.nc
-    
-    #Finally convert to a CMIP5 filesystem tree:
-    mkdir out/CMIP5
-    cdb_query_CMIP5 convert $FILE_NAME.0001-0499.retrieved.remap.nc out/CMIP5/
+    #Create swap directory:
+    mkdir ${SWAP_DIR}
+    echo $CEDA_PASSWORD | cdb_query CMIP5 ask validate reduce_soft_links download_opendap reduce \
+          --username=${CEDA_USERNAME} \
+          --password_from_pipe \
+          --swap_dir=${SWAP_DIR} \
+          --num_procs=$NUM_PROCS \
+          --ask_experiment=historical:1979-2005,rcp85:2006-2015 \
+          --ask_var=zg:mon-atmos-Amon,va:mon-atmos-Amon,ta:mon-atmos-Amon \
+          --ask_month=1,2,12 \
+          --related_experiments \
+          --record_validate \
+          --Xdata_node=http://esgf2.dkrz.de \
+          --reduce_soft_links_script='ncrcat -d lat,55.0,65.0' \
+          '' \
+           --out_destination=${OUT_DIR} \
+           ${OUT_FILE}
+    #Remove swap directory:
+    rm -r ${SWAP_DIR}

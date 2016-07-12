@@ -29,9 +29,6 @@ The command ``cdb_query CMIP5`` contains several commands:
 .. Remapping
 .. include:: recipe05.rst
 
-..
-    .. picontrol
-    .. include:: recipe04.rst
+.. Latitude band:
+.. include:: recipe06.rst
 
-    .. daily
-    .. include:: recipe05.rst
