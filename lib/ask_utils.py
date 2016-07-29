@@ -75,6 +75,9 @@ def ask_database(database,options,session=None):
         elif ('http' in search_path and 'esg-search' in search_path):
             #ESGF catalogue archive query
             browser=esgf_query.browser(search_path,options,session=session)
+        elif ('http' in search_path):
+            #ESGF catalogue archive query
+            browser=http_query.browser(search_path,options,session=session)
         else:
             browser=None
 

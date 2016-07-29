@@ -11,12 +11,15 @@ import nc_Database
 import netcdf4_soft_links.remote_netcdf as remote_netcdf
 
 class browser:
-    def __init__(self,search_path,options):
+    def __init__(self,search_path,options,session=None):
         self.file_type='HTTPServer'
         self.options=options
         self.search_path=search_path.rstrip('/')
         self.data_node=remote_netcdf.get_data_node(self.search_path,self.file_type)
-        self.session=requests.Session()
+        if session != None:
+            self.session=session
+        else:
+            self.session=requests.Session()
         return
 
     def close(self):
