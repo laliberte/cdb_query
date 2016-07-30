@@ -21,10 +21,14 @@ def download(database,retrieval_type,options,q_manager,sessions):
     options_copy=copy.copy(options)
     if 'out_download_dir' in dir(options):
         #Describe the tree pattern:
-        if database.drs.official_drs.index('var')>database.drs.official_drs.index('version'):
+        if not 'version' in database.drs.official_drs:
+            options_copy.out_download_dir+='/tree/'
+        elif database.drs.official_drs[-1]=='var' and database.drs.official_drs[-2]=='version':
             options_copy.out_download_dir+='/tree/version/var/'
-        else:
+        elif database.drs.official_drs[-2]=='var' and database.drs.official_drs[-1]=='version':
             options_copy.out_download_dir+='/tree/var/version/'
+        else:
+            raise NotImplementedError('If version is in the project drs, it must be either the last or next-to-last field.')
 
     if ('swap_dir' in dir(options_copy) and options_copy.swap_dir!='.'):
         options_copy.out_netcdf_file=options_copy.swap_dir+'/'+os.path.basename(options_copy.out_netcdf_file)
