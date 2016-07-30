@@ -11,7 +11,7 @@ import json
 import netCDF4
 
 #Internal:
-import nc_Database, ftp_query, filesystem_query, esgf_query, cdb_query_archive_class
+import nc_Database, http_query, ftp_query, filesystem_query, esgf_query, cdb_query_archive_class
 
 
 #################################################################

@@ -109,7 +109,8 @@ def record_validate(parser,project_drs):
 def ask_shared_arguments(parser,project_drs):
     query_group = parser.add_argument_group('Scientific query setup')
     default_experiment={'CMIP5':tuple(['historical:1950-2005',]),
-                        'CORDEX':tuple(['historical:1979-2005',])}
+                        'CORDEX':tuple(['historical:1979-2005',]),
+                        'CanSISE':tuple(['historical-r1:1979-2005',])}
     query_group.add_argument('--ask_experiment',
                              default=list(default_experiment[project_drs.project]),
                              type=csv_list,
@@ -123,7 +124,7 @@ def ask_shared_arguments(parser,project_drs):
                              default=range(1,13),
                              type=int_list,
                              help='Comma-separated list of months to be considered. Default: All months.')
-    search_path_list=[
+    ESGF_nodes=[
     'https://esgf-index1.ceda.ac.uk/esg-search/',
     'https://esgf-node.ipsl.upmc.fr/esg-search/',
     'https://esgf-data.dkrz.de/esg-search/',
@@ -131,16 +132,20 @@ def ask_shared_arguments(parser,project_drs):
     'https://esgf-node.jpl.nasa.gov/esg-search/',
     'https://esg-dn1.nsc.liu.se/esg-search/'
     ]
+    default_search_path_list={'CMIP5':ESGF_nodes,
+                              'CORDEX':ESGF_nodes,
+                              'CanSISE':['http://collaboration.cmc.ec.gc.ca/cmc/cccma/CanSISE/output']}
     query_group.add_argument('--search_path',
-                             default=search_path_list,
+                             default=default_search_path_list[project_drs.project],
                              type=csv_list,
                              help='Comma-separated list of search paths. Can be a local directory, an ESGF index node, a FTP server.\n\
-                                   Default: {0}'.format(','.join(search_path_list)))
+                                   Default: {0}'.format(','.join(default_search_path_list[project_drs.project])))
     query_group.add_argument('--Xsearch_path',
                              default=[],
                              help='Comma-separated list of search paths to exclude.')
     default_var={'CMIP5':tuple(['tas:mon-atmos-Amon',]),
-                 'CORDEX':tuple(['tas:mon',])}
+                 'CORDEX':tuple(['tas:mon',]),
+                 'CanSISE':tuple(['tas:mon-atmos',])}
     query_group.add_argument('--ask_var',
                              default=list(default_var[project_drs.project]),
                              type=csv_list,
@@ -148,11 +153,11 @@ def ask_shared_arguments(parser,project_drs):
                                    Default: {0}'.format(','.join(default_var[project_drs.project]),'-'.join(project_drs.var_specs)))
     query_group.add_argument('--ask_file_type',
                              default=[],
-                             choices=file_type_list,
+                             choices=project_drs.file_types,
                              action='append',
                              help='A file type. Can be repeated.\n\
                                    This list is ordered. The first specified file type will be selected first in the validate step.\n\
-                                   Default: {0}'.format(','.join(file_type_list)))
+                                   Default: {0}'.format(','.join(project_drs.file_types)))
 
     query_group.add_argument('--distrib',
                                  default=False, action='store_true',

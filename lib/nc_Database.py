@@ -108,8 +108,8 @@ class nc_Database:
         #List all the trees:
         drs_list=copy.copy(self.drs.base_drs)
 
-        #drs_to_remove=['search','path','file_type','version','time']
-        drs_to_remove=['path','data_node','file_type','version','time']
+        drs_to_remove=[drs for drs  in ['path','data_node','file_type','version','time']
+                                if drs in drs_list]
         for drs in drs_to_remove: drs_list.remove(drs)
         #Remove the time:
         drs_to_remove.remove('time')

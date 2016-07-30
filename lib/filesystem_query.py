@@ -28,6 +28,8 @@ class browser:
                        'file_type':self.file_type,
                        'data_node':remote_netcdf.get_data_node(self.search_path,self.file_type),
                        'time':'0'}
+            if not 'version' in database.drs.official_drs:
+                description.update({'version':'v1'})
             file_expt_copy=copy.deepcopy(database.nc_Database.file_expt)
             for att in description.keys():
                 setattr(file_expt_copy,att,description[att])
