@@ -13,7 +13,7 @@ Core requirements
 
 * Python 2.7.x.
 * A recent version of the netCDF4 library.
-* ESGF certificates.
+* ESGF credentials.
 
 Before proceeding further, are you willing to use a 3rd party Linux Distribution (Free for Academic Use)?
 
@@ -45,7 +45,7 @@ actions a user should take is
 
 3. Go to https://pcmdi.llnl.gov/esg-orp/home.htm and login with your `openid` using your `password`.
 
-4. Go to https://pcmdi.llnl.gov/esg-orp/registration-request.htm?resource=http%3A%2F%2Fesgf-data1.ceda.ac.uk%2Fthredds%2FfileServer%2Fesg_testroot%2Fregister%2Fcmip5_research.nc.
+4. Go to https://pcmdi.llnl.gov/esg-orp/registration-request.htm?resource=http%3A%2F%2Fpcmdi.llnl.gov%2Fthredds%2FfileServer%2Fesg_testroot%2Fregister%2Fcmip5_research.nc.
    Your browser will likely ask you to trust some certificates. CLICK `ALWAYS ALLOW`. If you don't do this, it won't work.
 
 5. Register for `CMIP5 Research`. You do not need to download data.

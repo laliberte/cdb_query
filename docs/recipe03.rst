@@ -88,6 +88,8 @@ Validating the simulations
 .. warning::
     From now on it is assumed that the user has installed properly resgistered with the ESGF.
     Using the ``--openid`` option combined with an ESGF account takes care of this.
+    The first time this function is used, it might fail and ask you to register your kind of user.
+    This has to be done only once.
     
 To narrow down our results to the simulations that satisfy ALL the requested criteria, we can use  ::
 
@@ -146,7 +148,7 @@ We retrieve the first month::
 
 This step took about 4 minutes from the University of Toronto on June 23, 2016. Next, we extract precipitation for the simulation with the EUR-11 domain::
 
-    $ ncks -G :9 -g /EUR-11/IPSL-INERIS/IPSL-IPSL-CM5A-MR/historical/r1i1p1/WRF331F/v1/day/pr \
+    $ ncks -G :9 -g /EUR-11/DMI/ICHEC-EC-EARTH/historical/r3i1p1/HIRHAM5/v1/day/pr \
                     pr_JJAS_France_pointers.validate.197906.retrieved.nc \
                     pr_JJAS_France_pointers.validate.197906.retrieved.EUR-11.nc
     $ ncview pr_JJAS_France_pointers.validate.197906.retrieved.EUR-11.nc
@@ -199,7 +201,7 @@ Finally, we retrieve the subsetted data::
 This step took about 3m40s from the University of Toronto. It retrieves all models but only over France.
 We can then check the variables::
 
-    $ ncks -G :9 -g /EUR-11/IPSL-INERIS/IPSL-IPSL-CM5A-MR/historical/r1i1p1/WRF331F/v1/day/pr \
+    $ ncks -G :9 -g /EUR-11/DMI/ICHEC-EC-EARTH/historical/r3i1p1/HIRHAM5/v1/day/pr \
                     pr_JJAS_France_pointers.validate.France.197906.retrieved.nc \
                     pr_JJAS_France_pointers.validate.France.197906.retrieved.EUR-11.nc
     $ ncview pr_JJAS_France_pointers.validate.France.197906.retrieved.EUR-11.nc
@@ -235,7 +237,7 @@ This recipe is summarized in the following BASH script::
     PASSWORD="your ESGF password"
 
     #Discover data:
-    cdb_query CORDEX ask --ask_experiment=historical:1979,2004 \
+    cdb_query CORDEX ask --ask_experiment=historical:1979-2004 \
                          --ask_var=pr:day \
                          --domain=EUR-11 \
                          --num_procs=${NUM_PROCS} \
@@ -248,6 +250,9 @@ This recipe is summarized in the following BASH script::
     #Validate simulations:
     #Exclude data_node http://esgf2.dkrz.de because it is on a tape archive (slow)
     #If you do not exclude it, it will likely be excluded because of its slow
+    #
+    #The first time this function is used, it might fail and ask you to register your kind of user.
+    #This has to be done only once.
     echo $PASSWORD | cdb_query CORDEX validate \
                 --openid=$OPENID \
                 --password_from_pipe \

@@ -99,6 +99,7 @@ def validate(database,options,q_manager=None,sessions=dict()):
         data_node_list=database.header['data_node_list']
         Xdata_node_list=[]
     database.drs.data_node_list=data_node_list
+    print(data_node_list)
 
     #Some data_nodes might have been dropped. Restrict options accordingly:
     options_copy=copy.copy(options)
@@ -436,9 +437,10 @@ def rank_data_nodes(options,data_node_list,url_list,q_manager):
 
         #Create a session for timing:
         session=requests.Session()
-        is_available=remote_netcdf.remote_netCDF(url[0],url[1],semaphores=q_manager.validate_semaphores,
-                                                            session=session,
-                                                           **credentials_kwargs).is_available(num_trials=1)
+        with Timer() as timed_exec:
+            is_available=remote_netcdf.remote_netCDF(url[0],url[1],semaphores=q_manager.validate_semaphores,
+                                                                session=session,
+                                                               **credentials_kwargs).is_available(num_trials=1)
         if not is_available:
             if not ('silent' in dir(options) and options.silent):
                 if timed_exec.interval>options.timeout:
@@ -448,6 +450,7 @@ def rank_data_nodes(options,data_node_list,url_list,q_manager):
         else:
             #Try opening a link on the data node. If it does not work, remove this data node.
             number_of_trials=3
+            exclude_data_node=False
             try:
                 timing=0.0
                 for trial in range(number_of_trials):
@@ -461,9 +464,15 @@ def rank_data_nodes(options,data_node_list,url_list,q_manager):
                 data_node_list_timed.append(data_node)
                 if not ('silent' in dir(options) and options.silent):
                     print('Done!')
+            except Exception as e:
+                if str(e).startswith('The kind of user must be selected'):
+                    raise
+                exclude_data_node=True
             except:
-                if not ('silent' in dir(options) and options.silent):
-                    print('Data node '+data_node+' excluded because it did not respond.')
+                exclude_data_node=True
+
+            if not ('silent' in dir(options) and options.silent) and exclude_data_node:
+                print('Data node '+data_node+' excluded because it did not respond.')
         #Close the session:
         session.close()
     return list(np.array(data_node_list_timed)[np.argsort(data_node_timing)]),list(set(data_node_list).difference(data_node_list_timed))

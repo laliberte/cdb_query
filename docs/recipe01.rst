@@ -97,6 +97,8 @@ Validating the set of simulations
 .. warning::
     From now on it is assumed that the user has installed properly resgistered with the ESGF.
     Using the ``--openid`` option combined with an ESGF account takes care of this.
+    The first time this function is used, it might fail and ask you to register your kind of user.
+    This has to be done only once.
     
 To narrow down our results to the simulations that satisfy ALL the requested criteria, we can use  ::
 
@@ -170,12 +172,12 @@ To retrieve the first month of daily data::
                             tas_ONDJF_pointers.validate.197901.retrieved.nc 
 
 The file ``tas_ONDJF_pointers.validate.197901.retrieved.nc`` should now contain the first thirty days for all experiments! To check the daily
-surface temperature in the amip experiment from simulation CNRM-CERFACS,CNRM-CM5,r1i1p1 `ncview` (if installed)::
+surface temperature in the amip experiment from simulation NCAR,CCSM4,r1i1p1 `ncview` (if installed)::
 
-    $ ncks -G : -g /CNRM-CERFACS/CNRM-CM5/amip/day/atmos/day/r1i1p1/tas \
+    $ ncks -G : -g /NCAR/CCSM4/amip/day/atmos/day/r1i1p1/tas \
                     tas_ONDJF_pointers.validate.197901.retrieved.nc \
-                    tas_ONDJF_pointers.validate.197901.retrieved.CNRM-CERFACS_CNRM-CM5_r1i1p1.nc
-    $ ncview tas_ONDJF_pointers.validate.197901.retrieved.CNRM-CERFACS_CNRM-CM5_r1i1p1.nc
+                    tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc
+    $ ncview tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc
 
 .. note::
     The ``ncks`` command can be slow. For some unknown reasons NCO version 4.5.3 and earlier with netCDF version 4.3.3.1 and earlier
@@ -208,6 +210,9 @@ This recipe is summarized in the following BASH script. The ``--password_from_pi
     #Exclude data_node http://esgf2.dkrz.de because it is on a tape archive (slow)
     #If you do not exclude it, it will likely be excluded because of its slow
     #response time.
+    #
+    #The first time this function is used, it might fail and ask you to register your kind of user.
+    #This has to be done only once.
     echo $PASSWORD | cdb_query CMIP5 validate \
                                 --openid=$OPENID \
                                 --password_from_pipe \
@@ -242,17 +247,17 @@ This recipe is summarized in the following BASH script. The ``--password_from_pi
 
             #Pick one simulation:
             #Note: this can be VERY slow!
-            ncks -G :8 -g /CNRM-CERFACS/CNRM-CM5/amip/day/atmos/day/r1i1p1/tas \
+            ncks -G :8 -g /NCAR/CCSM4/amip/day/atmos/day/r1i1p1/tas \
                tas_ONDJF_pointers.validate.197901.retrieved.nc \
-               tas_ONDJF_pointers.validate.197901.retrieved.CNRM-CERFACS_CNRM-CM5_r1i1p1.nc
+               tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc
             #Remove soft_links informations:
             ncks -L 0 -O -x -g soft_links \
-               tas_ONDJF_pointers.validate.197901.retrieved.CNRM-CERFACS_CNRM-CM5_r1i1p1.nc \
-               tas_ONDJF_pointers.validate.197901.retrieved.CNRM-CERFACS_CNRM-CM5_r1i1p1.nc
+               tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc \
+               tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc
             
             #Look at it:
             #When done, look at it. A good tool for that is ncview:
-            #   ncview tas_ONDJF_pointers.validate.197901.retrieved.CNRM-CERFACS_CNRM-CM5_r1i1p1.nc
+            #   ncview tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc
 
             #Convert hierarchical file to files on filesystem (much faster than ncks):
             #Identity reduction simply copies the data to disk

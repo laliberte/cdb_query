@@ -449,6 +449,9 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs,origina
         getattr(cdb_query_archive_class,function_name)(database,options_copy,q_manager=q_manager,sessions=sessions)
         if ( 'log_files' in options and options.log_files ):
             print('DONE Process: ',datetime.datetime.now(),function_name,[(queue_name,getattr(q_manager,queue_name+'_expected').value) for queue_name in q_manager.queues_names],options_copy)
+    except Exception as e:
+        if str(e).startswith('The kind of user must be selected'):
+            raise
     except:
         if options.trial>0:
             #Decrement expectation in next function:
