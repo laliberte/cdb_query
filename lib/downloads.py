@@ -7,6 +7,7 @@ import numpy as np
 
 #External but related:
 import netcdf4_soft_links.remote_netcdf as remote_netcdf
+import netcdf4_soft_links.requests_sessions as requests_sessions
 
 #Internal:
 import cdb_query_archive_class
@@ -36,7 +37,12 @@ def download(database,retrieval_type,options,q_manager,sessions):
     if 'validate' in sessions.keys():
         session=sessions['validate']
     else:
-        session=None
+        remote_netcdf_kwargs=dict()
+        if 'validate_cache' in dir(options) and getattr(options,'validate_cache'):
+            remote_netcdf_kwargs['cache']=getattr(options,'validate_cache').split(',')[0]
+            if len(getattr(options,'validate_cache').split(','))>1:
+                remote_netcdf_kwargs['expire_after']=datetime.timedelta(hours=float(getattr(options,'validate_cache').split(',')[1]))
+        session=requests_sessions.create_single_session(**remote_netcdf_kwargs)
 
     #Recover the database meta data:
     database.load_header(options_copy)
