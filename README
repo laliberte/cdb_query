@@ -27,9 +27,15 @@ Current ESGF Project Compatibility
 - CMIP5 (full, tested)
 - CORDEX (full, not completely tested)
 
+Current OTHER Project Compatibility
+-----------------------------------
+- CanSISE (full, not completely tested)
 
 Version History
 ---------------
+
+1.9.8:   Some major improvements in the management of certificates. Added a simple wed file list scrappign capability
+         for CanSISE project.
 
 1.9.7.x: Code now compatible with CORDEX. Minor bug fixes. Import error fixes. Minor API changes.
 
