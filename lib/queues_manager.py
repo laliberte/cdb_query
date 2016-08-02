@@ -339,10 +339,11 @@ def recorder_queue_consume(q_manager,project_drs,original_options):
             if ('username' in dir(original_options) and 
                 original_options.username!=None and
                 original_options.password!=None and
+                original_options.use_certificates and
                 datetime.datetime.now() - renewal_time > datetime.timedelta(hours=1)):
                 #Reactivate certificates every hours:
                 certificates.retrieve_certificates(original_options.username,
-                                                   original_options.service,
+                                                   'ceda',
                                                    user_pass=original_options.password,
                                                    timeout=original_options.timeout)
                 renewal_time=datetime.datetime.now()
