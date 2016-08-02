@@ -97,7 +97,7 @@ class CDB_queues_manager:
                 self.download_remote_netcdf_kwargs['expire_after']=datetime.timedelta(hours=float(options.download_cache.split(',')[1]))
 
         #Add credentials:
-        self.download_remote_netcdf_kwargs.update({opt: getattr(options,opt) for opt in ['openid','username','password'
+        self.download_remote_netcdf_kwargs.update({opt: getattr(options,opt) for opt in ['openid','username','password','use_certifiates'
                                                                      ] if opt in dir(options)})
         
         for queue_name in self.queues_names:
