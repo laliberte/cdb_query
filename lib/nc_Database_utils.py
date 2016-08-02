@@ -88,15 +88,15 @@ def retrieve_or_replicate(output_grp,data,
 
     remote_netcdf_kwargs.update({opt: getattr(options,opt) for opt in ['openid','username','password','use_certificates',
                                                                  ] if opt in dir(options)})
-    options_dict.update({opt: getattr(options,opt) for opt in ['previous','next','year','month','day','hour',
-                                                                 'download_all_files','download_all_opendap'] if opt in dir(options)})
+    options_dict={opt: getattr(options,opt) for opt in ['previous','next','year','month','day','hour',
+                                                                 'download_all_files','download_all_opendap'] if opt in dir(options)}
 
     options_dict['remote_netcdf_kwargs']=remote_netcdf_kwargs
 
     netcdf_pointers=read_soft_links.read_netCDF_pointers(data.groups[group],
                                                         q_manager=q_manager,
                                                         session=session,
-                                                        **combined_dicts
+                                                        **options_dict
                                                         )
     if retrieval_type=='reduce_soft_links':
         #If applying to soft links, replicate.
@@ -316,7 +316,7 @@ def convert_dates_to_timestamps(output_tmp,time_frequency):
     if ( time_frequency!='fx' 
          and 'time' in output_tmp.variables.keys() 
          and len(output_tmp.variables['time'])>0 ):
-        date_axis=netcdf_utils.get_date_axis(output_tmp.variables['time'])[[0,-1]]
+        date_axis=netcdf_utils.get_date_axis(output_tmp,'time')[[0,-1]]
         return '_'+'-'.join([conversion[time_frequency](date) for date in date_axis])
     else:
         return ''

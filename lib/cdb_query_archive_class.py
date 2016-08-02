@@ -431,8 +431,8 @@ def rank_data_nodes(options,data_node_list,url_list,q_manager):
             print 'Querying '+url[0]+' to measure response time of data node... '
 
         #Add credentials:
-        credentials_kwargs.update({opt: getattr(options,opt) for opt in ['openid','username','password','use_certificates'
-                                                                     ] if opt in dir(options)})
+        credentials_kwargs={opt: getattr(options,opt) for opt in ['openid','username','password','use_certificates'
+                                                                     ] if opt in dir(options)}
 
         #Create a session for timing:
         session=requests.Session()

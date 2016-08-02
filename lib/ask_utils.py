@@ -46,8 +46,8 @@ def ask(database,options,q_manager=None,sessions=dict()):
 
         #Write the database to file. Only record paths:
         #Add credentials:
-        remote_netcdf_kwargs.update({opt: getattr(options,opt) for opt in ['openid','username','password','use_certificates'
-                                                                     ] if opt in dir(options)})
+        remote_netcdf_kwargs={opt: getattr(options,opt) for opt in ['openid','username','password','use_certificates'
+                                                                     ] if opt in dir(options)}
         output =database.nc_Database.write_database(database.header,options,'record_paths',remote_netcdf_kwargs=remote_netcdf_kwargs)
         #Remove data_node list from output file:
         with netCDF4.Dataset(output,'a') as dataset:
