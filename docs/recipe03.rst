@@ -86,13 +86,13 @@ ends a the vertical line. This is an `OPENDAP` link. The second part, at the rig
 Validating the simulations
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
 .. warning::
-    From now on it is assumed that the user has installed appropriate certificates to retrieve data from the ESGF CORDEX archive.
-    The ``--username`` option combined with a CEDA account takes care of this.
+    From now on it is assumed that the user has installed properly resgistered with the ESGF.
+    Using the ``--openid`` option combined with an ESGF account takes care of this.
     
 To narrow down our results to the simulations that satisfy ALL the requested criteria, we can use  ::
 
         $ cdb_query CORDEX validate \
-                        --username=$CEDA_USERNAME \
+                        --openid=$OPENID \
                         --num_procs=10 \
                         pr_JJAS_France_pointers.nc \
                         pr_JJAS_France_pointers.validate.nc
@@ -120,7 +120,7 @@ Retrieving the data: `wget`
 `cdb_query CORDEX` includes built-in functionality for retrieving the paths. It is used as follows ::
 
     $ cdb_query CORDEX download_files --out_download_dir=./in/CMIP5/ \
-                                    --username=$CEDA_USERNAME \
+                                    --openid=$OPENID \
                                     --download_all_files \
                                     pr_JJAS_France_pointers.validate.nc \
                                     pr_JJAS_France_pointers.validate.files.nc
@@ -140,7 +140,7 @@ Retrieving the data: `OPeNDAP`
 We retrieve the first month::
 
     $ cdb_query CORDEX download_opendap --year=1979 --month=6 \
-                                   --username=$CEDA_USERNAME \
+                                   --openid=$OPENID \
                                    pr_JJAS_France_pointers.validate.nc \
                                    pr_JJAS_France_pointers.validate.197906.retrieved.nc 
 
@@ -192,7 +192,7 @@ In the second method, the subsetting can be performed asynchronously (``--num_pr
 Finally, we retrieve the subsetted data::
     
     $ cdb_query CORDEX download_opendap --year=1979 --month=6 \
-                                   --username=$CEDA_USERNAME \
+                                   --openid=$OPENID \
                                    pr_JJAS_France_pointers.validate.France.nc \
                                    pr_JJAS_France_pointers.validate.France.197906.retrieved.nc 
 
@@ -209,14 +209,14 @@ Should show precipitation over France in June 1979.
 The amount of time required for the download is not substantially improved for single month but they are for longer retrievals::
 
     $ time cdb_query CORDEX download_opendap --month=6  \
-                                             --username=CEDA_USERNAME \
+                                             --openid=$OPENID\
                                              pr_JJAS_France_pointers.validate.France.nc \
                                              pr_JJAS_France_pointers.validate.France.June.retrieved.nc
     real    25m28.268s
     user    14m25.368s
     sys 3m18.299s
     $ time cdb_query CORDEX download_opendap --month=6  \
-                                             --username=CEDA_USERNAME \
+                                             --openid=$OPENID\
                                              pr_JJAS_France_pointers.validate.nc \
                                              pr_JJAS_France_pointers.validate.June.retrieved.nc
     real    43m45.656s
@@ -230,9 +230,9 @@ This recipe is summarized in the following BASH script::
     #!/bin/bash
     #Change to set number of processes to use:
     NUM_PROCS=10
-    #Specify your CEDA username (linked to your openid):
-    CEDA_USERNAME="your badc username"
-    CEDA_PASSWORD="your badc password"
+    #Specify your OPENID
+    OPENID="your openid"
+    PASSWORD="your ESGF password"
 
     #Discover data:
     cdb_query CORDEX ask --ask_experiment=historical:1979,2004 \
@@ -248,8 +248,8 @@ This recipe is summarized in the following BASH script::
     #Validate simulations:
     #Exclude data_node http://esgf2.dkrz.de because it is on a tape archive (slow)
     #If you do not exclude it, it will likely be excluded because of its slow
-    echo $CEDA_PASSWORD | cdb_query CORDEX validate \
-                --username=$CEDA_USERNAME \
+    echo $PASSWORD | cdb_query CORDEX validate \
+                --openid=$OPENID \
                 --password_from_pipe \
                 --num_procs=${NUM_PROCS} \
                 --Xdata_node=http://esgf2.dkrz.de \
@@ -257,9 +257,9 @@ This recipe is summarized in the following BASH script::
                 pr_JJAS_France_pointers.validate.nc
     #CHOOSE:
         # *1* Retrieve files:
-            #echo $CEDA_PASSWORD | cdb_query CORDEX download_files \ 
+            #echo $PASSWORD | cdb_query CORDEX download_files \ 
             #                    --out_download_dir=./in/CMIP5/ \
-            #                    --username=$CEDA_USERNAME \
+            #                    --openid=$OPENID \
             #                    --download_all_files \
             #                    --password_from_pipe \
             #                    pr_JJAS_France_pointers.validate.nc \
@@ -267,8 +267,8 @@ This recipe is summarized in the following BASH script::
 
         # *2* Retrieve to netCDF:
             #Retrieve one month:
-            echo $CEDA_PASSWORD | cdb_query CORDEX download_opendap --year=1979 --month=6 \
-                               --username=$CEDA_USERNAME \
+            echo $PASSWORD | cdb_query CORDEX download_opendap --year=1979 --month=6 \
+                               --openid=$OPENID \
                                --password_from_pipe \
                                pr_JJAS_France_pointers.validate.nc \
                                pr_JJAS_France_pointers.validate.197906.retrieved.nc
@@ -286,8 +286,8 @@ This recipe is summarized in the following BASH script::
                             pr_JJAS_France_pointers.validate.France.nc
 
             #We then retrieve the whole time series over France:
-            echo $CEDA_PASSWORD | cdb_query CORDEX download_opendap \
-                                 --username=$CEDA_USERNAME \
+            echo $PASSWORD | cdb_query CORDEX download_opendap \
+                                 --openid=$OPENID \
                                  --password_from_pipe \
                                  pr_JJAS_France_pointers.validate.France.nc \
                                  pr_JJAS_France_pointers.validate.France.retrieved.nc

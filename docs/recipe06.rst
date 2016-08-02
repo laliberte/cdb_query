@@ -24,8 +24,8 @@ The following BASH script recovers several variables over a latitude band::
 
     #Use 5 processors:
     NUM_PROCS=5
-    CEDA_USERNAME="your CEDA username"
-    CEDA_PASSWORD="your CEDA password"
+    OPENID="your openid"
+    PASSWORD="your ESGF password"
 
     SWAP_DIR="/dev/shm/lat_band/"
     OUT_FILE="DJF_lat_band.nc"
@@ -33,8 +33,8 @@ The following BASH script recovers several variables over a latitude band::
 
     #Create swap directory:
     mkdir ${SWAP_DIR}
-    echo $CEDA_PASSWORD | cdb_query CMIP5 ask validate reduce_soft_links download_opendap reduce \
-          --username=${CEDA_USERNAME} \
+    echo $PASSWORD | cdb_query CMIP5 ask validate reduce_soft_links download_opendap reduce \
+          --openid=$OPENID \
           --password_from_pipe \
           --swap_dir=${SWAP_DIR} \
           --num_procs=$NUM_PROCS \

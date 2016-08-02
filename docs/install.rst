@@ -34,40 +34,27 @@ This package can be installed with ``pip``::
              using ``cdb_query``. If you are using Anaconda, you must activate it (see :ref:`install-distro`).
 
 
-Obtaining ESGF certificates
+Obtaining ESGF credentials
 ---------------------------
 
-This package allows you to obtain and manage ESGF certificates transparently. The only
+This package allows you to obtain and manage ESGF credentials transparently. The only
 actions a user should take is 
 
-1. Register at https://services.ceda.ac.uk/cedasite/register/info/.
-   When registering, you will create a `password` and `username`.
+1. Register at https://pcmdi.llnl.gov/user/add/?next=https://pcmdi.llnl.gov/projects/esgf-llnl/.
+   When registering, you will create a `password` and receive an `openid`.
 
-2. Go to https://services.ceda.ac.uk. Login using your `username` and `password`.
-   Your `openid` will be listed here. You will receive an email with instructions. Disregard it for the moment.
+3. Go to https://pcmdi.llnl.gov/esg-orp/home.htm and login with your `openid` using your `password`.
 
-3. Go to https://esgf-data1.ceda.ac.uk/esg-orp/home.htm and login with your `openid` using your `password`.
-
-4. Go to https://esgf-data1.ceda.ac.uk/esg-orp/registration-request.htm?resource=http%3A%2F%2Fesgf-data1.ceda.ac.uk%2Fthredds%2FfileServer%2Fesg_testroot%2Fregister%2Fcmip5_research.nc.
+4. Go to https://pcmdi.llnl.gov/esg-orp/registration-request.htm?resource=http%3A%2F%2Fesgf-data1.ceda.ac.uk%2Fthredds%2FfileServer%2Fesg_testroot%2Fregister%2Fcmip5_research.nc.
    Your browser will likely ask you to trust some certificates. CLICK `ALWAYS ALLOW`. If you don't do this, it won't work.
 
 5. Register for `CMIP5 Research`. You do not need to download data.
 
-6. Run the following command::
+6. If using https://ceda.ac.uk instead of https://pcmdi.llnl.gov, your a `username` must be passed along your `openid` when using `cdb_query`.
 
-        $ cdb_query CMIP5 certificates
+.. note:: Previously the authentication would use local certificates. This option is still available but will be deprecated in the future.
 
-7. Edit your ``.bash_profile``. Add these two lines to your ``.bash_profile``::
-
-    export X509_CERT_DIR=$HOME/.esg4/certificates
-    export X509_USER_PROXY=$HOME/.esg4/credentials.pem
-
-   and source your ``.bash_profile``::
-
-    $ source ~/.bash_profile
-
-Alternatively, if you would like to use another registering service, please follow the instructions on how to install the :ref:`install-certs`
-
+.. Alternatively, if you would like to use another registering service, please follow the instructions on how to install the :ref:`install-certs`
 
 Secondary tools used in the recipes
 -----------------------------------
