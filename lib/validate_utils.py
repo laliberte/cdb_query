@@ -240,7 +240,7 @@ def validate(database,options,q_manager=None,sessions=dict()):
         if len(options.validate_cache.split(','))>1:
             remote_netcdf_kwargs['expire_after']=datetime.timedelta(hours=float(options.validate_cache.split(',')[1]))
     #Add credentials:
-    remote_netcdf_kwargs.update({opt: getattr(options,opt) for opt in ['openid','username','password'
+    remote_netcdf_kwargs.update({opt: getattr(options,opt) for opt in ['openid','username','password','use_certifices'
                                                                      ] if opt in dir(options)})
 
     if 'validate' in sessions.keys():

@@ -167,7 +167,7 @@ class nc_Database:
                                                                   session=session,
                                                                   remote_netcdf_kwargs=remote_netcdf_kwargs)
 
-                getattr(netcdf_pointers,record_function_handle)(output,var,username=options.username,user_pass=options.password)
+                getattr(netcdf_pointers,record_function_handle)(output,var)
 
                 #Remove recorded data from database:
                 self.session.query(*out_tuples).filter(sqlalchemy.and_(*conditions)).delete()
