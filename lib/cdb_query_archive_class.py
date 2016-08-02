@@ -12,6 +12,7 @@ import random
 import sys
 import getpass
 import datetime
+import requests
 
 #External but related:
 import netcdf4_soft_links.certificates as certificates
@@ -429,9 +430,15 @@ def rank_data_nodes(options,data_node_list,url_list,q_manager):
         if not ('silent' in dir(options) and options.silent):
             print 'Querying '+url[0]+' to measure response time of data node... '
 
-        with Timer() as timed_exec:
-            is_available=remote_netcdf.remote_netCDF(url[0],url[1],semaphores=q_manager.validate_semaphores).is_available(num_trials=1)
+        #Add credentials:
+        credentials_kwargs.update({opt: getattr(options,opt) for opt in ['openid','username','password'
+                                                                     ] if opt in dir(options)})
 
+        #Create a session for timing:
+        session=requests.Session()
+        is_available=remote_netcdf.remote_netCDF(url[0],url[1],semaphores=q_manager.validate_semaphores,
+                                                            session=session,
+                                                           **credentials_kwargs).is_available(num_trials=1)
         if not is_available:
             if not ('silent' in dir(options) and options.silent):
                 if timed_exec.interval>options.timeout:
@@ -439,12 +446,17 @@ def rank_data_nodes(options,data_node_list,url_list,q_manager):
                 else:
                     print('Data node '+data_node+' excluded because it did not respond.')
         else:
-            #Try opening a link on the data node. If it does not work remove this data node.
+            #Try opening a link on the data node. If it does not work, remove this data node.
             number_of_trials=3
             try:
-                import_string='import netcdf4_soft_links.remote_netcdf as remote_netcdf;import time;'
-                load_string='remote_data=remote_netcdf.remote_netCDF(\''+url[0]+'\',\''+url[1]+'\');remote_data.is_available(num_trials=1);time.sleep(0.1);'
-                timing=timeit.timeit(import_string+load_string,number=number_of_trials)
+                timing=0.0
+                for trial in range(number_of_trials):
+                    #simple loop. Pass the session that should have all the proper cookies:
+                    with Timer() as timed_exec:
+                        is_available=remote_netcdf.remote_netCDF(url[0],url[1],semaphores=q_manager.validate_semaphores,
+                                                                            session=session,
+                                                                           **credentials_kwargs).is_available(num_trials=1)
+                    timing+=timed_exec.interval
                 data_node_timing.append(timing)
                 data_node_list_timed.append(data_node)
                 if not ('silent' in dir(options) and options.silent):
@@ -452,6 +464,8 @@ def rank_data_nodes(options,data_node_list,url_list,q_manager):
             except:
                 if not ('silent' in dir(options) and options.silent):
                     print('Data node '+data_node+' excluded because it did not respond.')
+        #Close the session:
+        session.close()
     return list(np.array(data_node_list_timed)[np.argsort(data_node_timing)]),list(set(data_node_list).difference(data_node_list_timed))
 
 #http://preshing.com/20110924/timing-your-code-using-pythons-with-statement/

@@ -95,6 +95,10 @@ class CDB_queues_manager:
             self.download_remote_netcdf_kwargs['cache']=options.download_cache.split(',')[0]
             if len(options.download_cache.split(','))>1:
                 self.download_remote_netcdf_kwargs['expire_after']=datetime.timedelta(hours=float(options.download_cache.split(',')[1]))
+
+        #Add credentials:
+        self.download_remote_netcdf_kwargs.update({opt: getattr(options,opt) for opt in ['openid','username','password'
+                                                                     ] if opt in dir(options)})
         
         for queue_name in self.queues_names:
             setattr(self,queue_name,self.manager.PriorityQueue())

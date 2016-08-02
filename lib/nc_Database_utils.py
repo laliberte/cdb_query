@@ -86,10 +86,13 @@ def retrieve_or_replicate(output_grp,data,
         if len(getattr(options,'validate_cache').split(','))>1:
             remote_netcdf_kwargs['expire_after']=datetime.timedelta(hours=float(getattr(options,'validate_cache').split(',')[1]))
 
-    combined_dicts=remote_netcdf_kwargs.copy()
-    combined_dicts.update({opt: getattr(options,opt) for opt in ['previous','next','year','month','day','hour',
-                                                                 'username','password',
+    remote_netcdf_kwargs.update({opt: getattr(options,opt) for opt in ['openid','username','password',
+                                                                 ] if opt in dir(options)})
+    options_dict.update({opt: getattr(options,opt) for opt in ['previous','next','year','month','day','hour',
                                                                  'download_all_files','download_all_opendap'] if opt in dir(options)})
+
+    options_dict['remote_netcdf_kwargs']=remote_netcdf_kwargs
+
     netcdf_pointers=read_soft_links.read_netCDF_pointers(data.groups[group],
                                                         q_manager=q_manager,
                                                         session=session,

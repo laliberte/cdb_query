@@ -193,7 +193,8 @@ This recipe is summarized in the following BASH script. The ``--password_from_pi
     #Discover data:
     cdb_query CMIP5 ask --ask_month=1,2,10,11,12 \
                         --ask_var=tas:day-atmos-day,orog:fx-atmos-fx \
-                        --Experiment=amip:1979-2004 \
+                        --ask_experiment=amip:1979-2004 \
+                        --model=CanAM4 --model=CCSM4 --model=GISS-E2-R --model=MRI-CGCM3 \
                         --num_procs=10 \
                         tas_ONDJF_pointers.nc
 
