@@ -17,7 +17,7 @@ With operator chaining, recipe 1 could be written::
     $ OPENID="your openid
     $ cdb_query CMIP5 ask validate download_opendap reduce \
                       --ask_month=1,2,10,11,12 \
-                      --ask_var=tas:day,atmos,day,orog:fx-atmos-fx \
+                      --ask_var=tas:day-atmos-day,orog:fx-atmos-fx \
                       --ask_experiment=amip:1979-2004 \
                       --Xdata_node=http://esgf2.dkrz.de \
                       --openid=$OPENID \
