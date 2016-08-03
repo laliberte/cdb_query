@@ -301,6 +301,6 @@ This recipe is summarized in the following BASH script::
             cdb_query CORDEX reduce --out_destination=./out_France/CORDEX/ \
                                     --num_procs=${NUM_PROCS} \
                                      '' \
-                                     pr_JJAS_France_pointers.validate.France.retrieved.nc
+                                     pr_JJAS_France_pointers.validate.France.retrieved.nc \
                                      pr_JJAS_France_pointers.validate.France.retrieved.converted.nc
 
