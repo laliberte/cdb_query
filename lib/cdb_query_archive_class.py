@@ -99,7 +99,6 @@ def validate(database,options,q_manager=None,sessions=dict()):
         data_node_list=database.header['data_node_list']
         Xdata_node_list=[]
     database.drs.data_node_list=data_node_list
-    print(data_node_list)
 
     #Some data_nodes might have been dropped. Restrict options accordingly:
     options_copy=copy.copy(options)
@@ -429,7 +428,7 @@ def rank_data_nodes(options,data_node_list,url_list,q_manager):
     for data_node_id, data_node in enumerate(data_node_list):
         url=url_list[data_node_id]
         if not ('silent' in dir(options) and options.silent):
-            print 'Querying '+url[0]+' to measure response time of data node... '
+            print('Querying '+url[0]+' to measure response time of data node... ')
 
         #Add credentials:
         credentials_kwargs={opt: getattr(options,opt) for opt in ['openid','username','password','use_certificates'
@@ -441,6 +440,7 @@ def rank_data_nodes(options,data_node_list,url_list,q_manager):
             is_available=remote_netcdf.remote_netCDF(url[0],url[1],semaphores=q_manager.validate_semaphores,
                                                                 session=session,
                                                                **credentials_kwargs).is_available(num_trials=1)
+
         if not is_available:
             if not ('silent' in dir(options) and options.silent):
                 if timed_exec.interval>options.timeout:
