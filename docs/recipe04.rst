@@ -53,6 +53,7 @@ With operator chaining, recipe 3 could be written::
                       --ask_experiment=historical:1979-2004 --ask_var=pr:day --ask_month=6,7,8,9 \
                       --openid=$OPENID \
                       --year=1979 --month=6 \
+                      --domain=EUR-11 \
                       --out_destination=./out_France/CORDEX/ \
                       --Xdata_node=http://esgf2.dkrz.de \
                       --record_validate \
