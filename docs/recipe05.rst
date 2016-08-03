@@ -37,7 +37,7 @@ With operator chaining, in a BASH script::
                       --openid=$OPENID \
                       --password_from_pipe \
                       --record_validate \
-                      --out_destination=./out/CMIP5/ \
+                      --out_destination=./out_sample/CMIP5/ \
                       --num_procs=10 \
                       --year=2000 --month=3 \
                       --reduce_soft_links_script='nc4sl --lonlatbox -150.0 -50.0 20.0 55.0' \
