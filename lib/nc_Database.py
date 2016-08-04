@@ -4,7 +4,7 @@ import sqlalchemy.orm
 import json
 import os
 import netCDF4
-import h5netcdf.legacyapi as netCDF4_h5
+#import h5netcdf.legacyapi as netCDF4_h5
 import copy
 import numpy as np
 
@@ -297,6 +297,7 @@ def create_tree_recursive(output_top,tree):
 def retrieve_dates_recursive(data,options):
     if 'soft_links' in data.groups.keys():
         options_dict={opt: getattr(options,opt) for opt in ['previous','next','year','month','day','hour'] if opt in dir(options)}
+        t_start=datetime.datetime.now()
         remote_data=read_soft_links.read_netCDF_pointers(data,**options_dict)
         if check_soft_links_size(remote_data) and remote_data.time_var!=None:
             return remote_data.date_axis[remote_data.time_restriction][remote_data.time_restriction_sort]
@@ -305,8 +306,9 @@ def retrieve_dates_recursive(data,options):
     elif len(data.groups.keys())>0:
         return np.unique(np.concatenate([ retrieve_dates_recursive(data.groups[group],options)
                 for group in data.groups.keys()
-                if ( is_level_name_included_and_not_excluded(data.groups[group].getncattr(level_key),options,group) and
-                 tree_recursive_check_not_empty(options,data.groups[group],check=False)) ]))
+                if  is_level_name_included_and_not_excluded(data.groups[group].getncattr(level_key),options,group)]))
+                #if ( is_level_name_included_and_not_excluded(data.groups[group].getncattr(level_key),options,group) and
+                # tree_recursive_check_not_empty(options,data.groups[group],check=False)) ]))
 
 def check_soft_links_size(remote_data):
     if remote_data.time_var!=None:
