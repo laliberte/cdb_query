@@ -17,6 +17,9 @@ import netcdf4_soft_links.retrieval_manager as retrieval_manager
 #Internal:
 import nc_Database_utils
 
+
+level_key='level_name'
+
 class nc_Database:
     def __init__(self,project_drs,database_file=None):
         #Defines the tree structure:
@@ -51,7 +54,8 @@ class nc_Database:
         return
 
     def load_nc_file(self):
-        return netCDF4_h5.Dataset(self.database_file,'r')
+        #return netCDF4_h5.Dataset(self.database_file,'r')
+        return netCDF4.Dataset(self.database_file,'r')
 
     def load_header(self):
         #Load header:
@@ -236,9 +240,9 @@ def populate_database_recursive(nc_Database,data,options,find_function,time_slic
                                                                     session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
     elif len(data.groups.keys())>0:
         for group in data.groups.keys():
-            level_name=data.groups[group].getncattr('level_name')
+            level_name=data.groups[group].getncattr(level_key)
             if is_level_name_included_and_not_excluded(level_name,options,group):
-                setattr(nc_Database.file_expt,data.groups[group].getncattr('level_name'),group)
+                setattr(nc_Database.file_expt,data.groups[group].getncattr(level_key),group)
                 populate_database_recursive(nc_Database,data.groups[group],options,find_function,time_slices=time_slices,
                                                                     semaphores=semaphores,
                                                                     session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
@@ -301,7 +305,7 @@ def retrieve_dates_recursive(data,options):
     elif len(data.groups.keys())>0:
         return np.unique(np.concatenate([ retrieve_dates_recursive(data.groups[group],options)
                 for group in data.groups.keys()
-                if ( is_level_name_included_and_not_excluded(data.groups[group].getncattr('level_name'),options,group) and
+                if ( is_level_name_included_and_not_excluded(data.groups[group].getncattr(level_key),options,group) and
                  tree_recursive_check_not_empty(options,data.groups[group],check=False)) ]))
 
 def check_soft_links_size(remote_data):
@@ -326,7 +330,7 @@ def tree_recursive_check_not_empty(options,data,check=True,slicing=True):
         if slicing:
             empty_list=[]
             for group in data.groups.keys():
-                level_name=data.groups[group].getncattr('level_name')
+                level_name=data.groups[group].getncattr(level_key)
                 if is_level_name_included_and_not_excluded(level_name,options,group):
                     empty_list.append(tree_recursive_check_not_empty(options,data.groups[group],check=check))
             return any(empty_list)

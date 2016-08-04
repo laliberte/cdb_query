@@ -120,11 +120,12 @@ def retrieve_or_replicate(output_grp,data,
 
 #PUT BACK IN DATABASE:
 def record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_drs,check_empty=False):
-    with netCDF4.Dataset(temp_file_name,'r') as data:
-        if data.disk_format=='HDF5':
-            read_Dataset=netCDF4_h5.Dataset
-        else:
-            read_Dataset=netCDF4.Dataset
+    #with netCDF4.Dataset(temp_file_name,'r') as data:
+    #    if data.disk_format=='HDF5':
+    #        read_Dataset=netCDF4_h5.Dataset
+    #    else:
+    #        read_Dataset=netCDF4.Dataset
+    read_Dataset=netCDF4.Dataset
 
     with read_Dataset(temp_file_name,'r') as data:
         fix_list_to_none=(lambda x: x[0] if (x!=None and len(x)==1) else None)
@@ -169,9 +170,9 @@ def replace_netcdf_variable_recursive_replicate(output_grp,data_grp,
                                                 check_empty=False):
     if len(tree)>0 or (not group_name in output_grp.groups.keys()):
         try:
-            setattr(output_grp,'level_name',level_name)
+            setattr(output_grp,nc_Database.level_key,level_name)
         except:
-            output_grp.setncattr('level_name',level_name)
+            output_grp.setncattr(nc_Database.level_key,level_name)
     if len(tree)>0:
         replace_netcdf_variable_recursive(output_grp,data_grp,
                                           tree[0],tree[1:],options,
@@ -183,11 +184,12 @@ def replace_netcdf_variable_recursive_replicate(output_grp,data_grp,
 
 #PUT INTO FILESYSTEM DATABASE
 def record_to_output_directory(output_file_name,project_drs,options):
-    with netCDF4.Dataset(output_file_name,'r') as data:
-        if data.disk_format=='HDF5':
-            read_Dataset=netCDF4_h5.Dataset
-        else:
-            read_Dataset=netCDF4.Dataset
+    #with netCDF4.Dataset(output_file_name,'r') as data:
+    #    if data.disk_format=='HDF5':
+    #        read_Dataset=netCDF4_h5.Dataset
+    #    else:
+    #        read_Dataset=netCDF4.Dataset
+    read_Dataset=netCDF4.Dataset
 
     with read_Dataset(output_file_name,'r') as data:
         out_dir=options.out_destination
