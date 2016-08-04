@@ -7,6 +7,8 @@ import copy
 import argparse 
 import textwrap
 import numpy as np
+import netCDF4
+from pkg_resources import parse_version
 
 #External but related:
 import netcdf4_soft_links.certificates as certificates
@@ -43,6 +45,9 @@ Previous versions: Frederic Laliberte, Paul Kushner (2011-2015).\n\
 If using this code to retrieve and process data from the ESGF please cite:\n\n\
 Efficient, robust and timely analysis of Earth System Models: a database-query approach (2016):\n\
 F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD'.format(version_num)
+
+    if parse_version(netCDF4.__netcdf4libversion__) >= parse_version('4.4'):
+        raise ImportError('At the moment, cdb_query is only compatible with netcdf versions less than 4.4')
 
     prog=args_list[0].split('/')[-1]
     #Be careful with the -h option:

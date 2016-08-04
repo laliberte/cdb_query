@@ -43,14 +43,14 @@ actions a user should take is
 1. Register at https://pcmdi.llnl.gov/user/add/?next=https://pcmdi.llnl.gov/projects/esgf-llnl/.
    When registering, you will create a `password` and receive an `openid`.
 
-3. Go to https://pcmdi.llnl.gov/esg-orp/home.htm and login with your `openid` using your `password`.
+2. Go to https://pcmdi.llnl.gov/esg-orp/home.htm and login with your `openid` using your `password`.
 
-4. Go to https://pcmdi.llnl.gov/esg-orp/registration-request.htm?resource=http%3A%2F%2Fpcmdi.llnl.gov%2Fthredds%2FfileServer%2Fesg_testroot%2Fregister%2Fcmip5_research.nc.
+3. Go to https://pcmdi.llnl.gov/esg-orp/registration-request.htm?resource=http%3A%2F%2Fpcmdi.llnl.gov%2Fthredds%2FfileServer%2Fesg_testroot%2Fregister%2Fcmip5_research.nc.
    Your browser will likely ask you to trust some certificates. CLICK `ALWAYS ALLOW`. If you don't do this, it won't work.
 
-5. Register for `CMIP5 Research`. You do not need to download data.
+4. Register for `CMIP5 Research`. You do not need to download data.
 
-6. If using https://ceda.ac.uk instead of https://pcmdi.llnl.gov, your a `username` must be passed along your `openid` when using `cdb_query`.
+5. If using https://ceda.ac.uk instead of https://pcmdi.llnl.gov, your a `username` must be passed along your `openid` when using `cdb_query`.
 
 .. note:: Previously the authentication would use local certificates. This option is still available but will be deprecated in the future.
 

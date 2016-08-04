@@ -20,6 +20,6 @@ and follow their instructions. `cdb_query` has only been tested on linux machine
   Once this is done, you have to install netCDF4 and HDF5. This is accomplished through their installation
   application::
 
-    $ conda install netcdf4 h5py Paste PasteDeploy
+    $ conda install netcdf4=1.2.2 h5py Paste PasteDeploy
 
 .. warning:: Do not use `conda` to install other packages BEFORE you have made sure that `cdb_query` is working properly.

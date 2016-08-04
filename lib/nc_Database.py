@@ -54,8 +54,8 @@ class nc_Database:
         return
 
     def load_nc_file(self):
-        #return netCDF4_h5.Dataset(self.database_file,'r')
-        return netCDF4.Dataset(self.database_file,'r')
+        return netCDF4_h5.Dataset(self.database_file,'r')
+        #return netCDF4.Dataset(self.database_file,'r')
 
     def load_header(self):
         #Load header:
