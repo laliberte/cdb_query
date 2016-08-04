@@ -120,7 +120,13 @@ def retrieve_or_replicate(output_grp,data,
 
 #PUT BACK IN DATABASE:
 def record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_drs,check_empty=False):
-    with netCDF4_h5.Dataset(temp_file_name,'r') as data:
+    with netCDF4.Dataset(temp_file_name,'r') as data:
+        if data.disk_format=='HDF5':
+            read_Dataset=netCDF4_h5.Dataset
+        else:
+            read_Dataset=netCDF4.Dataset
+
+    with read_Dataset(temp_file_name,'r') as data:
         fix_list_to_none=(lambda x: x[0] if (x!=None and len(x)==1) else None)
         var=[ fix_list_to_none(getattr(options,opt)) if getattr(options,opt)!=None else None for opt in project_drs.official_drs_no_version]
         tree=zip(project_drs.official_drs_no_version,var)
@@ -177,7 +183,13 @@ def replace_netcdf_variable_recursive_replicate(output_grp,data_grp,
 
 #PUT INTO FILESYSTEM DATABASE
 def record_to_output_directory(output_file_name,project_drs,options):
-    with netCDF4_h5.Dataset(output_file_name,'r') as data:
+    with netCDF4.Dataset(output_file_name,'r') as data:
+        if data.disk_format=='HDF5':
+            read_Dataset=netCDF4_h5.Dataset
+        else:
+            read_Dataset=netCDF4.Dataset
+
+    with read_Dataset(output_file_name,'r') as data:
         out_dir=options.out_destination
         with netCDF4.Dataset(output_file_name+'.tmp','w') as output:
             write_netcdf_variable_recursive(output,out_dir,data,
