@@ -1,5 +1,6 @@
 #External:
 import netCDF4
+import h5netcdf.legacyapi as netCDF4_h5
 import h5py
 import copy
 import subprocess
@@ -81,25 +82,12 @@ def reduce_sl_or_var(database,options,q_manager=None,sessions=dict(),retrieval_t
     return temp_output_file_name
 
 def extract_single_tree(temp_file,file,tree,tree_fx,options,options_fx,session=None,retrieval_type='reduce',check_empty=False):
-    with netCDF4.Dataset(file,'r') as data:
-        hdf5=None
-        try:
-            for item in h5py.h5f.get_obj_ids(types=h5py.h5f.OBJ_FILE):
-                if 'name' in dir(item) and item.name==file:
-                    hdf5=h5py.File(item)
-        except ValueError:
-            pass
-        except RuntimeError:
-            pass
-
+    with netCDF4_h5.Dataset(file,'r') as data:
         with netCDF4.Dataset(temp_file,'w',format='NETCDF4',diskless=True,persist=True) as output_tmp:
             if ('add_fixed' in dir(options) and options.add_fixed):
-                nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree_fx,options_fx,session=session,retrieval_type=retrieval_type,check_empty=True,hdf5=hdf5)
+                nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree_fx,options_fx,session=session,retrieval_type=retrieval_type,check_empty=True)
 
-            nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree,options,session=session,retrieval_type=retrieval_type,check_empty=check_empty,hdf5=hdf5)
-
-    if hdf5!=None:
-        hdf5.close()
+            nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree,options,session=session,retrieval_type=retrieval_type,check_empty=check_empte)
     return
 
 def get_fixed_var_tree(project_drs,options,var):
