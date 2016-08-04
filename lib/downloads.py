@@ -80,6 +80,14 @@ def time_split(database,options):
         #Some time frequencies should not be time split:
         return [(None,None,None,None),]
 
+    loop_names=['year','month','day','hour']
+    if  not 'loop_through_time' in dir(options) or len(options.loop_through_time)==0:
+        return [(None,None,None,None),]
+    elif np.all([ len(getattr(options,loop))==1 if loop in options_copy.loop_through_time 
+                                        else getattr(options,loop)==None for loop in loop_names]):
+        return [ tuple([ getattr(options,loop) if loop in options_copy.loop_through_time 
+                                        else None for loop in loop_names]),]
+
     options_copy=copy.copy(options)
     #Do not use previous and next to determine time:
     for type in ['previous','next']:
@@ -99,16 +107,12 @@ def time_split(database,options):
     dates_axis=database.nc_Database.retrieve_dates(options_copy)
     database.close_database()
     if len(dates_axis)>0:
-        if ('loop_through_time' in dir(options) and len(options.loop_through_time)>0):
-            loop_names=['year','month','day','hour']
-            time_list=recursive_time_list(dates_axis,loop_names,[ True if loop in options_copy.loop_through_time else False for loop in loop_names],[],[])
-            valid_time_list=list(set(time_list))
-            if len(valid_time_list)>0:
-                return valid_time_list
-            else:
-                return []
+        time_list=recursive_time_list(dates_axis,loop_names,[ True if loop in options_copy.loop_through_time else False for loop in loop_names],[],[])
+        valid_time_list=list(set(time_list))
+        if len(valid_time_list)>0:
+            return valid_time_list
         else:
-            return [(None,None,None,None),]
+            return []
     else:
         #There are no dates corresponding to the slicing
         return []
