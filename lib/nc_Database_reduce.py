@@ -94,7 +94,7 @@ def extract_single_tree(temp_file,file,tree,tree_fx,options,options_fx,session=N
             if ('add_fixed' in dir(options) and options.add_fixed):
                 nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree_fx,options_fx,session=session,retrieval_type=retrieval_type,check_empty=True)
 
-            nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree,options,session=session,retrieval_type=retrieval_type,check_empty=check_empte)
+            nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree,options,session=session,retrieval_type=retrieval_type,check_empty=check_empty)
     return
 
 def get_fixed_var_tree(project_drs,options,var):

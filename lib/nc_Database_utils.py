@@ -90,11 +90,6 @@ def retrieve_or_replicate(output_grp,data,
 
     options_dict['remote_netcdf_kwargs']=remote_netcdf_kwargs
 
-    #if session!=None:
-    #    #print(data.groups[group],session.cookies)
-    #    print(len(session.cookies))
-    #else:
-    #    print('no session')
     netcdf_pointers=read_soft_links.read_netCDF_pointers(data.groups[group],
                                                         q_manager=q_manager,
                                                         session=session,
