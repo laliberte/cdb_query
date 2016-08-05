@@ -166,6 +166,7 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD'.format(version_num)
             finally:
                 if ('start_server' in dir(options) and options.start_server):
                     reduce_server.shutdown()
+
                 q_manager.stop_download_processes()
                 for process_name in processes.keys():
                     if process_name!=multiprocessing.current_process().name:

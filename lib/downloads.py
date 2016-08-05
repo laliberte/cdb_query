@@ -74,6 +74,12 @@ def download(database,retrieval_type,options,q_manager,sessions):
         database.close_database()
     return options_copy.out_netcdf_file
 
+def _is_len_one_list(x):
+    if isinstance(x,list) and len(x)==1:
+        return True
+    else:
+        return False
+
 def time_split(database,options):
     if ( options.time_frequency!=None and
          set(options.time_frequency).issubset(['fx','clim'])):
@@ -83,9 +89,9 @@ def time_split(database,options):
     loop_names=['year','month','day','hour']
     if  not 'loop_through_time' in dir(options) or len(options.loop_through_time)==0:
         return [(None,None,None,None),]
-    elif np.all([ len(getattr(options,loop))==1 if loop in options_copy.loop_through_time 
+    elif np.all([ _is_len_one_list(getattr(options,loop)) if loop in options.loop_through_time 
                                         else getattr(options,loop)==None for loop in loop_names]):
-        return [ tuple([ getattr(options,loop) if loop in options_copy.loop_through_time 
+        return [ tuple([ getattr(options,loop)[0] if loop in options.loop_through_time 
                                         else None for loop in loop_names]),]
 
     options_copy=copy.copy(options)

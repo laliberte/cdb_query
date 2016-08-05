@@ -161,7 +161,6 @@ def download_files(database,options,q_manager=None,sessions=dict()):
     else:
         vars_list=reduce_var_list(database,options)
 
-
     if len(vars_list)==1:
         #Users have requested time types to be kept
         times_list=downloads.time_split(database,options)

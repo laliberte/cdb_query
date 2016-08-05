@@ -297,7 +297,6 @@ def create_tree_recursive(output_top,tree):
 def retrieve_dates_recursive(data,options):
     if 'soft_links' in data.groups.keys():
         options_dict={opt: getattr(options,opt) for opt in ['previous','next','year','month','day','hour'] if opt in dir(options)}
-        t_start=datetime.datetime.now()
         remote_data=read_soft_links.read_netCDF_pointers(data,**options_dict)
         if check_soft_links_size(remote_data) and remote_data.time_var!=None:
             return remote_data.date_axis[remote_data.time_restriction][remote_data.time_restriction_sort]
