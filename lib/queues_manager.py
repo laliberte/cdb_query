@@ -227,7 +227,8 @@ class CDB_queues_manager:
         timeout=timeout_first
 
         while not (self.do_not_keep_consumers_alive.is_set() and 
-                    self.expected_queue_size(queues_names)==0):
+                    self.expected_queue_size()==0):
+                    #self.expected_queue_size(queues_names)==0):
                     #and
                     #getattr(self,'record_expected').value==getattr(self,'record').qsize()):
             #Get an element from one queue, starting from the last:
@@ -274,7 +275,8 @@ class CDB_queues_manager:
                 getattr(self,queue_name+'_expected').decrement_no_lock()
                 return item
 
-    def expected_queue_size(self,restricted_queues_names):
+    #def expected_queue_size(self,restricted_queues_names):
+    def expected_queue_size(self):
         return np.max([getattr(self,queue_name+'_expected').value for queue_name in self.queues_names])
 
 def recorder(q_manager,project_drs,options):
@@ -352,13 +354,22 @@ def recorder_queue_consume(q_manager,project_drs,original_options):
         for session_name in sessions.keys():
             sessions[session_name].close()
         for record_name in output.keys():
-            output[record_name].close()
+            if output[record_name]._isopen:
+                output[record_name].close()
     return
 
 def record_to_netcdf_file(counter,function_name,options,output,q_manager,project_drs):
-
     temp_file_name=options.in_netcdf_file
-    if ((function_name in dir(options) and
+    if (counter==2 and 
+        q_manager.expected_queue_size()==0 and
+        len(q_manager.queues_names)==2 and
+        not q_manager.queues_names[-2] in  ['reduce','reduce_soft_links'] and
+        function_name=='record'):
+        #Only one function was computed and it is already structured
+        #Can simply copy instead of recording:
+        output[function_name].close()
+        os.rename(temp_file_name,options.out_netcdf_file)
+    elif ((function_name in dir(options) and
         getattr(options,function_name) and
         function_name in output.keys()) or
         function_name=='record'):

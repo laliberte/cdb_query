@@ -4,7 +4,7 @@ import sqlalchemy.orm
 import json
 import os
 import netCDF4
-#import h5netcdf.legacyapi as netCDF4_h5
+import h5netcdf.legacyapi as netCDF4_h5
 import copy
 import numpy as np
 
