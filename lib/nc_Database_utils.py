@@ -16,6 +16,14 @@ import netcdf4_soft_links.requests_sessions as requests_sessions
 #Internal:
 import nc_Database
 
+def _read_Dataset(file_name):
+    try:
+        with netCDF4_h5.Dataset(file_name,'r') as data:
+            pass
+        return netCDF4_h5.Dataset
+    except:
+        return netCDF4.Dataset
+
 #EXTRACTIONS:
 def extract_netcdf_variable(output,data,tree,options,
                             session=None,
@@ -115,14 +123,7 @@ def retrieve_or_replicate(output_grp,data,
 
 #PUT BACK IN DATABASE:
 def record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_drs,check_empty=False):
-    with netCDF4.Dataset(temp_file_name,'r') as data:
-        if data.disk_format=='HDF5':
-            read_Dataset=netCDF4_h5.Dataset
-        else:
-            read_Dataset=netCDF4.Dataset
-    #read_Dataset=netCDF4.Dataset
-
-    with read_Dataset(temp_file_name,'r') as data:
+    with _read_Dataset(temp_file_name)(temp_file_name, 'r') as data:
         fix_list_to_none=(lambda x: x[0] if (x!=None and len(x)==1) else None)
         var=[ fix_list_to_none(getattr(options,opt)) if getattr(options,opt)!=None else None for opt in project_drs.official_drs_no_version]
         tree=zip(project_drs.official_drs_no_version,var)
@@ -179,14 +180,7 @@ def replace_netcdf_variable_recursive_replicate(output_grp,data_grp,
 
 #PUT INTO FILESYSTEM DATABASE
 def record_to_output_directory(output_file_name,project_drs,options):
-    with netCDF4.Dataset(output_file_name,'r') as data:
-        if data.disk_format=='HDF5':
-            read_Dataset=netCDF4_h5.Dataset
-        else:
-            read_Dataset=netCDF4.Dataset
-    #read_Dataset=netCDF4.Dataset
-
-    with read_Dataset(output_file_name,'r') as data:
+    with _read_Dataset(output_file_name)(output_file_name,'r') as data:
         out_dir=options.out_destination
         with netCDF4.Dataset(output_file_name+'.tmp','w') as output:
             write_netcdf_variable_recursive(output,out_dir,data,
@@ -244,11 +238,13 @@ def write_netcdf_variable_recursive_replicate(output,sub_out_dir,data_grp,
         #Get the time:
         timestamp=convert_dates_to_timestamps(data_grp,time_frequency)
 
-        if timestamp=='':
-            output_file_name=None
-            return output_file_name
+        if (timestamp == '' and
+            time_frequency not in ['fx', 'clim']):
+            return None
+        elif timestamp == '':
+            output_file_name += '.nc'
         else:
-            output_file_name+=timestamp+'.nc'
+            output_file_name += timestamp+'.nc'
 
         output_file_name=sub_out_dir+'/'+output_file_name
         with netCDF4.Dataset(output_file_name,'w') as output_data:
