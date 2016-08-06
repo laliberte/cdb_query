@@ -126,7 +126,7 @@ def obtain_time_list(diagnostic,project_drs,var_name,experiment,model):
 def find_model_list(diagnostic,project_drs,model_list,experiment,options):
     #Time slices:
     time_slices=dict()
-    if ( 'record_validate' in dir(options) and
+    if ( not 'record_validate' in dir(options) or
          not options.record_validate):
          #Slice time unless the validate step should be recorded:
          for time_type in ['month','year']:
