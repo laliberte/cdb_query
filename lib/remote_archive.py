@@ -18,7 +18,7 @@ class DRS:
         #self.simulations_desc=['domain','institute','driving_model','model_version','model','ensemble']
         self.simulations_desc=['domain','institute','driving_model','rcm_model','rcm_version','ensemble']
 
-        self.header_desc=['search_list','file_type_list','months_list','data_node_list','experiment_list','variable_list']
+        self.header_desc=['search_list','file_type_list','month_list','data_node_list','experiment_list','variable_list']
 
         self.filename_drs=['var','domain','driving_model','experiment','ensemble','rcm_model','version','time_frequency']
         self.official_drs=[
@@ -101,7 +101,7 @@ class DRS:
 
         self.filename_drs=['var','cmor_table','model','experiment','ensemble']
 
-        self.header_desc=['search_list','file_type_list','months_list','data_node_list','experiment_list','variable_list']
+        self.header_desc=['search_list','file_type_list','month_list','data_node_list','experiment_list','variable_list']
         self.base_drs=self.official_drs+[
                   'file_type',
                   'time',
@@ -150,7 +150,7 @@ class DRS:
 
         self.filename_drs=['var','time_frequency','model','experiment','ensemble']
 
-        self.header_desc=['search_list','file_type_list','months_list','data_node_list','experiment_list','variable_list']
+        self.header_desc=['search_list','file_type_list','month_list','data_node_list','experiment_list','variable_list']
         self.base_drs=self.official_drs+[
                   'file_type',
                   'time',
@@ -198,7 +198,7 @@ class DRS:
 
         self.filename_drs=['var','cmor_table','model','experiment','ensemble']
 
-        self.header_desc=['search_list','file_type_list','months_list','data_node_list','experiment_list','variable_list']
+        self.header_desc=['search_list','file_type_list','month_list','data_node_list','experiment_list','variable_list']
         self.base_drs=self.official_drs+[
                   'file_type',
                   'time',
@@ -244,7 +244,7 @@ class DRS:
 
         self.filename_drs=['var','cmor_table','model','experiment','ensemble']
 
-        self.header_desc=['search_list','file_type_list','months_list','data_node_list','experiment_list','variable_list']
+        self.header_desc=['search_list','file_type_list','month_list','data_node_list','experiment_list','variable_list']
         self.base_drs=self.official_drs+[
                   'file_type',
                   'time',
