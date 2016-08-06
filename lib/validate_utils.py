@@ -64,12 +64,12 @@ def find_time_file(pointers,file_expt,file_available=False,time_slices=dict(),se
     if not picontrol_min_time: years_list=[ year for year in years_list if year in years_list_requested]
 
     #Time was further sliced:
-    if ('year' in time_slices.keys() and
+    if ('year' in time_slices and
          time_slices['year']!=None):
         years_list=[year for year in years_list if year in time_slices['year']]
 
     months_list=range(1,13)
-    if ('month' in time_slices.keys() and
+    if ('month' in time_slices and
         time_slices['month']!=None):
         months_list=[month for month in months_list if month in time_slices['month']]
 
@@ -143,16 +143,17 @@ def find_model_list(diagnostic,project_drs,model_list,experiment,options):
         years_list.append(years_range[1])
     time_list=[]
     for year in years_list:
-        if ( ( 'year' in time_slices.keys() and
+        if ( ( 'year' in time_slices and
                    (time_slices['year']==None or
                   year in time_slices['year'])) or
-              (not 'year' in time_slices.keys())):
+              (not 'year' in time_slices)):
             for month in get_diag_month_list(diagnostic):
-                if ( ( 'month' in time_slices.keys() and
+                if ( ( 'month' in time_slices and
                         (time_slices['month']==None or
                           month in time_slices['month'])) or
-                     (not 'month' in time_slices.keys())):
+                     (not 'month' in time_slices)):
                     time_list.append(str(year).zfill(4)+str(month).zfill(2))
+
 
     model_list_var=copy.copy(model_list)
     model_list_copy=copy.copy(model_list)
@@ -249,7 +250,7 @@ def validate(database,options,q_manager=None,sessions=dict()):
         session=None
 
     time_slices=dict()
-    if ( 'record_validate' in dir(options) and
+    if ( not 'record_validate' in dir(options) or
          not options.record_validate):
          for time_type in ['month','year']:
             if time_type in dir(options):
