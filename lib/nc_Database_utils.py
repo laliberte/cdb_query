@@ -34,7 +34,7 @@ def extract_netcdf_variable_recursive(output,data,
     level_name=level_desc[0]
     group_name=level_desc[1]
     if group_name==None or isinstance(group_name,list):
-        for group in data.groups.keys():
+        for group in data.groups:
             if ( nc_Database.is_level_name_included_and_not_excluded(level_name,options,group) and
                  nc_Database.tree_recursive_check_not_empty(options,data.groups[group])):
                 output_grp=netcdf_utils.replicate_group(data,output,group)
@@ -60,7 +60,7 @@ def extract_retrieve_or_replicate(group_name,output,data,
                                   retrieval_type,
                                   options,q_manager,check_empty,session):
     if len(tree)>0:
-        if group_name in data.groups.keys():
+        if group_name in data.groups:
             extract_netcdf_variable_recursive(output,data.groups[group_name],
                                               tree[0],tree[1:],
                                               retrieval_type,
@@ -99,7 +99,7 @@ def retrieve_or_replicate(output_grp,data,
         #If applying to soft links, replicate.
         netcdf_pointers.replicate(output_grp,check_empty=check_empty)
     elif retrieval_type=='reduce':
-        if (not 'soft_links' in data.groups[group].groups.keys()):
+        if (not 'soft_links' in data.groups[group].groups):
             #If there is no soft links, replicate.
             netcdf_pointers.replicate(output_grp,check_empty=check_empty)
         else:
@@ -140,7 +140,7 @@ def replace_netcdf_variable_recursive(output,data,
     level_name=level_desc[0]
     group_name=level_desc[1]
     if group_name==None or isinstance(group_name,list):
-        for group in data.groups.keys():
+        for group in data.groups:
             if nc_Database.tree_recursive_check_not_empty(options,data.groups[group],slicing=False):
                 output_grp=netcdf_utils.create_group(data,output,group)
                 replace_netcdf_variable_recursive_replicate(output_grp,data.groups[group],
@@ -149,7 +149,7 @@ def replace_netcdf_variable_recursive(output,data,
                                                             check_empty=check_empty)
     else:
         output_grp=netcdf_utils.create_group(data,output,group_name)
-        if group_name in data.groups.keys():
+        if group_name in data.groups:
             data_grp=data.groups[group_name]
         else:
             data_grp=data
@@ -163,7 +163,7 @@ def replace_netcdf_variable_recursive_replicate(output_grp,data_grp,
                                                 level_name,group_name,
                                                 tree,options,
                                                 check_empty=False):
-    if len(tree)>0 or (not group_name in output_grp.groups.keys()):
+    if len(tree)>0 or (not group_name in output_grp.groups):
         try:
             setattr(output_grp,nc_Database.level_key,level_name)
         except:
@@ -210,7 +210,7 @@ def write_netcdf_variable_recursive(output,out_dir,data,
         fix_list=(lambda x: x[0] if (x!= None and len(x)==1) else x)
         group_name=fix_list(getattr(options,level_name))
         if group_name==None or isinstance(group_name,list):
-            for group in data.groups.keys():
+            for group in data.groups:
                 sub_out_dir=make_sub_dir(out_dir,group)
                 output_grp=netcdf_utils.create_group(data,output,group)
                 options_copy=copy.copy(options)
@@ -279,7 +279,7 @@ def convert_dates_to_timestamps(output_tmp,time_frequency):
     conversion['6hr']=(lambda x: str(x.year).zfill(4)+str(x.month).zfill(2)+str(x.day).zfill(2)+str(x.hour).zfill(2)+str(x.minute).zfill(2)+str(x.second).zfill(2))
     conversion['3hr']=(lambda x: str(x.year).zfill(4)+str(x.month).zfill(2)+str(x.day).zfill(2)+str(x.hour).zfill(2)+str(x.minute).zfill(2)+str(x.second).zfill(2))
     if ( time_frequency!='fx' 
-         and 'time' in output_tmp.variables.keys() 
+         and 'time' in output_tmp.variables 
          and len(output_tmp.variables['time'])>0 ):
         date_axis=netcdf_utils.get_date_axis(output_tmp,'time')[[0,-1]]
         return '_'+'-'.join([conversion[time_frequency](date) for date in date_axis])
