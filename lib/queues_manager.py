@@ -367,8 +367,9 @@ def record_to_netcdf_file(counter,function_name,options,output,q_manager,project
         function_name=='record'):
         #Only one function was computed and it is already structured
         #Can simply copy instead of recording:
+        out_file_name=output[function_name].filepath()
         output[function_name].close()
-        os.rename(temp_file_name,options.out_netcdf_file)
+        os.rename(temp_file_name,out_file_name)
     elif ((function_name in dir(options) and
         getattr(options,function_name) and
         function_name in output.keys()) or
