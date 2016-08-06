@@ -360,20 +360,24 @@ def recorder_queue_consume(q_manager,project_drs,original_options):
 
 def record_to_netcdf_file(counter,function_name,options,output,q_manager,project_drs):
     temp_file_name=options.in_netcdf_file
-    if (counter==2 and 
-        q_manager.expected_queue_size()==0 and
-        len(q_manager.queues_names)==2 and
+    if (counter == 2 and 
+        q_manager.expected_queue_size() == 0 and
+        len(q_manager.queues_names) == 2 and
         not q_manager.queues_names[-2] in  ['reduce','reduce_soft_links'] and
-        function_name=='record'):
+        function_name == 'record'):
         #Only one function was computed and it is already structured
         #Can simply copy instead of recording:
-        out_file_name=output[function_name].filepath()
+        out_file_name = output[function_name].filepath()
         output[function_name].close()
-        os.rename(temp_file_name,out_file_name)
+        try:
+            os.remove(out_file_name)
+        except:
+            pass
+        shutil.move(temp_file_name, out_file_name)
     elif ((function_name in dir(options) and
-        getattr(options,function_name) and
+        getattr(options, function_name) and
         function_name in output.keys()) or
-        function_name=='record'):
+        function_name == 'record'):
         #Only record this function if it was requested:
         #import subprocess; subprocess.Popen('ncdump -v path '+temp_file_name,shell=True)
         if ( 'log_files' in options and options.log_files ):

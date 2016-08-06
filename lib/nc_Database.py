@@ -55,7 +55,6 @@ class nc_Database:
 
     def load_nc_file(self):
         return netCDF4_h5.Dataset(self.database_file,'r')
-        #return netCDF4.Dataset(self.database_file,'r')
 
     def load_header(self):
         #Load header:
@@ -131,12 +130,12 @@ class nc_Database:
         with netCDF4.Dataset(temp_output_file_name,
                                  'w',format='NETCDF4',diskless=True,persist=True) as output_root:
             if 'no_check_availability' in dir(options) and options.no_check_availability:
-                record_header(output_root,{val:header[val] for val in header.keys() if val!='data_node_list'})
+                record_header(output_root,{val:header[val] for val in header if val!='data_node_list'})
             else:
                 record_header(output_root,header)
 
             #Define time subset:
-            if 'month_list' in header.keys():
+            if 'month_list' in header:
                 months=header['month_list']
             else:
                 months=range(1,13)
