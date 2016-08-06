@@ -31,7 +31,7 @@ With operator chaining, in a BASH script::
     echo $PASSWORD | cdb_query CMIP5 ask validate reduce_soft_links download_opendap reduce \
                       --ask_month=3,4,5 \
                       --ask_var=tas:mon-atmos-Amon,pr:mon-atmos-Amon \
-                      --ask_xperiment=historical:1950-2005,rcp85:2006-2050 \
+                      --ask_experiment=historical:1950-2005,rcp85:2006-2050 \
                       --related_experiments \
                       --Xdata_node=http://esgf2.dkrz.de \
                       --openid=$OPENID \
