@@ -40,7 +40,7 @@ With operator chaining, in a BASH script::
                       --out_destination=./out_sample/CMIP5/ \
                       --num_procs=10 \
                       --year=2000 --month=3 \
-                      --reduce_soft_links_script='nc4sl --lonlatbox -150.0 -50.0 20.0 55.0' \
+                      --reduce_soft_links_script='nc4sl subset --lonlatbox -150.0 -50.0 20.0 55.0' \
                       'cdo -sellonlatbox,-124.78,-66.95,24.74,49.34 \
                            -remapbil,newgrid_atmos.cdo \
                            -selgrid,lonlat,curvilinear,gaussian,unstructured ' \
@@ -52,7 +52,7 @@ It does:
 #. Excludes (``--Xdata_node=http://esgf2.dkrz.de``) data node ``http://esgf2.dkrz.de`` because it is a tape archive and tends to be slow.
 #. Retrieves certificates (``--openid=$OPENID``). Password read from the pipe (``--password_from_pipe``).
 #. Records the result (``--record_validate``) of ``validate`` to ``us_pr_tas_MAM_pointers.validate.200003.retrieved.converted.nc.validate``.
-#. Selects a slightly larger area than continental US for download (``--reduce_soft_links_script='nc4sl --lonlatbox -150.0 -50.0 20.0 55.0'``)
+#. Selects a slightly larger area than continental US for download (``--reduce_soft_links_script='nc4sl subset --lonlatbox -150.0 -50.0 20.0 55.0'``)
 #. Downloads only March 2000 (``--year=2000 --month=3``).
 #. Uses a bilinear remapping and focuses on the continental US (``'cdo ... '``).
 #. Does this using 10 processes ``--num_procs=10``.
@@ -73,7 +73,7 @@ If the data looks OK, then one can use the validate file to bypass the ``ask`` a
                       --password_from_pipe \
                       --out_destination=./out/CMIP5/ \
                       --num_procs=10 \
-                      --reduce_soft_links_script='nc4sl --lonlatbox -150.0 -50.0 20.0 55.0' \
+                      --reduce_soft_links_script='nc4sl subset --lonlatbox -150.0 -50.0 20.0 55.0' \
                       'cdo -sellonlatbox,-124.78,-66.95,24.74,49.34  \
                            -remapbil,newgrid_atmos.cdo \
                            -selgrid,lonlat,curvilinear,gaussian,unstructured ' \
