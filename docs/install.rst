@@ -50,7 +50,7 @@ actions a user should take is
 
 4. Register for `CMIP5 Research`. You do not need to download data.
 
-5. If using https://ceda.ac.uk instead of https://pcmdi.llnl.gov, your a `username` must be passed along your `openid` when using `cdb_query`.
+5. If using https://ceda.ac.uk instead of https://pcmdi.llnl.gov, your `username` must be passed along your `openid` when using `cdb_query`.
 
 .. note:: Previously the authentication would use local certificates. This option is still available but will be deprecated in the future.
 
