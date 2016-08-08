@@ -118,6 +118,15 @@ class nc_Database:
         #Remove the time:
         drs_to_remove.remove('time')
 
+        #Check if time was sliced:
+        time_slices=dict()
+        if ( not 'record_validate' in dir(options) or
+             not options.record_validate):
+             #Slice time unless the validate step should be recorded:
+             for time_type in ['month','year']:
+                if time_type in dir(options):
+                    time_slices[time_type]=getattr(options,time_type)
+
         #Find the unique tuples:
         trees_list=self.list_subset([getattr(File_Expt,level) for level in drs_list])
 
@@ -136,9 +145,10 @@ class nc_Database:
 
             #Define time subset:
             if 'month_list' in header:
-                months=header['month_list']
+                months_list = header['month_list']
             else:
-                months=range(1,13)
+                months_list = range(1,13)
+
             
             for tree in trees_list:
                 time_frequency=tree[drs_list.index('time_frequency')]
@@ -153,10 +163,20 @@ class nc_Database:
                 output=create_tree(output_root,zip(drs_list,tree))
                 #Record data:
                 if 'missing_years' in dir(options) and options.missing_years:
-                    years=None
+                    years_list=None
                 else:
-                    years_range=[ int(year) for year in header['experiment_list'][experiment].split(',')]
-                    years=range(years_range[0],years_range[1]+1)
+                    years_range = [ int(year) for year in header['experiment_list'][experiment].split(',')]
+                    years_list = range(years_range[0],years_range[1]+1)
+
+                #Time was further sliced:
+                if ('year' in time_slices and
+                     time_slices['year'] != None):
+                    years_list = [year for year in years_list if year in time_slices['year']]
+
+                months_list = range(1,13)
+                if ('month' in time_slices and
+                    time_slices['month']!=None):
+                    months_list=[month for month in months_list if month in time_slices['month']]
 
                 if record_function_handle=='record_paths':
                     check_dimensions=False
@@ -164,7 +184,7 @@ class nc_Database:
                     check_dimensions=True
 
                 netcdf_pointers=create_soft_links.create_netCDF_pointers(
-                                                                  paths_list,time_frequency,years, months,
+                                                                  paths_list,time_frequency,years_list, months_list,
                                                                   header['file_type_list'],
                                                                   header['data_node_list'],
                                                                   semaphores=semaphores,check_dimensions=check_dimensions,

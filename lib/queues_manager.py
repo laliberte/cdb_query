@@ -371,7 +371,7 @@ def record_to_netcdf_file(counter,function_name,options,output,q_manager,project
         output[function_name].close()
         try:
             os.remove(out_file_name)
-        except:
+        except Exception:
             pass
         shutil.move(temp_file_name, out_file_name)
     elif ((function_name in dir(options) and
@@ -396,7 +396,7 @@ def record_to_netcdf_file(counter,function_name,options,output,q_manager,project
         for id in range(2):
             try:
                 os.remove(temp_file_name)
-            except:
+            except Exception:
                 pass
     return
 
@@ -468,7 +468,7 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs,origina
     except Exception as e:
         if str(e).startswith('The kind of user must be selected'):
             raise
-    except:
+
         if options.trial>0:
             #Decrement expectation in next function:
             q_manager.remove((function_name,options_copy))
@@ -476,7 +476,7 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs,origina
             try:
                 map(os.remove,glob.glob(options_save.out_netcdf_file+'.*'))
                 os.remove(options_save.out_netcdf_file)
-            except:
+            except Exception:
                 pass
 
             #Put it back in the queue, increasing its trial number:
@@ -507,7 +507,7 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs,origina
             try:
                 map(os.remove,glob.glob(options_save.out_netcdf_file+'.*'))
                 os.remove(options_save.out_netcdf_file)
-            except:
+            except Exception:
                 pass
 
             #Put back to first function:
