@@ -120,8 +120,8 @@ class nc_Database:
 
         #Check if time was sliced:
         time_slices=dict()
-        if ( not 'record_validate' in dir(options) or
-             not options.record_validate):
+        if not ( 'record_validate' in dir(options) and
+                  options.record_validate):
              #Slice time unless the validate step should be recorded:
              for time_type in ['month','year']:
                 if time_type in dir(options):
