@@ -136,13 +136,26 @@ def reduce_var_list(database,options):
                                              not field in options.keep_field]
     else:
         drs_to_eliminate=database.drs.official_drs_no_version
-    return [ [ make_list(item) for item in var_list] for var_list in 
+    var_list=[ [ make_list(item) for item in var_list] for var_list in 
                 set([
                     tuple([ 
                         tuple(sorted(set(make_list(var[drs_to_eliminate.index(field)]))))
                         if field in drs_to_eliminate else None
                         for field in database.drs.official_drs_no_version]) for var in 
                         database.list_fields_local(options,drs_to_eliminate) ])]
+    if len(var_list)>1:
+        #This is a fix necessary for MOHC models. 
+        if 'var' in drs_to_eliminate:
+            var_index = database.drs.official_drs_no_version.index('var')
+            var_names = set(map(lambda x: tuple(x[var_index]),var_list))
+            if len(var_names) == 1:
+                ensemble_index = database.drs.official_drs_no_version.index('ensemble')
+                ensemble_names = np.unique(np.concatenate(map(lambda x: tuple(x[ensemble_index]),var_list)))
+                if 'r0i0p0' in ensemble_names:
+                    for var in var_list:
+                        if 'r0i0p0' in var[ensemble_index]:
+                            return [var,]
+    return var_list
 
 def download_files(database,options,q_manager=None,sessions=dict()):
     if q_manager != None:
