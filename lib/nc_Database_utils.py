@@ -142,7 +142,7 @@ def replace_netcdf_variable_recursive(output,data,
     group_name=level_desc[1]
     if group_name==None or isinstance(group_name,list):
         for group in data.groups:
-            if nc_Database.tree_recursive_check_not_empty(options,data.groups[group],slicing=False):
+            if nc_Database.tree_recursive_check_not_empty(options,data.groups[group],slicing=False,check=False):
                 output_grp=netcdf_utils.create_group(data,output,group)
                 replace_netcdf_variable_recursive_replicate(output_grp,data.groups[group],
                                                             level_name,group,

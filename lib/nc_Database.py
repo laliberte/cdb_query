@@ -144,11 +144,10 @@ class nc_Database:
                 record_header(output_root,header)
 
             #Define time subset:
-            if 'month_list' in header:
+            if 'month_list' in header.keys():
                 months_list = header['month_list']
             else:
                 months_list = range(1,13)
-
             
             for tree in trees_list:
                 time_frequency=tree[drs_list.index('time_frequency')]
@@ -173,7 +172,6 @@ class nc_Database:
                      time_slices['year'] != None):
                     years_list = [year for year in years_list if year in time_slices['year']]
 
-                months_list = range(1,13)
                 if ('month' in time_slices and
                     time_slices['month']!=None):
                     months_list=[month for month in months_list if month in time_slices['month']]
