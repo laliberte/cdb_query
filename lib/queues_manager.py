@@ -163,8 +163,8 @@ class CDB_queues_manager:
             counter=self.counter.increment()
             #item[-1].in_netcdf_file+='.'+str(counter)
 
-            item[-1].in_netcdf_file = tempfile.mkstemp(dir=item[-].swap_dir,suffix='.'+str(counter))
-            new_file_name=item[-1].in_netcdf_file
+            item[-1].in_netcdf_file = tempfile.mkstemp(dir=item[-1].swap_dir,suffix='.'+str(counter))[1]
+            new_file_name = item[-1].in_netcdf_file
         else:
             new_file_name=''
         getattr(self,item[0]+'_expected').increment()
@@ -393,7 +393,7 @@ def record_to_netcdf_file(counter,function_name,options,output,q_manager,project
     if len(function_name.split('_'))>1:
         options_copy=copy.copy(options)
         #options_copy.out_netcdf_file+='.'+str(counter)
-        options_copy.out_netcdf_file = tempfile.mkstemp(dir=options_copy.swap_dir,suffix='.'+str(counter))
+        options_copy.out_netcdf_file = tempfile.mkstemp(dir=options_copy.swap_dir,suffix='.'+str(counter))[1]
         q_manager.put_to_next((function_name,options_copy))
     else:
         #Make sure the file is gone:
@@ -459,7 +459,7 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs,origina
 
     #Create unique file id:
     #options_copy.out_netcdf_file+='.'+str(counter)
-    options_copy.out_netcdf_file = tempfile.mkstemp(dir=options_copy.swap_dir,suffix='.'+str(counter)) 
+    options_copy.out_netcdf_file = tempfile.mkstemp(dir=options_copy.swap_dir,suffix='.'+str(counter))[1]
 
     #Recursively apply commands:
     database=cdb_query_archive_class.Database_Manager(project_drs)

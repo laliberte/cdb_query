@@ -5,9 +5,14 @@ import datetime
 import copy
 import os
 import numpy as np
+import netCDF4
+from pkg_resources import parse_version
 
 #External but related:
 import netcdf4_soft_links.manage_soft_links_parsers as manage_soft_links_parsers
+
+#Internal:
+from . import remote_archive
 
 file_type_list=['local_file','OPENDAP','HTTPServer']
 
@@ -90,7 +95,35 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD'.format(version_num)
     generate_subparsers(command_parser,epilog,project_drs)
 
     options = command_parser.parse_args(commands_args,namespace=options)
-    return options
+    return options, project_drs
+
+#http://stackoverflow.com/questions/6365601/default-sub-command-or-handling-no-sub-command-with-argparse
+def set_default_subparser(self, name, args=None):
+    """default subparser selection. Call after setup, just before parse_args()
+    name: is the name of the subparser to call by default
+    args: if set is the argument list handed to parse_args()
+
+    , tested with 2.7, 3.2, 3.3, 3.4
+    it works with 2.6 assuming argparse is installed
+    """
+    subparser_found = False
+    for arg in sys.argv[1:]:
+        if arg in ['-h', '--help']:  # global help if no subparser
+            break
+    else:
+        for x in self._subparsers._actions:
+            if not isinstance(x, argparse._SubParsersAction):
+                continue
+            for sp_name in x._name_parser_map.keys():
+                if sp_name in sys.argv[1:]:
+                    subparser_found = True
+        if not subparser_found:
+            # insert default in first position, this implies no
+            # global options without a sub_parsers specified
+            if args is None:
+                sys.argv.insert(1, name)
+            else:
+                args.insert(0, name)
 
 def absolute_path(path):
     return os.path.abspath(os.path.expanduser(os.path.expandvars(path)))
@@ -142,6 +175,7 @@ def basic_control_arguments(parser,project_drs):
     parser.add_argument('--log_files', default=False, action='store_true', help='Create one log file per process.')
     parser.add_argument('--swap_dir', type=writeable_dir, default='.',
                                       help='Use this directory as a swap directory.')
+    parser.add_argument('--priority', type=int, default=0, help=argparse.SUPPRESS)
     return
 
 def slicing_arguments(parser,project_drs,exclude_args=[],action_type='store'):
@@ -323,7 +357,6 @@ def loop_control(parser,project_drs):
                                             For example, \'-l year -l month\' loops through all month, one at a time.\n\
                                             \'-l month\', on the other hand, would loop through the 12 months, passing all years\n\
                                             to \'reduce\'.' )
-    parser.add_argument('--priority', type=int, default=0, help=argparse.SUPPRESS)
     return parser
 
 def add_dummy_process_parser(parser,description,epilog):
