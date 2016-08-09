@@ -31,8 +31,8 @@ def download(database,retrieval_type,options,q_manager,sessions):
         else:
             raise NotImplementedError('If version is in the project drs, it must be either the last or next-to-last field.')
 
-    if ('swap_dir' in dir(options_copy) and options_copy.swap_dir!='.'):
-        options_copy.out_netcdf_file=options_copy.swap_dir+'/'+os.path.basename(options_copy.out_netcdf_file)
+    #if ('swap_dir' in dir(options_copy) and options_copy.swap_dir!='.'):
+    #    options_copy.out_netcdf_file=options_copy.swap_dir+'/'+os.path.basename(options_copy.out_netcdf_file)
 
     if 'validate' in sessions.keys():
         session=sessions['validate']

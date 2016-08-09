@@ -131,10 +131,9 @@ class nc_Database:
         trees_list=self.list_subset([getattr(File_Expt,level) for level in drs_list])
 
         #Create output:
-        #temp_output_file_name=options.out_netcdf_file+'.pid'+str(os.getpid())
         temp_output_file_name=options.out_netcdf_file
-        if ('swap_dir' in dir(options) and options.swap_dir!='.'):
-            temp_output_file_name=options.swap_dir+'/'+os.path.basename(temp_output_file_name)
+        #if ('swap_dir' in dir(options) and options.swap_dir!='.'):
+        #    temp_output_file_name=options.swap_dir+'/'+os.path.basename(temp_output_file_name)
 
         with netCDF4.Dataset(temp_output_file_name,
                                  'w',format='NETCDF4',diskless=True,persist=True) as output_root:

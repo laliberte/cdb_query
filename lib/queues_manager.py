@@ -12,6 +12,7 @@ import numpy as np
 import datetime
 import glob
 import shutil
+import tempfile
 from sqlite3 import DatabaseError
 import requests
 
@@ -160,7 +161,9 @@ class CDB_queues_manager:
             self.queues_names.index(item[0])>0):
             #Copy input files to prevent garbage from accumulating:
             counter=self.counter.increment()
-            item[-1].in_netcdf_file+='.'+str(counter)
+            #item[-1].in_netcdf_file+='.'+str(counter)
+
+            item[-1].in_netcdf_file = tempfile.mkstemp(dir=item[-].swap_dir,suffix='.'+str(counter))
             new_file_name=item[-1].in_netcdf_file
         else:
             new_file_name=''
@@ -389,7 +392,8 @@ def record_to_netcdf_file(counter,function_name,options,output,q_manager,project
 
     if len(function_name.split('_'))>1:
         options_copy=copy.copy(options)
-        options_copy.out_netcdf_file+='.'+str(counter)
+        #options_copy.out_netcdf_file+='.'+str(counter)
+        options_copy.out_netcdf_file = tempfile.mkstemp(dir=options_copy.swap_dir,suffix='.'+str(counter))
         q_manager.put_to_next((function_name,options_copy))
     else:
         #Make sure the file is gone:
@@ -454,7 +458,8 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs,origina
     options_save=copy.copy(options)
 
     #Create unique file id:
-    options_copy.out_netcdf_file+='.'+str(counter)
+    #options_copy.out_netcdf_file+='.'+str(counter)
+    options_copy.out_netcdf_file = tempfile.mkstemp(dir=options_copy.swap_dir,suffix='.'+str(counter)) 
 
     #Recursively apply commands:
     database=cdb_query_archive_class.Database_Manager(project_drs)

@@ -8,6 +8,8 @@ import argparse
 import textwrap
 import numpy as np
 import netCDF4
+import shutil
+import tempfile
 from pkg_resources import parse_version
 
 #External but related:
@@ -45,15 +47,28 @@ def cdb_query_from_list(args_list):
         elif (options.command == 'reduce' and
              'start_server' in options and
              options.start_server):
+
+            #Make tempdir:
+            if 'swap_dir' in dir(options):
+               options.swap_dir = tempfile.mkdtemp(dir=options.swap_dir) 
+
             #Use a server:
             queues_manager.ReduceManager.register('get_manager')
             reduce_manager=queues_manager.ReduceManager(address=('',50000),authkey='abracadabra')
             reduce_manager.connect()
             q_manager=reduce_manager.get_manager()
-            queues_manager.reducer(q_manager,project_drs,options)
+            try:
+                queues_manager.reducer(q_manager,project_drs,options)
+            finally:
+                #remove tempdir:
+                shutil.rmtree(options.swap_dir)
         else:
             #Ask for username and password:
             options=certificates.prompt_for_username_and_password(options)
+
+            #Make tempdir:
+            if 'swap_dir' in dir(options):
+               options.swap_dir = tempfile.mkdtemp(dir=options.swap_dir) 
 
             #Create the queue manager:
             q_manager=queues_manager.CDB_queues_manager(options)
@@ -81,6 +96,9 @@ def cdb_query_from_list(args_list):
             finally:
                 if ('start_server' in dir(options) and options.start_server):
                     reduce_server.shutdown()
+
+                #remove tempdir:
+                shutil.rmtree(options.swap_dir)
 
                 q_manager.stop_download_processes()
                 for process_name in processes.keys():
