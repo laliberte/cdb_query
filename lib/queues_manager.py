@@ -469,7 +469,14 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs,origina
         if str(e).startswith('The kind of user must be selected'):
             raise
 
-        if options.trial>0:
+        if ('not_failsafe' in dir(original_options) and
+            original_options.not_failsafe):
+            print(function_name+' failed with the following options:',options_save)
+            raise
+
+        if options.trial > 0:
+            #Retry this function.
+
             #Decrement expectation in next function:
             q_manager.remove((function_name,options_copy))
             #Delete output from previous attempt files:
@@ -485,11 +492,9 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs,origina
             new_file_name=q_manager.increment_expected_and_put((function_name,options_save))
             if new_file_name!='':
                 shutil.copyfile(options.in_netcdf_file,new_file_name)
-        else:
-            print(function_name+' failed with the following options:',options_save)
-            if ('not_failsafe' in dir(original_options) and
-                original_options.not_failsafe):
-                raise
+        elif options.failsafe_attempt > 0:
+
+            #Reset complete branch
             options_save.trial=original_options.trial
             if 'in_netcdf_file' in dir(original_options):
                 options_save.in_netcdf_file=original_options.in_netcdf_file
@@ -509,9 +514,17 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs,origina
                 os.remove(options_save.out_netcdf_file)
             except Exception:
                 pass
+            
+            options_save.trial = original_options.trial
+            
+            #Decrement failsafe attempt:
+            options_save.failsafe_attempt -= 1
 
             #Put back to first function:
             new_file_name=q_manager.increment_expected_and_put((q_manager.queues_names[0],options_save))
+        else:
+            #If it keeps on failing, ignore this whole branch!
+            print(function_name+' failed with the following options:',options_save)
     return
 
 def create_sessions(original_options,q_manager=None):
