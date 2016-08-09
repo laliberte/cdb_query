@@ -10,6 +10,12 @@ import tempfile
 #Internal:
 import nc_Database_utils
 
+def _fix_list(x)
+    if len(x)==1:
+        return x[0]
+    else:
+        return x
+
 def reduce_soft_links(database,options,q_manager=None,sessions=dict()):
     return reduce_sl_or_var(database,options,q_manager=q_manager,sessions=sessions,retrieval_type='reduce_soft_links',script=options.reduce_soft_links_script)
 
@@ -18,10 +24,9 @@ def reduce_variable(database,options,q_manager=None,sessions=dict(),retrieval_ty
 
 def reduce_sl_or_var(database,options,q_manager=None,sessions=dict(),retrieval_type='reduce',script=''):
     #The leaf(ves) considered here:
-    fix_list=(lambda x: x[0] if len(x)==1 else x)
 
     #Warning! Does not allow --serial option:
-    var=[fix_list(getattr(options,opt)) if getattr(options,opt)!=None
+    var=[_fix_list(getattr(options,opt)) if getattr(options,opt)!=None
                                  else None for opt in database.drs.official_drs_no_version]
     tree=zip(database.drs.official_drs_no_version,var)
 
