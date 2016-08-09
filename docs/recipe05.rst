@@ -57,7 +57,8 @@ It does:
 #. Downloads only March 2000 (``--year=2000 --month=3``).
 #. Uses a bilinear remapping and focuses on the continental US (``'cdo ... '``).
 #. Does this using 10 processes ``--num_procs=10``.
-#. Converts the data to the CMIP5 DRS to directory ``./out/CMIP5/``.
+#. Converts the data to the CMIP5 DRS to directory ``./out_sample/CMIP5/``.
+#. Writes a full description of downloaded data (pointers to it) in file ``us_pr_tas_MAM_pointers.validate.200003.retrieved.converted.nc``.
 
 Scaling up to the whole dataset
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
