@@ -24,8 +24,9 @@ The following BASH script recovers several variables over a latitude band::
 
     #Use 5 processors:
     NUM_PROCS=5
-    OPENID="your openid"
-    PASSWORD="your ESGF password"
+    OPENID='your openid'
+    # Single quotes are necessary here:
+    PASSWORD='your ESGF password'
 
     SWAP_DIR="/dev/shm/lat_band/"
     OUT_FILE="DJF_lat_band.nc"

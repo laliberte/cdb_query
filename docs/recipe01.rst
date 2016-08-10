@@ -190,8 +190,9 @@ This recipe is summarized in the following BASH script. The ``--password_from_pi
 
     #!/bin/bash
 
-    OPENID="your openid"
-    PASSWORD="your ESGF password"
+    OPENID='your openid'
+    # Single quotes are necessary here:
+    PASSWORD='your ESGF password'
     #Discover data:
     cdb_query CMIP5 ask --ask_month=1,2,10,11,12 \
                         --ask_var=tas:day-atmos-day,orog:fx-atmos-fx \

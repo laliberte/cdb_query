@@ -25,8 +25,9 @@ With operator chaining, in a BASH script::
     yinc      = 0.94240837696
     EndOfGrid
 
-    OPENID="your openid"
-    PASSWORD="your ESGF password"
+    OPENID='your openid'
+    # Single quotes are necessary here:
+    PASSWORD='your ESGF password'
     #latlon box -124.78 -66.95 24.74 49.34 is continental us
     echo $PASSWORD | cdb_query CMIP5 ask validate reduce_soft_links download_opendap reduce \
                       --ask_month=3,4,5 \

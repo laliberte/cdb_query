@@ -233,8 +233,9 @@ This recipe is summarized in the following BASH script::
     #Change to set number of processes to use:
     NUM_PROCS=10
     #Specify your OPENID
-    OPENID="your openid"
-    PASSWORD="your ESGF password"
+    OPENID='your openid'
+    # Single quotes are necessary here:
+    PASSWORD='your ESGF password'
 
     #Discover data:
     cdb_query CORDEX ask --ask_experiment=historical:1979-2004 \
