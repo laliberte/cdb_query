@@ -474,8 +474,8 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs,origina
         if str(e).startswith('The kind of user must be selected'):
             raise
 
-        if ('not_failsafe' in dir(original_options) and
-            original_options.not_failsafe):
+        if ('debug' in dir(original_options) and
+            original_options.debug):
             print(function_name+' failed with the following options:',options_save)
             raise
 
