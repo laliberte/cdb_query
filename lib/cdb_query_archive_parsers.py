@@ -169,8 +169,9 @@ def basic_control_arguments(parser,project_drs):
                                                              'before re-attempting the whole branch. Default: 3.')
     parser.add_argument('--failsafe_attempt', type=int, default=1, help='Try a function sequence function that number of time '
                                                                         'before dropping the offending simulation. Default: 2.')
-    parser.add_argument('--not_failsafe', default=False, action='store_true', help='Disable --trial and --failsafe_attempt '
-                                                                                   'and raise exceptions')
+    parser.add_argument('--debug', default=False, action='store_true', help='Disable --trial and --failsafe_attempt '
+                                                                            'and raise exceptions. Necessary to obtain '
+                                                                            'debugging informations.')
 
     parser.add_argument('--log_files', default=False, action='store_true', help='Create one log file per process.')
     parser.add_argument('--swap_dir', type=writeable_dir, default='.',
