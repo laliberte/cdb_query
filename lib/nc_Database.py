@@ -7,6 +7,7 @@ import netCDF4
 import h5netcdf.legacyapi as netCDF4_h5
 import copy
 import numpy as np
+import datetime
 
 #External but related:
 import netcdf4_soft_links.read_soft_links as read_soft_links
@@ -221,7 +222,7 @@ class nc_Database:
     def retrieve_dates(self,options):
         ##Recover the database meta data:
         with self.load_nc_file() as dataset:
-            dates_axis=retrieve_dates_recursive(dataset,options)
+            dates_axis = np.unique(retrieve_dates_recursive(dataset,options))
         return dates_axis
 
 #####################################################################
@@ -312,16 +313,16 @@ def create_tree_recursive(output_top,tree):
 
 def retrieve_dates_recursive(data,options):
     if 'soft_links' in data.groups.keys():
-        options_dict={opt: getattr(options,opt) for opt in ['previous','next','year','month','day','hour'] if opt in dir(options)}
-        remote_data=read_soft_links.read_netCDF_pointers(data,**options_dict)
-        if check_soft_links_size(remote_data) and remote_data.time_var!=None:
+        options_dict = {opt: getattr(options,opt) for opt in ['previous','next','year','month','day','hour'] if opt in dir(options)}
+        remote_data = read_soft_links.read_netCDF_pointers(data,**options_dict)
+        if check_soft_links_size(remote_data) and remote_data.time_var != None:
             return remote_data.date_axis[remote_data.time_restriction][remote_data.time_restriction_sort]
         else:
             return np.array([])
     elif len(data.groups.keys())>0:
-        return np.unique(np.concatenate([ retrieve_dates_recursive(data.groups[group],options)
+        return np.concatenate([ retrieve_dates_recursive(data.groups[group],options)
                 for group in data.groups.keys()
-                if  is_level_name_included_and_not_excluded(data.groups[group].getncattr(level_key),options,group)]))
+                if  is_level_name_included_and_not_excluded(data.groups[group].getncattr(level_key),options,group)])
                 #if ( is_level_name_included_and_not_excluded(data.groups[group].getncattr(level_key),options,group) and
                 # tree_recursive_check_not_empty(options,data.groups[group],check=False)) ]))
 

@@ -10,7 +10,7 @@ import tempfile
 #Internal:
 import nc_Database_utils
 
-def _fix_list(x)
+def _fix_list(x):
     if len(x)==1:
         return x[0]
     else:

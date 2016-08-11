@@ -221,13 +221,13 @@ def reduce(database,options,q_manager=None,sessions=dict()):
           len(options.in_extra_netcdf_files)>0) ):
         raise InputErrorr('The identity script \'\' can only be used when no extra netcdf files are specified.')
 
-    vars_list=reduce_var_list(database,options)
-    if len(vars_list)==1:
+    vars_list = reduce_var_list(database,options)
+    if len(vars_list) == 1:
         #Users have requested time types to be kept
-        times_list=downloads.time_split(database,options)
+        times_list = downloads.time_split(database,options)
     else:
-        times_list=[(None,None,None,None),]
-    database.put_or_process('reduce',nc_Database_reduce.reduce_variable,vars_list,options,q_manager,sessions,times_list=times_list)
+        times_list = [(None,None,None,None),]
+    database.put_or_process('reduce', nc_Database_reduce.reduce_variable, vars_list, options, q_manager, sessions, times_list=times_list)
     return
 
 def merge(database,options,q_manager=None,sessions=dict()):
@@ -299,7 +299,7 @@ class Database_Manager:
                 options_copy=make_new_options_from_lists(options,vars_list[0],times_list[0],function_name,self.drs.official_drs_no_version)
 
             #Compute function:
-            output_file_name=function_handle(self,options_copy,q_manager=q_manager,sessions=sessions)
+            output_file_name = function_handle(self,options_copy,q_manager=q_manager,sessions=sessions)
 
             if output_file_name==None:
                 #No file was written and the next function should not expect anything:
