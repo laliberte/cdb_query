@@ -256,6 +256,9 @@ def ask_simulations_recursive(database,options,simulations_desc,async=True):
     else:
         #Recursion termination condition:
         options_copy.list_only_field=simulations_desc[0]
+        if 'ask_cache' in dir(options_copy):
+            #Disable ask cache
+           options_copy.ask_cache = None 
         simulations_list=[(item,) for item in ask(database,options_copy)]
         options_copy.list_only_field=None
     return simulations_list
