@@ -1,14 +1,14 @@
 #External:
 import netCDF4
-import h5py
 import copy
 import subprocess
 import os
 import sys
 import tempfile
+import numpy as np
 
 #Internal:
-import nc_Database_utils
+from . import nc_Database_utils
 
 def _fix_list(x):
     if len(x)==1:
@@ -16,11 +16,76 @@ def _fix_list(x):
     else:
         return x
 
-def reduce_soft_links(database,options,q_manager=None,sessions=dict()):
-    return reduce_sl_or_var(database,options,q_manager=q_manager,sessions=sessions,retrieval_type='reduce_soft_links',script=options.reduce_soft_links_script)
+def make_list(item):
+    if isinstance(item,list):
+        return item
+    elif (isinstance(item,set) or isinstance(item,tuple)):
+        return list(item)
+    else:
+        if item!=None:
+            return [item,]
+        else:
+            return None
+
+def set_var_new_options(options_copy, var, official_drs_no_version):
+    for opt_id, opt in enumerate(official_drs_no_version):
+        if var_item[opt_id]!=None:
+            setattr(options_copy,opt,make_list(var_item[opt_id]))
+    return
+
+def set_time_new_options(options_copy, time):
+    for opt_id, opt in enumerate(['year','month','day','hour']):
+        if time_item[opt_id]!=None and opt in dir(options_copy):
+            setattr(options_copy,opt,make_list(time_item[opt_id]))
+    return
+
+#Do it by simulation, except if one simulation field should be kept for further operations:
+def reduce_var_list(database,options):
+    if ('keep_field' in dir(options) and options.keep_field!=None):
+        drs_to_eliminate=[field for field in database.drs.official_drs_no_version if
+                                             not field in options.keep_field]
+    else:
+        drs_to_eliminate=database.drs.official_drs_no_version
+    var_list=[ [ make_list(item) for item in var_list] for var_list in 
+                set([
+                    tuple([ 
+                        tuple(sorted(set(make_list(var[drs_to_eliminate.index(field)]))))
+                        if field in drs_to_eliminate else None
+                        for field in database.drs.official_drs_no_version]) for var in 
+                        database.list_fields_local(options,drs_to_eliminate) ])]
+    if len(var_list)>1:
+        #This is a fix necessary for MOHC models. 
+        if 'var' in drs_to_eliminate:
+            var_index = database.drs.official_drs_no_version.index('var')
+            var_names = set(map(lambda x: tuple(x[var_index]),var_list))
+            if len(var_names) == 1:
+                ensemble_index = database.drs.official_drs_no_version.index('ensemble')
+                ensemble_names = np.unique(np.concatenate(map(lambda x: tuple(x[ensemble_index]),var_list)))
+                if 'r0i0p0' in ensemble_names:
+                    for var in var_list:
+                        if 'r0i0p0' in var[ensemble_index]:
+                            return [var,]
+    return var_list
+
+def reduce_soft_links(database, options, q_manager=None, sessions=dict()):
+    vars_list = reduce_var_list(database, options)
+    for var in vars_list:
+        options_copy = copy.copy(options)
+        options_copy = set_new_var_options(options_copy,var,database.drs.official_drs_no_version)
+        return reduce_sl_or_var(database,options_copy,q_manager=q_manager,sessions=sessions,retrieval_type='reduce_soft_links',
+                                                                                            script=options.reduce_soft_links_script)
 
 def reduce_variable(database,options,q_manager=None,sessions=dict(),retrieval_type='reduce'):
-    return reduce_sl_or_var(database,options,q_manager=q_manager,sessions=sessions,retrieval_type='reduce',script=options.script)
+    vars_list = reduce_var_list(database, options)
+    for var in vars_list:
+        options_copy = copy.copy(options)
+        options_copy = set_new_var_options(options_copy,var,database.drs.official_drs_no_version)
+        times_list=downloads.time_split(database,options_copy)
+        for time in times_list:
+            options_copy_time = copy.copy(options_copy)
+            options_copy_time = set_new_var_options(options_copy_time,var,database.drs.official_drs_no_version)
+            return reduce_sl_or_var(database,options_copy_time,q_manager=q_manager,sessions=sessions,retrieval_type='reduce',
+                                                                                                     script=options.script)
 
 def reduce_sl_or_var(database,options,q_manager=None,sessions=dict(),retrieval_type='reduce',script=''):
     #The leaf(ves) considered here:

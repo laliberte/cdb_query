@@ -20,27 +20,7 @@ import netcdf4_soft_links.retrieval_manager as retrieval_manager
 import netcdf4_soft_links.remote_netcdf as remote_netcdf
 
 #Internal:
-import ask_utils
-import validate_utils
-import nc_Database
-import nc_Database_utils
-import nc_Database_reduce
-import downloads
-import cdb_query_archive_parsers
-
-def ask_var_list(database,simulations_list,options):
-    if 'keep_field' in dir(options):
-        drs_to_eliminate=[field for field in database.drs.simulations_desc if
-                                             not field in options.keep_field]
-    else:
-        drs_to_eliminate=database.drs.simulations_desc
-    return [ [make_list(item) for item in var_list] for var_list in 
-                set([
-                    tuple([ 
-                            tuple(sorted(set(make_list(var[database.drs.simulations_desc.index(field)])))) 
-                        if field in drs_to_eliminate else None
-                        for field in database.drs.official_drs_no_version]) for var in 
-                        simulations_list ])]
+from . import ask_utils, validate_utils, nc_Database, nc_Database_utils, reduce_utils, downloads, cdb_query_archive_parsers
 
 def ask(database,options,q_manager=None,sessions=dict()):
     #Load header:
@@ -81,7 +61,7 @@ def ask(database,options,q_manager=None,sessions=dict()):
         print "cdb_query will now attempt to confirm that these simulations have all the requested variables."
         print "This can take some time. Please abort if there are not enough simulations for your needs."
     
-    vars_list=ask_var_list(database,simulations_list_no_fx,options)
+    vars_list=ask_utils.ask_var_list(database,simulations_list_no_fx,options)
     database.put_or_process('ask',ask_utils.ask,vars_list,options,q_manager,sessions)
     return
 
@@ -125,37 +105,10 @@ def validate(database,options,q_manager=None,sessions=dict()):
                 q_manager.download.semaphores.add_new_data_node(data_node)
                 q_manager.download.queues.add_new_data_node(data_node)
 
-    vars_list=ask_var_list(database,simulations_list_no_fx,options_copy)
+    vars_list=ask_utils.ask_var_list(database,simulations_list_no_fx,options_copy)
     database.put_or_process('validate',validate_utils.validate,vars_list,options_copy,q_manager,sessions)
     return
 
-#Do it by simulation, except if one simulation field should be kept for further operations:
-def reduce_var_list(database,options):
-    if ('keep_field' in dir(options) and options.keep_field!=None):
-        drs_to_eliminate=[field for field in database.drs.official_drs_no_version if
-                                             not field in options.keep_field]
-    else:
-        drs_to_eliminate=database.drs.official_drs_no_version
-    var_list=[ [ make_list(item) for item in var_list] for var_list in 
-                set([
-                    tuple([ 
-                        tuple(sorted(set(make_list(var[drs_to_eliminate.index(field)]))))
-                        if field in drs_to_eliminate else None
-                        for field in database.drs.official_drs_no_version]) for var in 
-                        database.list_fields_local(options,drs_to_eliminate) ])]
-    if len(var_list)>1:
-        #This is a fix necessary for MOHC models. 
-        if 'var' in drs_to_eliminate:
-            var_index = database.drs.official_drs_no_version.index('var')
-            var_names = set(map(lambda x: tuple(x[var_index]),var_list))
-            if len(var_names) == 1:
-                ensemble_index = database.drs.official_drs_no_version.index('ensemble')
-                ensemble_names = np.unique(np.concatenate(map(lambda x: tuple(x[ensemble_index]),var_list)))
-                if 'r0i0p0' in ensemble_names:
-                    for var in var_list:
-                        if 'r0i0p0' in var[ensemble_index]:
-                            return [var,]
-    return var_list
 
 def download_files(database,options,q_manager=None,sessions=dict()):
     if q_manager != None:
@@ -170,9 +123,9 @@ def download_files(database,options,q_manager=None,sessions=dict()):
     #Recover the database meta data:
     if ( not 'script' in dir(options) or options.script==''):
         #No reduction: do not split in variables...
-        vars_list=[ [make_list(None) for item in database.drs.official_drs_no_version] ] 
+        vars_list=[ [reduce_utils.make_list(None) for item in database.drs.official_drs_no_version] ] 
     else:
-        vars_list=reduce_var_list(database,options)
+        vars_list=reduce_utils.reduce_var_list(database,options)
 
     if len(vars_list)==1:
         #Users have requested time types to be kept
@@ -183,8 +136,8 @@ def download_files(database,options,q_manager=None,sessions=dict()):
     return
 
 def reduce_soft_links(database,options,q_manager=None,sessions=dict()):
-    vars_list=reduce_var_list(database,options)
-    database.put_or_process('reduce_soft_links',nc_Database_reduce.reduce_soft_links,vars_list,options,q_manager,sessions)
+    vars_list=reduce_utils.reduce_var_list(database,options)
+    database.put_or_process('reduce_soft_links',reduce_utils.reduce_soft_links,vars_list,options,q_manager,sessions)
     return
 
 def download_opendap(database,options,q_manager=None,sessions=dict()):
@@ -199,9 +152,9 @@ def download_opendap(database,options,q_manager=None,sessions=dict()):
 
     if ( not 'script' in dir(options) or options.script==''):
         #No reduction: do not split in variables...
-        vars_list=[ [make_list(None) for item in database.drs.official_drs_no_version] ] 
+        vars_list=[ [reduce_utils.make_list(None) for item in database.drs.official_drs_no_version] ] 
     else:
-        vars_list=reduce_var_list(database,options)
+        vars_list=reduce_utils.reduce_var_list(database,options)
 
     if len(vars_list)==1:
         #Users have requested time types to be kept
@@ -221,13 +174,13 @@ def reduce(database,options,q_manager=None,sessions=dict()):
           len(options.in_extra_netcdf_files)>0) ):
         raise InputErrorr('The identity script \'\' can only be used when no extra netcdf files are specified.')
 
-    vars_list = reduce_var_list(database,options)
+    vars_list = reduce_utils.reduce_var_list(database,options)
     if len(vars_list) == 1:
         #Users have requested time types to be kept
         times_list = downloads.time_split(database,options)
     else:
         times_list = [(None,None,None,None),]
-    database.put_or_process('reduce', nc_Database_reduce.reduce_variable, vars_list, options, q_manager, sessions, times_list=times_list)
+    database.put_or_process('reduce', reduce_utils.reduce_variable, vars_list, options, q_manager, sessions, times_list=times_list)
     return
 
 def merge(database,options,q_manager=None,sessions=dict()):
@@ -276,9 +229,9 @@ class Database_Manager:
             random.shuffle(vars_list)
             for var_id,var in enumerate(vars_list):
                 for time_id, time in enumerate(times_list):
-                    options_copy=make_new_options_from_lists(options,var,time,function_name,self.drs.official_drs_no_version)
+                    options_copy = make_new_options_from_lists(options,var,time,function_name,self.drs.official_drs_no_version)
                     #Set the priority to time_id:
-                    options_copy.priority=time_id
+                    options_copy.priority = time_id
 
                     if len(times_list)>1:
                         #Find times list again:
@@ -294,14 +247,14 @@ class Database_Manager:
         else:
             #Compute single element!
             if ('serial' in dir(options) and options.serial):
-                options_copy=copy.copy(options)
+                options_copy = copy.copy(options)
             else: 
-                options_copy=make_new_options_from_lists(options,vars_list[0],times_list[0],function_name,self.drs.official_drs_no_version)
+                options_copy = make_new_options_from_lists(options,vars_list[0],times_list[0],function_name,self.drs.official_drs_no_version)
 
             #Compute function:
             output_file_name = function_handle(self,options_copy,q_manager=q_manager,sessions=sessions)
 
-            if output_file_name==None:
+            if output_file_name == None:
                 #No file was written and the next function should not expect anything:
                 #next_function_name=q_manager.queues_names[q_manager.queues_names.index(function_name)+1]
                 #getattr(q_manager,next_function_name+'_expected').decrement()
@@ -408,35 +361,6 @@ class Database_Manager:
         del self.nc_Database
         return
 
-def make_list(item):
-    if isinstance(item,list):
-        return item
-    elif (isinstance(item,set) or isinstance(item,tuple)):
-        return list(item)
-    else:
-        if item!=None:
-            return [item,]
-        else:
-            return None
-
-def make_new_options_from_lists(options,var_item,time_item,function_name,official_drs_no_version):
-    options_copy=copy.copy(options)
-    for opt_id, opt in enumerate(official_drs_no_version):
-        if var_item[opt_id]!=None:
-            setattr(options_copy,opt,make_list(var_item[opt_id]))
-    for opt_id, opt in enumerate(['year','month','day','hour']):
-        if time_item[opt_id]!=None and opt in dir(options_copy):
-            setattr(options_copy,opt,make_list(time_item[opt_id]))
-
-    if (function_name in ['ask','validate'] and
-        'ensemble' in official_drs_no_version and
-        'ensemble' in dir(options_copy) and options_copy.ensemble != None
-        and not 'r0i0p0' in options_copy.ensemble):
-        #Added 'fixed' variables:
-        options_copy.ensemble.append('r0i0p0')
-    return options_copy
-
-
 def rank_data_nodes(options,data_node_list,url_list,q_manager):
     data_node_list_timed=[]
     data_node_timing=[]
@@ -446,15 +370,20 @@ def rank_data_nodes(options,data_node_list,url_list,q_manager):
             print('Querying '+url[0]+' to measure response time of data node... ')
 
         #Add credentials:
-        credentials_kwargs={opt: getattr(options,opt) for opt in ['openid','username','password','use_certificates'
+        credentials_kwargs={opt: getattr(options,opt) for opt in ['openid','username','password','use_certificates', 'timeout'
                                                                      ] if opt in dir(options)}
 
         #Create a session for timing:
         session=requests.Session()
         with Timer() as timed_exec:
-            is_available=remote_netcdf.remote_netCDF(url[0],url[1],semaphores=q_manager.validate_semaphores,
-                                                                session=session,
-                                                               **credentials_kwargs).is_available(num_trials=1)
+            try:
+                is_available = remote_netcdf.remote_netCDF(url[0],url[1],semaphores=q_manager.validate_semaphores,
+                                                                    session=session,
+                                                                   **credentials_kwargs).is_available(num_trials=1)
+            except Exception as e:
+                is_available = False
+                if str(e).startswith('The kind of user must be selected'):
+                    raise
 
         if not is_available:
             if not ('silent' in dir(options) and options.silent):
@@ -491,6 +420,19 @@ def rank_data_nodes(options,data_node_list,url_list,q_manager):
         #Close the session:
         session.close()
     return list(np.array(data_node_list_timed)[np.argsort(data_node_timing)]),list(set(data_node_list).difference(data_node_list_timed))
+
+def make_new_options_from_lists(options,var_item,time_item,function_name,official_drs_no_version):
+    options_copy=copy.copy(options)
+    reduce_utils.set_var_new_options(options_copy, var, official_drs_no_version)
+    reduce_utils.set_var_new_options(options_copy, time)
+
+    if (function_name in ['ask','validate'] and
+        'ensemble' in official_drs_no_version and
+        'ensemble' in dir(options_copy) and options_copy.ensemble != None
+        and not 'r0i0p0' in options_copy.ensemble):
+        #Added 'fixed' variables:
+        options_copy.ensemble.append('r0i0p0')
+    return options_copy
 
 #http://preshing.com/20110924/timing-your-code-using-pythons-with-statement/
 class Timer:    

@@ -263,6 +263,21 @@ def ask_simulations_recursive(database,options,simulations_desc,async=True):
         options_copy.list_only_field=None
     return simulations_list
 
+def ask_var_list(database,simulations_list,options):
+    if 'keep_field' in dir(options):
+        drs_to_eliminate=[field for field in database.drs.simulations_desc if
+                                             not field in options.keep_field]
+    else:
+        drs_to_eliminate=database.drs.simulations_desc
+    return [ [make_list(item) for item in var_list] for var_list in 
+                set([
+                    tuple([ 
+                            tuple(sorted(set(make_list(var[database.drs.simulations_desc.index(field)])))) 
+                        if field in drs_to_eliminate else None
+                        for field in database.drs.official_drs_no_version]) for var in 
+                        simulations_list ])]
+
+
 def find_path(nc_Database,file_expt,time_slices=dict(),semaphores=dict(),session=None,remote_netcdf_kwargs=dict()):
     for val in dir(file_expt):
         if val[0]!='_' and val!='case_id':

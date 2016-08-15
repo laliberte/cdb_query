@@ -209,11 +209,6 @@ class nc_Database:
                 q_manager.download.set_closed()
                 data_node_list=self.list_data_nodes(options)
                 output=retrieval_manager.launch_download(output,data_node_list,q_manager.download,options)
-                #if (retrieval_type=='download_files'
-                #    and
-                #    not ( 'do_not_revalidate' in dir(options) and options.do_not_revalidate)):
-                #    pass #Not implemented yet
-                #       #revalidate
             else:
                 nc_Database_utils.extract_netcdf_variable(output,dataset,tree,options,retrieval_type=retrieval_type)
         return output
