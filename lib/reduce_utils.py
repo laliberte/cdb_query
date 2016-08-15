@@ -8,7 +8,7 @@ import tempfile
 import numpy as np
 
 #Internal:
-from . import nc_Database_utils
+from . import nc_Database_utils, downloads
 
 def _fix_list(x):
     if len(x)==1:
@@ -83,7 +83,7 @@ def reduce_variable(database,options,q_manager=None,sessions=dict(),retrieval_ty
         times_list=downloads.time_split(database,options_copy)
         for time in times_list:
             options_copy_time = copy.copy(options_copy)
-            set_new_time_options(options_copy_time,var)
+            set_new_time_options(options_copy_time,time)
             return reduce_sl_or_var(database,options_copy_time,q_manager=q_manager,sessions=sessions,retrieval_type='reduce',
                                                                                                      script=options.script)
 
