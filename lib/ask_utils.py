@@ -263,6 +263,17 @@ def ask_simulations_recursive(database,options,simulations_desc,async=True):
         options_copy.list_only_field=None
     return simulations_list
 
+def make_list(item):
+    if isinstance(item,list):
+        return item
+    elif (isinstance(item,set) or isinstance(item,tuple)):
+        return list(item)
+    else:
+        if item!=None:
+            return [item,]
+        else:
+            return None
+
 def ask_var_list(database,simulations_list,options):
     if 'keep_field' in dir(options):
         drs_to_eliminate=[field for field in database.drs.simulations_desc if

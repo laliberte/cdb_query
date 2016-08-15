@@ -423,8 +423,8 @@ def rank_data_nodes(options,data_node_list,url_list,q_manager):
 
 def make_new_options_from_lists(options,var_item,time_item,function_name,official_drs_no_version):
     options_copy=copy.copy(options)
-    reduce_utils.set_var_new_options(options_copy, var, official_drs_no_version)
-    reduce_utils.set_var_new_options(options_copy, time)
+    reduce_utils.set_new_var_options(options_copy, var_item, official_drs_no_version)
+    reduce_utils.set_new_time_options(options_copy, time_item)
 
     if (function_name in ['ask','validate'] and
         'ensemble' in official_drs_no_version and

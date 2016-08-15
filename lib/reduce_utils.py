@@ -27,13 +27,13 @@ def make_list(item):
         else:
             return None
 
-def set_var_new_options(options_copy, var, official_drs_no_version):
+def set_new_var_options(options_copy, var_item, official_drs_no_version):
     for opt_id, opt in enumerate(official_drs_no_version):
         if var_item[opt_id]!=None:
             setattr(options_copy,opt,make_list(var_item[opt_id]))
     return
 
-def set_time_new_options(options_copy, time):
+def set_new_time_options(options_copy, time_item):
     for opt_id, opt in enumerate(['year','month','day','hour']):
         if time_item[opt_id]!=None and opt in dir(options_copy):
             setattr(options_copy,opt,make_list(time_item[opt_id]))
@@ -71,7 +71,7 @@ def reduce_soft_links(database, options, q_manager=None, sessions=dict()):
     vars_list = reduce_var_list(database, options)
     for var in vars_list:
         options_copy = copy.copy(options)
-        options_copy = set_new_var_options(options_copy,var,database.drs.official_drs_no_version)
+        set_new_var_options(options_copy,var,database.drs.official_drs_no_version)
         return reduce_sl_or_var(database,options_copy,q_manager=q_manager,sessions=sessions,retrieval_type='reduce_soft_links',
                                                                                             script=options.reduce_soft_links_script)
 
@@ -79,11 +79,11 @@ def reduce_variable(database,options,q_manager=None,sessions=dict(),retrieval_ty
     vars_list = reduce_var_list(database, options)
     for var in vars_list:
         options_copy = copy.copy(options)
-        options_copy = set_new_var_options(options_copy,var,database.drs.official_drs_no_version)
+        set_new_var_options(options_copy,var,database.drs.official_drs_no_version)
         times_list=downloads.time_split(database,options_copy)
         for time in times_list:
             options_copy_time = copy.copy(options_copy)
-            options_copy_time = set_new_var_options(options_copy_time,var,database.drs.official_drs_no_version)
+            set_new_time_options(options_copy_time,var)
             return reduce_sl_or_var(database,options_copy_time,q_manager=q_manager,sessions=sessions,retrieval_type='reduce',
                                                                                                      script=options.script)
 
