@@ -4,7 +4,6 @@ import sqlalchemy.orm
 import json
 import os
 import netCDF4
-import h5netcdf.legacyapi as netCDF4_h5
 import copy
 import numpy as np
 import datetime
@@ -18,9 +17,6 @@ import netcdf4_soft_links.retrieval_manager as retrieval_manager
 #Internal:
 import nc_Database_utils
 
-
-#Use h5netcdf to read netCDF4 files:
-netCDF4_reader = netCDF4_h5
 
 level_key='level_name'
 
@@ -60,15 +56,19 @@ class nc_Database:
     def load_header(self):
         #Load header:
         header=dict()
-        with netCDF4_reader.Dataset(self.database_file,'r') as dataset:
+        with nc_Database_utils._read_Dataset(self.database_file)(self.database_file,'r') as dataset:
             for att in set(self.drs.header_desc).intersection(dataset.ncattrs()):
                 header[att]=json.loads(dataset.getncattr(att))
         return header
 
     def populate_database(self,options,find_function,time_slices=dict(),semaphores=dict(),session=None,remote_netcdf_kwargs=dict()):
         self.file_expt.time='0'
-        with netCDF4_reader.Dataset(self.database_file,'r') as dataset:
-            populate_database_recursive(self,dataset,options,find_function,time_slices=time_slices,semaphores=semaphores,session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
+        with nc_Database_utils._read_Dataset(self.database_file)(self.database_file,'r') as dataset:
+            populate_database_recursive(self, dataset, options, find_function, 
+                                        time_slices=time_slices,
+                                        semaphores=semaphores,
+                                        session=session,
+                                        remote_netcdf_kwargs=remote_netcdf_kwargs)
 
         #Allow complex queries:
         if ('field' in dir(options) and options.field!=[] and options.field!=None):
@@ -200,7 +200,7 @@ class nc_Database:
         ##Recover the database meta data:
         tree=zip(self.drs.official_drs_no_version,[ None
                             for field in self.drs.official_drs_no_version])
-        with netCDF4_reader.Dataset(self.database_file,'r') as dataset:
+        with nc_Database_utils._read_Dataset(self.database_file)(self.database_file,'r') as dataset:
             if retrieval_type in ['download_files', 'download_opendap']:
                 q_manager.download.set_opened()
                 nc_Database_utils.extract_netcdf_variable(output,dataset,tree,options,q_manager=q_manager.download,
@@ -221,7 +221,7 @@ class nc_Database:
 
     def retrieve_dates(self,options):
         ##Recover the database meta data:
-        with netCDF4_reader.Dataset(self.database_file,'r') as dataset:
+        with nc_Database_utils._read_Dataset(self.database_file)(self.database_file,'r') as dataset:
             dates_axis = np.unique(retrieve_dates_recursive(dataset,options))
         return dates_axis
 

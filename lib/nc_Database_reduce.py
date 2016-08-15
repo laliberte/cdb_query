@@ -69,7 +69,8 @@ def reduce_sl_or_var(database,options,q_manager=None,sessions=dict(),retrieval_t
 
         #Remove temp_output_file_name to avoid programs that request before overwriting:
         os.remove(temp_output_file_name)
-        out=subprocess.call(script_to_call.format(*temp_file_name_list),shell=True,stdout=sys.stdout,stderr=sys.stderr)
+        #out=subprocess.call(script_to_call.format(*temp_file_name_list),shell=True,stdout=sys.stdout,stderr=sys.stderr)
+        out=subprocess.call(script_to_call.format(*temp_file_name_list),shell=True)
     try:
         for file in temp_file_name_list[:-1]:
             os.remove(file)
