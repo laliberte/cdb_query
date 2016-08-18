@@ -101,7 +101,9 @@ def reduce_sl_or_var(database,options,q_manager=None,sessions=dict(),retrieval_t
     #Define output_file_name:
     output_file_name=get_output_name(database.drs,options,var)
     #temp_output_file_name=get_temp_output_file_name(options,output_file_name)
-    temp_output_file_name = tempfile.mkstemp(dir=options.swap_dir)[1]
+    fileno, temp_output_file_name = tempfile.mkstemp(dir=options.swap_dir)
+    #must close fileno
+    os.close(fileno)
 
     file_name_list=get_input_file_names(database.drs,options,script)
     temp_file_name_list=[]
@@ -113,7 +115,10 @@ def reduce_sl_or_var(database,options,q_manager=None,sessions=dict(),retrieval_t
 
     for file_name in file_name_list:
         #temp_file_name=get_temp_input_file_name(options,file_name)
-        temp_file_name = tempfile.mkstemp(dir=options.swap_dir)[1]
+        fileno, temp_file_name = tempfile.mkstemp(dir=options.swap_dir)
+        #must close fileno
+        os.close(fileno)
+
         extract_single_tree(temp_file_name,file_name,
                                     tree,tree_fx,
                                     options,options_fx,

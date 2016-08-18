@@ -16,14 +16,14 @@ import tempfile
 from sqlite3 import DatabaseError
 import requests
 
-#Internal:
-import cdb_query_archive_class
-import nc_Database
-import nc_Database_utils
+#External but related:
 import netcdf4_soft_links.queues_manager as NC4SL_queues_manager
 import netcdf4_soft_links.retrieval_manager as retrieval_manager
 import netcdf4_soft_links.certificates as certificates
 import netcdf4_soft_links.requests_sessions as requests_sessions
+
+#Internal:
+from . import cdb_query_archive_class, nc_Database, nc_Database_utils
 
 class SimpleSyncManager(managers.BaseManager):
     '''
@@ -163,7 +163,9 @@ class CDB_queues_manager:
             counter=self.counter.increment()
             #item[-1].in_netcdf_file+='.'+str(counter)
 
-            item[-1].in_netcdf_file = tempfile.mkstemp(dir=item[-1].swap_dir,suffix='.'+str(counter))[1]
+            fileno, item[-1].in_netcdf_file = tempfile.mkstemp(dir=item[-1].swap_dir,suffix='.'+str(counter))
+            #must close file number:
+            os.close(fileno)
             new_file_name = item[-1].in_netcdf_file
         else:
             new_file_name=''
@@ -393,7 +395,9 @@ def record_to_netcdf_file(counter,function_name,options,output,q_manager,project
     if len(function_name.split('_'))>1:
         options_copy=copy.copy(options)
         #options_copy.out_netcdf_file+='.'+str(counter)
-        options_copy.out_netcdf_file = tempfile.mkstemp(dir=options_copy.swap_dir,suffix='.'+str(counter))[1]
+        fileno, options_copy.out_netcdf_file = tempfile.mkstemp(dir=options_copy.swap_dir,suffix='.'+str(counter))
+        #must close file number:
+        os.close(fileno)
         q_manager.put_to_next((function_name,options_copy))
     else:
         #Make sure the file is gone:
@@ -459,7 +463,9 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs,origina
 
     #Create unique file id:
     #options_copy.out_netcdf_file+='.'+str(counter)
-    options_copy.out_netcdf_file = tempfile.mkstemp(dir=options_copy.swap_dir,suffix='.'+str(counter))[1]
+    fileno, options_copy.out_netcdf_file = tempfile.mkstemp(dir=options_copy.swap_dir,suffix='.'+str(counter))
+    #must close file number:
+    os.close(fileno)
 
     #Recursively apply commands:
     database=cdb_query_archive_class.Database_Manager(project_drs)
