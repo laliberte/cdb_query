@@ -255,11 +255,9 @@ class CDB_queues_manager:
 
     def get_queue(self,queue_name,timeout):
         #Get queue with locks:
-        if 'record'!=item[1]:
-            next_queue_name = self.queues_names[self.queues_names.index(item[1])+1]
-        else:
-            next_queue_name = None
-
+        if queue_name != 'record':
+            next_queue_name = self.queues_names[self.queues_names.index(queue_name)+1]
+            
         with getattr(self, queue_name+'_expected').lock:
             if  ( ( getattr(self, queue_name+'_expected').value_no_lock == 0) or
                   (getattr(self, next_queue_name+'_expected').value > 2*self.num_procs)):
@@ -273,10 +271,11 @@ class CDB_queues_manager:
                 #Will fail with Queue.Empty if the item had not been put in the queue:
                 item = getattr(self, queue_name).get(True, timeout)[1]
                 #reset priority to 0:
-                item[-1].priority=0
+                item[-1].priority = 0
                 #Increment future actions:
-                if next_queue_name:
-                    getattr(self, next_queue_name+'_expected').increment()
+                if 'record'!=item[1]:
+                    future_queue_name = self.queues_names[self.queues_names.index(item[1])+1]
+                    getattr(self, future_queue_name+'_expected').increment()
                 #Decrement current action:
                 getattr(self, queue_name+'_expected').decrement_no_lock()
                 return item
