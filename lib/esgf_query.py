@@ -49,8 +49,8 @@ class browser:
         list_names=[('experiment','experiment_list'),('var','variable_list')]
         lists_to_loop=dict()
         for id in list_names:
-            if id[0] in dir(self.options) and getattr(self.options,id[0])!=None:
-                lists_to_loop[id[1]]=self.options.experiment
+            if id[0] in dir(self.options) and getattr(self.options,id[0]) != None:
+                lists_to_loop[id[1]] = getattr(self.options,id[0])
             else:
                 lists_to_loop[id[1]]=database.header[id[1]].keys()
         for id in lists_to_loop.keys():
@@ -99,7 +99,7 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
     #conn = SearchConnection(search_path, distrib=options.distrib,cache='esgf_query')
 
     if session != None:
-        conn=SearchConnection(search_path, session=session)
+        conn = SearchConnection(search_path, session=session)
     else:
         if 'ask_cache' in dir(options) and options.ask_cache:
             conn_kwargs['cache']=options.ask_cache.split(',')[0]
