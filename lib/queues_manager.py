@@ -74,8 +74,6 @@ class CDB_queues_manager:
         else:
             self.num_procs=1
 
-        #for name in ['ask','validate','time_split']:
-        #authorized_functions=['ask','validate',
         authorized_functions=['ask','validate','record_validate',
                                'download_files','reduce_soft_links',
                                 'download_opendap','reduce']
@@ -103,7 +101,6 @@ class CDB_queues_manager:
         
         for queue_name in self.queues_names:
             setattr(self,queue_name,self.manager.PriorityQueue())
-            #setattr(self,queue_name,self.manager.Queue())
             setattr(self,queue_name+'_expected',NC4SL_queues_manager.Shared_Counter(self.manager))
         
         #Create a shared counter to prevent file collisions:
@@ -161,7 +158,6 @@ class CDB_queues_manager:
             self.queues_names.index(item[0])>0):
             #Copy input files to prevent garbage from accumulating:
             counter=self.counter.increment()
-            #item[-1].in_netcdf_file+='.'+str(counter)
 
             fileno, item[-1].in_netcdf_file = tempfile.mkstemp(dir=item[-1].swap_dir,suffix='.'+str(counter))
             #must close file number:
@@ -259,25 +255,30 @@ class CDB_queues_manager:
 
     def get_queue(self,queue_name,timeout):
         #Get queue with locks:
-        with getattr(self,queue_name+'_expected').lock:
-            if  ( ( getattr(self,queue_name+'_expected').value_no_lock == 0) or
-                  (queue_name == 'download_opendap' and
-                   'reduce' in self.queues_names and
-                   getattr(self,'reduce_expected').value>2*self.num_procs)):
+        if 'record'!=item[1]:
+            next_queue_name = self.queues_names[self.queues_names.index(item[1])+1]
+        else:
+            next_queue_name = None
+
+        with getattr(self, queue_name+'_expected').lock:
+            if  ( ( getattr(self, queue_name+'_expected').value_no_lock == 0) or
+                  (getattr(self, next_queue_name+'_expected').value > 2*self.num_procs)):
+                  #(queue_name == 'download_opendap' and
+                  # 'reduce' in self.queues_names and
+                  # getattr(self,'reduce_expected').value>2*self.num_procs)):
                 #If nothing is expected or there is already downloaded to
                 #feed reduce, skip!
                 raise Queue.Empty
             else:
                 #Will fail with Queue.Empty if the item had not been put in the queue:
-                item=getattr(self,queue_name).get(True,timeout)[1]
+                item = getattr(self, queue_name).get(True, timeout)[1]
                 #reset priority to 0:
                 item[-1].priority=0
                 #Increment future actions:
-                if 'record'!=item[1]:
-                    next_queue_name=self.queues_names[self.queues_names.index(item[1])+1]
-                    getattr(self,next_queue_name+'_expected').increment()
+                if next_queue_name:
+                    getattr(self, next_queue_name+'_expected').increment()
                 #Decrement current action:
-                getattr(self,queue_name+'_expected').decrement_no_lock()
+                getattr(self, queue_name+'_expected').decrement_no_lock()
                 return item
 
     #def expected_queue_size(self,restricted_queues_names):
