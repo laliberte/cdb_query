@@ -34,6 +34,8 @@ Current OTHER Project Compatibility
 Version History
 ---------------
 
+1.9.9.x: Bug fixes. piControl experiments now work as intended. Stability.
+
 1.9.9:   Stability. Better tempfiles handling (no file descriptor leak). More robust ESGF auth.
 
 1.9.8:   Some major improvements in the management of certificates. Added a simple wed file list scrappign capability
