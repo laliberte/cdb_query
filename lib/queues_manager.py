@@ -260,7 +260,8 @@ class CDB_queues_manager:
             
         with getattr(self, queue_name+'_expected').lock:
             if  ( ( getattr(self, queue_name+'_expected').value_no_lock == 0) or
-                  (getattr(self, next_queue_name+'_expected').value > 2*self.num_procs)):
+                  (queue_name != 'record' and 
+                   getattr(self, self.queues_names[self.queues_names.index(queue_name)+1]+'_expected').value > 2*self.num_procs)):
                   #(queue_name == 'download_opendap' and
                   # 'reduce' in self.queues_names and
                   # getattr(self,'reduce_expected').value>2*self.num_procs)):
