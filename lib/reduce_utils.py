@@ -127,6 +127,15 @@ def reduce_sl_or_var(database,options,q_manager=None,sessions=dict(),retrieval_t
                                     check_empty=(retrieval_type=='reduce'))
         temp_file_name_list.append(temp_file_name)
 
+    if 'sample' in dir(options) and options.sample:
+        try:
+            os.makedirs(options.out_destination)
+        except OSError as exception:
+            if exception.errno != errno.EEXIST:
+                raise
+        for file in temp_file_name_list:
+            shutil.copy(file,options.out_destination+'/'+os.path.basename(file))
+
     if script=='':
         os.rename(temp_file_name_list[0],temp_output_file_name)
     else:

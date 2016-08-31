@@ -345,6 +345,7 @@ def fields_selection(parser,project_drs):
     return
 
 def reduce_process_arguments(parser,project_drs):
+    parser.add_argument('--sample',action='store_true',help='Save samples in out_destination')
     parser.add_argument('in_extra_netcdf_files',nargs='*',
                                  help='NETCDF extra retrieved files (input).')
     return 
