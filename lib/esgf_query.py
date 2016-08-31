@@ -96,7 +96,6 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
 
     #Assumes that all slicing arguments in options are length-one list:
     conn_kwargs={'distrib':options.distrib}
-    #conn = SearchConnection(search_path, distrib=options.distrib,cache='esgf_query')
 
     if session != None:
         conn = SearchConnection(search_path, session=session)
@@ -110,6 +109,11 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
     #Search the ESGF:
     top_ctx = conn.new_context(project=nc_Database.drs.project,
                         experiment=experiment,variable=var_name)
+    if ( 'product' in dir(nc_Database.drs) and 
+         top_ctx.hit_count == 0 ):
+        #Try using project to define product name. Fix for CREATEIP.
+        top_ctx = conn.new_context(product=nc_Database.drs.product,
+                            experiment=experiment,variable=var_name)
 
     constraints_dict={field:var_desc[field_id] for field_id, field in enumerate(nc_Database.drs.var_specs)}
     #This is where the lenght-one list is important:
@@ -164,7 +168,7 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
             file_list_found=ctx.search(variable=var_name)
             file_list_remote=map(lambda x: get_urls(nc_Database.drs,x,file_type_list,var_name),file_list_found)
             file_list_remote=[item for sublist in file_list_remote for item in sublist]
-        except:
+        except Exception as e:
             warnings.warn('Search path {0} is unresponsive at the moment'.format(search_path),UserWarning)
 
         map(lambda x: record_url(x,nc_Database),file_list_remote)
@@ -172,9 +176,9 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
 
 def allow_aliases(project_drs,key,available_keys):
     # Check if aliases are allowed and return compatible alias.
-    aliases=find_aliases(project_drs,key)
-    if available_keys!=None:
-        compatible_keys=set(aliases).intersection(available_keys)
+    aliases = find_aliases(project_drs,key)
+    if available_keys != None:
+        compatible_keys = set(aliases).intersection(available_keys)
         return compatible_keys.pop()
     else:
         return key
@@ -252,13 +256,17 @@ def create_file_info_dict(key,item,drs):
             file_info['url']=item.urls[key][0][0].replace('.html','')
         else:
             file_info['url']=item.urls[key][0][0]
-    except:
+    except Exception as e:
         file_info['url']=None
     for val in drs.official_drs+unique_file_id_list:
         try:
             if val=='var':
                 #this is a temporary fix to a poor design decision on my part.
                 #to really fix this, will have to change names 'var' to 'variable'.
+                #if (isinstance(item.json['variable'],list) and
+                #   len(item.json['variable']) == 1):
+                #    file_info[val]=item.json['variable'][0]
+                #else:
                 file_info[val]=item.json['variable']
             elif val=='version':
                 if 'version' in item.json.keys():
@@ -270,15 +278,19 @@ def create_file_info_dict(key,item,drs):
                     file_info[val]=version
                 else:
                     file_info[val]='v'+version
-            #elif val=='model_version':
-            #    file_info[val]='v'+item.json['version']
-            elif val=='ensemble' and drs.project in ['NMME']:
+            elif ( val=='ensemble' and 
+                   drs.project in ['NMME'] ):
+                #Fix for NMME
                 file_info[val]=item.json['instance_id'].split('_')[-2]
+            elif ( val=='product' and
+                   'product' in dir(drs) ):
+                #Fix for CREATE-IP
+                file_info[val] = drs.product
             else:
                 file_info[val]=item.json[allow_aliases(drs,val,item.json.keys())]
 
             if isinstance(file_info[val],list): file_info[val]=str(file_info[val][0])
-        except:
+        except Exception as e:
             file_info[val]=None
     return file_info
     #if (file_info['checksum']!=None and 

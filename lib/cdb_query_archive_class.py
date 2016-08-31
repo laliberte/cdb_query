@@ -52,8 +52,12 @@ def ask(database,options,q_manager=None,sessions=dict()):
         simulations_list=ask_utils.ask_simulations_recursive(database,options,database.drs.simulations_desc)
 
     #Remove fixed variable:
-    simulations_list_no_fx=[simulation for simulation in simulations_list if 
+    if 'ensemble' in database.drs.simulations_desc:
+        simulations_list_no_fx=[simulation for simulation in simulations_list if 
                                 simulation[database.drs.simulations_desc.index('ensemble')]!='r0i0p0']
+    else:
+        simulations_list_no_fx = copy.copy(simulations_list)
+
     if not ('silent' in dir(options) and options.silent) and len(simulations_list_no_fx)>1:
         print "This is a list of simulations that COULD satisfy the query:"
         for simulation in simulations_list_no_fx:
@@ -92,8 +96,11 @@ def validate(database,options,q_manager=None,sessions=dict()):
     if simulations_list==[]:
         simulations_list=database.list_fields_local(options_copy,database.drs.simulations_desc)
     #Remove fixed variable:
-    simulations_list_no_fx=[simulation for simulation in simulations_list if 
+    if 'ensemble' in database.drs.simulations_desc:
+        simulations_list_no_fx=[simulation for simulation in simulations_list if 
                                 simulation[database.drs.simulations_desc.index('ensemble')]!='r0i0p0']
+    else:
+        simulations_list_no_fx = copy.copy(simulations_list)
 
     #Activate queues and semaphores:
     if q_manager != None:

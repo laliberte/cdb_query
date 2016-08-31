@@ -277,8 +277,11 @@ def intersection(database,options):
     #Step one: find all the institute / model tuples with all the requested variables
     #          for all months of all years for all experiments.
     simulations_list=database.nc_Database.simulations_list()
-    simulations_list_no_fx=[simulation for simulation in simulations_list if 
-                                simulation[database.drs.simulations_desc.index('ensemble')]!='r0i0p0']
+    if 'ensemble' in database.drs.simulations_desc:
+        simulations_list_no_fx=[simulation for simulation in simulations_list if 
+                                    simulation[database.drs.simulations_desc.index('ensemble')]!='r0i0p0']
+    else:
+        simulations_list_no_fx = copy.copy(simulations_list)
     model_list=copy.copy(simulations_list_no_fx)
 
     if not 'experiment' in database.drs.simulations_desc:
@@ -304,8 +307,11 @@ def intersection(database,options):
     
     #Remove fixed variables:
     simulations_list=database.nc_Database.simulations_list()
-    simulations_list_no_fx=[simulation for simulation in simulations_list if 
+    if 'ensemble' in database.drs.simulations_desc:
+        simulations_list_no_fx=[simulation for simulation in simulations_list if 
                                 simulation[database.drs.simulations_desc.index('ensemble')]!='r0i0p0']
+    else:
+        simulations_list_no_fx=copy.copy(simulations_list)
     models_to_remove=set(
                         [remove_ensemble(simulation,database.drs) for simulation in simulations_list]
                          ).difference([remove_ensemble(simulation,database.drs) for simulation in simulations_list_no_fx])
@@ -317,7 +323,10 @@ def intersection(database,options):
     return 
 
 def remove_ensemble(simulation,project_drs):
-    simulations_desc_indices_without_ensemble=range(0,len(project_drs.simulations_desc))
-    simulations_desc_indices_without_ensemble.remove(project_drs.simulations_desc.index('ensemble'))
-    return itemgetter(*simulations_desc_indices_without_ensemble)(simulation)
+    if 'ensemble' in project_drs.simulations_desc:
+        simulations_desc_indices_without_ensemble=range(0,len(project_drs.simulations_desc))
+        simulations_desc_indices_without_ensemble.remove(project_drs.simulations_desc.index('ensemble'))
+        return itemgetter(*simulations_desc_indices_without_ensemble)(simulation)
+    else:
+        return simulation
 

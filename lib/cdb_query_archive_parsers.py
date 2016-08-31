@@ -231,6 +231,11 @@ def ask_shared_arguments(parser,project_drs):
     query_group = parser.add_argument_group('Scientific query setup')
     default_experiment={'CMIP5':tuple(['historical:1950-2005',]),
                         'CORDEX':tuple(['historical:1979-2005',]),
+                        'CREATEIP':tuple(['CFSR:1979-2015','ERA-Interim:1979-2015',
+                                          'JRA-25:1979-2013',
+                                          'JRA-55:1958-2015',
+                                          'MERRA-2:1980-2015',
+                                          'MERRA-reanalysis:1979-2015']),
                         'CanSISE':tuple(['historical-r1:1979-2005',])}
     query_group.add_argument('--ask_experiment',
                              default=list(default_experiment[project_drs.project]),
@@ -255,6 +260,7 @@ def ask_shared_arguments(parser,project_drs):
     ]
     default_search_path_list={'CMIP5':ESGF_nodes,
                               'CORDEX':ESGF_nodes,
+                              'CREATEIP':['https://esgf.nccs.nasa.gov/esg-search/'],
                               'CanSISE':['http://collaboration.cmc.ec.gc.ca/cmc/cccma/CanSISE/output']}
     query_group.add_argument('--search_path',
                              default=default_search_path_list[project_drs.project],
@@ -266,6 +272,7 @@ def ask_shared_arguments(parser,project_drs):
                              help='Comma-separated list of search paths to exclude.')
     default_var={'CMIP5':tuple(['tas:mon-atmos-Amon',]),
                  'CORDEX':tuple(['tas:mon',]),
+                 'CREATEIP':tuple(['tas:mon-atmos',]),
                  'CanSISE':tuple(['tas:mon-atmos',])}
     query_group.add_argument('--ask_var',
                              default=list(default_var[project_drs.project]),

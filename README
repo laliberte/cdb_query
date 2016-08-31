@@ -25,6 +25,7 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD.
 Current ESGF Project Compatibility
 ----------------------------------
 - CMIP5 (full, tested)
+- CREATEIP (full, tested)
 - CORDEX (full, not completely tested)
 
 Current OTHER Project Compatibility
@@ -34,7 +35,7 @@ Current OTHER Project Compatibility
 Version History
 ---------------
 
-1.9.9.x: Bug fixes. piControl experiments now work as intended. Stability.
+1.9.9.x: Bug fixes. piControl experiments now work as intended. Stability. New Projects.
 
 1.9.9:   Stability. Better tempfiles handling (no file descriptor leak). More robust ESGF auth.
 
