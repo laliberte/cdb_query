@@ -6,6 +6,8 @@ import os
 import sys
 import tempfile
 import numpy as np
+import shutil
+import errno
 
 #Internal:
 from . import nc_Database_utils, downloads
