@@ -315,9 +315,13 @@ def retrieve_dates_recursive(data,options):
         else:
             return np.array([])
     elif len(data.groups.keys())>0:
-        return np.concatenate([ retrieve_dates_recursive(data.groups[group],options)
+        time_axes = [ retrieve_dates_recursive(data.groups[group],options)
                 for group in data.groups.keys()
-                if  is_level_name_included_and_not_excluded(data.groups[group].getncattr(level_key),options,group)])
+                if  is_level_name_included_and_not_excluded(data.groups[group].getncattr(level_key),options,group)]
+        if len(time_axes) > 0:
+            return np.concatenate(time_axes)
+        else:
+            return np.array([])
                 #if ( is_level_name_included_and_not_excluded(data.groups[group].getncattr(level_key),options,group) and
                 # tree_recursive_check_not_empty(options,data.groups[group],check=False)) ]))
 
