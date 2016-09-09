@@ -8,6 +8,11 @@ import tempfile
 import numpy as np
 import shutil
 import errno
+from StringIO import StringIO
+import logging
+#_logger = logging.getLogger(__name__)
+#_logger.addHandler(logging.NullHandler())
+#_logger.setLevel(logging.CRITICAL)
 
 #Internal:
 from . import nc_Database_utils, downloads
@@ -54,7 +59,7 @@ def reduce_var_list(database,options):
                         tuple(sorted(set(make_list(var[drs_to_eliminate.index(field)]))))
                         if field in drs_to_eliminate else None
                         for field in database.drs.official_drs_no_version]) for var in 
-                        database.list_fields_local(options,drs_to_eliminate) ])]
+                        database.list_fields_local(options,drs_to_eliminate, soft_links=False) ])]
     if len(var_list)>1:
         #This is a fix necessary for MOHC models. 
         if 'var' in drs_to_eliminate:
@@ -70,28 +75,59 @@ def reduce_var_list(database,options):
     return var_list
 
 def reduce_soft_links(database, options, q_manager=None, sessions=dict()):
+    #Create temp output
+    fileno, temp_output_file_name = tempfile.mkstemp(dir=options.swap_dir)
+    #must close fileno
+    os.close(fileno)
+
     vars_list = reduce_var_list(database, options)
-    for var in vars_list:
-        options_copy = copy.copy(options)
-        set_new_var_options(options_copy,var,database.drs.official_drs_no_version)
-        return reduce_sl_or_var(database,options_copy,q_manager=q_manager,sessions=sessions,retrieval_type='reduce_soft_links',
-                                                                                            script=options.reduce_soft_links_script)
+    with netCDF4.Dataset(temp_output_file_name,'w',diskless=True,persist=True) as output:
+        for var in vars_list:
+            options_copy = copy.copy(options)
+            set_new_var_options(options_copy,var,database.drs.official_drs_no_version)
+            logging.debug('Reducing soft_links '+str(var)+' '+str(time))
+            temp_output_file_name_one_var = reduce_sl_or_var(database,options_copy,q_manager=q_manager,
+                                                             sessions=sessions,retrieval_type='reduce_soft_links',
+                                                             script=options.reduce_soft_links_script)
+            nc_Database_utils.record_to_netcdf_file_from_file_name(options_copy,temp_output_file_name_one_var,output,database.drs)
+            logging.debug('Done reducing soft_links '+str(var)+' '+str(time))
+
+            try:
+                os.remove(temp_output_file_name_one_var)
+            except Exception:
+                pass
+    return temp_output_file_name
 
 def reduce_variable(database,options,q_manager=None,sessions=dict(),retrieval_type='reduce'):
+    #Create temp output
+    fileno, temp_output_file_name = tempfile.mkstemp(dir=options.swap_dir)
+    #must close fileno
+    os.close(fileno)
+
     vars_list = reduce_var_list(database, options)
-    for var in vars_list:
-        options_copy = copy.copy(options)
-        set_new_var_options(options_copy,var,database.drs.official_drs_no_version)
-        times_list=downloads.time_split(database,options_copy)
-        for time in times_list:
-            options_copy_time = copy.copy(options_copy)
-            set_new_time_options(options_copy_time,time)
-            return reduce_sl_or_var(database,options_copy_time,q_manager=q_manager,sessions=sessions,retrieval_type='reduce',
-                                                                                                     script=options.script)
+    with netCDF4.Dataset(temp_output_file_name,'w',diskless=True,persist=True) as output:
+        for var in vars_list:
+            options_copy = copy.copy(options)
+            set_new_var_options(options_copy,var,database.drs.official_drs_no_version)
+            times_list=downloads.time_split(database,options_copy)
+            for time in times_list:
+                options_copy_time = copy.copy(options_copy)
+                set_new_time_options(options_copy_time,time)
+                logging.debug('Reducing variables '+str(var)+' '+str(time))
+                temp_output_file_name_one_var = reduce_sl_or_var(database,options_copy_time,q_manager=q_manager,
+                                                               sessions=sessions,retrieval_type='reduce',
+                                                               script=options.script)
+                nc_Database_utils.record_to_netcdf_file_from_file_name(options_copy_time,temp_output_file_name_one_var,output,database.drs)
+                logging.debug('Done Reducing variables '+str(var)+' '+str(time))
+
+                try:
+                    os.remove(temp_output_file_name_one_var)
+                except Exception:
+                    pass
+    return temp_output_file_name
 
 def reduce_sl_or_var(database,options,q_manager=None,sessions=dict(),retrieval_type='reduce',script=''):
     #The leaf(ves) considered here:
-
     #Warning! Does not allow --serial option:
     var=[_fix_list(getattr(options,opt)) if getattr(options,opt)!=None
                                  else None for opt in database.drs.official_drs_no_version]
@@ -150,8 +186,11 @@ def reduce_sl_or_var(database,options,q_manager=None,sessions=dict(),retrieval_t
 
         #Remove temp_output_file_name to avoid programs that request before overwriting:
         os.remove(temp_output_file_name)
-        #out=subprocess.call(script_to_call.format(*temp_file_name_list),shell=True,stdout=sys.stdout,stderr=sys.stderr)
-        out=subprocess.call(script_to_call.format(*temp_file_name_list),shell=True)
+        output = subprocess.check_output(script_to_call.format(*temp_file_name_list),shell=True,stderr=subprocess.STDOUT)
+        for line in iter(output.splitlines()):
+            logging.info(line)
+        #out=subprocess.call(script_to_call.format(*temp_file_name_list),shell=True)
+
     try:
         for file in temp_file_name_list[:-1]:
             os.remove(file)
@@ -170,6 +209,7 @@ def reduce_sl_or_var(database,options,q_manager=None,sessions=dict(),retrieval_t
         os.rename(output_file_name,temp_output_file_name)
     except OSError:
         pass
+
     return temp_output_file_name
 
 def extract_single_tree(temp_file,file,tree,tree_fx,options,options_fx,session=None,retrieval_type='reduce',check_empty=False):
