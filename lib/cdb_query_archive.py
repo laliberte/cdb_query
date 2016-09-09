@@ -1,21 +1,11 @@
 #External:
 import sys
-import select
-import getpass
-import multiprocessing
-import copy
-import argparse 
-import textwrap
-import numpy as np
-import shutil
-import tempfile
-
-#External but related:
-import netcdf4_soft_links.certificates as certificates
-import netcdf4_soft_links.retrieval_manager as retrieval_manager
+import logging
+import logging.handlers
+import threading
 
 #Internal:
-from . import cdb_query_archive_parsers, cdb_query_archive_class, queues_manager
+from . import cdb_query_archive_parsers
 
 def main():
     cdb_query_from_list(sys.argv)
@@ -25,8 +15,44 @@ def cdb_query_from_list(args_list):
     #Parser arguments:
     options, project_drs = cdb_query_archive_parsers.full_parser(args_list)
 
+    # https://docs.python.org/2/howto/logging-cookbook.html
+    if ( 'log_files' in dir(options) and options.log_files and
+         'out_netcdf_file' in dir(options) ):
+        logging.basicConfig(
+                            level=logging.DEBUG,
+                            format='%(processName)-10s %(asctime)s.%(msecs)03d %(name)-12s %(levelname)-8s %(message)s',
+                            datefmt='%m-%d %H:%M:%S',
+                            filename=options.out_netcdf_file+'.log',
+                            filemode='w')
+        #rootLogger = logging.getLogger('')
+        #rootLogger.setLevel(logging.DEBUG)
+        #socketHandler = logging.handlers.SocketHandler('localhost',
+        #                    logging.handlers.DEFAULT_TCP_LOGGING_PORT)
+        #rootLogger.addHandler(socketHandler)
+        
+        #logging_thread = threading.Thread(target=logger_thread, args=(options,))
+        #logging_thread.start()
+    else:
+        logging.basicConfig(level=logging.WARNING,
+                            format='%(processName)-20s %(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                            datefmt='%m-%d %H:%M'
+                                )
+    #External:
+    import multiprocessing
+    import copy
+    import shutil
+    import tempfile
+
+    #External but related:
+    import netcdf4_soft_links.certificates as certificates
+    import netcdf4_soft_links.retrieval_manager as retrieval_manager
+
+    #Internal:
+    from . import cdb_query_archive_class, queues_manager
+
     if 'related_experiments' in dir(options) and not options.related_experiments:
         project_drs.simulations_desc.append('experiment')
+
     
     if options.command!='certificates':
         if options.command in ['list_fields','merge']:
@@ -65,11 +91,12 @@ def cdb_query_from_list(args_list):
                options.swap_dir = tempfile.mkdtemp(dir=options.swap_dir) 
 
             #Create the queue manager:
-            q_manager=queues_manager.CDB_queues_manager(options)
-            processes=queues_manager.start_consumer_processes(q_manager,project_drs,options)
+            logging.debug('Starting queues manager')
+            q_manager = queues_manager.CDB_queues_manager(options)
+            processes = queues_manager.start_consumer_processes(q_manager,project_drs,options)
             try:
                 #Start the queue consumer processes:
-                options_copy=copy.copy(options)
+                options_copy = copy.copy(options)
                 #Increment first queue and put:
                 q_manager.increment_expected_and_put((q_manager.queues_names[0],options_copy))
                 if ('start_server' in dir(options) and options.start_server):
@@ -101,9 +128,13 @@ def cdb_query_from_list(args_list):
                             processes[process_name].terminate()
     else:
         options=certificates.prompt_for_username_and_password(options)
-        
+
+    return
+
+#def logger_thread(options):
+#    from . import logging_server
+#    logging_server.start(options)
 
 if __name__ == "__main__":
     sys.settrace
     main()
-
