@@ -94,7 +94,7 @@ def validate(database,options,q_manager=None,sessions=dict()):
 
     #Find the atomic simulations:
     if simulations_list==[]:
-        simulations_list=database.list_fields_local(options_copy,database.drs.simulations_desc)
+        simulations_list=database.list_fields_local(options_copy,database.drs.simulations_desc, soft_links=False)
     #Remove fixed variable:
     if 'ensemble' in database.drs.simulations_desc:
         simulations_list_no_fx=[simulation for simulation in simulations_list if 
@@ -134,11 +134,8 @@ def download_files(database,options,q_manager=None,sessions=dict()):
     else:
         vars_list=reduce_utils.reduce_var_list(database,options)
 
-    if len(vars_list)==1:
-        #Users have requested time types to be kept
-        times_list=downloads.time_split(database,options)
-    else:
-        times_list=[(None,None,None,None),]
+    #Users have requested time types to be kept
+    times_list = downloads.time_split(database,options,check_split=(len(vars_list)==1))
     database.put_or_process('download_files',downloads.download_files,vars_list,options,q_manager,sessions,times_list=times_list)
     return
 
@@ -163,11 +160,7 @@ def download_opendap(database,options,q_manager=None,sessions=dict()):
     else:
         vars_list=reduce_utils.reduce_var_list(database,options)
 
-    if len(vars_list)==1:
-        #Users have requested time types to be kept
-        times_list=downloads.time_split(database,options)
-    else:
-        times_list=[(None,None,None,None),]
+    times_list = downloads.time_split(database,options,check_split=(len(vars_list)==1))
     database.put_or_process('download_opendap',downloads.download_opendap,vars_list,options,q_manager,sessions,times_list=times_list)
     return
 
@@ -182,11 +175,7 @@ def reduce(database,options,q_manager=None,sessions=dict()):
         raise InputErrorr('The identity script \'\' can only be used when no extra netcdf files are specified.')
 
     vars_list = reduce_utils.reduce_var_list(database,options)
-    if len(vars_list) == 1:
-        #Users have requested time types to be kept
-        times_list = downloads.time_split(database,options)
-    else:
-        times_list = [(None,None,None,None),]
+    times_list = downloads.time_split(database,options,check_split=(len(vars_list)==1))
     database.put_or_process('reduce', reduce_utils.reduce_variable, vars_list, options, q_manager, sessions, times_list=times_list)
     return
 
@@ -209,8 +198,8 @@ class Database_Manager:
         self.drs=project_drs
         return
 
-    def list_fields_local(self,options,fields_to_list):
-        self.load_database(options,find_simple)
+    def list_fields_local(self,options,fields_to_list, soft_links=True):
+        self.load_database(options,find_simple, soft_links=soft_links)
         fields_list=self.nc_Database.list_fields(fields_to_list)
         self.close_database()
         return fields_list
@@ -234,15 +223,15 @@ class Database_Manager:
             'serial' in dir(options) and options.serial):
             #Randomize to minimize strain on consumers:
             random.shuffle(vars_list)
-            for var_id,var in enumerate(vars_list):
+            for var_id, var in enumerate(vars_list):
                 for time_id, time in enumerate(times_list):
                     options_copy = make_new_options_from_lists(options,var,time,function_name,self.drs.official_drs_no_version)
-                    #Set the priority to time_id:
-                    options_copy.priority = time_id
+                    #Set the priority to var_id + time_id to get a good mix:
+                    options_copy.priority = var_id + time_id
 
                     if len(times_list)>1:
                         #Find times list again:
-                        var_times_list=downloads.time_split(self,options_copy)
+                        var_times_list = downloads.time_split(self,options_copy)
                     #Submit only if the times_list is not empty:
                     if len(times_list)==1 or len(var_times_list)>0:
                         new_file_name=q_manager.increment_expected_and_put((function_name,options_copy))
@@ -343,16 +332,22 @@ class Database_Manager:
             self.close_database()
         return
         
-    def load_database(self,options,find_function,time_slices=dict(),semaphores=dict(),session=None,remote_netcdf_kwargs=dict()):
+    def load_database(self,options,find_function,
+                      soft_links=True,time_slices=dict(),
+                      semaphores=dict(),session=None,remote_netcdf_kwargs=dict()):
         self.define_database(options)
         if 'header' in dir(self):
             self.nc_Database.header=self.header
-        self.nc_Database.populate_database(options,find_function,time_slices=time_slices,semaphores=semaphores,session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
+        self.nc_Database.populate_database(options,find_function,
+                                           soft_links=soft_links,
+                                           time_slices=time_slices,semaphores=semaphores,
+                                           session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
         if 'ensemble' in dir(options) and options.ensemble!=None:
             #Always include r0i0p0 when ensemble was sliced:
             options_copy=copy.copy(options)
             options_copy.ensemble='r0i0p0'
-            self.nc_Database.populate_database(options_copy,find_function,semaphores=semaphores,session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
+            self.nc_Database.populate_database(options_copy,find_function,soft_links=soft_links,
+                                               semaphores=semaphores,session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
         return
 
     def define_database(self,options):

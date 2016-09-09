@@ -61,11 +61,11 @@ class nc_Database:
                 header[att]=json.loads(dataset.getncattr(att))
         return header
 
-    def populate_database(self,options,find_function,time_slices=dict(),semaphores=dict(),session=None,remote_netcdf_kwargs=dict()):
+    def populate_database(self,options,find_function,soft_links=True,time_slices=dict(),semaphores=dict(),session=None,remote_netcdf_kwargs=dict()):
         self.file_expt.time='0'
         with nc_Database_utils._read_Dataset(self.database_file)(self.database_file,'r') as dataset:
             populate_database_recursive(self, dataset, options, find_function, 
-                                        time_slices=time_slices,
+                                        soft_links=soft_links,time_slices=time_slices,
                                         semaphores=semaphores,
                                         session=session,
                                         remote_netcdf_kwargs=remote_netcdf_kwargs)
@@ -227,8 +227,10 @@ class nc_Database:
 #####################################################################
 file_unique_id_list=['checksum_type','checksum','tracking_id']
 
-def populate_database_recursive(nc_Database,data,options,find_function,time_slices=dict(),semaphores=dict(),session=None,remote_netcdf_kwargs=dict()):
-    if 'soft_links' in data.groups.keys():
+def populate_database_recursive(nc_Database,data,options,find_function,
+                                soft_links=True,time_slices=dict(),semaphores=dict(),
+                                session=None,remote_netcdf_kwargs=dict()):
+    if soft_links and 'soft_links' in data.groups.keys():
         soft_links=data.groups['soft_links']
         paths=soft_links.variables['path'][:]
         for path_id, path in enumerate(paths):
@@ -238,7 +240,7 @@ def populate_database_recursive(nc_Database,data,options,find_function,time_slic
                 setattr(nc_Database.file_expt,id,soft_links.variables[id][path_id])
 
             #Check if data_node was included:
-            data_node=remote_netcdf.get_data_node(soft_links.variables['path'][path_id],
+            data_node = remote_netcdf.get_data_node(soft_links.variables['path'][path_id],
                                                     soft_links.variables['file_type'][path_id])
 
             if is_level_name_included_and_not_excluded('data_node',options,data_node):
@@ -250,12 +252,12 @@ def populate_database_recursive(nc_Database,data,options,find_function,time_slic
                 find_function(nc_Database,copy.deepcopy(nc_Database.file_expt),time_slices=time_slices,
                                                                     semaphores=semaphores,
                                                                     session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
-    elif len(data.groups.keys())>0:
+    elif len(data.groups.keys())>0 and not 'soft_links' in data.groups.keys():
         for group in data.groups.keys():
             level_name=data.groups[group].getncattr(level_key)
             if is_level_name_included_and_not_excluded(level_name,options,group):
                 setattr(nc_Database.file_expt,data.groups[group].getncattr(level_key),group)
-                populate_database_recursive(nc_Database,data.groups[group],options,find_function,time_slices=time_slices,
+                populate_database_recursive(nc_Database,data.groups[group],options,find_function,soft_links=soft_links,time_slices=time_slices,
                                                                     semaphores=semaphores,
                                                                     session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
     elif 'path' in data.ncattrs():
@@ -281,7 +283,6 @@ def populate_database_recursive(nc_Database,data,options,find_function,time_slic
                                                         semaphores=semaphores,session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
     else:
         #for retrieved datasets:
-        #id_list=['file_type','search','path','version']
         id_list=['file_type','path','version']
         for id in id_list:
             setattr(nc_Database.file_expt,id,'')
@@ -317,7 +318,8 @@ def retrieve_dates_recursive(data,options):
     elif len(data.groups.keys())>0:
         time_axes = [ retrieve_dates_recursive(data.groups[group],options)
                 for group in data.groups.keys()
-                if  is_level_name_included_and_not_excluded(data.groups[group].getncattr(level_key),options,group)]
+                if is_level_name_included_and_not_excluded(data.groups[group].getncattr(level_key),options,group)]
+
         if len(time_axes) > 0:
             return np.concatenate(time_axes)
         else:

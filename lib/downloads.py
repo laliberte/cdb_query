@@ -81,19 +81,18 @@ def _is_len_one_list(x):
     else:
         return False
 
-def time_split(database,options):
-    if ( options.time_frequency!=None and
-         set(options.time_frequency).issubset(['fx','clim'])):
-        #Some time frequencies should not be time split:
-        return [(None,None,None,None),]
-
+def time_split(database,options, check_split=True):
     loop_names=['year','month','day','hour']
-    if  not 'loop_through_time' in dir(options) or len(options.loop_through_time)==0:
-        return [(None,None,None,None),]
-    elif np.all([ _is_len_one_list(getattr(options,loop)) if loop in options.loop_through_time 
-                                        else getattr(options,loop)==None for loop in loop_names]):
-        return [ tuple([ getattr(options,loop)[0] if loop in options.loop_through_time 
-                                        else None for loop in loop_names]),]
+
+    if ( not check_split or 
+         ( options.time_frequency!=None and
+           set(options.time_frequency).issubset(['fx','clim'])) or
+           not 'loop_through_time' in dir(options) ):
+        #Some time frequencies should not be time split:
+        return [ tuple([getattr(options,loop) for loop in loop_names]),]
+    elif np.all([ _is_len_one_list(getattr(options,loop)) for loop in loop_names if loop in options.loop_through_time]):
+        return [ tuple([ getattr(options,loop)[0] if loop in options.loop_through_time
+                                        else getattr(options,loop) for loop in loop_names]),]
 
     options_copy=copy.copy(options)
     #Do not use previous and next to determine time:
@@ -114,7 +113,7 @@ def time_split(database,options):
     dates_axis = database.nc_Database.retrieve_dates(options_copy)
     database.close_database()
     if len(dates_axis)>0:
-        time_list = recursive_time_list(dates_axis, loop_names,
+        time_list = recursive_time_list(options_copy, dates_axis, loop_names,
                                         [ True if loop in options_copy.loop_through_time else False for loop in loop_names],[],[])
         valid_time_list = list(set(time_list))
         if len(valid_time_list) > 0:
@@ -125,7 +124,7 @@ def time_split(database,options):
         #There are no dates corresponding to the slicing
         return []
 
-def recursive_time_list(dates_axis, loop_names, loop_values, time_unit_names, time_unit_values):
+def recursive_time_list(options, dates_axis, loop_names, loop_values, time_unit_names, time_unit_values):
     dates_axis_tmp = dates_axis
     for time_unit, value in zip(time_unit_names, time_unit_values):
         dates_axis_tmp = dates_axis_tmp[np.array(map(lambda x: getattr(x,time_unit) == value, dates_axis_tmp))]
@@ -133,7 +132,7 @@ def recursive_time_list(dates_axis, loop_names, loop_values, time_unit_names, ti
     if loop_values[0]:
         unique_loop_list = np.unique(map(lambda x: getattr(x,loop_names[0]), dates_axis_tmp))
         if len(loop_names) > 1:
-            return [ item for sublist in map(lambda y: map(lambda x: (y,)+x,recursive_time_list(dates_axis_tmp,
+            return [ item for sublist in map(lambda y: map(lambda x: (y,)+x,recursive_time_list(options, dates_axis_tmp,
                                                                                                 loop_names[1:],
                                                                                                 loop_values[1:],
                                                                                                 time_unit_names + [loop_names[0], ],
@@ -144,7 +143,18 @@ def recursive_time_list(dates_axis, loop_names, loop_values, time_unit_names, ti
             return map(lambda y:(y,),unique_loop_list)
     else:
         if len(loop_names)>1:
-            return map(lambda x:(None,)+x,recursive_time_list(dates_axis_tmp, loop_names[1:], loop_values[1:], time_unit_names, time_unit_values))
+            return map(lambda x:(_make_tuple(getattr(options,loop_names[0])),)+x,recursive_time_list(options, 
+                                                                                        dates_axis_tmp, 
+                                                                                        loop_names[1:], 
+                                                                                        loop_values[1:], 
+                                                                                        time_unit_names, 
+                                                                                        time_unit_values))
         else:
-            return [(None,),]
+            return [(_make_tuple(getattr(options,loop_names[0])),),]
+
+def _make_tuple(x):
+    if isinstance(x,list):
+        return tuple(x)
+    else:
+        return x
         
