@@ -42,7 +42,7 @@ setup(
                             'netCDF4',
                             'sqlalchemy>=1.0',
                             'esgf-pyclient',
-                            'netcdf4_soft_links>=0.7',
+                            'netcdf4_soft_links>=0.7.4',
                             'bs4'],
         zip_safe=False,
         # other arguments here...
