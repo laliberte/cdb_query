@@ -36,6 +36,7 @@ Version History
 ---------------
 
 1.9.9.x: Bug fixes. piControl experiments now work as intended. Stability. New Projects.
+         Performance improvements in reduce. Logging.
 
 1.9.9:   Stability. Better tempfiles handling (no file descriptor leak). More robust ESGF auth.
 
