@@ -85,12 +85,12 @@ def reduce_soft_links(database, options, q_manager=None, sessions=dict()):
         for var in vars_list:
             options_copy = copy.copy(options)
             set_new_var_options(options_copy,var,database.drs.official_drs_no_version)
-            logging.debug('Reducing soft_links '+str(var)+' '+str(time))
-            temp_output_file_name_one_var = reduce_sl_or_var(database,options_copy,q_manager=q_manager,
-                                                             sessions=sessions,retrieval_type='reduce_soft_links',
+            logging.debug('Reducing soft_links '+str(var))
+            temp_output_file_name_one_var = reduce_sl_or_var(database, options_copy, q_manager=q_manager,
+                                                             sessions=sessions, retrieval_type='reduce_soft_links',
                                                              script=options.reduce_soft_links_script)
-            nc_Database_utils.record_to_netcdf_file_from_file_name(options_copy,temp_output_file_name_one_var,output,database.drs)
-            logging.debug('Done reducing soft_links '+str(var)+' '+str(time))
+            nc_Database_utils.record_to_netcdf_file_from_file_name(options_copy, temp_output_file_name_one_var, output ,database.drs)
+            logging.debug('Done reducing soft_links '+str(var))
 
             try:
                 os.remove(temp_output_file_name_one_var)

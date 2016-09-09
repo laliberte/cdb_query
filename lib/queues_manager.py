@@ -506,7 +506,9 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs,origina
             new_file_name=q_manager.increment_expected_and_put((q_manager.queues_names[0],options_save))
         else:
             #If it keeps on failing, ignore this whole branch!
-            print(function_name+' failed with the following options:',options_save)
+            logging.error(function_name + 
+                          ' failed with the following options: ' +
+                          str(options_save))
     return
 
 def create_sessions(original_options,q_manager=None):
