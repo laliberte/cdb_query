@@ -15,6 +15,8 @@ import shutil
 import tempfile
 from sqlite3 import DatabaseError
 import requests
+import logging
+_logger = logging.getLogger(__name__)
 
 #External but related:
 import netcdf4_soft_links.queues_manager as NC4SL_queues_manager
@@ -291,22 +293,8 @@ def recorder(q_manager,project_drs,options):
     #The consumers can now terminate:
     q_manager.set_closed()
 
-
-    if ( 'log_files' in options and options.log_files ):
-        log_file_name=multiprocessing.current_process().name + ".out"
-        with open(log_file_name, "w") as logger:
-            sys.stdout=logger
-            old_stdout=sys.stdout
-            old_stdout.flush()
-            try:
-                sys.stdout=logger
-                print(multiprocessing.current_process().name+' with pid '+str(os.getpid()))
-                recorder_queue_consume(q_manager,project_drs,options)
-            finally:
-                sys.stdout.flush()
-                sys.stdout=old_stdout
-    else:
-        recorder_queue_consume(q_manager,project_drs,options)
+    _logger.debug(multiprocessing.current_process().name+' with pid '+str(os.getpid()))
+    recorder_queue_consume(q_manager,project_drs,options)
     return
         
 def recorder_queue_consume(q_manager,project_drs,original_options):
@@ -369,7 +357,7 @@ def record_to_netcdf_file(counter,function_name,options,output,q_manager,project
     if (counter == 2 and 
         q_manager.expected_queue_size() == 0 and
         len(q_manager.queues_names) == 2 and
-        not q_manager.queues_names[-2] in  ['reduce','reduce_soft_links'] and
+        #not q_manager.queues_names[-2] in  ['reduce','reduce_soft_links'] and
         function_name == 'record'):
         #Only one function was computed and it is already structured
         #Can simply copy instead of recording:
@@ -386,12 +374,9 @@ def record_to_netcdf_file(counter,function_name,options,output,q_manager,project
         function_name == 'record'):
         #Only record this function if it was requested:
         #import subprocess; subprocess.Popen('ncdump -v path '+temp_file_name,shell=True)
-        if ( 'log_files' in options and options.log_files ):
-            print('Recording: '+function_name,datetime.datetime.now(),options)
-        #with netCDF4.Dataset(record_file_name,'a') as output:
+        _logger.debug('Recording: '+function_name+', with options: '+str(options))
         nc_Database_utils.record_to_netcdf_file_from_file_name(options,temp_file_name,output[function_name],project_drs)
-        if ( 'log_files' in options and options.log_files ):
-            print('DONE Recording: '+function_name,datetime.datetime.now(),options)
+        _logger.debug('DONE Recording: '+function_name)
 
     if len(function_name.split('_'))>1:
         options_copy=copy.copy(options)
@@ -410,20 +395,8 @@ def record_to_netcdf_file(counter,function_name,options,output,q_manager,project
     return
 
 def consumer(q_manager,project_drs,options):
-    if ( 'log_files' in options and options.log_files ):
-        log_file_name=multiprocessing.current_process().name + ".out"
-        with open(log_file_name, "w") as logger:
-            old_stdout=sys.stdout
-            old_stdout.flush()
-            try:
-                sys.stdout=logger
-                print(multiprocessing.current_process().name+' with pid '+str(os.getpid()))
-                consumer_queue_consume(q_manager,project_drs,options)
-            finally:
-                sys.stdout.flush()
-                sys.stdout=old_stdout
-    else:
-        consumer_queue_consume(q_manager,project_drs,options)
+    _logger.debug(multiprocessing.current_process().name+' with pid '+str(os.getpid()))
+    consumer_queue_consume(q_manager,project_drs,options)
     return
 
 def consumer_queue_consume(q_manager,project_drs,original_options):
@@ -436,20 +409,8 @@ def consumer_queue_consume(q_manager,project_drs,original_options):
     return
 
 def reducer(q_manager,project_drs,options):
-    if ( 'log_files' in options and options.log_files ):
-        log_file_name=multiprocessing.current_process().name + ".out"
-        with open(log_file_name, "w") as logger:
-            old_stdout=sys.stdout
-            old_stdout.flush()
-            try:
-                sys.stdout=logger
-                print(multiprocessing.current_process().name+' with pid '+str(os.getpid()))
-                reducer_queue_consume(q_manager,project_drs,original_options)
-            finally:
-                sys.stdout.flush()
-                sys.stdout=old_stdout
-    else:
-        reducer_queue_consume(q_manager,project_drs,original_options)
+    _logger.debug(multiprocessing.current_process().name+' with pid '+str(os.getpid()))
+    reducer_queue_consume(q_manager,project_drs,original_options)
     return
 
 def reducer_queue_consume(q_manager,project_drs,original_options):
@@ -472,18 +433,27 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs,origina
     database=cdb_query_archive_class.Database_Manager(project_drs)
     #Run the command:
     try:
-        if ( 'log_files' in options and options.log_files ):
-            print('Process: ',datetime.datetime.now(),function_name,[(queue_name,getattr(q_manager,queue_name+'_expected').value) for queue_name in q_manager.queues_names],options_copy)
+        _logger.debug('Process: '+
+                    function_name+
+                    ', current queues: '+
+                    str([(queue_name,getattr(q_manager,queue_name+'_expected').value) for queue_name in q_manager.queues_names])+
+                    ', with options: '+
+                    str(options_copy))
         getattr(cdb_query_archive_class,function_name)(database,options_copy,q_manager=q_manager,sessions=sessions)
-        if ( 'log_files' in options and options.log_files ):
-            print('DONE Process: ',datetime.datetime.now(),function_name,[(queue_name,getattr(q_manager,queue_name+'_expected').value) for queue_name in q_manager.queues_names],options_copy)
+        _logger.debug('DONE Process: '+
+                    function_name+
+                    ', current queues: '+
+                    str([(queue_name,getattr(q_manager,queue_name+'_expected').value) for queue_name in q_manager.queues_names])
+                        )
     except Exception as e:
         if str(e).startswith('The kind of user must be selected'):
             raise
 
         if ('debug' in dir(original_options) and
             original_options.debug):
-            print(function_name+' failed with the following options:',options_save)
+            _logger.error(function_name+
+                          ' failed with the following options: '+
+                          str(options_save))
             raise
 
         if options.trial > 0:
