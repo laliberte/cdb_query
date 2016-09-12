@@ -187,10 +187,14 @@ def reduce_sl_or_var(database,options,q_manager=None,sessions=dict(),retrieval_t
         #Remove temp_output_file_name to avoid programs that request before overwriting:
         os.remove(temp_output_file_name)
         try:
-            output = subprocess.check_output(script_to_call.format(*temp_file_name_list),shell=True,stderr=subprocess.STDOUT)
-        except subprocess.CalledProcessError as e:
+            output = subprocess.check_output(script_to_call.format(*temp_file_name_list),
+                                             shell=True, stderr=subprocess.STDOUT)
             #Capture subprocess errors to print output:
             for line in iter(output.splitlines()):
+                logging.info(line)
+        except subprocess.CalledProcessError as e:
+            #Capture subprocess errors to print output:
+            for line in iter(e.output.splitlines()):
                 logging.info(line)
             raise
         #out=subprocess.call(script_to_call.format(*temp_file_name_list),shell=True)
