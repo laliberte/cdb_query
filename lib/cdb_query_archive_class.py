@@ -384,12 +384,13 @@ def rank_data_nodes(options,data_node_list,url_list,q_manager):
                                                                    **credentials_kwargs).is_available(num_trials=1)
             except Exception as e:
                 is_available = False
-                if str(e).startswith('The kind of user must be selected'):
+                if (str(e).startswith('The kind of user must be selected') or
+                     ('debug' in dir(options) and options.debug)):
                     raise
 
         if not is_available:
             if not ('silent' in dir(options) and options.silent):
-                if timed_exec.interval>options.timeout:
+                if timed_exec.interval > options.timeout:
                     print('Data node '+data_node+' excluded because it did not respond (timeout).')
                 else:
                     print('Data node '+data_node+' excluded because it did not respond.')
@@ -411,7 +412,8 @@ def rank_data_nodes(options,data_node_list,url_list,q_manager):
                 if not ('silent' in dir(options) and options.silent):
                     print('Done!')
             except Exception as e:
-                if str(e).startswith('The kind of user must be selected'):
+                if (str(e).startswith('The kind of user must be selected') or:
+                     ('debug' in dir(options) and options.debug)):
                     raise
                 exclude_data_node=True
             except:
