@@ -76,9 +76,10 @@ def reduce_var_list(database,options):
 
 def reduce_soft_links(database, options, q_manager=None, sessions=dict()):
     #Create temp output
-    fileno, temp_output_file_name = tempfile.mkstemp(dir=options.swap_dir)
+    #fileno, temp_output_file_name = tempfile.mkstemp(dir=options.swap_dir)
     #must close fileno
-    os.close(fileno)
+    #os.close(fileno)
+    temp_output_file_name = options.out_netcdf_file
 
     vars_list = reduce_var_list(database, options)
     with netCDF4.Dataset(temp_output_file_name,'w',diskless=True,persist=True) as output:
@@ -100,9 +101,10 @@ def reduce_soft_links(database, options, q_manager=None, sessions=dict()):
 
 def reduce_variable(database,options,q_manager=None,sessions=dict(),retrieval_type='reduce'):
     #Create temp output
-    fileno, temp_output_file_name = tempfile.mkstemp(dir=options.swap_dir)
+    #fileno, temp_output_file_name = tempfile.mkstemp(dir=options.swap_dir)
     #must close fileno
-    os.close(fileno)
+    #os.close(fileno)
+    temp_output_file_name = options.out_netcdf_file
 
     vars_list = reduce_var_list(database, options)
     with netCDF4.Dataset(temp_output_file_name,'w',diskless=True,persist=True) as output:
