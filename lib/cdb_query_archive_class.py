@@ -412,7 +412,7 @@ def rank_data_nodes(options,data_node_list,url_list,q_manager):
                 if not ('silent' in dir(options) and options.silent):
                     print('Done!')
             except Exception as e:
-                if (str(e).startswith('The kind of user must be selected') or:
+                if (str(e).startswith('The kind of user must be selected') or
                      ('debug' in dir(options) and options.debug)):
                     raise
                 exclude_data_node=True
