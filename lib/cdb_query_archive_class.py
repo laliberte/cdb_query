@@ -13,6 +13,7 @@ import sys
 import getpass
 import datetime
 import requests
+import logging
 
 #External but related:
 import netcdf4_soft_links.certificates as certificates
@@ -59,11 +60,11 @@ def ask(database,options,q_manager=None,sessions=dict()):
         simulations_list_no_fx = copy.copy(simulations_list)
 
     if not ('silent' in dir(options) and options.silent) and len(simulations_list_no_fx)>1:
-        print "This is a list of simulations that COULD satisfy the query:"
+        print("This is a list of simulations that COULD satisfy the query:"
         for simulation in simulations_list_no_fx:
-            print ','.join(simulation)
-        print "cdb_query will now attempt to confirm that these simulations have all the requested variables."
-        print "This can take some time. Please abort if there are not enough simulations for your needs."
+            print(','.join(simulation))
+        print("cdb_query will now attempt to confirm that these simulations have all the requested variables."
+               "This can take some time. Please abort if there are not enough simulations for your needs.")
     
     vars_list=ask_utils.ask_var_list(database,simulations_list_no_fx,options)
     database.put_or_process('ask',ask_utils.ask,vars_list,options,q_manager,sessions)
@@ -215,8 +216,9 @@ class Database_Manager:
             if len(vars_list)>0:
                 if not ('silent' in dir(options) and options.silent):
                     for var in vars_list:
-                        print ' '.join([ opt+': '+str(var[opt_id]) for opt_id, opt in enumerate(self.drs.official_drs_no_version)])
-                    print 'Were excluded because no date matched times requested'
+                        logging.warning(' '.join([ opt+': '+str(var[opt_id]) 
+                                                   for opt_id, opt in enumerate(self.drs.official_drs_no_version)]))
+                    logging.warning('Were excluded because no date matched times requested')
             return
 
         if not ((len(vars_list)==1 and len(times_list)==1) or
@@ -369,7 +371,10 @@ def rank_data_nodes(options,data_node_list,url_list,q_manager):
     for data_node_id, data_node in enumerate(data_node_list):
         url=url_list[data_node_id]
         if not ('silent' in dir(options) and options.silent):
-            print('Querying '+url[0]+' to measure response time of data node... ')
+            if 'log_files' in dir(options) and options.log_files:
+                logging.info('Querying '+url[0]+' to measure response time of data node... ')
+            else:
+                print('Querying '+url[0]+' to measure response time of data node... ')
 
         #Add credentials:
         credentials_kwargs={opt: getattr(options,opt) for opt in ['openid','username','password','use_certificates', 'timeout'
@@ -391,9 +396,9 @@ def rank_data_nodes(options,data_node_list,url_list,q_manager):
         if not is_available:
             if not ('silent' in dir(options) and options.silent):
                 if timed_exec.interval > options.timeout:
-                    print('Data node '+data_node+' excluded because it did not respond (timeout).')
+                    logging.warning('Data node '+data_node+' excluded because it did not respond (timeout).')
                 else:
-                    print('Data node '+data_node+' excluded because it did not respond.')
+                    logging.warning('Data node '+data_node+' excluded because it did not respond.')
         else:
             #Try opening a link on the data node. If it does not work, remove this data node.
             number_of_trials=3
@@ -410,7 +415,10 @@ def rank_data_nodes(options,data_node_list,url_list,q_manager):
                 data_node_timing.append(timing)
                 data_node_list_timed.append(data_node)
                 if not ('silent' in dir(options) and options.silent):
-                    print('Done!')
+                    if 'log_files' in dir(options) and options.log_files:
+                        logging.info('Done!')
+                    else:
+                        print('Done!')
             except Exception as e:
                 if (str(e).startswith('The kind of user must be selected') or
                      ('debug' in dir(options) and options.debug)):
@@ -420,7 +428,7 @@ def rank_data_nodes(options,data_node_list,url_list,q_manager):
                 exclude_data_node=True
 
             if not ('silent' in dir(options) and options.silent) and exclude_data_node:
-                print('Data node '+data_node+' excluded because it did not respond.')
+                logging.warning('Data node '+data_node+' excluded because it did not respond.')
         #Close the session:
         session.close()
     return list(np.array(data_node_list_timed)[np.argsort(data_node_timing)]),list(set(data_node_list).difference(data_node_list_timed))
