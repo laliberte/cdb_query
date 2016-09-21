@@ -65,10 +65,10 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD'.format(version_num)
             #Carry the option around silently:
             subparser.add_argument('-h',action='store_true',help=argparse.SUPPRESS)
 
-    options,commands_args=project_parser.parse_known_args(args=args_list[1:])
+    options,commands_args = project_parser.parse_known_args(args=args_list[1:])
     #This is an ad-hoc patch to allow chained subcommands:
     cli=['certificates','list_fields','merge','ask','validate','download_files',
-                            'reduce_soft_links','download_opendap','reduce']
+                            'reduce_soft_links','download_opendap','reduce', 'reduce_server']
     if (not 'process' in commands_args and
         len(np.intersect1d(cli,commands_args))>0):
         index_process=np.max(
@@ -567,12 +567,22 @@ def generate_subparsers(parser,epilog,project_drs):
     process_arguments_handles['reduce']=[reduce_process_arguments,output_arguments]
     chained_arguments_handles['reduce']=[]
 
+    description['reduce_server']=textwrap.dedent('Spawns reducer processes')
+    arguments_handles['reduce_server']=[
+                                 basic_control_arguments,
+                                 processing_arguments,
+                                 ]
+    start_arguments_handles['reduce_server']=[]
+    process_arguments_handles['reduce_server']=[]
+    chained_arguments_handles['reduce_server']=[]
+
     childs={'ask':['validate'],
             'validate':['download_files','reduce_soft_links','download_opendap','reduce'],
             'download_files':['reduce_soft_links','download_opendap','reduce'],
             'reduce_soft_links':['download_opendap','reduce'],
             'download_opendap':['reduce'],
-            'reduce':[]
+            'reduce':[],
+            'reduce_server':[]
             }
     for function_name in childs.keys():
         parser=subparsers.add_parser(function_name,description=description[function_name],epilog=epilog)

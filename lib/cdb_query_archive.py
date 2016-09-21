@@ -64,9 +64,7 @@ def cdb_query_from_list(args_list):
              options.list_only_field):
             database=cdb_query_archive_class.Database_Manager(project_drs)
             cdb_query_archive_class.ask(database,options)
-        elif (options.command == 'reduce' and
-             'start_server' in options and
-             options.start_server):
+        elif (options.command == 'reduce_server'):
 
             #Make tempdir:
             if 'swap_dir' in dir(options):
@@ -76,7 +74,7 @@ def cdb_query_from_list(args_list):
             queues_manager.ReduceManager.register('get_manager')
             reduce_manager=queues_manager.ReduceManager(address=('',50000),authkey='abracadabra')
             reduce_manager.connect()
-            q_manager=reduce_manager.get_manager()
+            q_manager = reduce_manager.get_manager()
             try:
                 queues_manager.reducer(q_manager,project_drs,options)
             finally:
@@ -106,17 +104,18 @@ def cdb_query_from_list(args_list):
                                                                    args=(q_manager,project_drs,options))
                     processes['recorder'].start()
                     #Create server and serve:
-                    queues_manager.ReduceManager.register('get_manager',lambda:q_manager,['increment_expected_and_put','put_to_next','remove','get_reduce_no_record'])
-                    reduce_manager=queues_manager.ReduceManager(address=('',50000),authkey='abracadabra')
-                    reduce_server=reduce_manager.get_server()
+                    queues_manager.ReduceManager.register('get_manager',lambda:q_manager)
+                    reduce_manager = queues_manager.ReduceManager(address=('',50000),authkey='abracadabra')
+                    reduce_server = reduce_manager.get_server()
                     print('Serving data on :',reduce_server.address)
                     reduce_server.serve_forever()
                 else:
                     #Start record process:
                     queues_manager.recorder(q_manager,project_drs,options)
             finally:
-                if ('start_server' in dir(options) and options.start_server):
-                    reduce_server.shutdown()
+                #if ('start_server' in dir(options) and options.start_server):
+                #    reduce_server.shutdown()
+                pass
 
                 #remove tempdir:
                 shutil.rmtree(options.swap_dir)

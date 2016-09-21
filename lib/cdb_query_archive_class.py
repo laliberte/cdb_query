@@ -60,7 +60,7 @@ def ask(database,options,q_manager=None,sessions=dict()):
         simulations_list_no_fx = copy.copy(simulations_list)
 
     if not ('silent' in dir(options) and options.silent) and len(simulations_list_no_fx)>1:
-        print("This is a list of simulations that COULD satisfy the query:"
+        print("This is a list of simulations that COULD satisfy the query:")
         for simulation in simulations_list_no_fx:
             print(','.join(simulation))
         print("cdb_query will now attempt to confirm that these simulations have all the requested variables."
@@ -165,9 +165,9 @@ def download_opendap(database,options,q_manager=None,sessions=dict()):
     database.put_or_process('download_opendap',downloads.download_opendap,vars_list,options,q_manager,sessions,times_list=times_list)
     return
 
-def gather(database,options,q_manager=None,sessions=dict()):
-    reduce(database,options,q_manager=q_manager)
-    return
+#def gather(database,options,q_manager=None,sessions=dict()):
+#    reduce(database,options,q_manager=q_manager)
+#    return
 
 def reduce(database,options,q_manager=None,sessions=dict()):
     if (options.script=='' and 

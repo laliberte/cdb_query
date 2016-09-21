@@ -264,9 +264,6 @@ class CDB_queues_manager:
             if  ( ( getattr(self, queue_name+'_expected').value_no_lock == 0) or
                   (queue_name != 'record' and 
                    getattr(self, self.queues_names[self.queues_names.index(queue_name)+1]+'_expected').value > 2*self.num_procs)):
-                  #(queue_name == 'download_opendap' and
-                  # 'reduce' in self.queues_names and
-                  # getattr(self,'reduce_expected').value>2*self.num_procs)):
                 #If nothing is expected or there is already downloaded to
                 #feed reduce, skip!
                 raise Queue.Empty
@@ -410,7 +407,7 @@ def consumer_queue_consume(q_manager,project_drs,original_options):
 
 def reducer(q_manager,project_drs,options):
     _logger.debug(multiprocessing.current_process().name+' with pid '+str(os.getpid()))
-    reducer_queue_consume(q_manager,project_drs,original_options)
+    reducer_queue_consume(q_manager,project_drs,options)
     return
 
 def reducer_queue_consume(q_manager,project_drs,original_options):
@@ -433,18 +430,25 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs,origina
     database=cdb_query_archive_class.Database_Manager(project_drs)
     #Run the command:
     try:
-        _logger.debug('Process: '+
-                    function_name+
-                    ', current queues: '+
-                    str([(queue_name,getattr(q_manager,queue_name+'_expected').value) for queue_name in q_manager.queues_names])+
-                    ', with options: '+
-                    str(options_copy))
+        if not original_options.command == 'reduce_server':
+            _logger.debug('Process: '+
+                        function_name+
+                        ', current queues: '+
+                        str([(queue_name,getattr(q_manager,queue_name+'_expected').value) for queue_name in q_manager.queues_names])+
+                        ', with options: '+
+                        str(options_copy))
+        else:
+            _logger.debug('Process: '+
+                        function_name+
+                        ', with options: '+
+                        str(options_copy))
         getattr(cdb_query_archive_class,function_name)(database,options_copy,q_manager=q_manager,sessions=sessions)
-        _logger.debug('DONE Process: '+
-                    function_name+
-                    ', current queues: '+
-                    str([(queue_name,getattr(q_manager,queue_name+'_expected').value) for queue_name in q_manager.queues_names])
-                        )
+        if not original_options.command == 'reduce_server':
+            _logger.debug('DONE Process: '+
+                        function_name+
+                        ', current queues: '+
+                        str([(queue_name,getattr(q_manager,queue_name+'_expected').value) for queue_name in q_manager.queues_names])
+                            )
     except Exception as e:
         if str(e).startswith('The kind of user must be selected'):
             raise
