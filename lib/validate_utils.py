@@ -154,7 +154,6 @@ def find_model_list(diagnostic,project_drs,model_list,experiment,options):
                      (not 'month' in time_slices)):
                     time_list.append(str(year).zfill(4)+str(month).zfill(2))
 
-
     model_list_var=copy.copy(model_list)
     model_list_copy=copy.copy(model_list)
 
@@ -183,17 +182,16 @@ def find_model_list(diagnostic,project_drs,model_list,experiment,options):
             #When missing years are allowed, ensure that all variables have the same times!
             valid_times=dict()
             for var_name in var_names_no_fx:
-                time_list_var=obtain_time_list(diagnostic,project_drs,var_name,experiment,model)
-                time_list_var=[str(int(time)-int(min_time)).zfill(6) for time in time_list_var]
-                valid_times[var_name]=set(time_list).intersection(time_list_var)
-            for var_name in var_names_no_fx:
-                for var_name_to_compare in var_names_no_fx:
-                    if (var_name!=var_name_to_compare and
-                        valid_times[var_name]!=valid_times[var_name_to_compare]):
-                        missing_vars.append(var_name+':'+','.join(
-                                            diagnostic.header['variable_list'][var_name])+
-                                            ' for some months ')
-                        break
+                time_list_var = obtain_time_list(diagnostic,project_drs,var_name,experiment,model)
+                time_list_var = [str(int(time)-int(min_time)).zfill(6) for time in time_list_var]
+                valid_times[var_name] = set(time_list).intersection(time_list_var)
+            intersection = set.intersection(*[ v for v in valid_times.values() ])
+
+            if len(intersection) > 0:
+                for var_name in var_names_no_fx:
+                    valid_times[var_name] = intersection
+            else:
+                missing_vars.append(','.join(var_names_no_fx)+':'+'have no common times.')
         else:
             #When missing years are not allowed, ensure that all variables have the requested times!
             for var_name in var_names_no_fx:
