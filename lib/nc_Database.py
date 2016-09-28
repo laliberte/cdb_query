@@ -162,7 +162,7 @@ class nc_Database:
                 output=create_tree(output_root,zip(drs_list,tree))
                 #Record data:
                 if 'missing_years' in dir(options) and options.missing_years:
-                    years_list=None
+                    years_list = None
                 else:
                     years_range = [ int(year) for year in header['experiment_list'][experiment].split(',')]
                     years_list = range(years_range[0],years_range[1]+1)
@@ -170,7 +170,10 @@ class nc_Database:
                 #Time was further sliced:
                 if ('year' in time_slices and
                      time_slices['year'] != None):
-                    years_list = [year for year in years_list if year in time_slices['year']]
+                    if years_list is None:
+                        years_list = time_slices['year']
+                    else:
+                        years_list = [year for year in years_list if year in time_slices['year']]
 
                 if ('month' in time_slices and
                     time_slices['month']!=None):
