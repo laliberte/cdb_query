@@ -366,6 +366,9 @@ def loop_control(parser,project_drs):
                                             For example, \'-l year -l month\' loops through all month, one at a time.\n\
                                             \'-l month\', on the other hand, would loop through the 12 months, passing all years\n\
                                             to \'reduce\'.' )
+    parser.add_argument('--restrictive_loop',action='store_true',default=False,
+                        help=('When activated, -l defines loops in a very restrictive manner.'
+                              'This can be useful when using --missing_years'))
     return parser
 
 def add_dummy_process_parser(parser,description,epilog):

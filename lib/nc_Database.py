@@ -7,6 +7,7 @@ import netCDF4
 import copy
 import numpy as np
 import datetime
+from functools import reduce
 
 #External but related:
 import netcdf4_soft_links.read_soft_links as read_soft_links
@@ -323,12 +324,18 @@ def retrieve_dates_recursive(data,options):
                 for group in data.groups.keys()
                 if is_level_name_included_and_not_excluded(data.groups[group].getncattr(level_key),options,group)]
 
+        time_axes = _drop_empty(time_axes)
         if len(time_axes) > 0:
-            return np.concatenate(time_axes)
+            if ( 'restrictive_loop' in dir(options) and
+                 options.restrictive_loop ):
+                return reduce(np.intersect1d,time_axes)
+            else:
+                return np.concatenate(time_axes)
         else:
             return np.array([])
-                #if ( is_level_name_included_and_not_excluded(data.groups[group].getncattr(level_key),options,group) and
-                # tree_recursive_check_not_empty(options,data.groups[group],check=False)) ]))
+
+def _drop_empty(array_list):
+    return [ item for item in array_list if len(item) > 0 ]
 
 def check_soft_links_size(remote_data):
     if remote_data.time_var!=None:
