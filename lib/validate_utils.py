@@ -187,10 +187,7 @@ def find_model_list(diagnostic,project_drs,model_list,experiment,options):
                 valid_times[var_name] = set(time_list).intersection(time_list_var)
             intersection = set.intersection(*[ v for v in valid_times.values() ])
 
-            if len(intersection) > 0:
-                for var_name in var_names_no_fx:
-                    valid_times[var_name] = intersection
-            else:
+            if len(intersection) == 0:
                 missing_vars.append(','.join(var_names_no_fx)+':'+'have no common times.')
         else:
             #When missing years are not allowed, ensure that all variables have the requested times!
