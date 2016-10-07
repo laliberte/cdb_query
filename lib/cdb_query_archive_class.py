@@ -173,7 +173,7 @@ def reduce(database,options,q_manager=None,sessions=dict()):
     if (options.script=='' and 
         ('in_extra_netcdf_files' in dir(options) and 
           len(options.in_extra_netcdf_files)>0) ):
-        raise InputErrorr('The identity script \'\' can only be used when no extra netcdf files are specified.')
+        raise SyntaxErrorr('The identity script \'\' can only be used when no extra netcdf files are specified.')
 
     vars_list = reduce_utils.reduce_var_list(database,options)
     times_list = downloads.time_split(database,options,check_split=(len(vars_list)==1))
@@ -326,8 +326,8 @@ class Database_Manager:
                     self.header['file_type_list']=cdb_query_archive_parsers.file_type_list
                 else:
                     self.header['file_type_list']=[item for item in options.ask_file_type]
-            except InputError:
-                raise InputError('Query improperly specified. Check --ask_var and --ask_experiment')
+            except IndexError:
+                raise SyntaxError('Query improperly specified. Check --ask_var and --ask_experiment')
         else:
             self.define_database(options)
             self.header=self.nc_Database.load_header()

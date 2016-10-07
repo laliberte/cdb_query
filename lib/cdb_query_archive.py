@@ -33,10 +33,16 @@ def cdb_query_from_list(args_list):
         #logging_thread = threading.Thread(target=logger_thread, args=(options,))
         #logging_thread.start()
     else:
-        logging.basicConfig(level=logging.WARNING,
-                            format='%(processName)-20s %(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-                            datefmt='%m-%d %H:%M'
-                                )
+        if ('debug' in dir(options) and options.debug):
+            logging.basicConfig(level=logging.DEBUG,
+                                format='%(processName)-20s %(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                                datefmt='%m-%d %H:%M'
+                                    )
+        else:
+            logging.basicConfig(level=logging.WARNING,
+                                format='%(processName)-20s %(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                                datefmt='%m-%d %H:%M'
+                                    )
     #External:
     import multiprocessing
     import copy

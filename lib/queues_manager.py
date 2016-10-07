@@ -231,17 +231,10 @@ class CDB_queues_manager:
 
         while not (self.do_not_keep_consumers_alive.is_set() and 
                     self.expected_queue_size()==0):
-                    #self.expected_queue_size(queues_names)==0):
-                    #and
-                    #getattr(self,'record_expected').value==getattr(self,'record').qsize()):
             #Get an element from one queue, starting from the last:
             for queue_name in queues_names[::-1]:
                 if queue_name in self.queues_names:
                     if record:
-                        #if getattr(self,'record_expected').value==getattr(self,queue_name).qsize():
-                        #    #When all that is left to do is record, terminate download processes:
-                        #    self.stop_download_processes()
-                        #else:
                         #The record worker tries to start download processes whenever it can:
                         self.start_download_processes()
 
@@ -486,7 +479,7 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs,origina
                 options_save.in_netcdf_file=original_options.in_netcdf_file
             elif 'in_netcdf_file' in dir(options_save):
                 del options_save.in_netcdf_file
-            options_save.out_netcdf_ile=original_options.out_netcdf_file
+            options_save.out_netcdf_file=original_options.out_netcdf_file
             if ('record_validate' in dir(options_save) and
                 'record_validate' in q_manager.queues_names and
                  q_manager.queues_names.index(function_name) > q_manager.queues_names.index('record_validate')):
