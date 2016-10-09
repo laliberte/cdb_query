@@ -123,16 +123,7 @@ def obtain_time_list(diagnostic,project_drs,var_name,experiment,model):
                             ).filter(sqlalchemy.and_(*conditions)).distinct().all()]
     return time_list_var
 
-def find_model_list(diagnostic,project_drs,model_list,experiment,options):
-    #Time slices:
-    time_slices=dict()
-    if not ('record_validate' in dir(options) and 
-            options.record_validate):
-         #Slice time unless the validate step should be recorded:
-         for time_type in ['month','year']:
-            if time_type in dir(options):
-                time_slices[time_type]=getattr(options,time_type)
-
+def find_time_list(diagnostic,experiment,time_slices):
     #Determine the requested time list:
     period_list = diagnostic.header['experiment_list'][experiment]
     if not isinstance(period_list,list): period_list=[period_list]
@@ -153,12 +144,14 @@ def find_model_list(diagnostic,project_drs,model_list,experiment,options):
                           month in time_slices['month'])) or
                      (not 'month' in time_slices)):
                     time_list.append(str(year).zfill(4)+str(month).zfill(2))
-
-    model_list_var=copy.copy(model_list)
-    model_list_copy=copy.copy(model_list)
-
     #Flag to check if the time axis is requested as relative:
-    picontrol_min_time=(years_list[0]<=10)
+    picontrol_min_time = (years_list[0]<=10)
+
+    return time_list, picontrol_min_time
+
+def find_model_list(diagnostic,project_drs,model_list,experiment,options,time_list, picontrol_min_time):
+    model_list_var = copy.copy(model_list)
+    model_list_copy = copy.copy(model_list)
 
     for model in model_list_var:
         missing_vars=[]
@@ -245,8 +238,13 @@ def validate(database,options,q_manager=None,sessions=dict()):
         session=None
 
     time_slices=dict()
-    if not ('record_validate' in dir(options) and
-            options.record_validate):
+    #If not record_validate or missing_years, slice valide in time:
+    #if not ( ('record_validate' in dir(options) and 
+    #          options.record_validate) or
+    #         ('missing_years' in dir(options) and
+    #          options.missing_years)):
+    if not ('record_validate' in dir(options) and 
+              options.record_validate):
          for time_type in ['month','year']:
             if time_type in dir(options):
                 time_slices[time_type]=getattr(options,time_type)
@@ -255,18 +253,18 @@ def validate(database,options,q_manager=None,sessions=dict()):
         #Does not check whether files are available / queryable before proceeding.
         database.load_database(options,find_time_available,time_slices=time_slices,semaphores=semaphores,session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
         #Find the list of institute / model with all the months for all the years / experiments and variables requested:
-        intersection(database,options)
+        intersection(database, options, time_slices=time_slices)
         output=database.nc_Database.write_database(database.header,options,'record_paths',semaphores=semaphores,session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
     else:
         #Checks that files are available.
         database.load_database(options,find_time,time_slices=time_slices,semaphores=semaphores,session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
         #Find the list of institute / model with all the months for all the years / experiments and variables requested:
-        intersection(database,options)
+        intersection(database, options, time_slices=time_slices)
         output=database.nc_Database.write_database(database.header,options,'record_meta_data',semaphores=semaphores,session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
     database.close_database()
     return output
 
-def intersection(database,options):
+def intersection(database,options, time_slices=dict()):
     #This function finds the models that satisfy all the criteria
 
     #Step one: find all the institute / model tuples with all the requested variables
@@ -281,11 +279,15 @@ def intersection(database,options):
 
     if not 'experiment' in database.drs.simulations_desc:
         for experiment in database.header['experiment_list'].keys():
-            model_list = find_model_list(database,database.drs,model_list,experiment,options)
-        model_list_combined=model_list
+            time_list, picontrol_min_time = find_time_list(database, experiment, time_slices)
+            if len(time_list) > 0:
+                #When time was sliced, exclude models only if there were some requested times:
+                model_list = find_model_list(database,database.drs,model_list,experiment,options,time_list, picontrol_min_time)
+        model_list_combined = model_list
     else:
-        model_list_combined=set().union(*[find_model_list(database,database.drs,model_list,experiment,options) 
-                                           for experiment in database.header['experiment_list'].keys()])
+        model_list_combined = set().union(*[find_model_list(database,database.drs,model_list,experiment,options,
+                                                            *find_time_list(database, experiment, time_slices)) 
+                                            for experiment in database.header['experiment_list'].keys()])
     
     #Step two: create the new paths dictionary:
     variable_list_requested=[]

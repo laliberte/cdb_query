@@ -244,10 +244,11 @@ def get_fixed_var_tree(project_drs,options,var):
         if ( opt in ['time_frequency','cmor_table'] and
              not var[project_drs.official_drs_no_version.index(opt)]==None):
             var_fx[project_drs.official_drs_no_version.index(opt)]='fx'
+
     tree_fx=zip(project_drs.official_drs_no_version,var_fx)
     options_fx=copy.copy(options)
     for opt_id,opt in enumerate(tree_fx):
-        if opt!=tree[opt_id]:
+        if opt != tree_fx[opt_id]:
             setattr(options_fx,opt[0],opt[1])
             if ('X'+opt[0] in dir(options_fx) and
                  isinstance(getattr(options_fx,'X'+opt[0]),list) and
