@@ -3,6 +3,7 @@ import sys
 import logging
 import logging.handlers
 import threading
+import os.path
 
 #Internal:
 from . import cdb_query_archive_parsers
@@ -14,6 +15,13 @@ def main():
 def cdb_query_from_list(args_list):
     #Parser arguments:
     options, project_drs = cdb_query_archive_parsers.full_parser(args_list)
+
+    if ( 'out_netcdf_file' in dir(options) and
+         os.path.isfile(options.out_netcdf_file) and
+         not options.O ):
+        # File exists and overwrite was not requested. Skip.
+        print('File {0} exists. To enable overwrite, use -O option. Exiting')
+        quit()
 
     # https://docs.python.org/2/howto/logging-cookbook.html
     if ( 'log_files' in dir(options) and options.log_files and

@@ -136,6 +136,11 @@ def input_arguments(parser,project_drs):
 def output_arguments(parser,project_drs):
     parser.add_argument('out_netcdf_file',type=absolute_path,
                                  help='NETCDF Diagnostic paths file (output)')
+    #group = parser.add_mutually_exclusive_group()
+    parser.add_argument('-O',action='store_true',
+                            help='Overwrite output file. Default: False')
+    #group.add_argument('-S',action='store_false',
+    #                        help='Skip if output file exists. Default: True')
     return
 
 def processing_arguments(parser,project_drs):
