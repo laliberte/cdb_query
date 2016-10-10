@@ -3,6 +3,7 @@ import netCDF4
 import h5py
 import copy
 import os
+import os.path
 import sys
 import multiprocessing
 import multiprocessing.managers as managers
@@ -25,7 +26,7 @@ import netcdf4_soft_links.certificates as certificates
 import netcdf4_soft_links.requests_sessions as requests_sessions
 
 #Internal:
-from . import cdb_query_archive_class, nc_Database, nc_Database_utils
+from . import cdb_query_archive_parsers, cdb_query_archive_class, nc_Database, nc_Database_utils
 
 class SimpleSyncManager(managers.BaseManager):
     '''
@@ -166,37 +167,33 @@ class CDB_queues_manager:
             #must close file number:
             os.close(fileno)
             if copyfile:
-                _copyfile(options, 'in_netcdf_file', options_copy, 'in_netcdf_file')
+                cdb_query_archive_parsers._copyfile(options, 'in_netcdf_file', options_copy, 'in_netcdf_file')
         getattr(self,function_name+'_expected').increment()
         getattr(self,function_name).put((options_copy.priority, (self.counter.increment(), function_name, options_copy)))
         return new_file_name
 
-    def put_to_next(self, function_name, options, output_file_name):
-        if 'in_netcdf_file' in dir(options):
-            previous_in_netcdf_file = options.in_netcdf_file
+    def put_to_next(self, function_name, options):
+        options_copy = copy.copy(options)
 
         #Set to output_file
-        options_copy.in_netcdf_file = output_file_name
+        options_copy.in_netcdf_file = options.out_netcdf_file
 
         #Put the item in the next function queue and give it a number:
         next_function_name = self.queues_names[self.queues_names.index(function_name)+1]
-        getattr(self, next_function_name).put((options.priority,(self.counter.increment(),next_function_name)+(options,)))
+        getattr(self, next_function_name).put((options.priority,(self.counter.increment(),next_function_name, options)))
 
         # Remove temporary input files if not the first function:
         if ( 'in_netcdf_file' in dir(options) and
              self.queues_names.index(function_name) > 0 ):
-            os.remove(previous_in_netcdf_file)
+            cdb_query_archive_parsers._remove(options,'in_netcdf_file')
         return
 
-    def remove(self,item):
-        next_function_name=self.queues_names[self.queues_names.index(item[0])+1]
+    def remove(self, function_name, options):
+        next_function_name = self.queues_names[self.queues_names.index(function_name)+1]
         getattr(self,next_function_name+'_expected').decrement()
-        if ('in_netcdf_file' in dir(item[-1]) and
-            self.queues_names.index(item[0])>0):
-            os.remove(item[-1].in_netcdf_file)
-            #return True
-        #else:
-        #    return False
+        if ('in_netcdf_file' in dir(options) and
+            self.queues_names.index(function_name)>0):
+            cdb_query_archive_parsers._remove(options,'in_netcdf_file')
         return
 
     def get_do_no_record(self):
@@ -275,7 +272,7 @@ class CDB_queues_manager:
                 #reset priority to 0:
                 item[-1].priority = 0
                 #Increment future actions:
-                if 'record'!=item[1]:
+                if 'record' != item[1]:
                     future_queue_name = self.queues_names[self.queues_names.index(item[1])+1]
                     getattr(self, future_queue_name+'_expected').increment()
                 #Decrement current action:
@@ -423,7 +420,6 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs,origina
     options_save=copy.copy(options)
 
     #Create unique file id:
-    #options_copy.out_netcdf_file+='.'+str(counter)
     fileno, options_copy.out_netcdf_file = tempfile.mkstemp(dir=options_copy.swap_dir,suffix='.'+str(counter))
     #must close file number:
     os.close(fileno)
@@ -466,7 +462,7 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs,origina
             #Retry this function.
 
             #Decrement expectation in next function:
-            q_manager.remove((function_name,options_copy))
+            q_manager.remove(function_name,options_copy)
             #Delete output from previous attempt files:
             try:
                 map(os.remove,glob.glob(options_save.out_netcdf_file+'.*'))
@@ -493,7 +489,7 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs,origina
                 #If validate was already recorded:
                 options_save.record_validate = False
 
-            q_manager.remove((function_name,options_copy))
+            q_manager.remove(function_name,options_copy)
             #Delete output from previous attempt files:
             try:
                 map(os.remove,glob.glob(options_save.out_netcdf_file+'.*'))
@@ -513,11 +509,6 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs,origina
             logging.error(function_name + 
                           ' failed with the following options: ' +
                           str(options_save))
-    return
-
-def _copyfile(options_source, field_source, options_dest, field_dest):
-    shutils.copyfile(getattr(options_source,field_source),
-                     getattr(options_dest,field_dest))
     return
 
 

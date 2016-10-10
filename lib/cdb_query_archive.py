@@ -3,10 +3,9 @@ import sys
 import logging
 import logging.handlers
 import threading
-import os.path
 
 #Internal:
-from . import cdb_query_archive_parsers
+from . import cdb_query_archive_parsers, queues_manager
 
 def main():
     cdb_query_from_list(sys.argv)
@@ -17,7 +16,7 @@ def cdb_query_from_list(args_list):
     options, project_drs = cdb_query_archive_parsers.full_parser(args_list)
 
     if ( 'out_netcdf_file' in dir(options) and
-         os.path.isfile(options.out_netcdf_file) and
+         cdb_query_archive_parsers._isfile(options,'out_netcdf_file') and
          not options.O ):
         # File exists and overwrite was not requested. Skip.
         print('File {0} exists, skipping processing. To enable overwrite, use -O option.'.format(options.out_netcdf_file))
@@ -32,14 +31,6 @@ def cdb_query_from_list(args_list):
                             datefmt='%m-%d %H:%M:%S',
                             filename=options.out_netcdf_file+'.log',
                             filemode='w')
-        #rootLogger = logging.getLogger('')
-        #rootLogger.setLevel(logging.DEBUG)
-        #socketHandler = logging.handlers.SocketHandler('localhost',
-        #                    logging.handlers.DEFAULT_TCP_LOGGING_PORT)
-        #rootLogger.addHandler(socketHandler)
-        
-        #logging_thread = threading.Thread(target=logger_thread, args=(options,))
-        #logging_thread.start()
     else:
         if ('debug' in dir(options) and options.debug):
             logging.basicConfig(level=logging.DEBUG,
@@ -67,7 +58,6 @@ def cdb_query_from_list(args_list):
     if 'related_experiments' in dir(options) and not options.related_experiments:
         project_drs.simulations_desc.append('experiment')
 
-    
     if options.command!='certificates':
         if options.command in ['list_fields','merge']:
             database=cdb_query_archive_class.Database_Manager(project_drs)

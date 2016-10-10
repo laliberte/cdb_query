@@ -210,7 +210,7 @@ class Database_Manager:
         if (len(vars_list)==0 or len(times_list)==0):
             #There is no variables to find in the input. 
             #Delete input and decrement expected function.
-            q_manager.remove((function_name,options))
+            q_manager.remove(function_name,options)
 
             if len(vars_list)>0:
                 if not ('silent' in dir(options) and options.silent):
@@ -236,7 +236,7 @@ class Database_Manager:
                     #Submit only if the times_list is not empty:
                     if len(times_list)==1 or len(var_times_list)>0:
                         q_manager.increment_expected_and_put(function_name, options_copy, copyfile=True)
-            q_manager.remove((function_name,options))
+            q_manager.remove(function_name,options)
             return
         else:
             #Compute single element!
@@ -246,18 +246,18 @@ class Database_Manager:
                 options_copy = make_new_options_from_lists(options,vars_list[0],times_list[0],function_name,self.drs.official_drs_no_version)
 
             #Compute function:
-            output_file_name = function_handle(self, options_copy, q_manager=q_manager, sessions=sessions)
+            function_handle(self, options_copy, q_manager=q_manager, sessions=sessions)
 
-            if output_file_name == None:
-                #No file was written and the next function should not expect anything:
-                q_manager.remove((function_name,options))
-                return
-            else:
-                #Reset trial counter:
-                options_copy.trial=0
+            #if output_file_name == None:
+            #    #No file was written and the next function should not expect anything:
+            #    q_manager.remove(function_name,options)
+            #    return
+            #else:
+            #Reset trial counter:
+            options_copy.trial=0
 
-                q_manager.put_to_next(function_name,options_copy,output_file_name)
-                return
+            q_manager.put_to_next(function_name,options_copy)
+            return
 
     def find_data_nodes_and_simulations(self,options):
         #We have to time the response of the data node.

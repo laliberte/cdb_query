@@ -125,16 +125,29 @@ def set_default_subparser(self, name, args=None):
             else:
                 args.insert(0, name)
 
-def absolute_path(path):
+def _absolute_path(path):
     return os.path.abspath(os.path.expanduser(os.path.expandvars(path)))
 
+def _isfile(options,field):
+    return os.path.isfile(getattr(options,field))
+
+def _copyfile(options_source, field_source, options_dest, field_dest):
+    shutils.copyfile(getattr(options_source,field_source),
+                     getattr(options_dest,field_dest))
+    return
+
+def _remove(options,field):
+    os.remove(getattr(options,field)
+    return
+
+
 def input_arguments(parser,project_drs):
-    parser.add_argument('in_netcdf_file',type=absolute_path,
+    parser.add_argument('in_netcdf_file',type=_absolute_path,
                                  help='NETCDF Diagnostic paths file (input)')
     return
 
 def output_arguments(parser,project_drs):
-    parser.add_argument('out_netcdf_file',type=absolute_path,
+    parser.add_argument('out_netcdf_file',type=_absolute_path,
                                  help='NETCDF Diagnostic paths file (output)')
     #group = parser.add_mutually_exclusive_group()
     parser.add_argument('-O',action='store_true',

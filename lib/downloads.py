@@ -11,7 +11,7 @@ import netcdf4_soft_links.remote_netcdf as remote_netcdf
 import netcdf4_soft_links.requests_sessions as requests_sessions
 
 #Internal:
-from . import cdb_query_archive_class, queues_manager
+from . import cdb_query_archive_parsers, cdb_query_archive_class
 
 def download_files(database,options,q_manager=None,sessions=dict()):
     return download(database,'download_files',options,q_manager,sessions)
@@ -71,7 +71,7 @@ def download(database,retrieval_type,options,q_manager,sessions):
         database.close_database()
     else:
         #Else, simply copy:
-        queues_manager._copyfile(options,'in_netcdf_file', options_copy, 'out_netcdf_file')
+        cdb_query_archive_parsers._copyfile(options,'in_netcdf_file', options_copy, 'out_netcdf_file')
         database.close_database()
     return
 

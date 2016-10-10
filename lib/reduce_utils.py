@@ -127,8 +127,7 @@ def reduce_sl_or_var(database,options,q_manager=None,sessions=dict(),retrieval_t
     #Decide whether to add fixed variables:
     tree_fx,options_fx=get_fixed_var_tree(database.drs,options,var)
 
-    #Define output_file_name:
-    output_file_name = options.out_netcdf_file
+    #Define temp_output_file_name:
     fileno, temp_output_file_name = tempfile.mkstemp(dir=options.swap_dir)
     #must close fileno
     os.close(fileno)
@@ -195,18 +194,17 @@ def reduce_sl_or_var(database,options,q_manager=None,sessions=dict(),retrieval_t
         pass
 
     if retrieval_type=='reduce_soft_links':
-        output_file_name=temp_output_file_name+'.tmp'
-        with netCDF4.Dataset(output_file_name,'w') as output:
+        processed_output_file_name = temp_output_file_name+'.tmp'
+        with netCDF4.Dataset(processed_output_file_name,'w') as output:
             nc_Database_utils.record_to_netcdf_file_from_file_name(options,temp_output_file_name,output,database.drs)
     else:
         #This is the last function in the chain. Convert and create soft links:
-        output_file_name=nc_Database_utils.record_to_output_directory(temp_output_file_name,database.drs,options)
+        processed_output_file_name = nc_Database_utils.record_to_output_directory(temp_output_file_name,database.drs,options)
     try:
         os.remove(temp_output_file_name)
-        os.rename(output_file_name,temp_output_file_name)
+        os.rename(processed_output_file_name, temp_output_file_name)
     except OSError:
         pass
-
     return temp_output_file_name
 
 def extract_single_tree(temp_file,file,tree,tree_fx,options,options_fx,session=None,retrieval_type='reduce',check_empty=False):
@@ -244,12 +242,13 @@ def get_fixed_var_tree(project_drs,options,var):
     return tree_fx, options_fx
     
 def get_input_file_names(project_drs,options,script):
-    input_file_name = options.in_netcdf_file
-    file_name_list = [input_file_name,]
-    if 'in_extra_netcdf_files' in dir(options): file_name_list += options.in_extra_netcdf_files
-    
     if (script=='' and 
         ('in_extra_netcdf_files' in dir(options) and 
               len(options.in_extra_netcdf_files) > 0) ):
         raise InputErrorr('The identity script \'\' can only be used when no extra netcdf files are specified.')
+
+    input_file_name = options.in_netcdf_file
+    file_name_list = [input_file_name,]
+    if 'in_extra_netcdf_files' in dir(options): file_name_list += options.in_extra_netcdf_files
+    
     return file_name_list
