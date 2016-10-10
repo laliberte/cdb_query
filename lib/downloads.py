@@ -32,9 +32,6 @@ def download(database,retrieval_type,options,q_manager,sessions):
         else:
             raise NotImplementedError('If version is in the project drs, it must be either the last or next-to-last field.')
 
-    #if ('swap_dir' in dir(options_copy) and options_copy.swap_dir!='.'):
-    #    options_copy.out_netcdf_file=options_copy.swap_dir+'/'+os.path.basename(options_copy.out_netcdf_file)
-
     if 'validate' in sessions.keys():
         session=sessions['validate']
     else:
@@ -62,16 +59,17 @@ def download(database,retrieval_type,options,q_manager,sessions):
     #Find the data that needs to be recovered:
     database.load_database(options_copy,cdb_query_archive_class.find_simple)
     file_type_list=[item[0] for item in database.nc_Database.list_fields(['file_type',])]
+
     if (not set(file_type_list).issubset(remote_netcdf.local_queryable_file_types) or
        is_time_slicing_requested):
         #If the data is not all local or if a time slice was requested, "download"
-        with netCDF4.Dataset(options_copy.out_netcdf_file,'w') as output:
+        with netCDF4.Dataset(options_copy.out_netcdf_file, 'w') as output:
             output.set_fill_off()
             output=database.nc_Database.retrieve_database(output,options_copy,q_manager=q_manager,session=session,retrieval_type=retrieval_type)
         database.close_database()
     else:
         #Else, simply copy:
-        shutil.copyfile(options.in_netcdf_file,options_copy.out_netcdf_file)
+        shutil.copyfile(options.in_netcdf_file, options_copy.out_netcdf_file)
         database.close_database()
     return options_copy.out_netcdf_file
 

@@ -112,13 +112,13 @@ def retrieve_or_replicate(output_grp,data,
             netcdf_pointers.replicate(output_grp,check_empty=check_empty)
         else:
             #There are soft links and they are supposed to be loaded:
-            netcdf_pointers.retrieve(output_grp,'load',filepath=options.out_netcdf_file)
+            netcdf_pointers.retrieve(output_grp,'load', filepath=options.out_netcdf_file)
     elif retrieval_type=='download_files':
-        netcdf_pointers.retrieve(output_grp,retrieval_type,filepath=options.out_netcdf_file,out_dir=options.out_download_dir)
+        netcdf_pointers.retrieve(output_grp,retrieval_type, filepath=options.out_netcdf_file, out_dir=options.out_download_dir)
     elif retrieval_type=='download_opendap':
-        netcdf_pointers.retrieve(output_grp,retrieval_type,filepath=options.out_netcdf_file)
+        netcdf_pointers.retrieve(output_grp,retrieval_type, filepath=options.out_netcdf_file)
     else:
-        netcdf_pointers.retrieve(output_grp,retrieval_type,filepath=options.out_netcdf_file)
+        netcdf_pointers.retrieve(output_grp,retrieval_type, filepath=options.out_netcdf_file)
     return
 
 #PUT BACK IN DATABASE:

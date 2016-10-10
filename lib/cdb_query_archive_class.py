@@ -254,10 +254,6 @@ class Database_Manager:
 
             if output_file_name == None:
                 #No file was written and the next function should not expect anything:
-                #next_function_name=q_manager.queues_names[q_manager.queues_names.index(function_name)+1]
-                #getattr(q_manager,next_function_name+'_expected').decrement()
-                #if ('in_netcdf_file' in dir(options) and
-                #    q_manager.queues_names.index(function_name)>0):
                 if q_manager.remove((function_name,options)):
                     os.remove(options.in_netcdf_file)
                 return
@@ -267,9 +263,9 @@ class Database_Manager:
 
                 #Remove temporary input files if not the first function:
                 if 'in_netcdf_file' in dir(options):
-                    previous_in_netcdf_file=options_copy.in_netcdf_file
+                    previous_in_netcdf_file = options_copy.in_netcdf_file
                 #Set to output_file
-                options_copy.in_netcdf_file=output_file_name
+                options_copy.in_netcdf_file = output_file_name
                 if q_manager.put_to_next((function_name,options_copy)):
                     os.remove(previous_in_netcdf_file)
                 return
@@ -354,10 +350,10 @@ class Database_Manager:
 
     def define_database(self,options):
         if 'in_netcdf_file' in dir(options):
-            self.nc_Database=nc_Database.nc_Database(self.drs,database_file=options.in_netcdf_file)
+            self.nc_Database = nc_Database.nc_Database(self.drs,database_file=options.in_netcdf_file)
             return
         else:
-            self.nc_Database=nc_Database.nc_Database(self.drs)
+            self.nc_Database = nc_Database.nc_Database(self.drs)
             return
 
     def close_database(self):
