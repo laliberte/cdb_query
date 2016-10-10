@@ -33,12 +33,10 @@ def ask(database,options,q_manager=None,sessions=dict()):
     else:
         session=None
 
-    only_list=ask_database(database,options,session=session)
+    only_list = ask_database(database,options,session=session)
 
-    if options.list_only_field!=None:
-        #If --list_only_field has been specified, output this list:
-        output=set(only_list)
-    else:
+    if options.list_only_field == None:
+        #If --list_only_field was not specified, write database
         #Find the intersection of the database, so that all the requested variables are available:
         intersection(database)
         #List data_nodes and record to header:
@@ -46,16 +44,16 @@ def ask(database,options,q_manager=None,sessions=dict()):
 
         #Write the database to file. Only record paths:
         #Add credentials:
-        remote_netcdf_kwargs={opt: getattr(options,opt) for opt in ['openid','username','password','use_certificates'
+        remote_netcdf_kwargs = {opt: getattr(options,opt) for opt in ['openid','username','password','use_certificates'
                                                                      ] if opt in dir(options)}
-        output =database.nc_Database.write_database(database.header,options,'record_paths',remote_netcdf_kwargs=remote_netcdf_kwargs)
+        database.nc_Database.write_database(database.header,options,'record_paths',remote_netcdf_kwargs=remote_netcdf_kwargs)
         #Remove data_node list from output file:
-        with netCDF4.Dataset(output,'a') as dataset:
+        with netCDF4.Dataset(options.out_netcdf_file,'a') as dataset:
             delattr(dataset,'data_node_list')
     #Close the database and clear memory
     database.close_database()
-    #Return --list_only_field or output filename:
-    return output
+    #Return --list_only_field:
+    return set(only_list)
 
 def ask_database(database,options,session=None):
     '''

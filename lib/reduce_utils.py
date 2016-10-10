@@ -75,14 +75,9 @@ def reduce_var_list(database,options):
     return var_list
 
 def reduce_soft_links(database, options, q_manager=None, sessions=dict()):
-    #Create temp output
-    #fileno, temp_output_file_name = tempfile.mkstemp(dir=options.swap_dir)
-    #must close fileno
-    #os.close(fileno)
-    temp_output_file_name = options.out_netcdf_file
 
     vars_list = reduce_var_list(database, options)
-    with netCDF4.Dataset(temp_output_file_name,'w',diskless=True,persist=True) as output:
+    with netCDF4.Dataset(options.out_netcdf_file,'w',diskless=True,persist=True) as output:
         for var in vars_list:
             options_copy = copy.copy(options)
             set_new_var_options(options_copy,var,database.drs.official_drs_no_version)
@@ -97,17 +92,11 @@ def reduce_soft_links(database, options, q_manager=None, sessions=dict()):
                 os.remove(temp_output_file_name_one_var)
             except Exception:
                 pass
-    return temp_output_file_name
+    return
 
 def reduce_variable(database,options,q_manager=None,sessions=dict(),retrieval_type='reduce'):
-    #Create temp output
-    #fileno, temp_output_file_name = tempfile.mkstemp(dir=options.swap_dir)
-    #must close fileno
-    #os.close(fileno)
-    temp_output_file_name = options.out_netcdf_file
-
     vars_list = reduce_var_list(database, options)
-    with netCDF4.Dataset(temp_output_file_name,'w',diskless=True,persist=True) as output:
+    with netCDF4.Dataset(options.out_netcdf_file,'w',diskless=True,persist=True) as output:
         for var in vars_list:
             options_copy = copy.copy(options)
             set_new_var_options(options_copy,var,database.drs.official_drs_no_version)
@@ -126,7 +115,7 @@ def reduce_variable(database,options,q_manager=None,sessions=dict(),retrieval_ty
                     os.remove(temp_output_file_name_one_var)
                 except Exception:
                     pass
-    return temp_output_file_name
+    return
 
 def reduce_sl_or_var(database,options,q_manager=None,sessions=dict(),retrieval_type='reduce',script=''):
     #The leaf(ves) considered here:
@@ -139,13 +128,12 @@ def reduce_sl_or_var(database,options,q_manager=None,sessions=dict(),retrieval_t
     tree_fx,options_fx=get_fixed_var_tree(database.drs,options,var)
 
     #Define output_file_name:
-    output_file_name=get_output_name(database.drs,options,var)
-    #temp_output_file_name=get_temp_output_file_name(options,output_file_name)
+    output_file_name = options.out_netcdf_file
     fileno, temp_output_file_name = tempfile.mkstemp(dir=options.swap_dir)
     #must close fileno
     os.close(fileno)
 
-    file_name_list=get_input_file_names(database.drs,options,script)
+    file_name_list = get_input_file_names(database.drs,options,script)
     temp_file_name_list=[]
 
     if 'validate' in sessions.keys():
@@ -154,7 +142,6 @@ def reduce_sl_or_var(database,options,q_manager=None,sessions=dict(),retrieval_t
         session=None
 
     for file_name in file_name_list:
-        #temp_file_name=get_temp_input_file_name(options,file_name)
         fileno, temp_file_name = tempfile.mkstemp(dir=options.swap_dir)
         #must close fileno
         os.close(fileno)
@@ -256,52 +243,13 @@ def get_fixed_var_tree(project_drs,options,var):
                      getattr(options_fx,'X'+opt[0]).remove(opt[1])
     return tree_fx, options_fx
     
-def get_temp_output_file_name(options,output_file_name):
-    #Put temp files in the swap dir:
-    if ('swap_dir' in dir(options) and options.swap_dir!='.'):
-        temp_output_file_name=options.swap_dir+'/'+os.path.basename(output_file_name)
-    else:
-        temp_output_file_name=output_file_name
-
-    #Create directory:
-    try:
-        directory=os.path.dirname(temp_output_file_name)
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-    except:
-        pass
-    return temp_output_file_name
-
-def get_temp_input_file_name(options,input_file_name):
-    #Put temp files in the swap dir:
-    if ('swap_dir' in dir(options) and options.swap_dir!='.'):
-        temp_input_file_name=options.swap_dir+'/'+os.path.basename(input_file_name)
-    else:
-        temp_input_file_name=input_file_name
-
-    temp_input_file_name+='.pid'+str(os.getpid())
-
-    #Create directory:
-    try:
-        directory=os.path.dirname(temp_input_file_name)
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-    except:
-        pass
-    return temp_input_file_name
-
-def get_output_name(project_drs,options,var):
-    output_file_name=options.out_netcdf_file
-    return output_file_name
-
 def get_input_file_names(project_drs,options,script):
-    input_file_name=options.in_netcdf_file
-    file_name_list=[input_file_name,]
-    if 'in_extra_netcdf_files' in dir(options): file_name_list+=options.in_extra_netcdf_files
+    input_file_name = options.in_netcdf_file
+    file_name_list = [input_file_name,]
+    if 'in_extra_netcdf_files' in dir(options): file_name_list += options.in_extra_netcdf_files
     
     if (script=='' and 
         ('in_extra_netcdf_files' in dir(options) and 
-              len(options.in_extra_netcdf_files)>0) ):
+              len(options.in_extra_netcdf_files) > 0) ):
         raise InputErrorr('The identity script \'\' can only be used when no extra netcdf files are specified.')
-
     return file_name_list

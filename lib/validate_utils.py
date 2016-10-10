@@ -254,15 +254,15 @@ def validate(database,options,q_manager=None,sessions=dict()):
         database.load_database(options,find_time_available,time_slices=time_slices,semaphores=semaphores,session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
         #Find the list of institute / model with all the months for all the years / experiments and variables requested:
         intersection(database, options, time_slices=time_slices)
-        output=database.nc_Database.write_database(database.header,options,'record_paths',semaphores=semaphores,session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
+        database.nc_Database.write_database(database.header,options,'record_paths',semaphores=semaphores,session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
     else:
         #Checks that files are available.
         database.load_database(options,find_time,time_slices=time_slices,semaphores=semaphores,session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
         #Find the list of institute / model with all the months for all the years / experiments and variables requested:
         intersection(database, options, time_slices=time_slices)
-        output=database.nc_Database.write_database(database.header,options,'record_meta_data',semaphores=semaphores,session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
+        database.nc_Database.write_database(database.header,options,'record_meta_data',semaphores=semaphores,session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
     database.close_database()
-    return output
+    return
 
 def intersection(database,options, time_slices=dict()):
     #This function finds the models that satisfy all the criteria

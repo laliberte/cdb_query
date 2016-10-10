@@ -132,10 +132,7 @@ class nc_Database:
         #Find the unique tuples:
         trees_list=self.list_subset([getattr(File_Expt,level) for level in drs_list])
 
-        #Create output:
-        temp_output_file_name = options.out_netcdf_file
-
-        with netCDF4.Dataset(temp_output_file_name,
+        with netCDF4.Dataset(options.out_netcdf_file,
                                  'w',format='NETCDF4',diskless=True,persist=True) as output_root:
             if 'no_check_availability' in dir(options) and options.no_check_availability:
                 record_header(output_root,{val:header[val] for val in header if val!='data_node_list'})
@@ -196,7 +193,7 @@ class nc_Database:
                 #Remove recorded data from database:
                 self.session.query(*out_tuples).filter(sqlalchemy.and_(*conditions)).delete()
 
-        return temp_output_file_name
+        return
 
     def retrieve_database(self,output,options,q_manager=None,session=None,retrieval_type='reduce'):
         ##Recover the database meta data:

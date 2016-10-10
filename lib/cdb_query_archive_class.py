@@ -246,7 +246,7 @@ class Database_Manager:
                 options_copy = make_new_options_from_lists(options,vars_list[0],times_list[0],function_name,self.drs.official_drs_no_version)
 
             #Compute function:
-            output_file_name = function_handle(self,options_copy,q_manager=q_manager,sessions=sessions)
+            output_file_name = function_handle(self, options_copy, q_manager=q_manager, sessions=sessions)
 
             if output_file_name == None:
                 #No file was written and the next function should not expect anything:

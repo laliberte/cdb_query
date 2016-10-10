@@ -20,37 +20,39 @@ def download_opendap(database,options,q_manager=None,sessions=dict()):
     return download(database,'download_opendap',options,q_manager,sessions)
 
 def download(database,retrieval_type,options,q_manager,sessions):
-    options_copy=copy.copy(options)
+    options_copy = copy.copy(options)
     if 'out_download_dir' in dir(options):
         #Describe the tree pattern:
         if not 'version' in database.drs.official_drs:
-            options_copy.out_download_dir+='/tree/'
-        elif database.drs.official_drs[-1]=='var' and database.drs.official_drs[-2]=='version':
-            options_copy.out_download_dir+='/tree/version/var/'
-        elif database.drs.official_drs[-2]=='var' and database.drs.official_drs[-1]=='version':
-            options_copy.out_download_dir+='/tree/var/version/'
+            options_copy.out_download_dir += '/tree/'
+        elif ( database.drs.official_drs[-1] == 'var' 
+               and database.drs.official_drs[-2] == 'version' ):
+            options_copy.out_download_dir += '/tree/version/var/'
+        elif ( database.drs.official_drs[-2] == 'var' 
+               and database.drs.official_drs[-1] == 'version' ):
+            options_copy.out_download_dir += '/tree/var/version/'
         else:
             raise NotImplementedError('If version is in the project drs, it must be either the last or next-to-last field.')
 
     if 'validate' in sessions.keys():
-        session=sessions['validate']
+        session = sessions['validate']
     else:
-        remote_netcdf_kwargs=dict()
+        remote_netcdf_kwargs = dict()
         if 'validate_cache' in dir(options) and getattr(options,'validate_cache'):
-            remote_netcdf_kwargs['cache']=getattr(options,'validate_cache').split(',')[0]
-            if len(getattr(options,'validate_cache').split(','))>1:
-                remote_netcdf_kwargs['expire_after']=datetime.timedelta(hours=float(getattr(options,'validate_cache').split(',')[1]))
-        session=requests_sessions.create_single_session(**remote_netcdf_kwargs)
+            remote_netcdf_kwargs['cache'] = getattr(options,'validate_cache').split(',')[0]
+            if len(getattr(options, 'validate_cache').split(',')) > 1:
+                remote_netcdf_kwargs['expire_after'] = datetime.timedelta(hours=float(getattr(options, 'validate_cache').split(',')[1]))
+        session = requests_sessions.create_single_session(**remote_netcdf_kwargs)
 
     #Recover the database meta data:
     database.load_header(options_copy)
     #Check if years should be relative, eg for piControl:
-    options_copy.min_year=None
+    options_copy.min_year = None
     if 'experiment_list' in database.header.keys():
         for experiment in database.header['experiment_list']:
-            min_year=int(database.header['experiment_list'][experiment].split(',')[0])
+            min_year = int(database.header['experiment_list'][experiment].split(',')[0])
             if min_year<10:
-                options_copy.min_year=min_year
+                options_copy.min_year = min_year
                 if not ('silent' in dir(options_copy) and options_copy.silent):
                     print 'Using min year {0} for experiment {1}'.format(str(min_year),experiment)
 
@@ -71,7 +73,7 @@ def download(database,retrieval_type,options,q_manager,sessions):
         #Else, simply copy:
         queues_manager._copyfile(options,'in_netcdf_file', options_copy, 'out_netcdf_file')
         database.close_database()
-    return options_copy.out_netcdf_file
+    return
 
 def _is_len_one_list(x):
     if isinstance(x,list) and len(x)==1:
