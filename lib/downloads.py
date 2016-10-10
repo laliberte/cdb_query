@@ -11,7 +11,7 @@ import netcdf4_soft_links.remote_netcdf as remote_netcdf
 import netcdf4_soft_links.requests_sessions as requests_sessions
 
 #Internal:
-import cdb_query_archive_class
+from . import cdb_query_archive_class, queues_manager
 
 def download_files(database,options,q_manager=None,sessions=dict()):
     return download(database,'download_files',options,q_manager,sessions)
@@ -69,7 +69,7 @@ def download(database,retrieval_type,options,q_manager,sessions):
         database.close_database()
     else:
         #Else, simply copy:
-        shutil.copyfile(options.in_netcdf_file, options_copy.out_netcdf_file)
+        queues_manager._copyfile(options,'in_netcdf_file', options_copy, 'out_netcdf_file')
         database.close_database()
     return options_copy.out_netcdf_file
 
@@ -110,6 +110,7 @@ def time_split(database,options, check_split=True):
     database.load_database(options_copy,cdb_query_archive_class.find_simple)
     dates_axis = database.nc_Database.retrieve_dates(options_copy)
     database.close_database()
+
     if len(dates_axis)>0:
         time_list = recursive_time_list(options_copy, dates_axis, loop_names,
                                         [ True if loop in options_copy.loop_through_time else False for loop in loop_names],[],[])

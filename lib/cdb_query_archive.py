@@ -110,7 +110,7 @@ def cdb_query_from_list(args_list):
                 #Start the queue consumer processes:
                 options_copy = copy.copy(options)
                 #Increment first queue and put:
-                q_manager.increment_expected_and_put((q_manager.queues_names[0],options_copy))
+                q_manager.increment_expected_and_put(q_manager.queues_names[0], options_copy)
                 if ('start_server' in dir(options) and options.start_server):
                     #Start a dedicated recorder process:
                     processes['recorder']=multiprocessing.Process(target=queues_manager.recorder,

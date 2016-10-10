@@ -154,41 +154,50 @@ class CDB_queues_manager:
         self.do_not_keep_consumers_alive.set()
         return
 
-    def increment_expected_and_put(self,item):
+    def increment_expected_and_put(self, function_name, options, copyfile=False):
+        options_copy = copy.copy(options)
         #Put the item in the right queue and give it a number:
-        if ('in_netcdf_file' in dir(item[-1]) and
-            self.queues_names.index(item[0])>0):
+        if ('in_netcdf_file' in dir(options_copy) and
+            self.queues_names.index(function_name) > 0):
             #Copy input files to prevent garbage from accumulating:
-            counter=self.counter.increment()
+            counter = self.counter.increment()
 
-            fileno, item[-1].in_netcdf_file = tempfile.mkstemp(dir=item[-1].swap_dir,suffix='.'+str(counter))
+            fileno, options_copy.in_netcdf_file = tempfile.mkstemp(dir=options_copy.swap_dir, suffix='.'+str(counter))
             #must close file number:
             os.close(fileno)
-            new_file_name = item[-1].in_netcdf_file
-        else:
-            new_file_name=''
-        getattr(self,item[0]+'_expected').increment()
-        getattr(self,item[0]).put((item[-1].priority,(self.counter.increment(),)+item))
+            if copyfile:
+                _copyfile(options, 'in_netcdf_file', options_copy, 'in_netcdf_file')
+        getattr(self,function_name+'_expected').increment()
+        getattr(self,function_name).put((options_copy.priority, (self.counter.increment(), function_name, options_copy)))
         return new_file_name
 
-    def put_to_next(self,item):
+    def put_to_next(self, function_name, options, output_file_name):
+        if 'in_netcdf_file' in dir(options):
+            previous_in_netcdf_file = options.in_netcdf_file
+
+        #Set to output_file
+        options_copy.in_netcdf_file = output_file_name
+
         #Put the item in the next function queue and give it a number:
-        next_function_name=self.queues_names[self.queues_names.index(item[0])+1]
-        getattr(self,next_function_name).put((item[-1].priority,(self.counter.increment(),next_function_name)+item[1:]))
-        if ('in_netcdf_file' in dir(item[-1]) and
-            self.queues_names.index(item[0])>0):
-            return True
-        else:
-            return False
+        next_function_name = self.queues_names[self.queues_names.index(function_name)+1]
+        getattr(self, next_function_name).put((options.priority,(self.counter.increment(),next_function_name)+(options,)))
+
+        # Remove temporary input files if not the first function:
+        if ( 'in_netcdf_file' in dir(options) and
+             self.queues_names.index(function_name) > 0 ):
+            os.remove(previous_in_netcdf_file)
+        return
 
     def remove(self,item):
         next_function_name=self.queues_names[self.queues_names.index(item[0])+1]
         getattr(self,next_function_name+'_expected').decrement()
         if ('in_netcdf_file' in dir(item[-1]) and
             self.queues_names.index(item[0])>0):
-            return True
-        else:
-            return False
+            os.remove(item[-1].in_netcdf_file)
+            #return True
+        #else:
+        #    return False
+        return
 
     def get_do_no_record(self):
         return self.get(queues_names=[queue for queue in ['download_opendap']
@@ -468,23 +477,21 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs,origina
             #Put it back in the queue, increasing its trial number:
             options_save.trial-=1
             #Increment expectation in current function and resubmit:
-            new_file_name=q_manager.increment_expected_and_put((function_name,options_save))
-            if new_file_name!='':
-                shutil.copyfile(options.in_netcdf_file,new_file_name)
+            q_manager.increment_expected_and_put(function_name, options_save, copyfile=True)
         elif options.failsafe_attempt > 0:
 
             #Reset complete branch
             options_save.trial=original_options.trial
             if 'in_netcdf_file' in dir(original_options):
-                options_save.in_netcdf_file=original_options.in_netcdf_file
+                options_save.in_netcdf_file = original_options.in_netcdf_file
             elif 'in_netcdf_file' in dir(options_save):
                 del options_save.in_netcdf_file
-            options_save.out_netcdf_file=original_options.out_netcdf_file
+            options_save.out_netcdf_file = original_options.out_netcdf_file
             if ('record_validate' in dir(options_save) and
                 'record_validate' in q_manager.queues_names and
                  q_manager.queues_names.index(function_name) > q_manager.queues_names.index('record_validate')):
                 #If validate was already recorded:
-                options_save.record_validate=False
+                options_save.record_validate = False
 
             q_manager.remove((function_name,options_copy))
             #Delete output from previous attempt files:
@@ -500,13 +507,19 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs,origina
             options_save.failsafe_attempt -= 1
 
             #Put back to first function:
-            new_file_name=q_manager.increment_expected_and_put((q_manager.queues_names[0],options_save))
+            q_manager.increment_expected_and_put(q_manager.queues_names[0],options_save)
         else:
             #If it keeps on failing, ignore this whole branch!
             logging.error(function_name + 
                           ' failed with the following options: ' +
                           str(options_save))
     return
+
+def _copyfile(options_source, field_source, options_dest, field_dest):
+    shutils.copyfile(getattr(options_source,field_source),
+                     getattr(options_dest,field_dest))
+    return
+
 
 def create_sessions(original_options,q_manager=None):
     sessions=dict()
