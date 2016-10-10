@@ -293,51 +293,52 @@ def recorder(q_manager,project_drs,options):
     recorder_queue_consume(q_manager,project_drs,options)
     return
         
-def recorder_queue_consume(q_manager,project_drs,original_options):
-    renewal_time=datetime.datetime.now()
-    sessions=create_sessions(original_options,q_manager=q_manager)
+def recorder_queue_consume(q_manager, project_drs, cproc_options):
+    renewal_time = datetime.datetime.now()
+    sessions = create_sessions(cproc_options, q_manager=q_manager)
 
-    if 'num_procs' in dir(original_options) and original_options.num_procs>1:
-        #get_type=getattr(q_manager,'get_all_record')
-        get_type=getattr(q_manager,'get_limited_record')
-    elif ('start_server' in dir(original_options) and original_options.start_server):
-        get_type=getattr(q_manager,'get_all_server_record')
+    if ( 'num_procs' in dir(cproc_options) 
+         and cproc_options.num_procs > 1):
+        get_type = getattr(q_manager, 'get_limited_record')
+    elif ('start_server' in dir(cproc_options) 
+           and cproc_options.start_server):
+        get_type = getattr(q_manager, 'get_all_server_record')
     else:
-        get_type=getattr(q_manager,'get_all_record')
+        get_type = getattr(q_manager, 'get_all_record')
 
-    output=dict()
+    output = dict()
     try:
         #Output diskless for perfomance. File will be created on closing:
-        output['record']=netCDF4.Dataset(original_options.out_netcdf_file,'w',diskless=True,persist=True)
+        output['record'] = netCDF4.Dataset(cproc_options.out_netcdf_file, 'w', diskless=True, persist=True)
         output['record'].set_fill_off()
-        database=cdb_query_archive_class.Database_Manager(project_drs)
-        database.load_header(original_options)
-        nc_Database.record_header(output['record'],database.header)
+        database = cdb_query_archive_class.Database_Manager(project_drs)
+        database.load_header(cproc_options)
+        nc_Database.record_header(output['record'], database.header)
 
         if 'record_validate' in q_manager.queues_names:
             #Output diskless for perfomance. File will be created on closing:
-            output['record_validate']=netCDF4.Dataset(original_options.out_netcdf_file+'.validate','w',diskless=True,persist=True)
+            output['record_validate'] = netCDF4.Dataset(cproc_options.out_netcdf_file+'.validate', 'w', diskless=True, persist=True)
             output['record_validate'].set_fill_off()
-            database=cdb_query_archive_class.Database_Manager(project_drs)
-            database.load_header(original_options)
-            nc_Database.record_header(output['record_validate'],database.header)
+            database = cdb_query_archive_class.Database_Manager(project_drs)
+            database.load_header(cproc_options)
+            nc_Database.record_header(output['record_validate'], database.header)
 
         for item in iter(get_type,'STOP'):
             if not 'record' in item[1].split('_'):
-                consume_one_item(item[0],item[1],item[2],q_manager,project_drs,original_options,sessions=sessions)
+                consume_one_item(item[0],item[1],item[2],q_manager,project_drs,cproc_options,sessions=sessions)
             else:
                 record_to_netcdf_file(item[0],item[1],item[2],output,q_manager,project_drs)
 
-            if ('username' in dir(original_options) and 
-                original_options.username!=None and
-                original_options.password!=None and
-                original_options.use_certificates and
+            if ('username' in dir(cproc_options) and 
+                cproc_options.username!=None and
+                cproc_options.password!=None and
+                cproc_options.use_certificates and
                 datetime.datetime.now() - renewal_time > datetime.timedelta(hours=1)):
                 #Reactivate certificates every hours:
-                certificates.retrieve_certificates(original_options.username,
+                certificates.retrieve_certificates(cproc_options.username,
                                                    'ceda',
-                                                   user_pass=original_options.password,
-                                                   timeout=original_options.timeout)
+                                                   user_pass=cproc_options.password,
+                                                   timeout=cproc_options.timeout)
                 renewal_time=datetime.datetime.now()
     finally:
         #Clean exit:
@@ -395,11 +396,11 @@ def consumer(q_manager,project_drs,options):
     consumer_queue_consume(q_manager,project_drs,options)
     return
 
-def consumer_queue_consume(q_manager,project_drs,original_options):
-    sessions=create_sessions(original_options,q_manager=q_manager)
+def consumer_queue_consume(q_manager,project_drs,cproc_options):
+    sessions=create_sessions(cproc_options,q_manager=q_manager)
     get_type=getattr(q_manager,'get_'+multiprocessing.current_process().name.split('_')[0]+'_no_record')
     for item in iter(get_type,'STOP'):
-        consume_one_item(item[0],item[1],item[2],q_manager,project_drs,original_options,sessions=sessions)
+        consume_one_item(item[0],item[1],item[2],q_manager,project_drs,cproc_options,sessions=sessions)
     for session_name in sessions.keys():
         sessions[session_name].close()
     return
@@ -409,12 +410,12 @@ def reducer(q_manager,project_drs,options):
     reducer_queue_consume(q_manager,project_drs,options)
     return
 
-def reducer_queue_consume(q_manager,project_drs,original_options):
+def reducer_queue_consume(q_manager,project_drs,cproc_options):
     for item in iter(q_manager.get_reduce_no_record,'STOP'):
-        consume_one_item(item[0],item[1],item[2],q_manager,project_drs,original_options)
+        consume_one_item(item[0],item[1],item[2],q_manager,project_drs,cproc_options)
     return
 
-def consume_one_item(counter,function_name,options,q_manager,project_drs,original_options,sessions=dict()):
+def consume_one_item(counter,function_name,options,q_manager,project_drs,cproc_options,sessions=dict()):
     #First copy options:
     options_copy=copy.copy(options)
     options_save=copy.copy(options)
@@ -428,7 +429,7 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs,origina
     database=cdb_query_archive_class.Database_Manager(project_drs)
     #Run the command:
     try:
-        if not original_options.command == 'reduce_server':
+        if not cproc_options.command == 'reduce_server':
             _logger.debug('Process: '+
                         function_name+
                         ', current queues: '+
@@ -441,7 +442,7 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs,origina
                         ', with options: '+
                         str(options_copy))
         getattr(cdb_query_archive_class,function_name)(database,options_copy,q_manager=q_manager,sessions=sessions)
-        if not original_options.command == 'reduce_server':
+        if not cproc_options.command == 'reduce_server':
             _logger.debug('DONE Process: '+
                         function_name+
                         ', current queues: '+
@@ -451,8 +452,8 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs,origina
         if str(e).startswith('The kind of user must be selected'):
             raise
 
-        if ('debug' in dir(original_options) and
-            original_options.debug):
+        if ( 'debug' in dir(cproc_options) and
+             cproc_options.debug ):
             _logger.error(function_name+
                           ' failed with the following options: '+
                           str(options_save))
@@ -462,48 +463,46 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs,origina
             #Retry this function.
 
             #Decrement expectation in next function:
-            q_manager.remove(function_name,options_copy)
+            q_manager.remove(function_name, options_copy)
             #Delete output from previous attempt files:
             try:
-                map(os.remove,glob.glob(options_save.out_netcdf_file+'.*'))
+                map(os.remove, glob.glob(options_save.out_netcdf_file+'.*'))
                 os.remove(options_save.out_netcdf_file)
             except Exception:
                 pass
 
             #Put it back in the queue, increasing its trial number:
-            options_save.trial-=1
+            options_save.trial -= 1
             #Increment expectation in current function and resubmit:
             q_manager.increment_expected_and_put(function_name, options_save, copyfile=True)
         elif options.failsafe_attempt > 0:
 
-            #Reset complete branch
-            options_save.trial=original_options.trial
-            if 'in_netcdf_file' in dir(original_options):
-                options_save.in_netcdf_file = original_options.in_netcdf_file
-            elif 'in_netcdf_file' in dir(options_save):
-                del options_save.in_netcdf_file
-            options_save.out_netcdf_file = original_options.out_netcdf_file
+            #Reset branch:
+            for field in ['in_netcdf_file','out_netcdf_file','trial']:
+                if 'original_'+field in dir(options_save):
+                    setattr(options_save,field,getattr(options_save,'original_'+field))
+                elif field in dir(options_save):
+                    delattr(options_save, field)
+
             if ('record_validate' in dir(options_save) and
                 'record_validate' in q_manager.queues_names and
                  q_manager.queues_names.index(function_name) > q_manager.queues_names.index('record_validate')):
                 #If validate was already recorded:
                 options_save.record_validate = False
 
-            q_manager.remove(function_name,options_copy)
+            q_manager.remove(function_name, options_copy)
             #Delete output from previous attempt files:
             try:
-                map(os.remove,glob.glob(options_save.out_netcdf_file+'.*'))
+                map(os.remove, glob.glob(options_save.out_netcdf_file+'.*'))
                 os.remove(options_save.out_netcdf_file)
             except Exception:
                 pass
-            
-            options_save.trial = original_options.trial
             
             #Decrement failsafe attempt:
             options_save.failsafe_attempt -= 1
 
             #Put back to first function:
-            q_manager.increment_expected_and_put(q_manager.queues_names[0],options_save)
+            q_manager.increment_expected_and_put(q_manager.queues_names[0], options_save)
         else:
             #If it keeps on failing, ignore this whole branch!
             logging.error(function_name + 
@@ -512,17 +511,17 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs,origina
     return
 
 
-def create_sessions(original_options,q_manager=None):
+def create_sessions(cprocs_options,q_manager=None):
     sessions=dict()
     for type in ['validate','ask']:
         if ( not 'queues_names' in dir(q_manager) or
             ( 'queues_names' in dir(q_manager) and
               type in q_manager.queues_names ) ):
             remote_netcdf_kwargs=dict()
-            if type+'_cache' in dir(original_options) and getattr(original_options,type+'_cache'):
-                remote_netcdf_kwargs['cache']=getattr(original_options,type+'_cache').split(',')[0]
-                if len(getattr(original_options,type+'_cache').split(','))>1:
-                    remote_netcdf_kwargs['expire_after']=datetime.timedelta(hours=float(getattr(original_options,type+'_cache').split(',')[1]))
+            if type+'_cache' in dir(cprocs_options) and getattr(cprocs_options,type+'_cache'):
+                remote_netcdf_kwargs['cache']=getattr(cprocs_options,type+'_cache').split(',')[0]
+                if len(getattr(cprocs_options,type+'_cache').split(','))>1:
+                    remote_netcdf_kwargs['expire_after']=datetime.timedelta(hours=float(getattr(cprocs_options,type+'_cache').split(',')[1]))
             if not ('sessions' in dir(q_manager) and
                     type in getattr(q_manager,'sessions').keys()):
                 #Create if it does not exist:

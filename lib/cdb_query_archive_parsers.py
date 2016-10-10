@@ -95,6 +95,13 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD'.format(version_num)
     generate_subparsers(command_parser,epilog,project_drs)
 
     options = command_parser.parse_args(commands_args,namespace=options)
+
+    #These lines are necessary for the failsafe implementation:
+    for field in ['in_netcdf_file', 'out_netcdf_file', 'trial']:
+        if ( set([field,'original_'+field]).issubset(dir(options))
+             and getattr(options, 'original_'+field) is None ):
+            setattr(options, 'original_'+field, getattr(options, field))
+            
     return options, project_drs
 
 #http://stackoverflow.com/questions/6365601/default-sub-command-or-handling-no-sub-command-with-argparse
@@ -144,11 +151,16 @@ def _remove(options,field):
 def input_arguments(parser,project_drs):
     parser.add_argument('in_netcdf_file',type=_absolute_path,
                                  help='NETCDF Diagnostic paths file (input)')
+    #Options only for failsafe implementation:
+    parser.add_argument('--original_in_netcdf_file', default=None, help=argparse.SUPPRESS)
     return
 
 def output_arguments(parser,project_drs):
     parser.add_argument('out_netcdf_file',type=_absolute_path,
                                  help='NETCDF Diagnostic paths file (output)')
+    #Options only for failsafe implementation:
+    parser.add_argument('--original_out_netcdf_file', default=None, help=argparse.SUPPRESS)
+
     #group = parser.add_mutually_exclusive_group()
     parser.add_argument('-O',action='store_true',
                             help='Overwrite output file. Default: False')
@@ -185,6 +197,9 @@ def basic_control_arguments(parser,project_drs):
     parser.add_argument('-s', '--silent', default=False, action='store_true', help='Make not verbose.')
     parser.add_argument('--trial', type=int, default=2, help='Try a function that number of time '
                                                              'before re-attempting the whole branch. Default: 3.')
+    #Options only for failsafe implementation:
+    parser.add_argument('--original_trial', default=None, help=argparse.SUPPRESS)
+
     parser.add_argument('--failsafe_attempt', type=int, default=1, help='Try a function sequence function that number of time '
                                                                         'before dropping the offending simulation. Default: 2.')
     parser.add_argument('--debug', default=False, action='store_true', help='Disable --trial and --failsafe_attempt '
