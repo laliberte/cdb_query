@@ -21,7 +21,7 @@ import netcdf4_soft_links.retrieval_manager as retrieval_manager
 import netcdf4_soft_links.remote_netcdf as remote_netcdf
 
 #Internal:
-from . import ask_utils, validate_utils, nc_Database, nc_Database_utils, reduce_utils, downloads_utils, parsers
+from . import ask_utils, validate_utils, nc_Database, nc_Database_utils, reduce_utils, downloads_utils, parsers, find_functions
 
 def ask(database,options,q_manager=None,sessions=dict()):
     #Load header:
@@ -200,7 +200,7 @@ class Database_Manager:
         return
 
     def list_fields_local(self,options,fields_to_list, soft_links=True):
-        self.load_database(options,find_simple, soft_links=soft_links)
+        self.load_database(options, find_functions.simple, soft_links=soft_links)
         fields_list=self.nc_Database.list_fields(fields_to_list)
         self.close_database()
         return fields_list
@@ -261,7 +261,7 @@ class Database_Manager:
 
     def find_data_nodes_and_simulations(self,options):
         #We have to time the response of the data node.
-        self.load_database(options,find_simple)
+        self.load_database(options, find_functions.simple)
         simulations_list=self.nc_Database.list_fields(self.drs.simulations_desc)
 
         data_node_list=[item[0] for item in self.nc_Database.list_fields(['data_node'])]
@@ -441,7 +441,3 @@ class Timer:
         self.end = time.clock()
         self.interval = self.end - self.start
 
-def find_simple(pointers,file_expt,time_slices=dict(),semaphores=None,session=None,remote_netcdf_kwargs=dict()):
-    pointers.session.add(file_expt)
-    pointers.session.commit()
-    return

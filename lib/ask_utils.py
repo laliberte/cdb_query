@@ -11,7 +11,7 @@ import json
 import netCDF4
 
 #Internal:
-from . import nc_Database, http_query, ftp_query, filesystem_query, esgf_query, commands
+from . import nc_Database, http_query, ftp_query, filesystem_query, esgf_query
 
 
 #################################################################
@@ -157,7 +157,7 @@ def find_model_list(database, model_list, experiment):
                                .filter(sqlalchemy.and_(*conditions))
                                .distinct()
                                .all() )
-            model_list_fx =s et(model_list_fx).intersection(set(model_list_var))
+            model_list_fx = set(model_list_fx).intersection(set(model_list_var))
     model_list_combined = [ model for model in model_list_copy 
                             if remove_ensemble(model,database.drs) in model_list_fx ]
     return model_list_combined
@@ -332,12 +332,3 @@ def ask_var_list(database, simulations_list, options):
                         simulations_list ])]
 
 
-def find_path(nc_Database,file_expt,
-              time_slices=dict(),semaphores=dict(),
-              session=None,remote_netcdf_kwargs=dict()):
-    for val in dir(file_expt):
-        if val[0]!='_' and val!='case_id':
-            getattr(file_expt,val)
-    nc_Database.session.add(file_expt)
-    nc_Database.session.commit()
-    return

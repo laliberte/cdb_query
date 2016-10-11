@@ -11,7 +11,7 @@ import netcdf4_soft_links.remote_netcdf as remote_netcdf
 import netcdf4_soft_links.requests_sessions as requests_sessions
 
 #Internal:
-from . import parsers, commands
+from . import parsers, find_functions
 
 def download_files(database,options,q_manager=None,sessions=dict()):
     return download(database,'download_files',options,q_manager,sessions)
@@ -59,7 +59,7 @@ def download(database,retrieval_type,options,q_manager,sessions):
     time_slicing_names=['year','month','day','hour']
     is_time_slicing_requested=np.any([ True if time_slicing in dir(options_copy) and getattr(options_copy,time_slicing)!=None else False for time_slicing in time_slicing_names])
     #Find the data that needs to be recovered:
-    database.load_database(options_copy,commands.find_simple)
+    database.load_database(options_copy, find_functions.simple)
     file_type_list=[item[0] for item in database.nc_Database.list_fields(['file_type',])]
 
     if (not set(file_type_list).issubset(remote_netcdf.local_queryable_file_types) or
@@ -109,7 +109,7 @@ def time_split(database,options, check_split=True):
                 if not ('silent' in dir(options_copy) and options_copy.silent):
                     print 'Using min year {0} for experiment {1}'.format(str(min_year),experiment)
     #Find the data that needs to be recovered:
-    database.load_database(options_copy,commands.find_simple)
+    database.load_database(options_copy,find_functions.simple)
     dates_axis = database.nc_Database.retrieve_dates(options_copy)
     database.close_database()
 
