@@ -56,14 +56,14 @@ class nc_Database:
     def load_header(self):
         #Load header:
         header=dict()
-        with nc_Database_utils._read_Dataset(self.database_file)(self.database_file,'r') as dataset:
+        with db_utils._read_Dataset(self.database_file)(self.database_file,'r') as dataset:
             for att in set(self.drs.header_desc).intersection(dataset.ncattrs()):
                 header[att]=json.loads(dataset.getncattr(att))
         return header
 
     def populate_database(self,options,find_function,soft_links=True,time_slices=dict(),semaphores=dict(),session=None,remote_netcdf_kwargs=dict()):
         self.file_expt.time='0'
-        with nc_Database_utils._read_Dataset(self.database_file)(self.database_file,'r') as dataset:
+        with db_utils._read_Dataset(self.database_file)(self.database_file,'r') as dataset:
             populate_database_recursive(self, dataset, options, find_function, 
                                         soft_links=soft_links,time_slices=time_slices,
                                         semaphores=semaphores,
@@ -198,23 +198,23 @@ class nc_Database:
         ##Recover the database meta data:
         tree=zip(self.drs.official_drs_no_version,[ None
                             for field in self.drs.official_drs_no_version])
-        with nc_Database_utils._read_Dataset(self.database_file)(self.database_file,'r') as dataset:
+        with db_utils._read_Dataset(self.database_file)(self.database_file,'r') as dataset:
             if retrieval_type in ['download_files', 'download_opendap']:
                 q_manager.download.set_opened()
-                nc_Database_utils.extract_netcdf_variable(output,dataset,tree,options,q_manager=q_manager.download,
+                db_utils.extract_netcdf_variable(output,dataset,tree,options,q_manager=q_manager.download,
                                                                                            session=session,
                                                                                            retrieval_type=retrieval_type)
                 q_manager.download.set_closed()
                 data_node_list=self.list_data_nodes(options)
                 output=retrieval_manager.launch_download(output,data_node_list,q_manager.download,options)
             else:
-                nc_Database_utils.extract_netcdf_variable(output,dataset,tree,options,retrieval_type=retrieval_type)
+                db_utils.extract_netcdf_variable(output,dataset,tree,options,retrieval_type=retrieval_type)
         return output
 
 
     def retrieve_dates(self,options):
         ##Recover the database meta data:
-        with nc_Database_utils._read_Dataset(self.database_file)(self.database_file,'r') as dataset:
+        with db_utils._read_Dataset(self.database_file)(self.database_file,'r') as dataset:
             dates_axis = np.unique(retrieve_dates_recursive(dataset,options))
         return dates_axis
 
@@ -309,7 +309,7 @@ def retrieve_dates_recursive(data,options):
     if 'soft_links' in data.groups.keys():
         options_dict = {opt: getattr(options,opt) for opt in ['previous','next','year','month','day','hour'] if opt in dir(options)}
         remote_data = read_soft_links.read_netCDF_pointers(data,**options_dict)
-        if check_soft_links_size(remote_data) and remote_data.time_var != None:
+        if db_utils.check_soft_links_size(remote_data) and remote_data.time_var != None:
             return remote_data.date_axis[remote_data.time_restriction][remote_data.time_restriction_sort]
         else:
             return np.array([])
@@ -330,16 +330,6 @@ def retrieve_dates_recursive(data,options):
 
 def _drop_empty(array_list):
     return [ item for item in array_list if len(item) > 0 ]
-
-def check_soft_links_size(remote_data):
-    if remote_data.time_var!=None:
-        #Check if time slice is leading to zero time dimension:
-        if np.any(remote_data.time_restriction):
-            return True
-        else:
-            return False
-    else:
-        return True
 
 
 class File_Expt(object):

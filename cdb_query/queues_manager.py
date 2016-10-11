@@ -26,7 +26,8 @@ import netcdf4_soft_links.certificates as certificates
 import netcdf4_soft_links.requests_sessions as requests_sessions
 
 #Internal:
-from . import parsers, commands, nc_Database, nc_Database_utils
+from . import parsers, commands
+from .nc_Database import db_manager, db_utils
 
 class SimpleSyncManager(managers.BaseManager):
     '''
@@ -180,7 +181,7 @@ class CDB_queues_manager:
 
         #Put the item in the next function queue and give it a number:
         next_function_name = self.queues_names[self.queues_names.index(function_name)+1]
-        getattr(self, next_function_name).put((options.priority,(self.counter.increment(),next_function_name, options)))
+        getattr(self, next_function_name).put((options_copy.priority,(self.counter.increment(),next_function_name, options_copy)))
 
         # Remove temporary input files if not the first function:
         if ( 'in_netcdf_file' in dir(options) and
@@ -313,7 +314,7 @@ def recorder_queue_consume(q_manager, project_drs, cproc_options):
         output['record'].set_fill_off()
         database = commands.Database_Manager(project_drs)
         database.load_header(cproc_options)
-        nc_Database.record_header(output['record'], database.header)
+        db_manager.record_header(output['record'], database.header)
 
         if 'record_validate' in q_manager.queues_names:
             #Output diskless for perfomance. File will be created on closing:
@@ -321,7 +322,7 @@ def recorder_queue_consume(q_manager, project_drs, cproc_options):
             output['record_validate'].set_fill_off()
             database = commands.Database_Manager(project_drs)
             database.load_header(cproc_options)
-            nc_Database.record_header(output['record_validate'], database.header)
+            db_manager.record_header(output['record_validate'], database.header)
 
         for item in iter(get_type,'STOP'):
             if not 'record' in item[1].split('_'):
@@ -372,7 +373,7 @@ def record_to_netcdf_file(counter,function_name,options,output,q_manager,project
         #Only record this function if it was requested:
         #import subprocess; subprocess.Popen('ncdump -v path '+temp_file_name,shell=True)
         _logger.debug('Recording: '+function_name+', with options: '+str(options))
-        nc_Database_utils.record_to_netcdf_file_from_file_name(options, options.in_netcdf_file,output[function_name],project_drs)
+        db_utils.record_to_netcdf_file_from_file_name(options, options.in_netcdf_file,output[function_name],project_drs)
         _logger.debug('DONE Recording: '+function_name)
 
     if len(function_name.split('_'))>1:

@@ -15,15 +15,15 @@ queryable_file_types=['OPENDAP','local_file']
 def obtain_time_list(diagnostic,project_drs,var_name,experiment,model):
     #Do this without fx variables:
     conditions=(
-                 [nc_Database.File_Expt.var==var_name,] +
-                 [nc_Database.File_Expt.experiment==experiment,] +
-               [ getattr(nc_Database.File_Expt,desc)==model[desc_id]
+                 [db_manager.File_Expt.var==var_name,] +
+                 [db_manager.File_Expt.experiment==experiment,] +
+               [ getattr(db_manager.File_Expt,desc)==model[desc_id]
                  for desc_id,desc in enumerate(project_drs.simulations_desc)]
                )
     for field_id, field in enumerate(project_drs.var_specs):
-        conditions.append(getattr(nc_Database.File_Expt,field)==diagnostic.header['variable_list'][var_name][field_id])
+        conditions.append(getattr(db_manager.File_Expt,field)==diagnostic.header['variable_list'][var_name][field_id])
     time_list_var=[x[0] for x in diagnostic.nc_Database.session.query(
-                             nc_Database.File_Expt.time
+                             db_manager.File_Expt.time
                             ).filter(sqlalchemy.and_(*conditions)).distinct().all()]
     return time_list_var
 
@@ -203,8 +203,8 @@ def intersection(database,options, time_slices=dict()):
 
     #Step four: remove from database:
     for model in models_to_remove:
-        conditions=[getattr(nc_Database.File_Expt,field)==model[field_id] for field_id, field in enumerate(database.drs.simulations_desc)]
-        database.nc_Database.session.query(nc_Database.File_Expt).filter(*conditions).delete()
+        conditions=[getattr(db_manager.File_Expt,field)==model[field_id] for field_id, field in enumerate(database.drs.simulations_desc)]
+        database.nc_Database.session.query(db_manager.File_Expt).filter(*conditions).delete()
     
     #Remove fixed variables:
     simulations_list=database.nc_Database.simulations_list()
@@ -218,8 +218,8 @@ def intersection(database,options, time_slices=dict()):
                          ).difference([remove_ensemble(simulation,database.drs) for simulation in simulations_list_no_fx])
 
     for model in models_to_remove:
-        conditions=[ getattr(nc_Database.File_Expt,field)==model[field_id] for field_id, field in enumerate(remove_ensemble(database.drs.simulations_desc,database.drs))]
-        database.nc_Database.session.query(nc_Database.File_Expt).filter(*conditions).delete()
+        conditions=[ getattr(db_manager.File_Expt,field)==model[field_id] for field_id, field in enumerate(remove_ensemble(database.drs.simulations_desc,database.drs))]
+        database.nc_Database.session.query(db_manager.File_Expt).filter(*conditions).delete()
 
     return 
 

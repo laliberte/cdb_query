@@ -5,6 +5,7 @@ import h5py
 import copy
 import datetime
 import os
+import numpy as np
 
 #External but related:
 import netcdf4_soft_links.create_soft_links as create_soft_links
@@ -58,7 +59,7 @@ def tree_recursive_check_not_empty(options,data,check=True,slicing=True):
             empty_list=[]
             for group in data.groups.keys():
                 level_name=data.groups[group].getncattr(level_key)
-                if db_utils.is_level_name_included_and_not_excluded(level_name,options,group):
+                if is_level_name_included_and_not_excluded(level_name,options,group):
                     empty_list.append(tree_recursive_check_not_empty(options,data.groups[group],check=check))
             return any(empty_list)
         else:
@@ -68,6 +69,16 @@ def tree_recursive_check_not_empty(options,data,check=True,slicing=True):
             return True
         else:
             return False
+
+def check_soft_links_size(remote_data):
+    if remote_data.time_var!=None:
+        #Check if time slice is leading to zero time dimension:
+        if np.any(remote_data.time_restriction):
+            return True
+        else:
+            return False
+    else:
+        return True
 
 
 #EXTRACTIONS:

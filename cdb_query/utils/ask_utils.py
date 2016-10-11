@@ -118,18 +118,18 @@ def find_model_list(database, model_list, experiment):
         if not time_frequency in ['fx', 'en']:
             #Do this without fx variables:
             conditions=[
-                         nc_Database.File_Expt.var == var_name,
-                         nc_Database.File_Expt.experiment == experiment
+                         db_manager.File_Expt.var == var_name,
+                         db_manager.File_Expt.experiment == experiment
                        ]
             for field_id, field in enumerate(database.drs.var_specs):
-                conditions.append(getattr(nc_Database.File_Expt, field) == 
+                conditions.append(getattr(db_manager.File_Expt, field) == 
                                   database.header['variable_list'][var_name][field_id])
 
             #Find the model_list for that one variable:
             model_list_var = ( database
                                .nc_Database
                                .session
-                               .query(*[ getattr(nc_Database.File_Expt,desc)
+                               .query(*[ getattr(db_manager.File_Expt,desc)
                                          for desc in database.drs.simulations_desc ])
                                .filter(sqlalchemy.and_(*conditions))
                                .distinct()
@@ -143,17 +143,17 @@ def find_model_list(database, model_list, experiment):
         time_frequency = database.header['variable_list'][var_name][database.drs.var_specs.index('time_frequency')]
         if time_frequency in ['fx', 'en']:
             conditions = [
-                         nc_Database.File_Expt.var == var_name,
-                         nc_Database.File_Expt.experiment == experiment
+                         db_manager.File_Expt.var == var_name,
+                         db_manager.File_Expt.experiment == experiment
                        ]
             for field_id, field in enumerate(database.drs.var_specs):
-                conditions.append(getattr(nc_Database.File_Expt, field) ==
+                conditions.append(getattr(db_manager.File_Expt, field) ==
                                   database.header['variable_list'][var_name][field_id])
             #For these variables remove ensemble description:
             model_list_var = ( database
                                .nc_Database
                                .session
-                               .query(*[ getattr(nc_Database.File_Expt,desc)
+                               .query(*[ getattr(db_manager.File_Expt,desc)
                                          for desc in database.drs.simulations_desc if desc!='ensemble'])
                                .filter(sqlalchemy.and_(*conditions))
                                .distinct()
@@ -193,9 +193,9 @@ def intersection(database):
 
     #Step three: remove from database:
     for model in models_to_remove:
-        conditions=[ getattr(nc_Database.File_Expt,field) == model[field_id] 
+        conditions=[ getattr(db_manager.File_Expt,field) == model[field_id] 
                      for field_id, field in enumerate(database.drs.simulations_desc) ]
-        database.nc_Database.session.query(nc_Database.File_Expt).filter(*conditions).delete()
+        database.nc_Database.session.query(db_manager.File_Expt).filter(*conditions).delete()
 
     #Step four: remove remaining models that only have fixed variables:
     simulations_list = database.nc_Database.simulations_list()
@@ -216,10 +216,10 @@ def intersection(database):
 
     for model in models_to_remove:
         #Remove the models from the database:
-        conditions=[ getattr(nc_Database.File_Expt, field) == model[field_id] 
+        conditions=[ getattr(db_manager.File_Expt, field) == model[field_id] 
                      for field_id, field in enumerate(
                                             remove_ensemble(database.drs.simulations_desc,database.drs)) ]
-        database.nc_Database.session.query(nc_Database.File_Expt).filter(*conditions).delete()
+        database.nc_Database.session.query(db_manager.File_Expt).filter(*conditions).delete()
     return
 
 def remove_ensemble(simulation, project_drs):

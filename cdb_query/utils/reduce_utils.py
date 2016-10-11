@@ -86,7 +86,7 @@ def reduce_soft_links(database, options, q_manager=None, sessions=dict()):
             temp_output_file_name_one_var = reduce_sl_or_var(database, options_copy, q_manager=q_manager,
                                                              sessions=sessions, retrieval_type='reduce_soft_links',
                                                              script=options.reduce_soft_links_script)
-            nc_Database_utils.record_to_netcdf_file_from_file_name(options_copy, temp_output_file_name_one_var, output ,database.drs)
+            db_utils.record_to_netcdf_file_from_file_name(options_copy, temp_output_file_name_one_var, output ,database.drs)
             logging.debug('Done reducing soft_links '+str(var))
 
             try:
@@ -109,7 +109,7 @@ def reduce_variable(database,options,q_manager=None,sessions=dict(),retrieval_ty
                 temp_output_file_name_one_var = reduce_sl_or_var(database,options_copy_time,q_manager=q_manager,
                                                                sessions=sessions,retrieval_type='reduce',
                                                                script=options.script)
-                nc_Database_utils.record_to_netcdf_file_from_file_name(options_copy_time,temp_output_file_name_one_var,output,database.drs)
+                db_utils.record_to_netcdf_file_from_file_name(options_copy_time,temp_output_file_name_one_var,output,database.drs)
                 logging.debug('Done Reducing variables '+str(var)+' '+str(time))
 
                 try:
@@ -197,10 +197,10 @@ def reduce_sl_or_var(database,options,q_manager=None,sessions=dict(),retrieval_t
     if retrieval_type=='reduce_soft_links':
         processed_output_file_name = temp_output_file_name+'.tmp'
         with netCDF4.Dataset(processed_output_file_name,'w') as output:
-            nc_Database_utils.record_to_netcdf_file_from_file_name(options,temp_output_file_name,output,database.drs)
+            db_utils.record_to_netcdf_file_from_file_name(options,temp_output_file_name,output,database.drs)
     else:
         #This is the last function in the chain. Convert and create soft links:
-        processed_output_file_name = nc_Database_utils.record_to_output_directory(temp_output_file_name,database.drs,options)
+        processed_output_file_name = db_utils.record_to_output_directory(temp_output_file_name,database.drs,options)
     try:
         os.remove(temp_output_file_name)
         os.rename(processed_output_file_name, temp_output_file_name)
@@ -209,12 +209,12 @@ def reduce_sl_or_var(database,options,q_manager=None,sessions=dict(),retrieval_t
     return temp_output_file_name
 
 def extract_single_tree(temp_file,file,tree,tree_fx,options,options_fx,session=None,retrieval_type='reduce',check_empty=False):
-    with nc_Database_utils._read_Dataset(file)(file,'r') as data:
+    with db_utils._read_Dataset(file)(file,'r') as data:
         with netCDF4.Dataset(temp_file,'w',format='NETCDF4',diskless=True,persist=True) as output_tmp:
             if ('add_fixed' in dir(options) and options.add_fixed):
-                nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree_fx,options_fx,session=session,retrieval_type=retrieval_type,check_empty=True)
+                db_utils.extract_netcdf_variable(output_tmp,data,tree_fx,options_fx,session=session,retrieval_type=retrieval_type,check_empty=True)
 
-            nc_Database_utils.extract_netcdf_variable(output_tmp,data,tree,options,session=session,retrieval_type=retrieval_type,check_empty=check_empty)
+            db_utils.extract_netcdf_variable(output_tmp,data,tree,options,session=session,retrieval_type=retrieval_type,check_empty=check_empty)
     return
 
 def get_fixed_var_tree(project_drs,options,var):
