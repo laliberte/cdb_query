@@ -7,12 +7,13 @@ import os
 import numpy as np
 import netCDF4
 from pkg_resources import parse_version
+import importlib
 
 #External but related:
 import netcdf4_soft_links.manage_soft_links_parsers as manage_soft_links_parsers
 
 #Internal:
-from . import remote_archive
+import remote_archive
 
 file_type_list=['local_file','OPENDAP','HTTPServer']
 
@@ -83,7 +84,8 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD'.format(version_num)
         commands_args.append('-h')
 
     #Then parser project-specific arguments:
-    project_drs=remote_archive.DRS(options.project)
+    project_drs = importlib.import_module('.remote_archive.'+options.project, package=prog)
+    print(dir(project_drs))
     command_parser = argparse.ArgumentParser(
                             prog=prog+' '+options.project,
                             formatter_class=argparse.RawDescriptionHelpFormatter,
