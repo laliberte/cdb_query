@@ -21,7 +21,7 @@ import netcdf4_soft_links.retrieval_manager as retrieval_manager
 import netcdf4_soft_links.remote_netcdf as remote_netcdf
 
 #Internal:
-from . import ask_utils, validate_utils, nc_Database, nc_Database_utils, reduce_utils, downloads, cdb_query_archive_parsers
+from . import ask_utils, validate_utils, nc_Database, nc_Database_utils, reduce_utils, downloads_utils, parsers
 
 def ask(database,options,q_manager=None,sessions=dict()):
     #Load header:
@@ -136,8 +136,8 @@ def download_files(database,options,q_manager=None,sessions=dict()):
         vars_list=reduce_utils.reduce_var_list(database,options)
 
     #Users have requested time types to be kept
-    times_list = downloads.time_split(database,options,check_split=(len(vars_list)==1))
-    database.put_or_process('download_files',downloads.download_files,vars_list,options,q_manager,sessions,times_list=times_list)
+    times_list = downloads_utils.time_split(database,options,check_split=(len(vars_list)==1))
+    database.put_or_process('download_files',downloads_utils.download_files,vars_list,options,q_manager,sessions,times_list=times_list)
     return
 
 def reduce_soft_links(database,options,q_manager=None,sessions=dict()):
@@ -161,8 +161,8 @@ def download_opendap(database,options,q_manager=None,sessions=dict()):
     else:
         vars_list=reduce_utils.reduce_var_list(database,options)
 
-    times_list = downloads.time_split(database,options,check_split=(len(vars_list)==1))
-    database.put_or_process('download_opendap',downloads.download_opendap,vars_list,options,q_manager,sessions,times_list=times_list)
+    times_list = downloads_utils.time_split(database,options,check_split=(len(vars_list)==1))
+    database.put_or_process('download_opendap',downloads_utils.download_opendap,vars_list,options,q_manager,sessions,times_list=times_list)
     return
 
 #def gather(database,options,q_manager=None,sessions=dict()):
@@ -176,7 +176,7 @@ def reduce(database,options,q_manager=None,sessions=dict()):
         raise SyntaxErrorr('The identity script \'\' can only be used when no extra netcdf files are specified.')
 
     vars_list = reduce_utils.reduce_var_list(database,options)
-    times_list = downloads.time_split(database,options,check_split=(len(vars_list)==1))
+    times_list = downloads_utils.time_split(database,options,check_split=(len(vars_list)==1))
     database.put_or_process('reduce', reduce_utils.reduce_variable, vars_list, options, q_manager, sessions, times_list=times_list)
     return
 
@@ -232,7 +232,7 @@ class Database_Manager:
 
                     if len(times_list)>1:
                         #Find times list again:
-                        var_times_list = downloads.time_split(self,options_copy)
+                        var_times_list = downloads_utils.time_split(self,options_copy)
                     #Submit only if the times_list is not empty:
                     if len(times_list)==1 or len(var_times_list)>0:
                         q_manager.increment_expected_and_put(function_name, options_copy, copyfile=True)
@@ -308,7 +308,7 @@ class Database_Manager:
                 self.header['variable_list']={item.split(':')[0]:item.split(':')[1].split('-') for item in options.ask_var}
                 #Need to do this to allwo choices:
                 if len(options.ask_file_type)==0:
-                    self.header['file_type_list']=cdb_query_archive_parsers.file_type_list
+                    self.header['file_type_list'] = parsers.file_type_list
                 else:
                     self.header['file_type_list']=[item for item in options.ask_file_type]
             except IndexError:

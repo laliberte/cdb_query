@@ -144,7 +144,7 @@ def _copyfile(options_source, field_source, options_dest, field_dest):
     return
 
 def _remove(options,field):
-    os.remove(getattr(options,field)
+    os.remove(getattr(options,field))
     return
 
 

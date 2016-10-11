@@ -26,7 +26,7 @@ import netcdf4_soft_links.certificates as certificates
 import netcdf4_soft_links.requests_sessions as requests_sessions
 
 #Internal:
-from . import cdb_query_archive_parsers, cdb_query_archive_class, nc_Database, nc_Database_utils
+from . import parsers, commands, nc_Database, nc_Database_utils
 
 class SimpleSyncManager(managers.BaseManager):
     '''
@@ -167,7 +167,7 @@ class CDB_queues_manager:
             #must close file number:
             os.close(fileno)
             if copyfile:
-                cdb_query_archive_parsers._copyfile(options, 'in_netcdf_file', options_copy, 'in_netcdf_file')
+                parsers._copyfile(options, 'in_netcdf_file', options_copy, 'in_netcdf_file')
         getattr(self,function_name+'_expected').increment()
         getattr(self,function_name).put((options_copy.priority, (self.counter.increment(), function_name, options_copy)))
         return new_file_name
@@ -185,7 +185,7 @@ class CDB_queues_manager:
         # Remove temporary input files if not the first function:
         if ( 'in_netcdf_file' in dir(options) and
              self.queues_names.index(function_name) > 0 ):
-            cdb_query_archive_parsers._remove(options,'in_netcdf_file')
+            parsers._remove(options,'in_netcdf_file')
         return
 
     def remove(self, function_name, options):
@@ -193,7 +193,7 @@ class CDB_queues_manager:
         getattr(self,next_function_name+'_expected').decrement()
         if ('in_netcdf_file' in dir(options) and
             self.queues_names.index(function_name)>0):
-            cdb_query_archive_parsers._remove(options,'in_netcdf_file')
+            parsers._remove(options,'in_netcdf_file')
         return
 
     def get_do_no_record(self):
@@ -311,7 +311,7 @@ def recorder_queue_consume(q_manager, project_drs, cproc_options):
         #Output diskless for perfomance. File will be created on closing:
         output['record'] = netCDF4.Dataset(cproc_options.out_netcdf_file, 'w', diskless=True, persist=True)
         output['record'].set_fill_off()
-        database = cdb_query_archive_class.Database_Manager(project_drs)
+        database = commands.Database_Manager(project_drs)
         database.load_header(cproc_options)
         nc_Database.record_header(output['record'], database.header)
 
@@ -319,7 +319,7 @@ def recorder_queue_consume(q_manager, project_drs, cproc_options):
             #Output diskless for perfomance. File will be created on closing:
             output['record_validate'] = netCDF4.Dataset(cproc_options.out_netcdf_file+'.validate', 'w', diskless=True, persist=True)
             output['record_validate'].set_fill_off()
-            database = cdb_query_archive_class.Database_Manager(project_drs)
+            database = commands.Database_Manager(project_drs)
             database.load_header(cproc_options)
             nc_Database.record_header(output['record_validate'], database.header)
 
@@ -426,7 +426,7 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs,cproc_o
     os.close(fileno)
 
     #Recursively apply commands:
-    database=cdb_query_archive_class.Database_Manager(project_drs)
+    database=commands.Database_Manager(project_drs)
     #Run the command:
     try:
         if not cproc_options.command == 'reduce_server':
@@ -441,7 +441,7 @@ def consume_one_item(counter,function_name,options,q_manager,project_drs,cproc_o
                         function_name+
                         ', with options: '+
                         str(options_copy))
-        getattr(cdb_query_archive_class,function_name)(database,options_copy,q_manager=q_manager,sessions=sessions)
+        getattr(commands,function_name)(database,options_copy,q_manager=q_manager,sessions=sessions)
         if not cproc_options.command == 'reduce_server':
             _logger.debug('DONE Process: '+
                         function_name+

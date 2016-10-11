@@ -5,7 +5,7 @@ import logging.handlers
 import threading
 
 #Internal:
-from . import cdb_query_archive_parsers, queues_manager
+from . import parsers, queues_manager
 
 def main():
     cdb_query_from_list(sys.argv)
@@ -13,10 +13,10 @@ def main():
 
 def cdb_query_from_list(args_list):
     #Parser arguments:
-    options, project_drs = cdb_query_archive_parsers.full_parser(args_list)
+    options, project_drs = parsers.full_parser(args_list)
 
     if ( 'out_netcdf_file' in dir(options) and
-         cdb_query_archive_parsers._isfile(options,'out_netcdf_file') and
+         parsers._isfile(options,'out_netcdf_file') and
          not options.O ):
         # File exists and overwrite was not requested. Skip.
         print('File {0} exists, skipping processing. To enable overwrite, use -O option.'.format(options.out_netcdf_file))
@@ -53,21 +53,21 @@ def cdb_query_from_list(args_list):
     import netcdf4_soft_links.retrieval_manager as retrieval_manager
 
     #Internal:
-    from . import cdb_query_archive_class, queues_manager
+    from . import commands, queues_manager
 
     if 'related_experiments' in dir(options) and not options.related_experiments:
         project_drs.simulations_desc.append('experiment')
 
     if options.command!='certificates':
         if options.command in ['list_fields','merge']:
-            database=cdb_query_archive_class.Database_Manager(project_drs)
+            database=commands.Database_Manager(project_drs)
             #Run the command:
-            getattr(cdb_query_archive_class,options.command)(database,options)
+            getattr(commands,options.command)(database,options)
         elif (options.command == 'ask' and
              'list_only_field' in options and
              options.list_only_field):
-            database=cdb_query_archive_class.Database_Manager(project_drs)
-            cdb_query_archive_class.ask(database,options)
+            database=commands.Database_Manager(project_drs)
+            commands.ask(database,options)
         elif (options.command == 'reduce_server'):
 
             #Make tempdir:

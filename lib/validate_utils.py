@@ -10,8 +10,7 @@ import datetime
 import netcdf4_soft_links.remote_netcdf as remote_netcdf
 
 #Internal:
-import nc_Database
-import cdb_query_archive_class
+from . import nc_Database, commands
 
 queryable_file_types=['OPENDAP','local_file']
 

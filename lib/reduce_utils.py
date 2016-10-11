@@ -15,7 +15,7 @@ import logging
 #_logger.setLevel(logging.CRITICAL)
 
 #Internal:
-from . import nc_Database_utils, downloads
+from . import nc_Database_utils, downloads_utils
 
 def _fix_list(x):
     if len(x)==1:
@@ -100,7 +100,7 @@ def reduce_variable(database,options,q_manager=None,sessions=dict(),retrieval_ty
         for var in vars_list:
             options_copy = copy.copy(options)
             set_new_var_options(options_copy,var,database.drs.official_drs_no_version)
-            times_list=downloads.time_split(database,options_copy)
+            times_list=downloads_utils.time_split(database,options_copy)
             for time in times_list:
                 options_copy_time = copy.copy(options_copy)
                 set_new_time_options(options_copy_time,time)
