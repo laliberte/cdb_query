@@ -76,24 +76,24 @@ def validate(database,options,q_manager=None,sessions=dict()):
     database.load_header(options)
 
     if not 'data_node_list' in database.header.keys():
-        data_node_list, url_list, simulations_list =database.find_data_nodes_and_simulations(options)
+        data_node_list, url_list, simulations_list = database.find_data_nodes_and_simulations(options)
         if not options.no_check_availability:
-            data_node_list, Xdata_node_list=rank_data_nodes(options,data_node_list,url_list,q_manager)
+            data_node_list, Xdata_node_list = rank_data_nodes(options,data_node_list,url_list,q_manager)
         else:
             Xdata_node_list=[]
     else:
         simulations_list=[]
         data_node_list=database.header['data_node_list']
         Xdata_node_list=[]
-    database.drs.data_node_list=data_node_list
+    database.drs.data_node_list = data_node_list
 
     #Some data_nodes might have been dropped. Restrict options accordingly:
-    options_copy=copy.copy(options)
+    options_copy = copy.copy(options)
     options_copy.data_node=data_node_list
     if 'Xdata_node' in dir(options_copy) and isinstance(options_copy.Xdata_node,list):
-        options_copy.Xdata_node=list(set(options_copy.Xdata_node+Xdata_node_list))
+        options_copy.Xdata_node = list(set(options_copy.Xdata_node+Xdata_node_list))
     else:
-        options_copy.Xdata_node=Xdata_node_list
+        options_copy.Xdata_node = Xdata_node_list
 
     #Find the atomic simulations:
     if simulations_list==[]:
@@ -356,68 +356,69 @@ def rank_data_nodes(options,data_node_list,url_list,q_manager):
     data_node_list_timed=[]
     data_node_timing=[]
     for data_node_id, data_node in enumerate(data_node_list):
-        url=url_list[data_node_id]
-        if not ('silent' in dir(options) and options.silent):
-            if 'log_files' in dir(options) and options.log_files:
-                logging.info('Querying '+url[0]+' to measure response time of data node... ')
-            else:
-                print('Querying '+url[0]+' to measure response time of data node... ')
-
-        #Add credentials:
-        credentials_kwargs={opt: getattr(options,opt) for opt in ['openid','username','password','use_certificates', 'timeout'
-                                                                     ] if opt in dir(options)}
-
-        #Create a session for timing:
-        session=requests.Session()
-        with Timer() as timed_exec:
-            try:
-                is_available = remote_netcdf.remote_netCDF(url[0],url[1],semaphores=q_manager.validate_semaphores,
-                                                                    session=session,
-                                                                   **credentials_kwargs).is_available(num_trials=1)
-            except Exception as e:
-                is_available = False
-                if (str(e).startswith('The kind of user must be selected') or
-                     ('debug' in dir(options) and options.debug)):
-                    raise
-
-        if not is_available:
+        if db_utils.is_level_name_included_and_not_excluded('data_node',options,data_node):
+            url=url_list[data_node_id]
             if not ('silent' in dir(options) and options.silent):
-                if timed_exec.interval > options.timeout:
-                    logging.warning('Data node '+data_node+' excluded because it did not respond (timeout).')
+                if 'log_files' in dir(options) and options.log_files:
+                    logging.info('Querying '+url[0]+' to measure response time of data node... ')
                 else:
-                    logging.warning('Data node '+data_node+' excluded because it did not respond.')
-        else:
-            #Try opening a link on the data node. If it does not work, remove this data node.
-            number_of_trials=3
-            exclude_data_node=False
-            try:
-                timing=0.0
-                for trial in range(number_of_trials):
-                    #simple loop. Pass the session that should have all the proper cookies:
-                    with Timer() as timed_exec:
-                        is_available=remote_netcdf.remote_netCDF(url[0],url[1],semaphores=q_manager.validate_semaphores,
-                                                                            session=session,
-                                                                           **credentials_kwargs).is_available(num_trials=1)
-                    timing+=timed_exec.interval
-                data_node_timing.append(timing)
-                data_node_list_timed.append(data_node)
-                if not ('silent' in dir(options) and options.silent):
-                    if 'log_files' in dir(options) and options.log_files:
-                        logging.info('Done!')
-                    else:
-                        print('Done!')
-            except Exception as e:
-                if (str(e).startswith('The kind of user must be selected') or
-                     ('debug' in dir(options) and options.debug)):
-                    raise
-                exclude_data_node=True
-            except:
-                exclude_data_node=True
+                    print('Querying '+url[0]+' to measure response time of data node... ')
 
-            if not ('silent' in dir(options) and options.silent) and exclude_data_node:
-                logging.warning('Data node '+data_node+' excluded because it did not respond.')
-        #Close the session:
-        session.close()
+            #Add credentials:
+            credentials_kwargs={opt: getattr(options,opt) for opt in ['openid','username','password','use_certificates', 'timeout'
+                                                                         ] if opt in dir(options)}
+
+            #Create a session for timing:
+            session=requests.Session()
+            with Timer() as timed_exec:
+                try:
+                    is_available = remote_netcdf.remote_netCDF(url[0],url[1],semaphores=q_manager.validate_semaphores,
+                                                                        session=session,
+                                                                       **credentials_kwargs).is_available(num_trials=1)
+                except Exception as e:
+                    is_available = False
+                    if (str(e).startswith('The kind of user must be selected') or
+                         ('debug' in dir(options) and options.debug)):
+                        raise
+
+            if not is_available:
+                if not ('silent' in dir(options) and options.silent):
+                    if timed_exec.interval > options.timeout:
+                        logging.warning('Data node '+data_node+' excluded because it did not respond (timeout).')
+                    else:
+                        logging.warning('Data node '+data_node+' excluded because it did not respond.')
+            else:
+                #Try opening a link on the data node. If it does not work, remove this data node.
+                number_of_trials=3
+                exclude_data_node=False
+                try:
+                    timing=0.0
+                    for trial in range(number_of_trials):
+                        #simple loop. Pass the session that should have all the proper cookies:
+                        with Timer() as timed_exec:
+                            is_available=remote_netcdf.remote_netCDF(url[0],url[1],semaphores=q_manager.validate_semaphores,
+                                                                                session=session,
+                                                                               **credentials_kwargs).is_available(num_trials=1)
+                        timing+=timed_exec.interval
+                    data_node_timing.append(timing)
+                    data_node_list_timed.append(data_node)
+                    if not ('silent' in dir(options) and options.silent):
+                        if 'log_files' in dir(options) and options.log_files:
+                            logging.info('Done!')
+                        else:
+                            print('Done!')
+                except Exception as e:
+                    if (str(e).startswith('The kind of user must be selected') or
+                         ('debug' in dir(options) and options.debug)):
+                        raise
+                    exclude_data_node=True
+                except:
+                    exclude_data_node=True
+
+                if not ('silent' in dir(options) and options.silent) and exclude_data_node:
+                    logging.warning('Data node '+data_node+' excluded because it did not respond.')
+            #Close the session:
+            session.close()
     return list(np.array(data_node_list_timed)[np.argsort(data_node_timing)]),list(set(data_node_list).difference(data_node_list_timed))
 
 def make_new_options_from_lists(options,var_item,time_item,function_name,official_drs_no_version):
