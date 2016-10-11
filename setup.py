@@ -15,8 +15,8 @@ package_name='cdb_query'
 setup(
        name = package_name,
        version = "1.9.9.5",
-       packages=[package_name],
-       package_dir = {package_name: 'lib'},
+       packages = find_packages(),
+       #package_dir = {package_name: 'lib'},
 #
 #        # metadata for upload to PyPI
         author = "F. B. Laliberte, P. J. Kushner",
@@ -49,7 +49,7 @@ setup(
         #package_data = {package_name : ['lib/*.sh']},
         entry_points = {
                   'console_scripts': [
-                           'cdb_query= cdb_query.core:main',
+                           package_name+'= '+package_name+'.core:main',
                                      ],
                        }
     )

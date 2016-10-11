@@ -13,8 +13,7 @@ import netcdf4_soft_links.netcdf_utils as netcdf_utils
 import netcdf4_soft_links.remote_netcdf as remote_netcdf
 import netcdf4_soft_links.requests_sessions as requests_sessions
 
-#Internal:
-import nc_Database
+level_key = 'level_name'
 
 def _read_Dataset(file_name):
     try:
@@ -23,6 +22,53 @@ def _read_Dataset(file_name):
         return netCDF4_h5.Dataset
     except:
         return netCDF4.Dataset
+
+def is_level_name_included_and_not_excluded(level_name,options,group):
+    if level_name in dir(options):
+        if isinstance(getattr(options,level_name),list):
+            included=((getattr(options,level_name)==[]) or
+                     (group in getattr(options,level_name)))
+        else:
+            included=((getattr(options,level_name)==None) or 
+                       (getattr(options,level_name)==group)) 
+    else:
+        included=True
+
+    if 'X'+level_name in dir(options):
+        if isinstance(getattr(options,'X'+level_name),list):
+            not_excluded=((getattr(options,'X'+level_name)==[]) or
+                     (not group in getattr(options,'X'+level_name)))
+        else:
+            not_excluded=((getattr(options,'X'+level_name)==None) or 
+                           (getattr(options,'X'+level_name)!=group)) 
+    else:
+        not_excluded=True
+    return included and not_excluded
+
+def tree_recursive_check_not_empty(options,data,check=True,slicing=True):
+    if 'soft_links' in data.groups.keys():
+        if check:
+            options_dict={opt: getattr(options,opt) for opt in ['previous','next','year','month','day','hour'] if opt in dir(options)}
+            remote_data=read_soft_links.read_netCDF_pointers(data,**options_dict)
+            return check_soft_links_size(remote_data)
+        else:
+            return True
+    elif len(data.groups.keys())>0:
+        if slicing:
+            empty_list=[]
+            for group in data.groups.keys():
+                level_name=data.groups[group].getncattr(level_key)
+                if db_utils.is_level_name_included_and_not_excluded(level_name,options,group):
+                    empty_list.append(tree_recursive_check_not_empty(options,data.groups[group],check=check))
+            return any(empty_list)
+        else:
+            return True
+    else:
+        if len(data.variables.keys())>0:
+            return True
+        else:
+            return False
+
 
 #EXTRACTIONS:
 def extract_netcdf_variable(output,data,tree,options,
@@ -43,8 +89,8 @@ def extract_netcdf_variable_recursive(output,data,
     group_name=level_desc[1]
     if group_name==None or isinstance(group_name,list):
         for group in data.groups:
-            if ( nc_Database.is_level_name_included_and_not_excluded(level_name,options,group) and
-                 nc_Database.tree_recursive_check_not_empty(options,data.groups[group])):
+            if ( is_level_name_included_and_not_excluded(level_name,options,group) and
+                 tree_recursive_check_not_empty(options,data.groups[group])):
                 output_grp=netcdf_utils.replicate_group(data,output,group)
                 extract_retrieve_or_replicate(group,output_grp,data,
                                                tree,
@@ -142,7 +188,7 @@ def replace_netcdf_variable_recursive(output,data,
     group_name=level_desc[1]
     if group_name==None or isinstance(group_name,list):
         for group in data.groups:
-            if nc_Database.tree_recursive_check_not_empty(options,data.groups[group],slicing=False,check=False):
+            if tree_recursive_check_not_empty(options,data.groups[group],slicing=False,check=False):
                 output_grp=netcdf_utils.create_group(data,output,group)
                 replace_netcdf_variable_recursive_replicate(output_grp,data.groups[group],
                                                             level_name,group,
@@ -166,9 +212,9 @@ def replace_netcdf_variable_recursive_replicate(output_grp,data_grp,
                                                 check_empty=False):
     if len(tree)>0 or (not group_name in output_grp.groups):
         try:
-            setattr(output_grp,nc_Database.level_key,level_name)
+            setattr(output_grp, level_key,level_name)
         except:
-            output_grp.setncattr(nc_Database.level_key,level_name)
+            output_grp.setncattr(level_key,level_name)
     if len(tree)>0:
         replace_netcdf_variable_recursive(output_grp,data_grp,
                                           tree[0],tree[1:],options,

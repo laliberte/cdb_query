@@ -18,8 +18,7 @@ import netcdf4_soft_links.retrieval_manager as retrieval_manager
 #Internal:
 from . import db_utils
 
-
-level_key='level_name'
+level_key = db_utils.level_key
 
 class nc_Database:
     def __init__(self,project_drs,database_file=None):
@@ -99,7 +98,7 @@ class nc_Database:
     def list_data_nodes(self,options):
         data_node_list=self.list_subset((File_Expt.data_node,))
         return  [data_node[0] for data_node in data_node_list  
-                if is_level_name_included_and_not_excluded('data_node',options,data_node)]
+                if db_utils.is_level_name_included_and_not_excluded('data_node',options,data_node)]
                 
     def list_paths_by_data_node(self,data_node):
         #return self.session.query(File_Expt.path).filter(File_Expt.data_node==data_node).first()[0]
@@ -242,7 +241,7 @@ def populate_database_recursive(nc_Database,data,options,find_function,
             data_node = remote_netcdf.get_data_node(soft_links.variables['path'][path_id],
                                                     soft_links.variables['file_type'][path_id])
 
-            if is_level_name_included_and_not_excluded('data_node',options,data_node):
+            if db_utils.is_level_name_included_and_not_excluded('data_node',options,data_node):
                 file_path='|'.join([soft_links.variables['path'][path_id],] +
                                                        [soft_links.variables[unique_file_id][path_id] for unique_file_id in file_unique_id_list])
                 setattr(nc_Database.file_expt,'path',file_path)
@@ -254,7 +253,7 @@ def populate_database_recursive(nc_Database,data,options,find_function,
     elif len(data.groups.keys())>0 and not 'soft_links' in data.groups.keys():
         for group in data.groups.keys():
             level_name=data.groups[group].getncattr(level_key)
-            if is_level_name_included_and_not_excluded(level_name,options,group):
+            if db_utils.is_level_name_included_and_not_excluded(level_name,options,group):
                 setattr(nc_Database.file_expt,data.groups[group].getncattr(level_key),group)
                 populate_database_recursive(nc_Database,data.groups[group],options,find_function,soft_links=soft_links,time_slices=time_slices,
                                                                     semaphores=semaphores,
@@ -269,7 +268,7 @@ def populate_database_recursive(nc_Database,data,options,find_function,
         #Check if data_node was included:
         data_node=remote_netcdf.get_data_node(data.getncattr('path'),
                                                 data.getncattr('file_type'))
-        if is_level_name_included_and_not_excluded('data_node',options,data_node):
+        if db_utils.is_level_name_included_and_not_excluded('data_node',options,data_node):
             file_path='|'.join([data.getncattr('path'),] +
                                                    [ data.getncattr(file_unique_id) if file_unique_id in data.ncattrs() else '' for file_unique_id in file_unique_id_list])
             setattr(nc_Database.file_expt,'path',file_path)
@@ -317,7 +316,7 @@ def retrieve_dates_recursive(data,options):
     elif len(data.groups.keys())>0:
         time_axes = [ retrieve_dates_recursive(data.groups[group],options)
                 for group in data.groups.keys()
-                if is_level_name_included_and_not_excluded(data.groups[group].getncattr(level_key),options,group)]
+                if db_utils.is_level_name_included_and_not_excluded(data.groups[group].getncattr(level_key),options,group)]
 
         time_axes = _drop_empty(time_axes)
         if len(time_axes) > 0:
@@ -341,52 +340,6 @@ def check_soft_links_size(remote_data):
             return False
     else:
         return True
-
-def tree_recursive_check_not_empty(options,data,check=True,slicing=True):
-    if 'soft_links' in data.groups.keys():
-        if check:
-            options_dict={opt: getattr(options,opt) for opt in ['previous','next','year','month','day','hour'] if opt in dir(options)}
-            remote_data=read_soft_links.read_netCDF_pointers(data,**options_dict)
-            return check_soft_links_size(remote_data)
-        else:
-            return True
-    elif len(data.groups.keys())>0:
-        if slicing:
-            empty_list=[]
-            for group in data.groups.keys():
-                level_name=data.groups[group].getncattr(level_key)
-                if is_level_name_included_and_not_excluded(level_name,options,group):
-                    empty_list.append(tree_recursive_check_not_empty(options,data.groups[group],check=check))
-            return any(empty_list)
-        else:
-            return True
-    else:
-        if len(data.variables.keys())>0:
-            return True
-        else:
-            return False
-
-def is_level_name_included_and_not_excluded(level_name,options,group):
-    if level_name in dir(options):
-        if isinstance(getattr(options,level_name),list):
-            included=((getattr(options,level_name)==[]) or
-                     (group in getattr(options,level_name)))
-        else:
-            included=((getattr(options,level_name)==None) or 
-                       (getattr(options,level_name)==group)) 
-    else:
-        included=True
-
-    if 'X'+level_name in dir(options):
-        if isinstance(getattr(options,'X'+level_name),list):
-            not_excluded=((getattr(options,'X'+level_name)==[]) or
-                     (not group in getattr(options,'X'+level_name)))
-        else:
-            not_excluded=((getattr(options,'X'+level_name)==None) or 
-                           (getattr(options,'X'+level_name)!=group)) 
-    else:
-        not_excluded=True
-    return included and not_excluded
 
 
 class File_Expt(object):
