@@ -1,32 +1,21 @@
 #External:
+import os
+import glob
 import copy
-import ftplib
-
-#Internal:
-import nc_Database
 
 #External but related:
 import netcdf4_soft_links.remote_netcdf as remote_netcdf
 
+#Internal:
+from ..nc_Database import db_manager
+
 class browser:
     def __init__(self,search_path,options):
-        self.file_type='FTPServer'
+        self.file_type='local_file'
         self.options=options
-        self.search_path=search_path.rstrip('/')
-        self.data_node=remote_netcdf.get_data_node(self.search_path,self.file_type)
-        if (self.options.username!=None and 
-            'password' in dir(self.options) and
-            self.options.password!=None):
-            #Use credentials:
-            self.ftp=ftplib.FTP(self.data_node.split('/')[2],self.options.username,self.options.password)
-
-        else:
-            #Do not use credentials and hope for anonymous:
-            self.ftp=ftplib.FTP(self.data_node.split('/')[2])
-        return
+        self.search_path=os.path.abspath(os.path.expanduser(os.path.expandvars(search_path)))
 
     def close(self):
-        self.ftp.close()
         return
 
     def test_valid(self):
@@ -37,7 +26,7 @@ class browser:
         if self.file_type in database.header['file_type_list']:
             description={
                        'file_type':self.file_type,
-                       'data_node':self.data_node,
+                       'data_node':remote_netcdf.get_data_node(self.search_path,self.file_type),
                        'time':'0'}
             if not 'version' in database.drs.official_drs:
                 description.update({'version':'v1'})
@@ -48,42 +37,29 @@ class browser:
             only_list.append(descend_tree_recursive(database,file_expt_copy,
                                     [item for item in database.drs.base_drs if not item in description.keys()],
                                     self.search_path,
-                                    self.options,self.ftp,list_level=list_level))
+                                    self.options,list_level=list_level))
 
             if 'alt_base_drs' in dir(database.drs):
                 only_list.append(descend_tree_recursive(database,file_expt_copy,
                                         [item for item in database.drs.alt_base_drs if not item in description.keys()],
                                         self.search_path,
-                                        self.options, self.ftp,list_level=list_level,alt=True))
+                                        self.options,list_level=list_level,alt=True))
         return [item for sublist in only_list for item in sublist]
 
 unique_file_id_list=['checksum_type','checksum','tracking_id']
-def descend_tree_recursive(database,file_expt,tree_desc,top_path,options,ftp,list_level=None,alt=False):
+def descend_tree_recursive(database,file_expt,tree_desc,top_path,options,list_level=None,alt=False):
     if not isinstance(tree_desc,list):
         return
-
-    #Make sure we're at the top_path:
-    try:
-        ftp.cwd('/'+'/'.join(top_path.split('/')[3:]))
-    except ftplib.error_perm:
-        return []
-
+    
     if len(tree_desc)==1:
-        #If we're at the end of the tree, we should expect files:
-        file_list_raw=ftp.nlst()
-        #ftp.voidcmd("TYPE I")
-        file_list=[file_name for file_name in file_list_raw
-                        if (len(file_name)>3 and file_name[-3:]=='.nc' )]
-                        #if (len(file_name)>3 and file_name[-3:]=='.nc' and ftp.size(file_name)>0)]
-        #ftp.voidcmd("TYPE A")
-
+        file_list=glob.glob(top_path+'/*.nc') 
         if len(file_list)>0:
             for file in file_list:
                 file_expt_copy=copy.deepcopy(file_expt)
                 #Add the file identifier to the path:
-                file_expt_copy.path=top_path+'/'+file
+                file_expt_copy.path=file
                 for unique_file_id in unique_file_id_list:
-                    #Add empty unique identifiers:
+                    #Add empty identifiers:
                     file_expt_copy.path+='|'
                 if alt: 
                     file_expt_copy.model_version=file_expt_copy.model.split('-')[1]
@@ -92,15 +68,15 @@ def descend_tree_recursive(database,file_expt,tree_desc,top_path,options,ftp,lis
                 database.nc_Database.session.commit()
         return file_list
 
-    #We're not at the end of the tree, we should expect directories:
     local_tree_desc=tree_desc[0]
     next_tree_desc=tree_desc[1:]
 
+
     subdir_list=[]
     #Loop through subdirectories:
-    for subdir in ftp.nlst():
+    for subdir in get_immediate_subdirectories(top_path):
         #Include only subdirectories that were specified if this level was specified:
-        if nc_Database.is_level_name_included_and_not_excluded(local_tree_desc,options,subdir):
+        if db_manager.is_level_name_included_and_not_excluded(local_tree_desc,options,subdir):
             if local_tree_desc+'_list' in database.header_simple.keys():
                 #We keep only the subdirectories that were requested
                 if subdir in database.header_simple[local_tree_desc+'_list']:
@@ -120,10 +96,15 @@ def descend_tree_recursive(database,file_expt,tree_desc,top_path,options,ftp,lis
         for subdir in subdir_list:
             file_expt_copy=copy.deepcopy(file_expt)
             setattr(file_expt_copy,local_tree_desc,subdir)
+            #if db_manager.is_level_name_included_and_not_excluded(local_tree_desc,options,subdir):
             only_list.append(descend_tree_recursive(database,file_expt_copy,
                                         next_tree_desc,top_path+'/'+subdir,
-                                            options,ftp,list_level=list_level,alt=alt))
+                                        options,list_level=list_level,alt=alt))
         return [item for sublist in only_list for item in sublist]
+
+def get_immediate_subdirectories(path):
+    return [name for name in os.listdir(path)
+            if os.path.isdir(os.path.join(path, name))]
 
 def RepresentsInt(s):
     try: 

@@ -15,7 +15,8 @@ import logging
 #_logger.setLevel(logging.CRITICAL)
 
 #Internal:
-from . import nc_Database_utils, downloads_utils
+from ..nc_Database import db_utils
+from . import downloads_utils
 
 def _fix_list(x):
     if len(x)==1:

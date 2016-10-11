@@ -21,7 +21,9 @@ import netcdf4_soft_links.retrieval_manager as retrieval_manager
 import netcdf4_soft_links.remote_netcdf as remote_netcdf
 
 #Internal:
-from . import ask_utils, validate_utils, nc_Database, nc_Database_utils, reduce_utils, downloads_utils, parsers, find_functions
+from .utils import ask_utils, validate_utils, reduce_utils, downloads_utils, find_functions
+from .nc_Database import db_manager, db_utils
+from . import parsers
 
 def ask(database,options,q_manager=None,sessions=dict()):
     #Load header:
@@ -183,9 +185,9 @@ def reduce(database,options,q_manager=None,sessions=dict()):
 def merge(database,options,q_manager=None,sessions=dict()):
     database.load_header(options)
     with netCDF4.Dataset(options.out_netcdf_file,'w') as output:
-        nc_Database.record_header(output,database.header)
+        db_manager.record_header(output,database.header)
         for file_name in [options.in_netcdf_file,]+options.in_extra_netcdf_files:
-            nc_Database_utils.record_to_netcdf_file_from_file_name(options,file_name,output,database.drs)
+            db_utils.record_to_netcdf_file_from_file_name(options,file_name,output,database.drs)
     return
 
 def list_fields(database,options,q_manager=None,sessions=dict()):
@@ -339,10 +341,10 @@ class Database_Manager:
 
     def define_database(self,options):
         if 'in_netcdf_file' in dir(options):
-            self.nc_Database = nc_Database.nc_Database(self.drs, database_file=options.in_netcdf_file)
+            self.nc_Database = db_manager.nc_Database(self.drs, database_file=options.in_netcdf_file)
             return
         else:
-            self.nc_Database = nc_Database.nc_Database(self.drs)
+            self.nc_Database = db_manager.nc_Database(self.drs)
             return
 
     def close_database(self):

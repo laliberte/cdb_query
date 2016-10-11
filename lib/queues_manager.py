@@ -170,7 +170,7 @@ class CDB_queues_manager:
                 parsers._copyfile(options, 'in_netcdf_file', options_copy, 'in_netcdf_file')
         getattr(self,function_name+'_expected').increment()
         getattr(self,function_name).put((options_copy.priority, (self.counter.increment(), function_name, options_copy)))
-        return new_file_name
+        return
 
     def put_to_next(self, function_name, options):
         options_copy = copy.copy(options)
@@ -350,7 +350,7 @@ def recorder_queue_consume(q_manager, project_drs, cproc_options):
     return
 
 def record_to_netcdf_file(counter,function_name,options,output,q_manager,project_drs):
-    temp_file_name=options.in_netcdf_file
+
     if (counter == 2 and 
         q_manager.expected_queue_size() == 0 and
         len(q_manager.queues_names) == 2 and
@@ -364,7 +364,7 @@ def record_to_netcdf_file(counter,function_name,options,output,q_manager,project
             os.remove(out_file_name)
         except Exception:
             pass
-        shutil.move(temp_file_name, out_file_name)
+        shutil.move(options.in_netcdf_file, out_file_name)
     elif ((function_name in dir(options) and
         getattr(options, function_name) and
         function_name in output.keys()) or
@@ -372,7 +372,7 @@ def record_to_netcdf_file(counter,function_name,options,output,q_manager,project
         #Only record this function if it was requested:
         #import subprocess; subprocess.Popen('ncdump -v path '+temp_file_name,shell=True)
         _logger.debug('Recording: '+function_name+', with options: '+str(options))
-        nc_Database_utils.record_to_netcdf_file_from_file_name(options,temp_file_name,output[function_name],project_drs)
+        nc_Database_utils.record_to_netcdf_file_from_file_name(options, options.in_netcdf_file,output[function_name],project_drs)
         _logger.debug('DONE Recording: '+function_name)
 
     if len(function_name.split('_'))>1:
@@ -386,7 +386,7 @@ def record_to_netcdf_file(counter,function_name,options,output,q_manager,project
         #Make sure the file is gone:
         for id in range(2):
             try:
-                os.remove(temp_file_name)
+                os.remove(options.in_netcdf_file)
             except Exception:
                 pass
     return

@@ -11,7 +11,8 @@ import netcdf4_soft_links.remote_netcdf as remote_netcdf
 import netcdf4_soft_links.requests_sessions as requests_sessions
 
 #Internal:
-from . import parsers, find_functions
+from . import find_functions
+from .. import parsers
 
 def download_files(database,options,q_manager=None,sessions=dict()):
     return download(database,'download_files',options,q_manager,sessions)

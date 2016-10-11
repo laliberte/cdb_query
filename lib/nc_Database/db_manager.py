@@ -16,7 +16,7 @@ import netcdf4_soft_links.remote_netcdf as remote_netcdf
 import netcdf4_soft_links.retrieval_manager as retrieval_manager
 
 #Internal:
-import nc_Database_utils
+from . import db_utils
 
 
 level_key='level_name'

@@ -11,7 +11,8 @@ import json
 import netCDF4
 
 #Internal:
-from . import nc_Database, http_query, ftp_query, filesystem_query, esgf_query
+from ..nc_Database import db_manager
+from ..queries import http, ftp, filesystem, esgf
 
 
 #################################################################
@@ -73,17 +74,17 @@ def ask_database(database, options, session=None):
            os.path.expanduser(
            os.path.expandvars(search_path)))):
             #Local filesystem archive
-            browser = filesystem_query.browser(search_path, options)
+            browser = filesystem.browser(search_path, options)
         elif ('ftp' in search_path and search_path[:3] == 'ftp'):
             #FTP filesystem archive
-            browser = ftp_query.browser(search_path, options)
+            browser = ftp.browser(search_path, options)
         elif ( 'http' in search_path 
                and 'esg-search' in search_path ):
             #ESGF catalogue archive query
-            browser = esgf_query.browser(search_path, options, session=session)
+            browser = esgf.browser(search_path, options, session=session)
         elif ('http' in search_path):
             #ESGF catalogue archive query
-            browser = http_query.browser(search_path, options, session=session)
+            browser = http.browser(search_path, options, session=session)
         else:
             browser = None
 

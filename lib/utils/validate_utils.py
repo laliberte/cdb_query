@@ -7,7 +7,8 @@ import numpy as np
 import datetime
 
 #Internal:
-from . import nc_Database, find_functions
+from ..nc_Database import db_manager
+from . import find_functions
 
 queryable_file_types=['OPENDAP','local_file']
 
