@@ -85,7 +85,6 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD'.format(version_num)
 
     #Then parser project-specific arguments:
     project_drs = importlib.import_module('.remote_archive.'+options.project, package=prog)
-    print(dir(project_drs))
     command_parser = argparse.ArgumentParser(
                             prog=prog+' '+options.project,
                             formatter_class=argparse.RawDescriptionHelpFormatter,
