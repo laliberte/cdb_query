@@ -8,6 +8,7 @@ import numpy as np
 import netCDF4
 from pkg_resources import parse_version
 import importlib
+import shutil
 
 #External but related:
 import netcdf4_soft_links.parsers as nc4sl_parsers
@@ -140,7 +141,7 @@ def _isfile(options,field):
     return os.path.isfile(getattr(options,field))
 
 def _copyfile(options_source, field_source, options_dest, field_dest):
-    shutils.copyfile(getattr(options_source,field_source),
+    shutil.copyfile(getattr(options_source,field_source),
                      getattr(options_dest,field_dest))
     return
 
