@@ -16,9 +16,9 @@ import requests
 import logging
 
 #External but related:
-import netcdf4_soft_links.certificates as certificates
+import netcdf4_soft_links.certificates.certificates as certificates
 import netcdf4_soft_links.retrieval_manager as retrieval_manager
-import netcdf4_soft_links.remote_netcdf as remote_netcdf
+import netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
 
 #Internal:
 from .utils import ask_utils, validate_utils, reduce_utils, downloads_utils, find_functions

@@ -1,3 +1,4 @@
+
 #External:
 import sys
 import logging
@@ -5,7 +6,7 @@ import logging.handlers
 import threading
 
 #Internal:
-from . import parsers, queues_manager
+from . import parsers
 
 def main():
     cdb_query_from_list(sys.argv)
@@ -42,6 +43,7 @@ def cdb_query_from_list(args_list):
                                 format='%(processName)-20s %(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                                 datefmt='%m-%d %H:%M'
                                     )
+
     #External:
     import multiprocessing
     import copy
@@ -49,7 +51,7 @@ def cdb_query_from_list(args_list):
     import tempfile
 
     #External but related:
-    import netcdf4_soft_links.certificates as certificates
+    import netcdf4_soft_links.certificates.certificates as certificates
     import netcdf4_soft_links.retrieval_manager as retrieval_manager
 
     #Internal:

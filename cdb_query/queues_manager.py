@@ -22,7 +22,7 @@ _logger = logging.getLogger(__name__)
 #External but related:
 import netcdf4_soft_links.queues_manager as NC4SL_queues_manager
 import netcdf4_soft_links.retrieval_manager as retrieval_manager
-import netcdf4_soft_links.certificates as certificates
+import netcdf4_soft_links.certificates.certificates as certificates
 import netcdf4_soft_links.requests_sessions as requests_sessions
 
 #Internal:

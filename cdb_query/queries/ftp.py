@@ -6,7 +6,7 @@ import ftplib
 from ..nc_Database import db_manager
 
 #External but related:
-import netcdf4_soft_links.remote_netcdf as remote_netcdf
+import netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
 
 class browser:
     def __init__(self,search_path,options):

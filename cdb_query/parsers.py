@@ -10,7 +10,7 @@ from pkg_resources import parse_version
 import importlib
 
 #External but related:
-import netcdf4_soft_links.manage_soft_links_parsers as manage_soft_links_parsers
+import netcdf4_soft_links.parsers as nc4sl_parsers
 
 #Internal:
 import remote_archive
@@ -84,7 +84,7 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD'.format(version_num)
         commands_args.append('-h')
 
     #Then parser project-specific arguments:
-    project_drs = importlib.import_module('.remote_archive.'+options.project, package=prog)
+    project_drs = importlib.import_module('.remote_archive.'+options.project, package=prog).DRS
     command_parser = argparse.ArgumentParser(
                             prog=prog+' '+options.project,
                             formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -421,7 +421,7 @@ def certificates(subparsers,epilog,project_drs):
                            epilog=epilog
                          )
     parser=add_dummy_process_parser(parser,description,epilog)
-    manage_soft_links_parsers.certificates_arguments(parser,project_drs)
+    nc4sl_parsers.certificates_arguments(parser,project_drs)
     return
 
 def list_fields(subparsers,epilog,project_drs):
@@ -442,7 +442,7 @@ def list_fields(subparsers,epilog,project_drs):
     select_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.base_drs,
                                        help='List the field (or fields if repeated) found in the file' )
 
-    manage_soft_links_parsers.data_node_restriction(parser,project_drs)
+    nc4sl_parsers.data_node_restriction(parser,project_drs)
     basic_slicing(parser,project_drs)
     complex_slicing(parser,project_drs)
     return
@@ -502,8 +502,8 @@ def generate_subparsers(parser,epilog,project_drs):
     arguments_handles['ask']=[
                        basic_control_arguments,
                        processing_arguments,
-                       manage_soft_links_parsers.certificates_arguments,
-                       manage_soft_links_parsers.serial_arguments,
+                       nc4sl_parsers.certificates_arguments,
+                       nc4sl_parsers.serial_arguments,
                        basic_slicing,
                        ask_shared_arguments,
                        related_experiments,
@@ -522,12 +522,12 @@ def generate_subparsers(parser,epilog,project_drs):
     arguments_handles['validate']=[
                                    basic_control_arguments,
                                    processing_arguments,
-                                   manage_soft_links_parsers.certificates_arguments,
-                                   manage_soft_links_parsers.serial_arguments,
+                                   nc4sl_parsers.certificates_arguments,
+                                   nc4sl_parsers.serial_arguments,
                                    basic_slicing,
                                    complex_slicing_with_fields,
-                                   manage_soft_links_parsers.data_node_restriction,
-                                   manage_soft_links_parsers.time_selection_arguments,
+                                   nc4sl_parsers.data_node_restriction,
+                                   nc4sl_parsers.time_selection_arguments,
                                    validate_shared_arguments,
                                    related_experiments,
                                    ]
@@ -540,15 +540,15 @@ def generate_subparsers(parser,epilog,project_drs):
                                     Must be called after \'download_files\' in order to prevent missing data.''')
     arguments_handles['download_files']=[
                             basic_control_arguments,
-                            manage_soft_links_parsers.certificates_arguments,
-                            manage_soft_links_parsers.serial_arguments,
+                            nc4sl_parsers.certificates_arguments,
+                            nc4sl_parsers.serial_arguments,
                             basic_slicing,
                             complex_slicing_with_fields,
                             fields_selection,
-                            manage_soft_links_parsers.data_node_restriction,
-                            manage_soft_links_parsers.time_selection_arguments,
-                            manage_soft_links_parsers.download_files_arguments_no_io,
-                            manage_soft_links_parsers.download_arguments_no_io,
+                            nc4sl_parsers.data_node_restriction,
+                            nc4sl_parsers.time_selection_arguments,
+                            nc4sl_parsers.download_files_arguments_no_io,
+                            nc4sl_parsers.download_arguments_no_io,
                             ]
     start_arguments_handles['download_files']=[input_arguments,]
     process_arguments_handles['download_files']=[output_arguments]
@@ -560,9 +560,9 @@ def generate_subparsers(parser,epilog,project_drs):
                                             basic_slicing,
                                             complex_slicing_with_fields,
                                             fields_selection,
-                                            manage_soft_links_parsers.serial_arguments,
-                                            manage_soft_links_parsers.data_node_restriction,
-                                            manage_soft_links_parsers.time_selection_arguments,
+                                            nc4sl_parsers.serial_arguments,
+                                            nc4sl_parsers.data_node_restriction,
+                                            nc4sl_parsers.time_selection_arguments,
                                             ]
     start_arguments_handles['reduce_soft_links']=[input_arguments]
     process_arguments_handles['reduce_soft_links']=[reduce_soft_links_script_process_arguments,output_arguments]
@@ -574,15 +574,15 @@ def generate_subparsers(parser,epilog,project_drs):
                                 Must be called after \'download_files\' in order to prevent missing data.''')
     arguments_handles['download_opendap']=[
                             basic_control_arguments,
-                            manage_soft_links_parsers.certificates_arguments,
+                            nc4sl_parsers.certificates_arguments,
                             basic_slicing,
                             complex_slicing_with_fields,
-                            manage_soft_links_parsers.time_selection_arguments,
-                            manage_soft_links_parsers.data_node_restriction,
-                            manage_soft_links_parsers.serial_arguments,
+                            nc4sl_parsers.time_selection_arguments,
+                            nc4sl_parsers.data_node_restriction,
+                            nc4sl_parsers.serial_arguments,
                             fields_selection,
-                            manage_soft_links_parsers.download_opendap_arguments_no_io,
-                            manage_soft_links_parsers.download_arguments_no_io,
+                            nc4sl_parsers.download_opendap_arguments_no_io,
+                            nc4sl_parsers.download_arguments_no_io,
                             ]
     start_arguments_handles['download_opendap']=[input_arguments,]
     process_arguments_handles['download_opendap']=[output_arguments]
@@ -594,9 +594,9 @@ def generate_subparsers(parser,epilog,project_drs):
                                  basic_slicing,
                                  complex_slicing_with_fields,
                                  fields_selection,
-                                 manage_soft_links_parsers.time_selection_arguments,
-                                 manage_soft_links_parsers.data_node_restriction,
-                                 manage_soft_links_parsers.serial_arguments,
+                                 nc4sl_parsers.time_selection_arguments,
+                                 nc4sl_parsers.data_node_restriction,
+                                 nc4sl_parsers.serial_arguments,
                                  loop_control,
                                  reduce_script_shared_arguments,
                                  ]

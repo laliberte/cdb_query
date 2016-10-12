@@ -10,9 +10,9 @@ import datetime
 from functools import reduce
 
 #External but related:
-import netcdf4_soft_links.read_soft_links as read_soft_links
-import netcdf4_soft_links.create_soft_links as create_soft_links
-import netcdf4_soft_links.remote_netcdf as remote_netcdf
+import netcdf4_soft_links.soft_links.read_soft_links as read_soft_links
+import netcdf4_soft_links.soft_links.create_soft_links as create_soft_links
+import netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
 import netcdf4_soft_links.retrieval_manager as retrieval_manager
 
 #Internal:

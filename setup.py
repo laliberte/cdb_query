@@ -14,7 +14,7 @@ from setuptools import setup, find_packages
 package_name='cdb_query'
 setup(
        name = package_name,
-       version = "1.9.9.5",
+       version = "1.9.9.6",
        packages = find_packages(),
        #package_dir = {package_name: 'lib'},
 #
@@ -42,7 +42,7 @@ setup(
                             'netCDF4',
                             'sqlalchemy>=1.0',
                             'esgf-pyclient',
-                            'netcdf4_soft_links>=0.7.6',
+                            'netcdf4_soft_links>=0.7.7',
                             'bs4'],
         zip_safe=False,
         # other arguments here...
