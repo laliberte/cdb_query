@@ -377,12 +377,12 @@ def record_to_netcdf_file(counter,function_name,options,output,q_manager,project
         _logger.debug('DONE Recording: '+function_name)
 
     if len(function_name.split('_'))>1:
-        options_copy=copy.copy(options)
-        #options_copy.out_netcdf_file+='.'+str(counter)
-        fileno, options_copy.out_netcdf_file = tempfile.mkstemp(dir=options_copy.swap_dir,suffix='.'+str(counter))
+        options_copy = copy.copy(options)
+        options_copy.out_netcdf_file = options_copy.in_netcdf_file 
+        #fileno, options_copy.out_netcdf_file = tempfile.mkstemp(dir=options_copy.swap_dir,suffix='.'+str(counter))
         #must close file number:
-        os.close(fileno)
-        q_manager.put_to_next((function_name,options_copy))
+        #os.close(fileno)
+        q_manager.put_to_next(function_name,options_copy)
     else:
         #Make sure the file is gone:
         for id in range(2):
