@@ -173,7 +173,7 @@ class CDB_queues_manager:
         getattr(self,function_name).put((options_copy.priority, (self.counter.increment(), function_name, options_copy)))
         return
 
-    def put_to_next(self, function_name, options):
+    def put_to_next(self, function_name, options, removefile=True):
         options_copy = copy.copy(options)
 
         #Set to output_file
@@ -184,7 +184,8 @@ class CDB_queues_manager:
         getattr(self, next_function_name).put((options_copy.priority,(self.counter.increment(),next_function_name, options_copy)))
 
         # Remove temporary input files if not the first function:
-        if ( 'in_netcdf_file' in dir(options) and
+        if ( removefile and
+             'in_netcdf_file' in dir(options) and
              self.queues_names.index(function_name) > 0 ):
             parsers._remove(options,'in_netcdf_file')
         return
@@ -382,7 +383,7 @@ def record_to_netcdf_file(counter,function_name,options,output,q_manager,project
         #fileno, options_copy.out_netcdf_file = tempfile.mkstemp(dir=options_copy.swap_dir,suffix='.'+str(counter))
         #must close file number:
         #os.close(fileno)
-        q_manager.put_to_next(function_name,options_copy)
+        q_manager.put_to_next(function_name,options_copy, removefile=False)
     else:
         #Make sure the file is gone:
         for id in range(2):
