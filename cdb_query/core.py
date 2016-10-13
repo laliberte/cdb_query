@@ -15,6 +15,7 @@ def main():
 def cdb_query_from_list(args_list):
     #Parser arguments:
     options, project_drs = parsers.full_parser(args_list)
+    print(options)
 
     if ( 'out_netcdf_file' in dir(options) and
          parsers._isfile(options,'out_netcdf_file') and
