@@ -7,7 +7,7 @@ import copy
 import netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
 
 #Internal:
-from ..nc_Database import db_manager
+from ..nc_Database import db_utils
 
 class browser:
     def __init__(self,search_path,options):
@@ -76,7 +76,7 @@ def descend_tree_recursive(database,file_expt,tree_desc,top_path,options,list_le
     #Loop through subdirectories:
     for subdir in get_immediate_subdirectories(top_path):
         #Include only subdirectories that were specified if this level was specified:
-        if db_manager.is_level_name_included_and_not_excluded(local_tree_desc,options,subdir):
+        if db_utils.is_level_name_included_and_not_excluded(local_tree_desc,options,subdir):
             if local_tree_desc+'_list' in database.header_simple.keys():
                 #We keep only the subdirectories that were requested
                 if subdir in database.header_simple[local_tree_desc+'_list']:
@@ -96,7 +96,7 @@ def descend_tree_recursive(database,file_expt,tree_desc,top_path,options,list_le
         for subdir in subdir_list:
             file_expt_copy=copy.deepcopy(file_expt)
             setattr(file_expt_copy,local_tree_desc,subdir)
-            #if db_manager.is_level_name_included_and_not_excluded(local_tree_desc,options,subdir):
+            #if db_utils.is_level_name_included_and_not_excluded(local_tree_desc,options,subdir):
             only_list.append(descend_tree_recursive(database,file_expt_copy,
                                         next_tree_desc,top_path+'/'+subdir,
                                         options,list_level=list_level,alt=alt))

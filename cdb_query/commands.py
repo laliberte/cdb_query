@@ -23,7 +23,7 @@ import netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
 #Internal:
 from .utils import ask_utils, validate_utils, reduce_utils, downloads_utils, find_functions
 from .nc_Database import db_manager, db_utils
-from . import parsers
+from . import parsers, commands_parser
 
 def ask(database, options, q_manager=None, sessions=dict()):
     #Load header:
@@ -296,7 +296,7 @@ class Database_Manager:
         return
 
     def load_header(self,options):
-        if ('ask' in dir(options) and options.ask):
+        if ( commands_parser._get_command_name(options) == 'ask' ):
             self.header=dict()
             try:
                 self.header['experiment_list']={item.split(':')[0]:item.split(':')[1].replace('-',',') for item in options.ask_experiment}
@@ -421,7 +421,7 @@ def make_new_options_from_lists(options,var_item,time_item,official_drs_no_versi
     reduce_utils.set_new_var_options(options_copy, var_item, official_drs_no_version)
     reduce_utils.set_new_time_options(options_copy, time_item)
 
-    if ( _get_command_name(options) in ['ask','validate'] and
+    if ( commands_parser._get_command_name(options) in ['ask','validate'] and
         'ensemble' in official_drs_no_version and
         'ensemble' in dir(options_copy) and options_copy.ensemble != None
         and not 'r0i0p0' in options_copy.ensemble):
@@ -429,56 +429,6 @@ def make_new_options_from_lists(options,var_item,time_item,official_drs_no_versi
         options_copy.ensemble.append('r0i0p0')
     return options_copy
 
-def _get_command_name(options, next=False, prev=False):
-    if ( options.command_number == 0 and 
-         not next and
-         not prev ):
-        return options.command
-    else:
-        if ( ( not next and
-               not prev ) or
-             ( next and prev) ):
-            return getattr(options,'command_{0}'.format(options.command_number))
-        elif next:
-            if ( 'command_{0}'.format(options.command_number+1) in dir(options) and
-                 not ( getattr(options,'command_{0}'.format(options.command_number+1)) ==
-                       getattr(options,'command_{0}'.format(options.command_number)) ) ):
-                return getattr(options,'command_{0}'.format(options.command_number+1))
-            else:
-                return None
-        elif prev:
-            if 'command_{0}'.format(options.command_number-1) in dir(options):
-                return getattr(options,'command_{0}'.format(options.command_number-1))
-            else:
-                return None
-
-def _get_record_command_name(options):
-    if ( getattr(options,'command_{0}'.format(options.command_number+1)) ==
-          getattr(options,'command_{0}'.format(options.command_number)) ) ):
-        return getattr(options,'command_{0}'.format(options.command_number))
-    else:
-        return ( getattr(options,'command_{0}'.format(options.command_number)) + '_' +
-                 getattr(options,'command_{0}'.format(options.command_number-1)) )
-
-def _get_command_names(options):
-    command_names = [options.command,]
-    command_fields = [ field for field in dir(options)
-                       if 'command' in field ]
-    for id in range(1,len(command_fields)):
-        field = 'command_{0}'.format(id)
-        if field in command_fields:
-            command_names.append(getattr(options,field))
-    command_names.pop()
-    return command_names
-
-def _get_record_command_names(options):
-    command_names = _get_command_names(options)
-    return [ command + '_' + command_names[command_id-1]
-             for command_id, command in enumerate(command_names) 
-             if command == 'record' ]
-
-def _number_of_commands(options):
-    return len( [ field for field in dir(options) if 'command' in field ] )
 
 #http://preshing.com/20110924/timing-your-code-using-pythons-with-statement/
 class Timer:    

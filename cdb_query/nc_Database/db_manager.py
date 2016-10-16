@@ -17,6 +17,7 @@ import netcdf4_soft_links.retrieval_manager as retrieval_manager
 
 #Internal:
 from . import db_utils
+from .. import commands_parser
 
 level_key = db_utils.level_key
 
@@ -121,8 +122,7 @@ class nc_Database:
 
         #Check if time was sliced:
         time_slices=dict()
-        if not ( 'record_validate' in dir(options) and
-                  options.record_validate):
+        if not ( 'record_validate' in commands_parser._get_command_names(options) ):
              #Slice time unless the validate step should be recorded:
              for time_type in ['month','year']:
                 if time_type in dir(options):

@@ -163,7 +163,7 @@ def reduce_sl_or_var(database,options,q_manager=None,sessions=dict(),retrieval_t
         for file in temp_file_name_list:
             shutil.copy(file,options.out_destination+'/'+os.path.basename(file))
 
-    if script=='':
+    if script.strip() == '':
         os.rename(temp_file_name_list[0],temp_output_file_name)
     else:
         #If script is not empty, call script:
@@ -243,7 +243,7 @@ def get_fixed_var_tree(project_drs,options,var):
     return tree_fx, options_fx
     
 def get_input_file_names(project_drs,options,script):
-    if (script=='' and 
+    if (script.strip() == '' and 
         ('in_extra_netcdf_files' in dir(options) and 
               len(options.in_extra_netcdf_files) > 0) ):
         raise InputErrorr('The identity script \'\' can only be used when no extra netcdf files are specified.')

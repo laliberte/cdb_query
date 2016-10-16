@@ -9,6 +9,7 @@ import datetime
 #Internal:
 from ..nc_Database import db_manager
 from . import find_functions
+from .. import commands_parser
 
 queryable_file_types=['OPENDAP','local_file']
 
@@ -147,8 +148,7 @@ def validate(database,options,q_manager=None,sessions=dict()):
     #          options.record_validate) or
     #         ('missing_years' in dir(options) and
     #          options.missing_years)):
-    if not ('record_validate' in dir(options) and 
-              options.record_validate):
+    if not ( 'record_validate' in commands_parser._get_command_names(options) ):
          for time_type in ['month','year']:
             if time_type in dir(options):
                 time_slices[time_type]=getattr(options,time_type)

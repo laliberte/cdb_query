@@ -70,17 +70,20 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD'.format(version_num)
     options, commands_args = project_parser.parse_known_args(args=args_list[1:])
     #This is an ad-hoc patch to allow chained subcommands:
     cli=['certificates','list_fields','merge','ask','validate','download_files',
-         'reduce_soft_links','download_opendap','reduce', 'reduce_server','record']
+         'reduce_soft_links','download_opendap','reduce', 'reduce_server']
+    cli_with_record = ['ask','validate','download_files','reduce_soft_links','download_opendap','reduce']
     try:
-        id_cli_used, cli_used = zip(*[arg for arg in enumerate(commands_args) if arg[1] in cli])
+        id_cli_used, cli_used = zip(*[arg for arg in enumerate(commands_args) if ( arg[1] in cli or
+                                                                                   'record' in arg[1].split('_') )])
+        max_id_cli_used = np.max(id_cli_used)
 
-        if ( len(cli_used) < 2 or 
-             cli_used[-1] != 'record' or
-             cli_used[-2] != 'record'):
-            commands_args.insert(np.max(id_cli_used)+1,'record')
-            if ( len(cli_used) == 0 or
-                 cli_used[-1] != 'record' ):
-                commands_args.insert(np.max(id_cli_used)+2,'record')
+        if ( not 'record' in cli_used[-1].split('_') and
+             cli_used[-1] in cli_with_record ):
+            commands_args.insert(max_id_cli_used+1, 'record_'+cli_used[-1])
+            max_id_cli_used += 1
+            
+        if not 'process' in commands_args:
+            commands_args.insert(max_id_cli_used+1,'process')
     except ValueError:
         pass
 
@@ -183,20 +186,9 @@ def processing_arguments(parser,project_drs):
                                     (1) Use num_procs-1 processes to perform the (ask, validate, download_files, reduce_soft_links) suite of functions, if they are requested,
                                     (2) Use num_procs-1 processes to perform the download_opendap, if requested,
                                     (3) Use num_procs-1 processes to perform the reduce function, if requested,
-                                    (4) Use 1 process to perform record functions.
+                                    (4) Use 1 process to perform process functions.
                                     As a rule of thumb, setting num_procs ~ (2/3)*(number of compute cores) should result in full usage of computing capacity.
                                   '''))
-    return
-
-def functions_arguments(parser,functions_list):
-    authorized_functions=['ask','validate',
-                          'download_files','reduce_soft_links',
-                          'download_opendap','reduce']
-    for function in authorized_functions:
-        if function in functions_list:
-            parser.add_argument('--'+function, default=True,help=argparse.SUPPRESS)
-        else:
-            parser.add_argument('--'+function, default=False,help=argparse.SUPPRESS)
     return
 
 def basic_control_arguments(parser,project_drs):
@@ -262,10 +254,6 @@ def complex_slicing_with_fields(parser,project_drs):
     comp_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.official_drs_no_version,
                                            help='Complex query fields.' )
     return
-
-#def record_validate(parser,project_drs):
-#    parser.add_argument('--record_validate',default=False,action='store_true',help='Record validate results in out_netcdf_file.validate')
-#    return
 
 def ask_shared_arguments(parser,project_drs):
     query_group = parser.add_argument_group('Scientific query setup')
@@ -411,9 +399,9 @@ def loop_control(parser,project_drs):
                               'This can be useful when using --missing_years'))
     return parser
 
-def add_dummy_record_parser(parser,description,epilog,number=1):
+def add_dummy_process_parser(parser,description,epilog,number=1):
     subparsers = parser.add_subparsers(help='',dest='command_{0}'.format(number))
-    new_parser=subparsers.add_parser('record',description=description,
+    new_parser=subparsers.add_parser('process',description=description,
                                             formatter_class=argparse.RawTextHelpFormatter,
                                             epilog=epilog)
     new_parser.prog=' '.join(new_parser.prog.split(' ')[:-1])
@@ -426,8 +414,8 @@ def certificates(subparsers,epilog,project_drs):
                            description=description,
                            epilog=epilog
                          )
-    parser=add_dummy_record_parser(parser,description,epilog)
-    parser=add_dummy_record_parser(parser,description,epilog,number=2)
+    parser=add_dummy_process_parser(parser,description,epilog)
+    parser.add_argument('--command_number', type=int, default=0, help=argparse.SUPPRESS)
     nc4sl_parsers.certificates_arguments(parser,project_drs)
     return
 
@@ -443,8 +431,8 @@ def list_fields(subparsers,epilog,project_drs):
                                             formatter_class=argparse.RawTextHelpFormatter,
                                             epilog=epilog
                                            )
-    parser=add_dummy_record_parser(parser,description,epilog)
-    parser=add_dummy_record_parser(parser,description,epilog,number=2)
+    parser=add_dummy_process_parser(parser,description,epilog)
+    parser.add_argument('--command_number', type=int, default=0, help=argparse.SUPPRESS)
     input_arguments(parser,project_drs)
     select_group = parser.add_argument_group('These arguments specify the structure of the output')
     select_group.add_argument('-f','--field',action='append', type=str, choices=project_drs.base_drs,
@@ -463,8 +451,8 @@ def merge(subparsers,epilog,project_drs):
                                             formatter_class=argparse.RawTextHelpFormatter,
                                             epilog=epilog
                                            )
-    parser=add_dummy_record_parser(parser,description,epilog)
-    parser=add_dummy_record_parser(parser,description,epilog,number=2)
+    parser=add_dummy_process_parser(parser,description,epilog)
+    parser.add_argument('--command_number', type=int, default=0, help=argparse.SUPPRESS)
     input_arguments(parser,project_drs)
     parser.add_argument('in_extra_netcdf_files',nargs='*',
                                  help='NETCDF extra files (input).')
@@ -474,15 +462,6 @@ def merge(subparsers,epilog,project_drs):
     return
 
 #Functions
-
-#def reduce(subparsers,epilog,project_drs):
-#    epilog_reduce=textwrap.dedent(epilog)
-#    parser=subparsers.add_parser('reduce',
-#                                       description=textwrap.dedent('Take as an input retrieved data and reduce bash script'),
-#                                       epilog=epilog_reduce
-#                                         )
-#    functions_arguments(parser,['reduce'])
-#    return 
 
 def generate_subparsers(parser,epilog,project_drs):
     #Discover tree
@@ -613,13 +592,6 @@ def generate_subparsers(parser,epilog,project_drs):
     process_arguments_handles['reduce']=[reduce_process_arguments,output_arguments]
     chained_arguments_handles['reduce']=[]
 
-    description['record']=textwrap.dedent('Record results from previous function')
-    arguments_handles['record']=[
-                                 ]
-    start_arguments_handles['record']=[]
-    process_arguments_handles['record']=[]
-    chained_arguments_handles['record']=[]
-
     description['reduce_server']=textwrap.dedent('Spawns reducer processes')
     arguments_handles['reduce_server']=[
                                  basic_control_arguments,
@@ -635,7 +607,6 @@ def generate_subparsers(parser,epilog,project_drs):
             'reduce_soft_links':['download_opendap','reduce'],
             'download_opendap':['reduce'],
             'reduce':[],
-            'record':[],
             'reduce_server':[]
             }
     for function_name in childs.keys():
@@ -653,7 +624,7 @@ def create_subparsers_recursive(parser,epilog,project_drs,functions_list,childs,
                                                   process_arguments_handles,
                                                   chained_arguments_handles,
                                                   previous_arguments_handles,
-                                                  record=False):
+                                                  record=True):
     function_name=functions_list[-1]
 
     subparsers = parser.add_subparsers(help='Commands to discover available data on the archive',
@@ -676,32 +647,32 @@ def create_subparsers_recursive(parser,epilog,project_drs,functions_list,childs,
                                               chained_arguments_handles,
                                               previous_arguments_handles+current_arguments_handles+
                                               chained_arguments_handles[function_name])
-    if record:
-        if len(functions_list)==1:
-            create_record_subparser(subparsers,project_drs,functions_list,
-                                                        arguments_handles[function_name]+
-                                                        start_arguments_handles[function_name]+
-                                                        process_arguments_handles[function_name])
-        else:
-            create_record_subparser(subparsers,project_drs,functions_list,
-                                                        previous_arguments_handles+
-                                                        arguments_handles[function_name]+
-                                                        process_arguments_handles[function_name])
+
+    if ( ( (not record) and len(functions_list) == 2) or
+         ( record and len(functions_list) == 1) ):
+        create_process_subparser(subparsers,project_drs,functions_list,
+                                                    arguments_handles[function_name]+
+                                                    start_arguments_handles[function_name]+
+                                                    process_arguments_handles[function_name])
     else:
-        record_parser = subparsers.add_parser('record')
-        create_subparsers_recursive(record_parser,epilog,project_drs,list(functions_list[:-1])+
-                                                                     ['record',function_name],childs,description,
+        create_process_subparser(subparsers,project_drs,functions_list,
+                                                    previous_arguments_handles+
+                                                    arguments_handles[function_name]+
+                                                    process_arguments_handles[function_name])
+    if record:
+        record_parser = subparsers.add_parser('record_'+function_name)
+        create_subparsers_recursive(record_parser,epilog,project_drs,list(functions_list[:-1])+['record_'+function_name,function_name]
+                                                                     ,childs,description,
                                                         start_arguments_handles,
                                                           arguments_handles,
                                                           process_arguments_handles,
                                                           chained_arguments_handles,
                                                           previous_arguments_handles,
-                                                          record=True)
+                                                          record=False)
     return 
 
-def create_record_subparser(subparsers,project_drs,functions_list,previous_arguments_handles):
-    parser=subparsers.add_parser('record')
-    #functions_arguments(parser,functions_list)
+def create_process_subparser(subparsers,project_drs,functions_list,previous_arguments_handles):
+    parser=subparsers.add_parser('process')
     parser.prog=' '.join(parser.prog.split(' ')[:-2])
 
     arguments_attributed=[]
@@ -714,10 +685,6 @@ def create_record_subparser(subparsers,project_drs,functions_list,previous_argum
         if not argument in arguments_attributed:
             argument(parser,project_drs)
             arguments_attributed.append(argument)
-    #if ('validate' in functions_list and
-    #   'validate' != functions_list[-1]):
-    #   if not record_validate in arguments_attributed:
-    #       record_validate(parser,project_drs)
     return
 
 def writeable_dir(prospective_dir):

@@ -26,7 +26,7 @@ import netcdf4_soft_links.certificates.certificates as certificates
 import netcdf4_soft_links.requests_sessions as requests_sessions
 
 #Internal:
-from . import parsers, commands
+from . import parsers, commands, commands_parser
 from .nc_Database import db_manager, db_utils
 
 class SimpleSyncManager(managers.BaseManager):
@@ -77,7 +77,7 @@ class CDB_queues_manager:
             self.num_procs=1
 
         #Create queues:
-        self.queues_names = commands._get_command_names(options)
+        self.queues_names = commands_parser._get_command_names(options)
 
         #If reduce_soft_links_script is identity, do
         #not pipe results through reduce_soft_links:
@@ -151,7 +151,7 @@ class CDB_queues_manager:
 
     def increment_expected_and_put(self, options, copyfile=False):
         options_copy = copy.copy(options)
-        function_name = commands._get_command_name(options)
+        function_name = commands_parser._get_command_name(options)
         #Put the item in the right queue and give it a number:
         if ( 'in_netcdf_file' in dir(options_copy) and
              options_copy.command_number > 0):
@@ -173,12 +173,13 @@ class CDB_queues_manager:
         #Set to output_file
         options_copy.in_netcdf_file = options.out_netcdf_file
 
+        #Put the item in the next function queue and give it a number:
+        next_function_name = commands_parser._get_command_name(options_copy, next=True)
+
         #Increment to next function:
         options_copy.command_number += 1
 
-        #Put the item in the next function queue and give it a number:
-        next_function_name = commands._get_command_name(options_copy, next=True)
-        getattr(self, next_function_name).put((options_copy.priority, self.counter.increment(), options_copy))
+        getattr(self,next_function_name).put((options_copy.priority, self.counter.increment(), options_copy))
 
         # Remove temporary input files if not the first function:
         if ( removefile and
@@ -188,7 +189,7 @@ class CDB_queues_manager:
         return
 
     def remove(self, options):
-        next_function_name = commands._get_command_name(options_copy, next=True)
+        next_function_name = commands_parser._get_command_name(options, next=True)
         getattr(self, next_function_name+'_expected').decrement()
         if ('in_netcdf_file' in dir(options) and
             options.command_number > 0 ):
@@ -219,14 +220,14 @@ class CDB_queues_manager:
                                         if queue in self.queues_names])
 
     def get_limited_record(self):
-        return self.get(record=True,queues_names=['record',])
+        return self.get(record=True,queues_names=[ queue for queue in self.queues_names if 'record' in queue.split('_')])
 
     def get_all_record(self):
         return self.get(record=True,queues_names=self.queues_names)
 
     def get_all_server_record(self):
-        return self.get(record=True,queues_names=['ask','validate','download_files','reduce_soft_links','download_opendap','record'])
-        #return self.get(record=True,queues_names=['ask','validate','download_files','reduce_soft_links','download_opendap','record'])
+        return self.get(record=True,queues_names=['ask','validate','download_files','reduce_soft_links','download_opendap']+
+                                                 [ queue for queue in self.queues_names if 'record' in queue.split('_')])
 
     def get(self,record=False,queues_names=[]):
         #Simple get that goes through the queues sequentially
@@ -245,7 +246,7 @@ class CDB_queues_manager:
 
                     #Record workers can pick from the record queue
                     if not ( not record and 
-                             'record' == queue_name ):
+                             'record' in queue_name.split('_') ):
                         try:
                             return self.get_queue(queue_name, timeout)
                         except Queue.Empty:
@@ -255,32 +256,31 @@ class CDB_queues_manager:
         return 'STOP'
 
     def get_queue(self, queue_name, timeout):
-        #Get queue with locks:
+        # Get queue with locks:
         with getattr(self, queue_name+'_expected').lock:
             if  getattr(self, queue_name+'_expected').value_no_lock == 0:
-                #If nothing is expected, skip:
+                # If nothing is expected, skip:
                 raise Queue.Empty
             else:
-                #Will fail with Queue.Empty if the item had not been put in the queue:
+                # Will fail with Queue.Empty if the item had not been put in the queue:
                 priority, counter, options = getattr(self, queue_name).get(True, timeout)
-                future_queue_name = commands._get_command_name(options, next=True)
+                future_queue_name = commands_parser._get_command_name(options, next=True)
 
-                if ( future_queue_name is not None:
-                     and getattr(self, future_queue_name + '_expected').value > 2*self.num_procs ):
-                    getattr(self, queue_name).put(priority, counter, options)
+                if ( future_queue_name is not None and
+                     getattr(self, future_queue_name + '_expected').value > 2 * self.num_procs ):
+                    getattr(self, queue_name).put((priority, counter, options))
                     # Prevent piling up:
                     raise Queue.Empty
                 else:
-                    #reset priority to 0:
+                    # reset priority to 0:
                     options.priority = 0
-                    #Increment future actions:
+                    # Increment future actions:
                     if future_queue_name is not None:
                         getattr(self, future_queue_name + '_expected').increment()
-                    #Decrement current action:
+                    # Decrement current action:
                     getattr(self, queue_name + '_expected').decrement_no_lock()
                     return counter, options
 
-    #def expected_queue_size(self,restricted_queues_names):
     def expected_queue_size(self):
         return np.max([ getattr(self, queue_name+'_expected').value for queue_name in self.queues_names ])
 
@@ -292,6 +292,8 @@ def recorder(q_manager, project_drs, options):
 
     _logger.debug(multiprocessing.current_process().name+' with pid '+str(os.getpid()))
     recorder_queue_consume(q_manager, project_drs, options)
+    _logger.debug(multiprocessing.current_process().name+' with pid '+str(os.getpid())+
+                  ' finished cleanly.')
     return
         
 def recorder_queue_consume(q_manager, project_drs, cproc_options):
@@ -310,23 +312,25 @@ def recorder_queue_consume(q_manager, project_drs, cproc_options):
     output = dict()
     try:
         #Output diskless for perfomance. File will be created on closing:
-        for record_name in commands._get_record_command_names(options):
-            if len(record_name.split('_')) == 2:
-                file_mod = '.'+record_name.split('_')[1]
-            else:
-                file_mod = ''
-            output[record_name] = netCDF4.Dataset(cproc_options.out_netcdf_file+file_mod, 'w', diskless=True, persist=True)
-            output[record_name].set_fill_off()
-            database = commands.Database_Manager(project_drs)
-            database.load_header(cproc_options)
-            db_manager.record_header(output[record_name], database.header)
+        command_names = commands_parser._get_command_names(cproc_options)
+        for command_id, command_name in enumerate(command_names):
+            if 'record' in command_name.split('_'):
+                if command_id == len(command_names)-1:
+                    file_mod = ''
+                else:
+                    file_mod = '.'+command_name.split('_')[1]
+                output[command_name] = netCDF4.Dataset(cproc_options.out_netcdf_file+file_mod, 'w', diskless=True, persist=True)
+                output[command_name].set_fill_off()
+                database = commands.Database_Manager(project_drs)
+                database.load_header(cproc_options)
+                db_manager.record_header(output[command_name], database.header)
 
-        for item in iter(get_type,'STOP'):
-            function_name = commands._get_command_name(item[1])
-            if function_name == 'record':
-                record_to_netcdf_file(item[0], item[1], output, q_manager, project_drs)
+        for counter, options in iter(get_type,'STOP'):
+            command_name = commands_parser._get_command_name(options)
+            if 'record' in command_name.split('_'):
+                record_to_netcdf_file(counter, options, output, q_manager, project_drs)
             else:
-                consume_one_item(item[0], item[1], q_manager, project_drs, cproc_options, sessions=sessions)
+                consume_one_item(counter, options, q_manager, project_drs, cproc_options, sessions=sessions)
 
             if ('username' in dir(cproc_options) and 
                 cproc_options.username != None and
@@ -349,51 +353,53 @@ def recorder_queue_consume(q_manager, project_drs, cproc_options):
     return
 
 def record_to_netcdf_file(counter, options, output, q_manager, project_drs):
-
-    record_name = commands._get_record_name(options)
+    command_name = commands_parser._get_command_name(options)
 
     if ( counter == 2 and 
          q_manager.expected_queue_size() == 0 and
-         _numbers_of_commands(options) == 3 ):
+         commands_parser._number_of_commands(options) == 2 ):
         #Only one function was computed and it is already structured
         #Can simply copy instead of recording:
-        out_file_name = output['record'].filepath()
-        output['record'].close()
+        out_file_name = output[command_name].filepath()
+        output[command_name].close()
         try:
             os.remove(out_file_name)
         except Exception:
             pass
         shutil.move(options.in_netcdf_file, out_file_name)
-    elif record_name in output.keys():
+    elif command_name in output.keys():
         #Only record this function if it was requested:
         #import subprocess; subprocess.Popen('ncdump -v path '+temp_file_name,shell=True)
-        _logger.debug('Recording: '+record_name+', with options: '+str(options))
-        db_utils.record_to_netcdf_file_from_file_name(options, options.in_netcdf_file, output[record_name], project_drs)
-        _logger.debug('DONE Recording: '+record_name)
+        _logger.debug('Recording: '+command_name+', with options: '+str(options))
+        db_utils.record_to_netcdf_file_from_file_name(options, options.in_netcdf_file, output[command_name], project_drs)
+        _logger.debug('DONE Recording: '+command_name)
 
-    if len(record_name.split('_')) > 1:
-        options_copy = copy.copy(options)
-        options_copy.out_netcdf_file = options_copy.in_netcdf_file 
-        q_manager.put_to_next(record_name, options_copy, removefile=False)
-    else:
-        #Make sure the file is gone:
+    if command_name == commands_parser._get_command_names(options)[-1]:
+        # Final recording:
+        # Make sure the file is gone:
         for id in range(2):
             try:
                 os.remove(options.in_netcdf_file)
             except Exception:
                 pass
+    else:
+        options_copy = copy.copy(options)
+        options_copy.out_netcdf_file = options_copy.in_netcdf_file 
+        q_manager.put_to_next(options_copy, removefile=False)
     return
 
 def consumer(q_manager,project_drs,options):
     _logger.debug(multiprocessing.current_process().name+' with pid '+str(os.getpid()))
     consumer_queue_consume(q_manager,project_drs,options)
+    _logger.debug(multiprocessing.current_process().name+' with pid '+str(os.getpid())+
+                  ' finished cleanly.')
     return
 
 def consumer_queue_consume(q_manager,project_drs,cproc_options):
     sessions=create_sessions(cproc_options,q_manager=q_manager)
     get_type=getattr(q_manager, 'get_'+multiprocessing.current_process().name.split('_')[0]+'_no_record')
-    for item in iter(get_type, 'STOP'):
-        consume_one_item(item[0], item[1], q_manager, project_drs, cproc_options, sessions=sessions)
+    for counter, options in iter(get_type, 'STOP'):
+        consume_one_item(counter, options, q_manager, project_drs, cproc_options, sessions=sessions)
     for session_name in sessions.keys():
         sessions[session_name].close()
     return
@@ -401,11 +407,13 @@ def consumer_queue_consume(q_manager,project_drs,cproc_options):
 def reducer(q_manager, project_drs, options):
     _logger.debug(multiprocessing.current_process().name+' with pid '+str(os.getpid()))
     reducer_queue_consume(q_manager, project_drs, options)
+    _logger.debug(multiprocessing.current_process().name+' with pid '+str(os.getpid())+
+                  ' finished cleanly.')
     return
 
 def reducer_queue_consume(q_manager, project_drs, cproc_options):
-    for item in iter(q_manager.get_reduce_no_record, 'STOP'):
-        consume_one_item(item[0], item[1], q_manager, project_drs, cproc_options)
+    for counter, options in iter(q_manager.get_reduce_no_record, 'STOP'):
+        consume_one_item(counter, options, q_manager, project_drs, cproc_options)
     return
 
 def consume_one_item(counter, options, q_manager, project_drs, cproc_options, sessions=dict()):
@@ -421,7 +429,7 @@ def consume_one_item(counter, options, q_manager, project_drs, cproc_options, se
     #Recursively apply commands:
     database = commands.Database_Manager(project_drs)
     #Run the command:
-    function_name = commands._get_command_name(options_copy)
+    function_name = commands_parser._get_command_name(options_copy)
     try:
         if not cproc_options.command == 'reduce_server':
             _logger.debug('Process: '+
@@ -554,10 +562,6 @@ def consumer_processes_names(q_manager,options):
             if avdr_types:
                 for proc_id in range(options.num_procs-1):
                    processes_names.append('avdr_'+str(proc_id))
-            #dr_types=(len(set(['download_opendap','reduce']).intersection(q_manager.queues_names))>0)
-            #if dr_types:
-            #    for proc_id in range(options.num_procs-1):
-            #       processes_names.append('dr_'+str(proc_id))
             do_types=(len(set(['download_opendap']).intersection(q_manager.queues_names))>0)
             if do_types:
                 for proc_id in range(options.num_procs-1):
