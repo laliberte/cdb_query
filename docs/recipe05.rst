@@ -29,7 +29,7 @@ With operator chaining, in a BASH script::
     # Single quotes are necessary here:
     PASSWORD='your ESGF password'
     #latlon box -124.78 -66.95 24.74 49.34 is continental us
-    echo $PASSWORD | cdb_query CMIP5 ask validate reduce_soft_links download_opendap reduce \
+    echo $PASSWORD | cdb_query CMIP5 ask validate record_validate reduce_soft_links download_opendap reduce \
                       --ask_month=3,4,5 \
                       --ask_var=tas:mon-atmos-Amon,pr:mon-atmos-Amon \
                       --ask_experiment=historical:1950-2005,rcp85:2006-2050 \
@@ -37,7 +37,6 @@ With operator chaining, in a BASH script::
                       --Xdata_node=http://esgf2.dkrz.de \
                       --openid=$OPENID \
                       --password_from_pipe \
-                      --record_validate \
                       --out_destination=./out_sample/CMIP5/ \
                       --num_procs=10 \
                       --year=2000 --month=3 \
@@ -53,7 +52,7 @@ It does:
 #. Drops simulations (``institute``, ``model``, ``ensemble``) triples that are not found in both ``historical`` and ``rcp85`` for ALL requested years.
 #. Excludes (``--Xdata_node=http://esgf2.dkrz.de``) data node ``http://esgf2.dkrz.de`` because it is a tape archive and tends to be slow.
 #. Retrieves certificates (``--openid=$OPENID``). Password read from the pipe (``--password_from_pipe``).
-#. Records the result (``--record_validate``) of ``validate`` to ``us_pr_tas_MAM_pointers.validate.200003.retrieved.converted.nc.validate``.
+#. Records the result (``record_validate``) of ``validate`` to ``us_pr_tas_MAM_pointers.validate.200003.retrieved.converted.nc.validate``.
 #. Selects a slightly larger area than continental US for download (``--reduce_soft_links_script='nc4sl subset --lonlatbox -150.0 -50.0 20.0 55.0'``)
 #. Downloads only March 2000 (``--year=2000 --month=3``).
 #. Uses a bilinear remapping and focuses on the continental US (``'cdo ... '``).

@@ -34,7 +34,7 @@ The following BASH script recovers several variables over a latitude band::
 
     #Create swap directory:
     mkdir ${SWAP_DIR}
-    echo $PASSWORD | cdb_query CMIP5 ask validate reduce_soft_links download_opendap reduce \
+    echo $PASSWORD | cdb_query CMIP5 ask validate record_validate reduce_soft_links download_opendap reduce \
           --openid=$OPENID \
           --password_from_pipe \
           --swap_dir=${SWAP_DIR} \
@@ -43,7 +43,6 @@ The following BASH script recovers several variables over a latitude band::
           --ask_var=zg:mon-atmos-Amon,va:mon-atmos-Amon,ta:mon-atmos-Amon \
           --ask_month=1,2,12 \
           --related_experiments \
-          --record_validate \
           --Xdata_node=http://esgf2.dkrz.de \
           --reduce_soft_links_script='ncrcat -d lat,55.0,65.0' \
           '' \
