@@ -234,12 +234,13 @@ def replace_netcdf_variable_recursive_replicate(output_grp,data_grp,
 
 #PUT INTO FILESYSTEM DATABASE
 def record_to_output_directory(output_file_name,project_drs,options):
-    with _read_Dataset(output_file_name)(output_file_name,'r') as data:
-        out_dir=options.out_destination
-        with netCDF4.Dataset(output_file_name+'.tmp','w') as output:
-            write_netcdf_variable_recursive(output,out_dir,data,
+    #with _read_Dataset(output_file_name)(output_file_name,'r') as data:
+    with netCDF4.Dataset(output_file_name, 'r') as data:
+        out_dir = options.out_destination
+        with netCDF4.Dataset(output_file_name+'.tmp', 'w') as output:
+            write_netcdf_variable_recursive(output, out_dir, data,
                                             project_drs.official_drs,
-                                            project_drs,options,check_empty=True)
+                                            project_drs, options, check_empty=True)
     return output_file_name+'.tmp'
 
 def write_netcdf_variable_recursive(output,out_dir,data,
