@@ -253,7 +253,7 @@ def populate_database_recursive(nc_Database,data,options,find_function,
                                                                     session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
     elif len(data.groups.keys())>0 and not 'soft_links' in data.groups.keys():
         for group in data.groups.keys():
-            level_name=data.groups[group].getncattr(level_key)
+            level_name = data.groups[group].getncattr(level_key)
             if db_utils.is_level_name_included_and_not_excluded(level_name,options,group):
                 setattr(nc_Database.file_expt,data.groups[group].getncattr(level_key),group)
                 populate_database_recursive(nc_Database,data.groups[group],options,find_function,soft_links=soft_links,time_slices=time_slices,
@@ -296,10 +296,10 @@ def create_tree(output_root,tree):
     return create_tree_recursive(output_root,tree)
 
 def create_tree_recursive(output_top,tree):
-    level_name=tree[0][1]
+    level_name = tree[0][1]
     if not level_name in output_top.groups.keys(): 
-        output=output_top.createGroup(level_name)
-        output.level_name=tree[0][0]
+        output = output_top.createGroup(level_name)
+        netcdf_utils.setncattr(output,'level_name',tree[0][0])
     else:
         output=output_top.groups[level_name]
     if len(tree)>1:
