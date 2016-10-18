@@ -50,7 +50,7 @@ def tree_recursive_check_not_empty(options,data,check=True,slicing=True):
     if 'soft_links' in data.groups.keys():
         if check:
             options_dict={opt: getattr(options,opt) for opt in ['previous','next','year','month','day','hour'] if opt in dir(options)}
-            remote_data=read_soft_links.read_netCDF_pointers(data,**options_dict)
+            remote_data = read_soft_links.read_netCDF_pointers(data,**options_dict)
             return check_soft_links_size(remote_data)
         else:
             return True
@@ -58,7 +58,7 @@ def tree_recursive_check_not_empty(options,data,check=True,slicing=True):
         if slicing:
             empty_list=[]
             for group in data.groups.keys():
-                level_name=data.groups[group].getncattr(level_key)
+                level_name = netcdf_utils.getncattr(data.groups[group], level_key)
                 if is_level_name_included_and_not_excluded(level_name,options,group):
                     empty_list.append(tree_recursive_check_not_empty(options,data.groups[group],check=check))
             return any(empty_list)
