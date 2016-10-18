@@ -14,6 +14,7 @@ import netcdf4_soft_links.soft_links.read_soft_links as read_soft_links
 import netcdf4_soft_links.soft_links.create_soft_links as create_soft_links
 import netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
 import netcdf4_soft_links.retrieval_manager as retrieval_manager
+import netcdf4_soft_links.netcdf_utils as netcdf_utils
 
 #Internal:
 from . import db_utils
@@ -59,7 +60,7 @@ class nc_Database:
         header=dict()
         with db_utils._read_Dataset(self.database_file)(self.database_file,'r') as dataset:
             for att in set(self.drs.header_desc).intersection(dataset.ncattrs()):
-                header[att]=json.loads(dataset.getncattr(att))
+                header[att] = json.loads(dataset.getncattr(att))
         return header
 
     def populate_database(self,options,find_function,soft_links=True,time_slices=dict(),semaphores=dict(),session=None,remote_netcdf_kwargs=dict()):
@@ -134,9 +135,9 @@ class nc_Database:
         with netCDF4.Dataset(options.out_netcdf_file,
                                  'w',format='NETCDF4',diskless=True,persist=True) as output_root:
             if 'no_check_availability' in dir(options) and options.no_check_availability:
-                record_header(output_root,{val:header[val] for val in header if val!='data_node_list'})
+                record_header(output_root, {val : header[val] for val in header if val != 'data_node_list'})
             else:
-                record_header(output_root,header)
+                record_header(output_root, header)
 
             #Define time subset:
             if 'month_list' in header.keys():
@@ -338,7 +339,7 @@ class File_Expt(object):
         for tree_desc in diag_tree_desc:
             setattr(self,tree_desc,'')
 
-def record_header(output_root,header):
-    for value in header.keys():
-        output_root.setncattr(value,json.dumps(header[value]))
+def record_header(output_root, header):
+    for val in header.keys():
+        netcdf_utils.setncattr(output_root, val, json.dumps(header[val]))
     return

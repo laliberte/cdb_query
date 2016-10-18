@@ -222,10 +222,7 @@ def replace_netcdf_variable_recursive_replicate(output_grp,data_grp,
                                                 tree,options,
                                                 check_empty=False):
     if len(tree)>0 or (not group_name in output_grp.groups):
-        try:
-            setattr(output_grp, level_key,level_name)
-        except:
-            output_grp.setncattr(level_key,level_name)
+        netcdf_utils.setncattr(output_grp,level_key,level_name)
     if len(tree)>0:
         replace_netcdf_variable_recursive(output_grp,data_grp,
                                           tree[0],tree[1:],options,
