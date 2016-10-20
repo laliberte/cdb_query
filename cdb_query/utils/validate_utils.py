@@ -57,11 +57,11 @@ def find_time_list(diagnostic,experiment,time_slices):
 def find_model_list(diagnostic,project_drs,model_list,experiment,options,time_list, picontrol_min_time):
     
     # Remove other experiments:
-    model_list_no_exp = remove_simulations(project_drs.simulations_desc,
-                                           'experiment', experiment, model_list),
-    model_list_copy = copy.copy(model_list_no_exp)
+    model_list_no_other_exp = include_simulations(project_drs.simulations_desc,
+                                                   'experiment', experiment, model_list)
+    model_list_copy = copy.copy(model_list_no_other_exp)
 
-    for model in model_list_no_exp:
+    for model in model_list_no_other_exp:
         missing_vars=[]
         if picontrol_min_time:
             #Fix for experiments without a standard time range:
@@ -164,12 +164,22 @@ def validate(database,options,q_manager=None,sessions=dict()):
     database.close_database()
     return
 
-def remove_simulations(simulations_desc, simulation_field, simulation_field_value,
+def exclude_simulations(simulations_desc, simulation_field, simulation_field_value,
                        simulations_list):
     if simulation_field in simulations_desc:
         simulations_list_limited = [ simulation for simulation in simulations_list if 
                                      simulation[simulations_desc.index(simulation_field)] 
                                      != simulation_field_value ]
+    else:
+        simulations_list_limited = copy.copy(simulations_list)
+    return simulations_list_limited
+
+def include_simulations(simulations_desc, simulation_field, simulation_field_value,
+                       simulations_list):
+    if simulation_field in simulations_desc:
+        simulations_list_limited = [ simulation for simulation in simulations_list if 
+                                     simulation[simulations_desc.index(simulation_field)] 
+                                     == simulation_field_value ]
     else:
         simulations_list_limited = copy.copy(simulations_list)
     return simulations_list_limited
@@ -181,7 +191,7 @@ def intersection(database,options, time_slices=dict()):
     #          for all months of all years for all experiments.
     simulations_list = database.nc_Database.simulations_list()
 
-    simulations_list_no_fx = remove_simulations(database.drs.simulations_desc,
+    simulations_list_no_fx = exclude_simulations(database.drs.simulations_desc,
                                                'ensemble','r0i0p0',
                                                simulations_list)
 
@@ -199,7 +209,6 @@ def intersection(database,options, time_slices=dict()):
                                                  options, time_list, picontrol_min_time)
         model_list_combined = model_list
     else:
-
         model_list_combined = set().union(*[find_model_list(database,database.drs,
                                                             model_list,
                                                             experiment,options,
