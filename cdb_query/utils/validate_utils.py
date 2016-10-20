@@ -7,7 +7,7 @@ import numpy as np
 import datetime
 
 #Internal:
-from ..nc_Database import db_manager
+from ..nc_Database import db_manager, db_utils
 from . import find_functions
 from .. import commands_parser
 
@@ -26,6 +26,7 @@ def obtain_time_list(diagnostic,project_drs,var_name,experiment,model):
     time_list_var=[x[0] for x in diagnostic.nc_Database.session.query(
                              db_manager.File_Expt.time
                             ).filter(sqlalchemy.and_(*conditions)).distinct().all()]
+    print(len(time_list_var), var_name,experiment,model)
     return time_list_var
 
 def find_time_list(diagnostic,experiment,time_slices):
@@ -55,10 +56,13 @@ def find_time_list(diagnostic,experiment,time_slices):
     return time_list, picontrol_min_time
 
 def find_model_list(diagnostic,project_drs,model_list,experiment,options,time_list, picontrol_min_time):
-    model_list_var = copy.copy(model_list)
-    model_list_copy = copy.copy(model_list)
+    
+    # Remove other experiments:
+    model_list_no_exp = remove_simulations(project_drs.simulations_desc,
+                                           'experiment', experiment, model_list),
+    model_list_copy = copy.copy(model_list_no_exp)
 
-    for model in model_list_var:
+    for model in model_list_no_exp:
         missing_vars=[]
         if picontrol_min_time:
             #Fix for experiments without a standard time range:
@@ -66,13 +70,9 @@ def find_model_list(diagnostic,project_drs,model_list,experiment,options,time_li
             for var_name in diagnostic.header['variable_list'].keys():
                 if not diagnostic.header['variable_list'][var_name][0] in ['fx','clim']:
                     time_list_var = obtain_time_list(diagnostic,project_drs,var_name,experiment,model)
-                    if len(time_list_var)>0:
+                    if len(time_list_var) > 0:
                         min_time_list.append(int(np.floor(np.min([int(time) for time in time_list_var])/100.0)*100))
-            #try:
             min_time = np.min(min_time_list)
-            #except ValueError as e:
-            #    #Use default:
-            #    min_time = 0
         else:
             min_time = 0
 
@@ -145,11 +145,6 @@ def validate(database,options,q_manager=None,sessions=dict()):
         session=None
 
     time_slices=dict()
-    #If not record_validate or missing_years, slice valide in time:
-    #if not ( ('record_validate' in dir(options) and 
-    #          options.record_validate) or
-    #         ('missing_years' in dir(options) and
-    #          options.missing_years)):
     if not ( 'record_validate' in commands_parser._get_command_names(options) ):
          for time_type in ['month','year']:
             if time_type in dir(options):
@@ -170,18 +165,28 @@ def validate(database,options,q_manager=None,sessions=dict()):
     database.close_database()
     return
 
+def remove_simulations(simulations_desc, simulation_field, simulation_field_value,
+                       simulation_list):
+    if simulation_field in simulations_desc:
+        simulations_list_limited = [ simulation for simulation in simulations_list if 
+                                     simulation[simulations_desc.index(simulation_field)] 
+                                     != simulation_field_value ]
+    else:
+        simulations_list_limited = copy.copy(simulations_list)
+    return simulations_list_limited
+
 def intersection(database,options, time_slices=dict()):
     #This function finds the models that satisfy all the criteria
 
     #Step one: find all the institute / model tuples with all the requested variables
     #          for all months of all years for all experiments.
-    simulations_list=database.nc_Database.simulations_list()
-    if 'ensemble' in database.drs.simulations_desc:
-        simulations_list_no_fx=[simulation for simulation in simulations_list if 
-                                    simulation[database.drs.simulations_desc.index('ensemble')]!='r0i0p0']
-    else:
-        simulations_list_no_fx = copy.copy(simulations_list)
-    model_list=copy.copy(simulations_list_no_fx)
+    simulations_list = database.nc_Database.simulations_list()
+
+    simulation_list_no_fx = remove_simulations(database.drs.simulations_desc,
+                                               'ensemble','r0i0p0',
+                                               simulation_list)
+
+    model_list = copy.copy(simulations_list_no_fx)
 
     if not 'experiment' in database.drs.simulations_desc:
         for experiment in database.header['experiment_list'].keys():
@@ -190,10 +195,15 @@ def intersection(database,options, time_slices=dict()):
                 time_list, picontrol_min_time = find_time_list(database, experiment, time_slices)
                 if len(time_list) > 0:
                     #When time was sliced, exclude models only if there were some requested times:
-                    model_list = find_model_list(database,database.drs,model_list,experiment,options,time_list, picontrol_min_time)
+                    model_list = find_model_list(database, database.drs, 
+                                                 model_list, experiment, 
+                                                 options, time_list, picontrol_min_time)
         model_list_combined = model_list
     else:
-        model_list_combined = set().union(*[find_model_list(database,database.drs,model_list,experiment,options,
+
+        model_list_combined = set().union(*[find_model_list(database,database.drs,
+                                                            model_list,
+                                                            experiment,options,
                                                             *find_time_list(database, experiment, time_slices)) 
                                             for experiment in database.header['experiment_list'].keys()])
     

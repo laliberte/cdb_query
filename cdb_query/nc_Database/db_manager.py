@@ -85,8 +85,8 @@ class nc_Database:
         return
 
     def simulations_list(self):
-        subset_desc=(getattr(File_Expt,item) for item in self.drs.simulations_desc)
-        simulations_list=self.list_subset(subset_desc)
+        subset_desc = (getattr(File_Expt,item) for item in self.drs.simulations_desc)
+        simulations_list = self.list_subset(subset_desc)
         return simulations_list
 
     def list_subset(self,subset):
