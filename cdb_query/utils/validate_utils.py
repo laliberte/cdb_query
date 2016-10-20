@@ -68,11 +68,11 @@ def find_model_list(diagnostic,project_drs,model_list,experiment,options,time_li
                     time_list_var = obtain_time_list(diagnostic,project_drs,var_name,experiment,model)
                     if len(time_list_var)>0:
                         min_time_list.append(int(np.floor(np.min([int(time) for time in time_list_var])/100.0)*100))
-            try:
-                min_time = np.min(min_time_list)
-            except ValueError as e:
-                #Use default:
-                min_time = 0
+            #try:
+            min_time = np.min(min_time_list)
+            #except ValueError as e:
+            #    #Use default:
+            #    min_time = 0
         else:
             min_time = 0
 
@@ -185,10 +185,12 @@ def intersection(database,options, time_slices=dict()):
 
     if not 'experiment' in database.drs.simulations_desc:
         for experiment in database.header['experiment_list'].keys():
-            time_list, picontrol_min_time = find_time_list(database, experiment, time_slices)
-            if len(time_list) > 0:
-                #When time was sliced, exclude models only if there were some requested times:
-                model_list = find_model_list(database,database.drs,model_list,experiment,options,time_list, picontrol_min_time)
+            if db_utils.is_level_name_included_and_not_excluded('experiment',options,experiment):
+                # Only check if experiment was not sliced
+                time_list, picontrol_min_time = find_time_list(database, experiment, time_slices)
+                if len(time_list) > 0:
+                    #When time was sliced, exclude models only if there were some requested times:
+                    model_list = find_model_list(database,database.drs,model_list,experiment,options,time_list, picontrol_min_time)
         model_list_combined = model_list
     else:
         model_list_combined = set().union(*[find_model_list(database,database.drs,model_list,experiment,options,

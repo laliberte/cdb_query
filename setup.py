@@ -15,7 +15,7 @@ package_name='cdb_query'
 setup(
        name = package_name,
        version = "1.9.9.7",
-       packages = find_packages(),
+       packages = find_packages(exclude=['test']),
        #package_dir = {package_name: 'lib'},
 #
 #        # metadata for upload to PyPI
