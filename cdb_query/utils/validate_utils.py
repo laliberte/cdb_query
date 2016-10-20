@@ -26,7 +26,6 @@ def obtain_time_list(diagnostic,project_drs,var_name,experiment,model):
     time_list_var=[x[0] for x in diagnostic.nc_Database.session.query(
                              db_manager.File_Expt.time
                             ).filter(sqlalchemy.and_(*conditions)).distinct().all()]
-    print(len(time_list_var), var_name,experiment,model)
     return time_list_var
 
 def find_time_list(diagnostic,experiment,time_slices):
@@ -166,7 +165,7 @@ def validate(database,options,q_manager=None,sessions=dict()):
     return
 
 def remove_simulations(simulations_desc, simulation_field, simulation_field_value,
-                       simulation_list):
+                       simulations_list):
     if simulation_field in simulations_desc:
         simulations_list_limited = [ simulation for simulation in simulations_list if 
                                      simulation[simulations_desc.index(simulation_field)] 
@@ -182,9 +181,9 @@ def intersection(database,options, time_slices=dict()):
     #          for all months of all years for all experiments.
     simulations_list = database.nc_Database.simulations_list()
 
-    simulation_list_no_fx = remove_simulations(database.drs.simulations_desc,
+    simulations_list_no_fx = remove_simulations(database.drs.simulations_desc,
                                                'ensemble','r0i0p0',
-                                               simulation_list)
+                                               simulations_list)
 
     model_list = copy.copy(simulations_list_no_fx)
 
