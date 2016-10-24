@@ -457,21 +457,23 @@ def consume_one_item(counter, options, q_manager, project_drs, cproc_options, se
             raise
 
         if ( 'debug' in dir(cproc_options) and
-             cproc_options.debug ):
+             cproc_options.debug or
+             'log_files' in dir(cproc_options) and
+             cproc_options.log_files ):
             _logger.error(function_name+
                           ' failed with the following options: '+
                           str(options_save))
             raise
 
-        if options.trial > 0:
+        if options_save.trial > 0:
             #Retry this function.
 
             #Decrement expectation in next function:
             q_manager.remove(options_copy)
             #Delete output from previous attempt files:
             try:
-                map(os.remove, glob.glob(options_save.out_netcdf_file+'.*'))
-                os.remove(options_save.out_netcdf_file)
+                map(os.remove, glob.glob(options_copy.out_netcdf_file+'.*'))
+                os.remove(options_copy.out_netcdf_file)
             except Exception:
                 pass
 
@@ -479,7 +481,7 @@ def consume_one_item(counter, options, q_manager, project_drs, cproc_options, se
             options_save.trial -= 1
             #Increment expectation in current function and resubmit:
             q_manager.increment_expected_and_put(options_save, copyfile=True)
-        elif options.failsafe_attempt > 0:
+        elif options_save.failsafe_attempt > 0:
 
             #Reset branch:
             for field in ['in_netcdf_file','out_netcdf_file','trial']:
@@ -497,8 +499,8 @@ def consume_one_item(counter, options, q_manager, project_drs, cproc_options, se
             q_manager.remove(options_copy)
             #Delete output from previous attempt files:
             try:
-                map(os.remove, glob.glob(options_save.out_netcdf_file+'.*'))
-                os.remove(options_save.out_netcdf_file)
+                map(os.remove, glob.glob(options_copy.out_netcdf_file+'.*'))
+                os.remove(options_copy.out_netcdf_file)
             except Exception:
                 pass
             
@@ -514,7 +516,7 @@ def consume_one_item(counter, options, q_manager, project_drs, cproc_options, se
             #If it keeps on failing, ignore this whole branch!
             logging.error(function_name + 
                           ' failed with the following options: ' +
-                          str(options_save))
+                          str(options_save) + '. Skipping this simulation(s) for good')
     return
 
 
