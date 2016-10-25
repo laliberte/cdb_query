@@ -144,7 +144,10 @@ def validate(database,options,q_manager=None,sessions=dict()):
         session=None
 
     time_slices=dict()
-    if not ( 'record_validate' in commands_parser._get_command_names(options) ):
+    #Slice time if record_validate was already performed:
+    if ( not ( 'record_validate' in commands_parser._get_command_names(options) )
+         or (  commands_parser._get_command_names(options).index('record_validate')
+                    < options.max_command_number ) ):
          for time_type in ['month','year']:
             if time_type in dir(options):
                 time_slices[time_type]=getattr(options,time_type)

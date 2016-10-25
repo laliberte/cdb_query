@@ -209,6 +209,7 @@ def basic_control_arguments(parser,project_drs):
                                       help='Use this directory as a swap directory.')
     parser.add_argument('--priority', type=int, default=0, help=argparse.SUPPRESS)
     parser.add_argument('--command_number', type=int, default=0, help=argparse.SUPPRESS)
+    parser.add_argument('--max_command_number', type=int, default=0, help=argparse.SUPPRESS)
     return
 
 def slicing_arguments(parser,project_drs,exclude_args=[],action_type='store'):

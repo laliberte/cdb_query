@@ -178,6 +178,7 @@ class CDB_queues_manager:
 
         #Increment to next function:
         options_copy.command_number += 1
+        options_copy.max_command_number += 1
 
         getattr(self,next_function_name).put((options_copy.priority, self.counter.increment(), options_copy))
 
@@ -367,8 +368,10 @@ def record_to_netcdf_file(counter, options, output, q_manager, project_drs):
         except Exception:
             pass
         shutil.move(options.in_netcdf_file, out_file_name)
-    elif command_name in output.keys():
-        #Only record this function if it was requested:
+    elif ( command_name in output.keys():
+            and (  commands_parser._get_command_names(options).index(command_name)
+                    >= options.max_command_number ) ):
+        #Only record this function if it was requested and never recorded before:
         #import subprocess; subprocess.Popen('ncdump -v path '+temp_file_name,shell=True)
         _logger.debug('Recording: '+command_name+', with options: '+str(options))
         db_utils.record_to_netcdf_file_from_file_name(options, options.in_netcdf_file, output[command_name], project_drs)
@@ -463,6 +466,9 @@ def consume_one_item(counter, options, q_manager, project_drs, cproc_options, se
             _logger.error(function_name+
                           ' failed with the following options: '+
                           str(options_save))
+
+        if ( 'debug' in dir(cproc_options) and
+             cproc_options.debug ):
             raise
 
         if options_save.trial > 0:
@@ -490,12 +496,6 @@ def consume_one_item(counter, options, q_manager, project_drs, cproc_options, se
                 elif field in dir(options_save):
                     delattr(options_save, field)
 
-            #if ('record_validate' in dir(options_save) and
-            #    'record_validate' in q_manager.queues_names and
-            #     q_manager.queues_names.index(function_name) > q_manager.queues_names.index('record_validate')):
-            #    #If validate was already recorded:
-            #    options_save.record_validate = False
-
             q_manager.remove(options_copy)
             #Delete output from previous attempt files:
             try:
@@ -514,7 +514,7 @@ def consume_one_item(counter, options, q_manager, project_drs, cproc_options, se
             q_manager.increment_expected_and_put(options_save)
         else:
             #If it keeps on failing, ignore this whole branch!
-            logging.error(function_name + 
+            _logger.error(function_name + 
                           ' failed with the following options: ' +
                           str(options_save) + '. Skipping this simulation(s) for good')
     return
