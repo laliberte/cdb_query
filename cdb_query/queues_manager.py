@@ -368,7 +368,7 @@ def record_to_netcdf_file(counter, options, output, q_manager, project_drs):
         except Exception:
             pass
         shutil.move(options.in_netcdf_file, out_file_name)
-    elif ( command_name in output.keys():
+    elif ( command_name in output.keys()
             and (  commands_parser._get_command_names(options).index(command_name)
                     >= options.max_command_number ) ):
         #Only record this function if it was requested and never recorded before:
@@ -463,7 +463,7 @@ def consume_one_item(counter, options, q_manager, project_drs, cproc_options, se
              cproc_options.debug or
              'log_files' in dir(cproc_options) and
              cproc_options.log_files ):
-            _logger.error(function_name+
+            _logger.exception(function_name+
                           ' failed with the following options: '+
                           str(options_save))
 
@@ -514,7 +514,7 @@ def consume_one_item(counter, options, q_manager, project_drs, cproc_options, se
             q_manager.increment_expected_and_put(options_save)
         else:
             #If it keeps on failing, ignore this whole branch!
-            _logger.error(function_name + 
+            _logger.exception(function_name + 
                           ' failed with the following options: ' +
                           str(options_save) + '. Skipping this simulation(s) for good')
     return
