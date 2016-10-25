@@ -471,20 +471,21 @@ def consume_one_item(counter, options, q_manager, project_drs, cproc_options, se
              cproc_options.debug ):
             raise
 
+        #Remove from queue:
+        q_manager.remove(options_copy)
+        #Delete output from previous attempt files:
+        try:
+            map(os.remove, glob.glob(options_copy.out_netcdf_file+'.*'))
+            os.remove(options_copy.out_netcdf_file)
+        except Exception:
+            pass
+
         if options_save.trial > 0:
             #Retry this function.
 
-            #Decrement expectation in next function:
-            q_manager.remove(options_copy)
-            #Delete output from previous attempt files:
-            try:
-                map(os.remove, glob.glob(options_copy.out_netcdf_file+'.*'))
-                os.remove(options_copy.out_netcdf_file)
-            except Exception:
-                pass
-
             #Put it back in the queue, increasing its trial number:
             options_save.trial -= 1
+
             #Increment expectation in current function and resubmit:
             q_manager.increment_expected_and_put(options_save, copyfile=True)
         elif options_save.failsafe_attempt > 0:
@@ -496,19 +497,11 @@ def consume_one_item(counter, options, q_manager, project_drs, cproc_options, se
                 elif field in dir(options_save):
                     delattr(options_save, field)
 
-            q_manager.remove(options_copy)
-            #Delete output from previous attempt files:
-            try:
-                map(os.remove, glob.glob(options_copy.out_netcdf_file+'.*'))
-                os.remove(options_copy.out_netcdf_file)
-            except Exception:
-                pass
-            
-            #Decrement failsafe attempt:
-            options_save.failsafe_attempt -= 1
-
             #Reset to first command:
             options_save.command_number = 0
+
+            #Decrement failsafe attempt:
+            options_save.failsafe_attempt -= 1
 
             #Put back to first function:
             q_manager.increment_expected_and_put(options_save)
