@@ -139,9 +139,9 @@ def validate(database,options,q_manager=None,sessions=dict()):
                                                                      ] if opt in dir(options)})
 
     if 'validate' in sessions.keys():
-        session=sessions['validate']
+        session = sessions['validate']
     else:
-        session=None
+        session = None
 
     time_slices=dict()
     #Slice time if record_validate was already performed:
@@ -150,7 +150,7 @@ def validate(database,options,q_manager=None,sessions=dict()):
                     < options.max_command_number ) ):
          for time_type in ['month','year']:
             if time_type in dir(options):
-                time_slices[time_type]=getattr(options,time_type)
+                time_slices[time_type] = getattr(options,time_type)
 
     if options.no_check_availability:
         #Does not check whether files are available / queryable before proceeding.
