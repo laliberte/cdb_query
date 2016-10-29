@@ -18,9 +18,12 @@ def cdb_query_from_list(args_list):
 
     if ( 'out_netcdf_file' in dir(options) and
          parsers._isfile(options,'out_netcdf_file') and
-         not options.O ):
-        # File exists and overwrite was not requested. Skip.
-        print('File {0} exists, skipping processing. To enable overwrite, use -O option.'.format(options.out_netcdf_file))
+         not options.O and
+         not options.A ):
+        # File exists and neither overwrite nor append were requested. Skip.
+        print(('File {0} exists, skipping processing. '
+               'To enable overwrite, use -O option. '
+               'To enable appending, use -A option.').format(options.out_netcdf_file))
         quit()
 
     # https://docs.python.org/2/howto/logging-cookbook.html

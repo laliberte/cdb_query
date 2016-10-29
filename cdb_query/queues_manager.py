@@ -320,7 +320,12 @@ def recorder_queue_consume(q_manager, project_drs, cproc_options):
                     file_mod = ''
                 else:
                     file_mod = '.'+command_name.split('_')[1:]
-                output[command_name] = netCDF4.Dataset(cproc_options.out_netcdf_file+file_mod, 'w', diskless=True, persist=True)
+                if ( 'A' in dir(options) and options.A ):
+                    output[command_name] = netCDF4.Dataset(cproc_options.original_out_netcdf_file+file_mod, 
+                                                           'a', diskless=True, persist=True)
+                else:
+                    output[command_name] = netCDF4.Dataset(cproc_options.original_out_netcdf_file+file_mod,
+                                                           'w', diskless=True, persist=True)
                 output[command_name].set_fill_off()
                 database = commands.Database_Manager(project_drs)
                 database.load_header(cproc_options)

@@ -170,11 +170,11 @@ def output_arguments(parser,project_drs):
     #Options only for failsafe implementation:
     parser.add_argument('--original_out_netcdf_file', default=None, help=argparse.SUPPRESS)
 
-    #group = parser.add_mutually_exclusive_group()
-    parser.add_argument('-O',action='store_true',
-                            help='Overwrite output file. Default: False')
-    #group.add_argument('-S',action='store_false',
-    #                        help='Skip if output file exists. Default: True')
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-O',action='store_true',
+                            help='Overwrite output file. Default: Skip if file present.')
+    group.add_argument('-A',action='store_true',
+                            help='Append to output file. Default: Skip if file present.')
     return
 
 def processing_arguments(parser,project_drs):
