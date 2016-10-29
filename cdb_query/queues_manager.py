@@ -373,11 +373,10 @@ def record_to_netcdf_file(counter, options, output, q_manager, project_drs):
         except Exception:
             pass
         shutil.move(options.in_netcdf_file, out_file_name)
-    elif ( command_name in output.keys()
-            and (  commands_parser._get_command_names(options).index(command_name)
-                    >= options.max_command_number ) ):
-        #Only record this function if it was requested and never recorded before:
-        #import subprocess; subprocess.Popen('ncdump -v path '+temp_file_name,shell=True)
+    elif ( command_name in output.keys() ):
+            #and (  commands_parser._get_command_names(options).index(command_name)
+            #        >= options.max_command_number ) ):
+        #Only record this function if it was requested::
         _logger.debug('Recording: '+command_name+', with options: '+str(options))
         db_utils.record_to_netcdf_file_from_file_name(options, options.in_netcdf_file, output[command_name], project_drs)
         _logger.debug('DONE Recording: '+command_name)

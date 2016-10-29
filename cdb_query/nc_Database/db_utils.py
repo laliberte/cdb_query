@@ -182,25 +182,27 @@ def retrieve_or_replicate(output_grp,data,
 def record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_drs,check_empty=False):
     with _read_Dataset(temp_file_name)(temp_file_name, 'r') as data:
         fix_list_to_none=(lambda x: x[0] if (x!=None and len(x)==1) else None)
-        var=[ fix_list_to_none(getattr(options,opt)) if getattr(options,opt)!=None else None for opt in project_drs.official_drs_no_version]
-        tree=zip(project_drs.official_drs_no_version,var)
+        var=[ fix_list_to_none(getattr(options,opt)) 
+              if getattr(options,opt)!=None else None 
+              for opt in project_drs.official_drs_no_version ]
+        tree=zip(project_drs.official_drs_no_version, var)
 
         #Do not check empty:
-        replace_netcdf_variable_recursive(output,data,
-                                           tree[0],tree[1:],options,
+        replace_netcdf_variable_recursive(output, data,
+                                           tree[0], tree[1:], options,
                                            check_empty=check_empty)
 
     return
 
-def replace_netcdf_variable_recursive(output,data,
-                                      level_desc,tree,options,
+def replace_netcdf_variable_recursive(output, data,
+                                      level_desc, tree, options,
                                       check_empty=False):
-    level_name=level_desc[0]
-    group_name=level_desc[1]
-    if group_name==None or isinstance(group_name,list):
+    level_name = level_desc[0]
+    group_name = level_desc[1]
+    if group_name == None or isinstance(group_name, list):
         for group in data.groups:
-            if tree_recursive_check_not_empty(options,data.groups[group],slicing=False,check=False):
-                output_grp=netcdf_utils.create_group(data,output,group)
+            if tree_recursive_check_not_empty(options,data.groups[group], slicing=False, check=False):
+                output_grp = netcdf_utils.create_group(data, output, group)
                 replace_netcdf_variable_recursive_replicate(output_grp,data.groups[group],
                                                             level_name,group,
                                                             tree,options,
@@ -228,8 +230,8 @@ def replace_netcdf_variable_recursive_replicate(output_grp,data_grp,
                                           tree[0],tree[1:],options,
                                           check_empty=check_empty)
     else:
-        netcdf_pointers=read_soft_links.read_netCDF_pointers(data_grp)
-        netcdf_pointers.append(output_grp,check_empty=check_empty)
+        netcdf_pointers = read_soft_links.read_netCDF_pointers(data_grp)
+        netcdf_pointers.append(output_grp, check_empty=check_empty)
     return
 
 #PUT INTO FILESYSTEM DATABASE
