@@ -55,15 +55,17 @@ def tree_recursive_check_not_empty(options,data,check=True,slicing=True):
         else:
             return True
     elif len(data.groups.keys())>0:
-        if slicing:
-            empty_list=[]
-            for group in data.groups.keys():
-                level_name = netcdf_utils.getncattr(data.groups[group], level_key)
-                if is_level_name_included_and_not_excluded(level_name,options,group):
+        empty_list=[]
+        for group in data.groups.keys():
+            level_name = netcdf_utils.getncattr(data.groups[group], level_key)
+            if is_level_name_included_and_not_excluded(level_name,options,group):
+                if slicing:
                     empty_list.append(tree_recursive_check_not_empty(options,data.groups[group],check=check))
-            return any(empty_list)
-        else:
-            return True
+                else:
+                    empty_list.append(True)
+            else:
+                empty_list.append(False)
+        return any(empty_list)
     else:
         if len(data.variables.keys())>0:
             return True
@@ -201,7 +203,7 @@ def replace_netcdf_variable_recursive(output, data,
     group_name = level_desc[1]
     if group_name == None or isinstance(group_name, list):
         for group in data.groups:
-            if tree_recursive_check_not_empty(options,data.groups[group], slicing=False, check=False):
+            if tree_recursive_check_not_empty(options, data.groups[group], slicing=False, check=False):
                 output_grp = netcdf_utils.create_group(data, output, group)
                 replace_netcdf_variable_recursive_replicate(output_grp,data.groups[group],
                                                             level_name,group,
