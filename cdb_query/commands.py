@@ -184,7 +184,11 @@ def reduce(database,options,q_manager=None,sessions=dict()):
 
 def merge(database,options,q_manager=None,sessions=dict()):
     database.load_header(options)
-    with netCDF4.Dataset(options.out_netcdf_file,'w') as output:
+    if ( 'A' in dir(options) and options.A ):
+        mode = 'a'
+    else:
+        mode = 'w'
+    with netCDF4.Dataset(options.out_netcdf_file, mode) as output:
         db_manager.record_header(output,database.header)
         for file_name in [options.in_netcdf_file,]+options.in_extra_netcdf_files:
             db_utils.record_to_netcdf_file_from_file_name(options,file_name,output,database.drs)
