@@ -252,34 +252,38 @@ def write_netcdf_variable_recursive(output,out_dir,data,
                                     project_drs,options,check_empty=False):
     level_name=tree[0]
     if level_name=='version':
-        version='v'+datetime.datetime.now().strftime('%Y%m%d')
-        sub_out_dir=make_sub_dir(out_dir,version)
-        options_copy=copy.copy(options)
-        setattr(options_copy,level_name,[version,])
+        version = 'v'+datetime.datetime.now().strftime('%Y%m%d')
+        sub_out_dir = make_sub_dir(out_dir,version)
+        options_copy = copy.copy(options)
+        setattr(options_copy, level_name, [version,])
         write_netcdf_variable_recursive_replicate(output,sub_out_dir,data,
                                                     version,tree,
                                                     project_drs,options_copy,check_empty=check_empty)
     else:
-        fix_list=(lambda x: x[0] if (x!= None and len(x)==1) else x)
-        group_name=fix_list(getattr(options,level_name))
-        if group_name==None or isinstance(group_name,list):
+        fix_list = (lambda x: x[0] if (x!= None and len(x)==1) else x)
+        group_name = fix_list(getattr(options, level_name))
+        if group_name == None or isinstance(group_name, list):
             for group in data.groups:
-                sub_out_dir=make_sub_dir(out_dir,group)
-                output_grp=netcdf_utils.create_group(data,output,group)
-                options_copy=copy.copy(options)
-                setattr(options_copy,level_name,[group,])
-                write_netcdf_variable_recursive_replicate(output_grp,sub_out_dir,data.groups[group],
-                                                            group,tree,
-                                                            project_drs,options_copy,check_empty=check_empty)
+                sub_out_dir = make_sub_dir(out_dir,group)
+                output_grp = netcdf_utils.create_group(data,output,group)
+                netcdf_utils.setncattr(output_grp, level_key, group)
+
+                options_copy = copy.copy(options)
+                setattr(options_copy, level_name, [group,])
+                write_netcdf_variable_recursive_replicate(output_grp, sub_out_dir, data.groups[group],
+                                                            group, tree,
+                                                            project_drs, options_copy, check_empty=check_empty)
                         
         else:
-            sub_out_dir=make_sub_dir(out_dir,group_name)
-            output_grp=netcdf_utils.create_group(data,output,group_name)
-            options_copy=copy.copy(options)
-            setattr(options_copy,level_name,[group_name,])
-            write_netcdf_variable_recursive_replicate(output_grp,sub_out_dir,data,
-                                                        group_name,tree,
-                                                        project_drs,options_copy,check_empty=check_empty)
+            sub_out_dir = make_sub_dir(out_dir, group_name)
+            output_grp = netcdf_utils.create_group(data, output, group_name)
+            netcdf_utils.setncattr(output_grp, level_key, group)
+
+            options_copy = copy.copy(options)
+            setattr(options_copy, level_name, [group_name,])
+            write_netcdf_variable_recursive_replicate(output_grp, sub_out_dir, data,
+                                                        group_name, tree,
+                                                        project_drs, options_copy, check_empty=check_empty)
     return
 
 def write_netcdf_variable_recursive_replicate(output,sub_out_dir,data_grp,
