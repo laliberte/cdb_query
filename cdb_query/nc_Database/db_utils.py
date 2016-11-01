@@ -277,7 +277,7 @@ def write_netcdf_variable_recursive(output,out_dir,data,
         else:
             sub_out_dir = make_sub_dir(out_dir, group_name)
             output_grp = netcdf_utils.create_group(data, output, group_name)
-            netcdf_utils.setncattr(output_grp, level_key, group)
+            netcdf_utils.setncattr(output_grp, level_key, group_name)
 
             options_copy = copy.copy(options)
             setattr(options_copy, level_name, [group_name,])
