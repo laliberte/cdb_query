@@ -9,9 +9,10 @@ import sqlalchemy
 import multiprocessing
 import json
 import netCDF4
+import numpy as np
 
 #Internal:
-from ..nc_Database import db_manager
+from ..nc_Database import db_manager, db_utils
 from ..queries import http, ftp, filesystem, esgf
 
 
@@ -39,7 +40,7 @@ def ask(database, options, q_manager=None, sessions=dict()):
     if options.list_only_field == None:
         #If --list_only_field was not specified, write database
         #Find the intersection of the database, so that all the requested variables are available:
-        intersection(database)
+        intersection(database, options)
         #List data_nodes and record to header:
         database.header['data_node_list'] = database.nc_Database.list_data_nodes(options)
 
@@ -100,7 +101,7 @@ def ask_database(database, options, session=None):
     #Convert list of list into list:
     return [item for sublist in only_list for item in sublist]
 
-def find_model_list(database, model_list, experiment):
+def find_model_list(database, model_list, experiment, options):
     '''
     Function to find the what subset of `model_list` can be found in 
     `database` for experiment `experiment`.
@@ -115,6 +116,7 @@ def find_model_list(database, model_list, experiment):
         # Here time frequency 'en' is for an ensemble mean,
         # i.e. a variable that is common to all ensemble members.
         # So are fx variables.
+
         if not time_frequency in ['fx', 'en']:
             #Do this without fx variables:
             conditions=[
@@ -125,17 +127,28 @@ def find_model_list(database, model_list, experiment):
                 conditions.append(getattr(db_manager.File_Expt, field) == 
                                   database.header['variable_list'][var_name][field_id])
 
-            #Find the model_list for that one variable:
-            model_list_var = ( database
-                               .nc_Database
-                               .session
-                               .query(*[ getattr(db_manager.File_Expt,desc)
-                                         for desc in database.drs.simulations_desc ])
-                               .filter(sqlalchemy.and_(*conditions))
-                               .distinct()
-                               .all() )
-            #Remove from model_list:
-            model_list_copy=set(model_list_copy).intersection(set(model_list_var))
+            inclusions_and_exclusions = [ 
+                          db_utils.is_level_name_included_and_not_excluded('var', options, var_name),
+                          db_utils.is_level_name_included_and_not_excluded('experiment', options, experiment)
+                          ]
+
+            for field_id, field in enumerate(database.drs.var_specs):
+                inclusions_and_exclusions.append(
+                            db_utils.is_level_name_included_and_not_excluded(field, options, 
+                                            database.header['variable_list'][var_name][field_id]))
+
+            if np.all(inclusions_and_exclusions):
+                #Find the model_list for that one variable:
+                model_list_var = ( database
+                                   .nc_Database
+                                   .session
+                                   .query(*[ getattr(db_manager.File_Expt,desc)
+                                             for desc in database.drs.simulations_desc ])
+                                   .filter(sqlalchemy.and_(*conditions))
+                                   .distinct()
+                                   .all() )
+                #Remove from model_list:
+                model_list_copy=set(model_list_copy).intersection(set(model_list_var))
 
     #Perform the same for variables shared by all elements of the ensemble:
     model_list_fx = [remove_ensemble(model, database.drs) for model in model_list_copy]
@@ -149,21 +162,32 @@ def find_model_list(database, model_list, experiment):
             for field_id, field in enumerate(database.drs.var_specs):
                 conditions.append(getattr(db_manager.File_Expt, field) ==
                                   database.header['variable_list'][var_name][field_id])
-            #For these variables remove ensemble description:
-            model_list_var = ( database
-                               .nc_Database
-                               .session
-                               .query(*[ getattr(db_manager.File_Expt,desc)
-                                         for desc in database.drs.simulations_desc if desc!='ensemble'])
-                               .filter(sqlalchemy.and_(*conditions))
-                               .distinct()
-                               .all() )
-            model_list_fx = set(model_list_fx).intersection(set(model_list_var))
+
+            inclusions_and_exclusions = [ 
+                          db_utils.is_level_name_included_and_not_excluded('var', options, var_name),
+                          db_utils.is_level_name_included_and_not_excluded('experiment', options, experiment)
+                          ]
+
+            for field_id, field in enumerate(database.drs.var_specs):
+                inclusions_and_exclusions.append(
+                            db_utils.is_level_name_included_and_not_excluded(field, options, 
+                                            database.header['variable_list'][var_name][field_id]))
+            if np.all(inclusions_and_exclusions):
+                #For these variables remove ensemble description:
+                model_list_var = ( database
+                                   .nc_Database
+                                   .session
+                                   .query(*[ getattr(db_manager.File_Expt,desc)
+                                             for desc in database.drs.simulations_desc if desc!='ensemble'])
+                                   .filter(sqlalchemy.and_(*conditions))
+                                   .distinct()
+                                   .all() )
+                model_list_fx = set(model_list_fx).intersection(set(model_list_var))
     model_list_combined = [ model for model in model_list_copy 
                             if remove_ensemble(model,database.drs) in model_list_fx ]
     return model_list_combined
 
-def intersection(database):
+def intersection(database, options):
     #Step one: find all the institute / model tuples with all the requested variables
     simulations_list = database.nc_Database.simulations_list()
 
@@ -179,12 +203,12 @@ def intersection(database):
         #If simulations are not defined using experiments, 
         #successively remove models by going through all the experiments:
         for experiment in database.header['experiment_list'].keys():
-            model_list = find_model_list(database, model_list, experiment)
+            model_list = find_model_list(database, model_list, experiment, options)
         #Assigned the limited model_list:
         model_list_combined = model_list
     else:
         #If they are, then list all simulations and find the combined model list:
-        list_of_model_list = [ find_model_list(database,model_list,experiment) 
+        list_of_model_list = [ find_model_list(database, model_list, experiment, options) 
                                            for experiment in database.header['experiment_list'].keys() ]
         model_list_combined = set().union(*list_of_model_list)
 

@@ -101,9 +101,9 @@ F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD'.format(version_num)
                             epilog=epilog)
 
     #Generate subparsers
-    generate_subparsers(command_parser,epilog,project_drs)
+    generate_subparsers(command_parser, epilog, project_drs)
 
-    options = command_parser.parse_args(commands_args,namespace=options)
+    options = command_parser.parse_args(commands_args, namespace=options)
 
     #These lines are necessary for the failsafe implementation:
     for field in ['in_netcdf_file', 'out_netcdf_file', 'trial']:

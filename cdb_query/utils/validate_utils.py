@@ -13,7 +13,7 @@ from .. import commands_parser
 
 queryable_file_types=['OPENDAP','local_file']
 
-def obtain_time_list(diagnostic,project_drs,var_name,experiment,model):
+def obtain_time_list(database,project_drs,var_name,experiment,model):
     #Do this without fx variables:
     conditions=(
                  [db_manager.File_Expt.var==var_name,] +
@@ -22,15 +22,15 @@ def obtain_time_list(diagnostic,project_drs,var_name,experiment,model):
                  for desc_id,desc in enumerate(project_drs.simulations_desc)]
                )
     for field_id, field in enumerate(project_drs.var_specs):
-        conditions.append(getattr(db_manager.File_Expt,field)==diagnostic.header['variable_list'][var_name][field_id])
-    time_list_var=[x[0] for x in diagnostic.nc_Database.session.query(
+        conditions.append(getattr(db_manager.File_Expt,field)==database.header['variable_list'][var_name][field_id])
+    time_list_var=[x[0] for x in database.nc_Database.session.query(
                              db_manager.File_Expt.time
                             ).filter(sqlalchemy.and_(*conditions)).distinct().all()]
     return time_list_var
 
-def find_time_list(diagnostic,experiment,time_slices):
+def find_time_list(database,experiment,time_slices):
     #Determine the requested time list:
-    period_list = diagnostic.header['experiment_list'][experiment]
+    period_list = database.header['experiment_list'][experiment]
     if not isinstance(period_list,list): period_list=[period_list]
     years_list=[]
     for period in period_list:
@@ -43,7 +43,7 @@ def find_time_list(diagnostic,experiment,time_slices):
                    (time_slices['year']==None or
                   year in time_slices['year'])) or
               (not 'year' in time_slices)):
-            for month in get_diag_month_list(diagnostic):
+            for month in get_diag_month_list(database):
                 if ( ( 'month' in time_slices and
                         (time_slices['month']==None or
                           month in time_slices['month'])) or
@@ -54,7 +54,7 @@ def find_time_list(diagnostic,experiment,time_slices):
 
     return time_list, picontrol_min_time
 
-def find_model_list(diagnostic,project_drs,model_list,experiment,options,time_list, picontrol_min_time):
+def find_model_list(database,project_drs,model_list,experiment,options,time_list, picontrol_min_time):
     
     # Remove other experiments:
     model_list_no_other_exp = include_simulations(project_drs.simulations_desc,
@@ -66,24 +66,35 @@ def find_model_list(diagnostic,project_drs,model_list,experiment,options,time_li
         if picontrol_min_time:
             #Fix for experiments without a standard time range:
             min_time_list=[]
-            for var_name in diagnostic.header['variable_list'].keys():
-                if not diagnostic.header['variable_list'][var_name][0] in ['fx','clim']:
-                    time_list_var = obtain_time_list(diagnostic,project_drs,var_name,experiment,model)
+            for var_name in database.header['variable_list'].keys():
+                if not database.header['variable_list'][var_name][0] in ['fx','clim']:
+                    time_list_var = obtain_time_list(database,project_drs,var_name,experiment,model)
                     if len(time_list_var) > 0:
                         min_time_list.append(int(np.floor(np.min([int(time) for time in time_list_var])/100.0)*100))
             min_time = np.min(min_time_list)
         else:
             min_time = 0
 
-        var_names_no_fx=[var_name for var_name in diagnostic.header['variable_list'].keys()
-                            if not diagnostic.header['variable_list'][var_name][0] in ['fx','clim']]
+        var_names_no_fx=[var_name for var_name in database.header['variable_list'].keys()
+                            if not database.header['variable_list'][var_name][0] in ['fx','clim']]
         if 'missing_years' in dir(options) and options.missing_years:
             #When missing years are allowed, ensure that all variables have the same times!
             valid_times=dict()
             for var_name in var_names_no_fx:
-                time_list_var = obtain_time_list(diagnostic,project_drs,var_name,experiment,model)
-                time_list_var = [str(int(time)-int(min_time)).zfill(6) for time in time_list_var]
-                valid_times[var_name] = set(time_list).intersection(time_list_var)
+                inclusions_and_exclusions = [ 
+                              db_utils.is_level_name_included_and_not_excluded('var', options, var_name),
+                              db_utils.is_level_name_included_and_not_excluded('experiment', options, experiment)
+                              ]
+
+                for field_id, field in enumerate(database.drs.var_specs):
+                    inclusions_and_exclusions.append(
+                                db_utils.is_level_name_included_and_not_excluded(field, options, 
+                                                database.header['variable_list'][var_name][field_id]))
+
+                if np.all(inclusions_and_exclusions):
+                    time_list_var = obtain_time_list(database,project_drs,var_name,experiment,model)
+                    time_list_var = [str(int(time)-int(min_time)).zfill(6) for time in time_list_var]
+                    valid_times[var_name] = set(time_list).intersection(time_list_var)
             intersection = set.intersection(*[ v for v in valid_times.values() ])
 
             if len(intersection) == 0:
@@ -91,15 +102,26 @@ def find_model_list(diagnostic,project_drs,model_list,experiment,options,time_li
         else:
             #When missing years are not allowed, ensure that all variables have the requested times!
             for var_name in var_names_no_fx:
-                time_list_var=obtain_time_list(diagnostic,project_drs,var_name,experiment,model)
-                time_list_var=[str(int(time)-int(min_time)).zfill(6) for time in time_list_var]
-                if not set(time_list).issubset(time_list_var):
-                    missing_vars.append(var_name+':'+','.join(
-                                        diagnostic.header['variable_list'][var_name])+
-                                        ' for some months: '+','.join(
-                                        sorted(set(time[:4] for time in set(time_list).difference(time_list_var)))
-                                        )
-                                       )
+                inclusions_and_exclusions = [ 
+                              db_utils.is_level_name_included_and_not_excluded('var', options, var_name),
+                              db_utils.is_level_name_included_and_not_excluded('experiment', options, experiment)
+                              ]
+
+                for field_id, field in enumerate(database.drs.var_specs):
+                    inclusions_and_exclusions.append(
+                                db_utils.is_level_name_included_and_not_excluded(field, options, 
+                                                database.header['variable_list'][var_name][field_id]))
+
+                if np.all(inclusions_and_exclusions):
+                    time_list_var = obtain_time_list(database,project_drs,var_name,experiment,model)
+                    time_list_var = [str(int(time)-int(min_time)).zfill(6) for time in time_list_var]
+                    if not set(time_list).issubset(time_list_var):
+                        missing_vars.append(var_name+':'+','.join(
+                                            database.header['variable_list'][var_name])+
+                                            ' for some months: '+','.join(
+                                            sorted(set(time[:4] for time in set(time_list).difference(time_list_var)))
+                                            )
+                                           )
         if len(missing_vars)>0:
            #print('\nThe reasons why some simulations were excluded:')
            if 'experiment' in project_drs.simulations_desc:
@@ -112,9 +134,9 @@ def find_model_list(diagnostic,project_drs,model_list,experiment,options,time_li
            model_list_copy.remove(model)
     return model_list_copy
 
-def get_diag_month_list(diagnostic):
-    if 'month_list' in diagnostic.header.keys():
-        diag_month_list=diagnostic.header['month_list']
+def get_diag_month_list(database):
+    if 'month_list' in database.header.keys():
+        diag_month_list=database.header['month_list']
     else:
         diag_month_list=range(1,13)
     return diag_month_list

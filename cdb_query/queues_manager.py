@@ -178,7 +178,8 @@ class CDB_queues_manager:
 
         #Increment to next function:
         options_copy.command_number += 1
-        options_copy.max_command_number += 1
+        if options_copy.max_command_number < options_copy.command_number:
+            options_copy.max_command_number += 1
 
         getattr(self,next_function_name).put((options_copy.priority, self.counter.increment(), options_copy))
 
@@ -319,13 +320,15 @@ def recorder_queue_consume(q_manager, project_drs, cproc_options):
                 if command_id == len(command_names)-1:
                     file_mod = ''
                 else:
-                    file_mod = '.'+command_name.split('_')[1:]
-                if ( 'A' in dir(options) and options.A ):
+                    file_mod = '.'+'_'.join(command_name.split('_')[1:])
+                if ( 'A' in dir(cproc_options) and cproc_options.A ):
                     mode = 'a'
+                    output[command_name] = netCDF4.Dataset(cproc_options.original_out_netcdf_file+file_mod,
+                                                           mode)
                 else:
                     mode = 'w'
-                output[command_name] = netCDF4.Dataset(cproc_options.original_out_netcdf_file+file_mod,
-                                                       mode, diskless=True, persist=True)
+                    output[command_name] = netCDF4.Dataset(cproc_options.original_out_netcdf_file+file_mod,
+                                                           mode, diskless=True, persist=True)
                 output[command_name].set_fill_off()
                 database = commands.Database_Manager(project_drs)
                 database.load_header(cproc_options)

@@ -167,10 +167,6 @@ def download_opendap(database,options,q_manager=None,sessions=dict()):
     database.put_or_process(downloads_utils.download_opendap,vars_list,options,q_manager,sessions,times_list=times_list)
     return
 
-#def gather(database,options,q_manager=None,sessions=dict()):
-#    reduce(database,options,q_manager=q_manager)
-#    return
-
 def reduce(database,options,q_manager=None,sessions=dict()):
     if (options.script=='' and 
         ('in_extra_netcdf_files' in dir(options) and 
