@@ -194,13 +194,14 @@ def reduce_sl_or_var(database,options,q_manager=None,sessions=dict(),retrieval_t
     except OSError:
         pass
 
-    if retrieval_type=='reduce_soft_links':
+    if retrieval_type == 'reduce_soft_links':
         processed_output_file_name = temp_output_file_name+'.tmp'
         with netCDF4.Dataset(processed_output_file_name,'w') as output:
             db_utils.record_to_netcdf_file_from_file_name(options,temp_output_file_name,output,database.drs)
     else:
         #This is the last function in the chain. Convert and create soft links:
         processed_output_file_name = db_utils.record_to_output_directory(temp_output_file_name,database.drs,options)
+        #out=subprocess.call('ncdump -h {0}'.format(processed_output_file_name), shell=True)
     try:
         os.remove(temp_output_file_name)
         os.rename(processed_output_file_name, temp_output_file_name)
