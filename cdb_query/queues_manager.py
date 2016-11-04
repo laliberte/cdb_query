@@ -481,11 +481,13 @@ def consume_one_item(counter, options, q_manager, project_drs, cproc_options, se
         #Remove from queue:
         q_manager.remove(options_copy)
         #Delete output from previous attempt files:
-        try:
-            map(os.remove, glob.glob(options_copy.out_netcdf_file+'.*'))
-            os.remove(options_copy.out_netcdf_file)
-        except Exception:
-            pass
+        if ('original_out_netcdf_file' in dir(options_copy) and
+            options_copy.out_netcdf_file != options_copy.original_out_netcdf_file ):
+            try:
+                map(os.remove, glob.glob(options_copy.out_netcdf_file+'.*'))
+                os.remove(options_copy.out_netcdf_file)
+            except Exception:
+                pass
 
         if options_save.trial > 0:
             #Retry this function.
