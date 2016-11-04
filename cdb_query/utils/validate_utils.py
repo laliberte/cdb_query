@@ -71,7 +71,13 @@ def find_model_list(database,project_drs,model_list,experiment,options,time_list
                     time_list_var = obtain_time_list(database,project_drs,var_name,experiment,model)
                     if len(time_list_var) > 0:
                         min_time_list.append(int(np.floor(np.min([int(time) for time in time_list_var])/100.0)*100))
-            min_time = np.min(min_time_list)
+            try:
+                min_time = np.min(min_time_list)
+            except ValueError as e:
+                if e.message == 'zero-size array to reduction operation minimum which has no identity':
+                    min_time = 0
+                else:
+                    raise
         else:
             min_time = 0
 
