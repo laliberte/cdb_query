@@ -37,6 +37,7 @@ def find_time_list(database,experiment,time_slices):
         years_range=[int(year) for year in period.split(',')]
         years_list.extend(range(*years_range))
         years_list.append(years_range[1])
+    years_list = sorted(set(years_list))
     time_list=[]
     for year in years_list:
         if ( ( 'year' in time_slices and
