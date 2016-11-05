@@ -184,7 +184,7 @@ def find_model_list(database, model_list, experiment, options):
                                    .all() )
                 model_list_fx = set(model_list_fx).intersection(set(model_list_var))
     model_list_combined = [ model for model in model_list_copy 
-                            if remove_ensemble(model,database.drs) in model_list_fx ]
+                            if remove_ensemble(model, database.drs) in model_list_fx ]
     return model_list_combined
 
 def intersection(database, options):

@@ -299,7 +299,14 @@ class Database_Manager:
         if ( commands_parser._get_command_name(options) == 'ask' ):
             self.header=dict()
             try:
-                self.header['experiment_list']={item.split(':')[0]:item.split(':')[1].replace('-',',') for item in options.ask_experiment}
+                self.header['experiment_list']=dict()
+                for item in options.ask_experiment:
+                    experiment = item.split(':')[0]
+                    years = item.split(':')[1].replace('-',',')
+                    if not experiment in self.header['experiment_list']:
+                        self.header['experiment_list'][experiment] = [years]
+                    else:
+                        self.header['experiment_list'][experiment].append(years)
                 self.header['month_list']=[item for item in options.ask_month]
                 self.header['search_list']=[item for item in options.search_path if not item in options.Xsearch_path]
                 self.header['variable_list']={item.split(':')[0]:item.split(':')[1].split('-') for item in options.ask_var}
