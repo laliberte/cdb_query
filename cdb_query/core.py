@@ -38,10 +38,7 @@ def cdb_query_from_list(args_list):
                             filemode='w')
     else:
         if ('debug' in dir(options) and options.debug):
-            if ('s' in dir(options) and options.s):
-                level = logging.INFO
-            else:
-                logging.DEBUG
+            level = logging.INFO if ('s' in dir(options) and options.s) else logging.DEBUG
             logging.basicConfig(level=level,
                                 format='%(processName)-20s %(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                                 datefmt='%m-%d %H:%M'
