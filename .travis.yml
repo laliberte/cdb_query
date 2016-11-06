@@ -1,0 +1,28 @@
+# Based on http://conda.pydata.org/docs/travis.html
+language: python
+sudo: false # use container based build
+notifications:
+  email: false
+
+matrix:
+  fast_finish: true
+  include:
+  - python: 2.7
+    env: CONDA_ENV=py27
+
+before_install:
+  - wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no --set show_channel_urls true
+  - conda update -q conda
+  - conda info -a
+
+install:
+  - conda env create --file ci/requirements-$CONDA_ENV.yml
+  - source activate test_env
+  - python setup.py install
+
+script:
+  - py.test cdb_query

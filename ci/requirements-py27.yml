@@ -1,0 +1,32 @@
+name: test_env
+channels:
+  - conda-forge
+dependencies:
+  - python=2.7
+  - pytest
+  - numpy
+  - pydap
+  - mechanize
+  - requests
+  - astropy
+  - beautifulsoup4
+  - h5py
+  - hdf5
+  - libnetcdf
+  - netcdf4
+  - numpy
+  - pandas
+  - paste
+  - pastedeploy
+  - pip
+  - python
+  - requests
+  - scipy
+  - setuptools
+  - sqlalchemy
+  - sqlite
+  - h5netcdf
+  - pip:
+      - requests_cache
+      - netcdf4_pydap
+      - netcdf4_soft_links
