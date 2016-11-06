@@ -51,8 +51,8 @@ def download(database,retrieval_type,options,q_manager,sessions):
     options_copy.min_year = None
     if 'experiment_list' in database.header.keys():
         for experiment in database.header['experiment_list']:
-            min_year = int(database.header['experiment_list'][experiment].split(',')[0])
-            if min_year<10:
+            min_year = np.min(find_functions.get_years_list_from_periods(database.header['experiment_list'][experiment])[0])
+            if min_year < 10:
                 options_copy.min_year = min_year
                 if not ('silent' in dir(options_copy) and options_copy.silent):
                     print 'Using min year {0} for experiment {1}'.format(str(min_year),experiment)

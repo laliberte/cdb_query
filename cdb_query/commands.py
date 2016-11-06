@@ -284,12 +284,12 @@ class Database_Manager:
                 self.header_simple[list_name].append(self.header['variable_list'][var_name][list_id])
 
         #Find all the requested experiments and years:
-        experiment_list=['experiment_list','years_list']
+        experiment_list=['experiment_list',]
         for list_name in experiment_list: self.header_simple[list_name]=[]
         for experiment_name in self.header['experiment_list'].keys():
             self.header_simple['experiment_list'].append(experiment_name)
-            for list_name in list(experiment_list[1:]):
-                self.header_simple[list_name].append(self.header['experiment_list'][experiment_name])
+            #for list_name in list(experiment_list[1:]):
+            #    self.header_simple[list_name].append(self.header['experiment_list'][experiment_name])
                 
         #Find the unique members:
         for list_name in self.header_simple.keys(): self.header_simple[list_name]=list(set(self.header_simple[list_name]))
@@ -299,7 +299,7 @@ class Database_Manager:
         if ( commands_parser._get_command_name(options) == 'ask' ):
             self.header=dict()
             try:
-                self.header['experiment_list']=dict()
+                self.header['experiment_list'] = dict()
                 for item in options.ask_experiment:
                     experiment = item.split(':')[0]
                     years = item.split(':')[1].replace('-',',')

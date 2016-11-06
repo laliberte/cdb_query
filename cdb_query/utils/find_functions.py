@@ -56,12 +56,7 @@ def time_file(database,file_expt,file_available=False,
         return
 
     #Find the years that were requested:
-    years_requested=[int(year) for year in database.header['experiment_list'][file_expt.experiment].split(',')]
-    years_list_requested=range(*years_requested)
-    years_list_requested.append(years_requested[1])
-
-    #Flag to check if the time axis is requested as relative:
-    picontrol_min_time=(years_list_requested[0]<=10)
+    years_list_requested, picontrol_min_time = get_years_list_from_periods(database.header['experiment_list'][file_expt.experiment])
 
     #Recover date range from filename:
     years_range = [int(date[:4]) for date in time_stamp.split('-')]
@@ -106,6 +101,20 @@ def time_file(database,file_expt,file_available=False,
                         file_available=remote_data.is_available()
                 _attribute_time(database,file_expt,file_available,year,month)
     return
+
+def get_years_list_from_periods(period_list):
+    #Determine the requested time list:
+    if not isinstance(period_list,list): period_list=[period_list]
+    years_list=[]
+    for period in period_list:
+        years_range=[int(year) for year in period.split(',')]
+        years_list.extend(range(*years_range))
+        years_list.append(years_range[1])
+    years_list = sorted(set(years_list))
+    #Flag to check if the time axis is requested as relative:
+    picontrol_min_time = (years_list[0]<=10)
+    return years_list, picontrol_min_time
+
 
 def _attribute_time(database,file_expt,file_available,year,month):
     #Record checksum of local files:

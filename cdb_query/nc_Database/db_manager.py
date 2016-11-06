@@ -19,6 +19,7 @@ import netcdf4_soft_links.netcdf_utils as netcdf_utils
 #Internal:
 from . import db_utils
 from .. import commands_parser
+from ..utils import find_functions
 
 level_key = db_utils.level_key
 
@@ -160,8 +161,7 @@ class nc_Database:
                 if 'missing_years' in dir(options) and options.missing_years:
                     years_list = None
                 else:
-                    years_range = [ int(year) for year in header['experiment_list'][experiment].split(',')]
-                    years_list = range(years_range[0],years_range[1]+1)
+                    years_list, picontrol_min_time = find_functions.get_years_list_from_periods(header['experiment_list'][experiment])
 
                 #Time was further sliced:
                 if ('year' in time_slices and

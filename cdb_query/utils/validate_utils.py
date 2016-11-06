@@ -29,15 +29,8 @@ def obtain_time_list(database,project_drs,var_name,experiment,model):
     return time_list_var
 
 def find_time_list(database,experiment,time_slices):
-    #Determine the requested time list:
-    period_list = database.header['experiment_list'][experiment]
-    if not isinstance(period_list,list): period_list=[period_list]
-    years_list=[]
-    for period in period_list:
-        years_range=[int(year) for year in period.split(',')]
-        years_list.extend(range(*years_range))
-        years_list.append(years_range[1])
-    years_list = sorted(set(years_list))
+    years_list, picontrol_min_time = find_functions.get_years_list_from_periods(database.header['experiment_list'][experiment])
+
     time_list=[]
     for year in years_list:
         if ( ( 'year' in time_slices and
@@ -50,10 +43,8 @@ def find_time_list(database,experiment,time_slices):
                           month in time_slices['month'])) or
                      (not 'month' in time_slices)):
                     time_list.append(str(year).zfill(4)+str(month).zfill(2))
-    #Flag to check if the time axis is requested as relative:
-    picontrol_min_time = (years_list[0]<=10)
-
     return time_list, picontrol_min_time
+
 
 def find_model_list(database,project_drs,model_list,experiment,options,time_list, picontrol_min_time):
     
