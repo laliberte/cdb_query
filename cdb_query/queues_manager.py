@@ -292,9 +292,9 @@ def recorder(q_manager, project_drs, options):
     #The consumers can now terminate:
     q_manager.set_closed()
 
-    _logger.debug(multiprocessing.current_process().name+' with pid '+str(os.getpid()))
+    _logger.info(multiprocessing.current_process().name+' with pid '+str(os.getpid()))
     recorder_queue_consume(q_manager, project_drs, options)
-    _logger.debug(multiprocessing.current_process().name+' with pid '+str(os.getpid())+
+    _logger.info(multiprocessing.current_process().name+' with pid '+str(os.getpid())+
                   ' finished cleanly.')
     return
         
@@ -380,9 +380,9 @@ def record_to_netcdf_file(counter, options, output, q_manager, project_drs):
             #and (  commands_parser._get_command_names(options).index(command_name)
             #        >= options.max_command_number ) ):
         #Only record this function if it was requested::
-        _logger.debug('Recording: '+command_name+', with options: '+str(options))
+        _logger.info('Recording: '+command_name+', with options: '+str(options))
         db_utils.record_to_netcdf_file_from_file_name(options, options.in_netcdf_file, output[command_name], project_drs)
-        _logger.debug('DONE Recording: '+command_name)
+        _logger.info('DONE Recording: '+command_name)
 
     if command_name == commands_parser._get_command_names(options)[-1]:
         # Final recording:
@@ -399,9 +399,9 @@ def record_to_netcdf_file(counter, options, output, q_manager, project_drs):
     return
 
 def consumer(q_manager,project_drs,options):
-    _logger.debug(multiprocessing.current_process().name+' with pid '+str(os.getpid()))
+    _logger.info(multiprocessing.current_process().name+' with pid '+str(os.getpid()))
     consumer_queue_consume(q_manager,project_drs,options)
-    _logger.debug(multiprocessing.current_process().name+' with pid '+str(os.getpid())+
+    _logger.info(multiprocessing.current_process().name+' with pid '+str(os.getpid())+
                   ' finished cleanly.')
     return
 
@@ -415,9 +415,9 @@ def consumer_queue_consume(q_manager,project_drs,cproc_options):
     return
 
 def reducer(q_manager, project_drs, options):
-    _logger.debug(multiprocessing.current_process().name+' with pid '+str(os.getpid()))
+    _logger.info(multiprocessing.current_process().name+' with pid '+str(os.getpid()))
     reducer_queue_consume(q_manager, project_drs, options)
-    _logger.debug(multiprocessing.current_process().name+' with pid '+str(os.getpid())+
+    _logger.info(multiprocessing.current_process().name+' with pid '+str(os.getpid())+
                   ' finished cleanly.')
     return
 
@@ -442,7 +442,7 @@ def consume_one_item(counter, options, q_manager, project_drs, cproc_options, se
     function_name = commands_parser._get_command_name(options_copy)
     try:
         if not cproc_options.command == 'reduce_server':
-            _logger.debug('Process: '+
+            _logger.info('Process: '+
                         function_name+
                         ', current queues: '+
                         str([ (queue_name, getattr(q_manager, queue_name+'_expected').value) 
@@ -450,13 +450,13 @@ def consume_one_item(counter, options, q_manager, project_drs, cproc_options, se
                         ', with options: '+
                         str(options_copy))
         else:
-            _logger.debug('Process: '+
+            _logger.info('Process: '+
                         function_name+
                         ', with options: '+
                         str(options_copy))
         getattr(commands, function_name)(database, options_copy, q_manager=q_manager, sessions=sessions)
         if not cproc_options.command == 'reduce_server':
-            _logger.debug('DONE Process: '+
+            _logger.info('DONE Process: '+
                         function_name+
                         ', current queues: '+
                         str([ (queue_name,getattr(q_manager,queue_name+'_expected').value)
