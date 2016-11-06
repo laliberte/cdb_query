@@ -14,7 +14,7 @@ def test_recipe01(tmpdir):
     core.cdb_query_from_list(shlex.split(
     '''
     cdb_query CMIP5 ask --ask_month=1,2,10,11,12
-                        --debug
+                        --debug -s
                         --openid={0}
                         --password={1}
                         --ask_var=tas:day-atmos-day,orog:fx-atmos-fx
@@ -84,7 +84,7 @@ def test_recipe01(tmpdir):
     '''
     cdb_query CMIP5 download_opendap 
                     --year=1979 --month=1
-                    --debug
+                    --debug -s
                     --openid={0}
                     --password={1}
                     --num_dl=3
@@ -99,7 +99,7 @@ def test_recipe01(tmpdir):
     core.cdb_query_from_list(shlex.split(
     '''
     cdb_query CMIP5 reduce
-                    --debug
+                    --debug -s
                     '' \
                     --out_destination={0}
                     {1} {2}

@@ -26,7 +26,8 @@ dependencies:
   - sqlalchemy
   - sqlite
   - h5netcdf
+  - cdo
+  - nco
   - pip:
       - requests_cache
       - netcdf4_pydap
-      - netcdf4_soft_links

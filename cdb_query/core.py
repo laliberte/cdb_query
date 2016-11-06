@@ -37,7 +37,8 @@ def cdb_query_from_list(args_list):
                             filename=options.out_netcdf_file+'.log',
                             filemode='w')
     else:
-        if ('debug' in dir(options) and options.debug):
+        if (('debug' in dir(options) and options.debug) and
+           not ('s' in dir(options) and options.s)):
             logging.basicConfig(level=logging.DEBUG,
                                 format='%(processName)-20s %(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                                 datefmt='%m-%d %H:%M'
