@@ -21,7 +21,8 @@ before_install:
   - git clone https://github.com/laliberte/netcdf4_pydap.git
   - git clone https://github.com/laliberte/netcdf4_soft_links.git
 
-install: travis_wait mvn install
+install:
+  - travis_wait mvn install
   - conda env create --file ci/requirements-$CONDA_ENV.yml
   - source activate test_env
   - cd netcdf4_pydap
