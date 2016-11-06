@@ -30,4 +30,4 @@ dependencies:
   - nco
   - pip:
       - requests_cache
-      - netcdf4_pydap
+      #- netcdf4_pydap
