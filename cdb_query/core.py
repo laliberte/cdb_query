@@ -38,7 +38,7 @@ def cdb_query_from_list(args_list):
                             filemode='w')
     else:
         if ('debug' in dir(options) and options.debug):
-            if ('s' in dir(options) and options.s)):
+            if ('s' in dir(options) and options.s):
                 level = logging.INFO
             else:
                 logging.DEBUG
