@@ -8,7 +8,6 @@ import os.path
 
 #Internal:
 from . import parsers
-from . import invert_options
 
 def main():
     cdb_query_from_list(sys.argv)
