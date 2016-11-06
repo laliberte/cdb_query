@@ -22,7 +22,6 @@ before_install:
   - git clone https://github.com/laliberte/netcdf4_soft_links.git
 
 install:
-  - travis_wait mvn install
   - conda env create --file ci/requirements-$CONDA_ENV.yml
   - source activate test_env
   - cd netcdf4_pydap
@@ -34,4 +33,4 @@ install:
   - python setup.py install
 
 script:
-  - py.test cdb_query
+  - bash cdb_query/tests/recipe01.sh 
