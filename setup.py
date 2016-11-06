@@ -43,7 +43,7 @@ setup(
                             'sqlalchemy>=1.0',
                             'esgf-pyclient',
                             'netcdf4_soft_links>=0.7.7.6',
-                            'bs4'],
+                            'beautifulsoup4'],
         zip_safe=False,
         # other arguments here...
         #package_data = {package_name : ['lib/*.sh']},
