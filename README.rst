@@ -1,6 +1,9 @@
 cdb_query
 =========
-https://travis-ci.org/laliberte/cdb_query#
+|Build Status|
+
+.. |Build Status| image:: https://travis-ci.org/laliberte/cdb_query.svg
+   :target: https://travis-ci.org/laliberte/cdb_query
 
 Python code to manage the analysis of climate model outputs published in the CMIP5 and CORDEX archives
 

@@ -35,7 +35,7 @@ setup(
             "Topic :: Scientific/Engineering :: Atmospheric Science",
             "Topic :: Scientific/Engineering :: Mathematics"
         ],
-        long_description=read('README'),
+        long_description=read('README.rst'),
         install_requires = ['numpy',
                             'h5py',
                             'h5netcdf>=0.3',
