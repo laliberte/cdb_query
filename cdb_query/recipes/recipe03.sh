@@ -11,6 +11,7 @@ cdb_query CORDEX ask \
                      --ask_var=pr:day \
                      --domain=EUR-11 \
                      --institute=KNMI \
+                     --driving_model=ICHEC-EC-EARTH \
                      --num_procs=${NUM_PROCS} \
                      pr_JJAS_France_pointers.nc
 #Testing check: 
