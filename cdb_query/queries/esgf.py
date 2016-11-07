@@ -14,24 +14,28 @@ import netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
 #Internal:
 from .pyesgf_connection import SearchConnection
 
-unique_file_id_list=['checksum_type','checksum','tracking_id']
+unique_file_id_list=['checksum_type', 'checksum', 'tracking_id']
 
 class browser:
-    def __init__(self,search_path,options,session=None):
-        self.options=options
-        self.session=session
-        self.search_path=search_path
+    def __init__(self, search_path, options, session=None):
+        self.options = options
+        self.session = session
+        self.search_path = search_path
 
     def test_valid(self):
         #Try to connect with timeout:
         try:
-            get_kwargs={'timeout':20,'stream':True,'allow_redirects':True}
-            if self.session!=None:
-                response=self.session.get(self.search_path+'search',**get_kwargs)
-            else:
-                response=requests.get(self.search_path+'search',**get_kwargs)
-            test=response.ok
-            response.close()
+            get_kwargs = {'timeout':20,'stream':True,'allow_redirects':True}
+            with warnings.catch_warnings():
+                warnings.filterwarnings("ignore", message=("Unverified HTTPS request is being made. "
+                                                           "Adding certificate verification is strongly advised. "
+                                                           "See: https://urllib3.readthedocs.io/en/latest/security.html"))
+                if self.session != None:
+                    response = self.session.get(self.search_path+'search',**get_kwargs)
+                else:
+                    response = requests.get(self.search_path+'search',**get_kwargs)
+                test = response.ok
+                response.close()
         except requests.exceptions.ReadTimeout as e:
             test=False
             pass
@@ -83,8 +87,12 @@ def experiment_variable_search_recursive(slicing_args,nc_Database,search_path,fi
                                                          experiment,var_name,var_desc,list_level=list_level)
     else:
         #When done, perform the search:
-        return experiment_variable_search(nc_Database,search_path,file_type_list,options,
-                                         experiment,var_name,var_desc,list_level=list_level,session=session)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message=("Unverified HTTPS request is being made. "
+                                                       "Adding certificate verification is strongly advised. "
+                                                       "See: https://urllib3.readthedocs.io/en/latest/security.html"))
+            return experiment_variable_search(nc_Database,search_path,file_type_list,options,
+                                             experiment,var_name,var_desc,list_level=list_level,session=session)
 
 def experiment_variable_search(nc_Database,search_path,file_type_list,options,
                                 experiment,var_name,var_desc,list_level=None,session=None):
