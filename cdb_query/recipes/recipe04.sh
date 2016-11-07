@@ -33,6 +33,7 @@ echo $PASSWORD_ESGF | cdb_query CORDEX ask validate record_validate \
                   --year=1979 --month=6 \
                   --domain=EUR-11 \
                   --institute=KNMI \
+                  --driving_model=ICHEC-EC-EARTH \
                   --out_destination=./out_France/CORDEX/ \
                   --Xdata_node=http://esgf2.dkrz.de \
                   --num_procs=10 \
