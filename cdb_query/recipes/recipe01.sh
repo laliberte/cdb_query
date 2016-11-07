@@ -83,14 +83,18 @@ cdb_query CMIP5 list_fields -f institute \
         #Note: this can be VERY slow!
         echo "Use NCO to look at the files:"
         if [ ! -f tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc ]; then
+            # Here, we capture warnings because these days ncks tends to spit out a lot of warning messages:
             ncks -q -G :8 -g /NCAR/CCSM4/amip/day/atmos/day/r1i1p1/tas \
                tas_ONDJF_pointers.validate.197901.retrieved.nc \
-               tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc
+               tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc > ncks_warnings
+            # Show errors:
+            cat ncks_warnings | grep 'rror'
             #Remove soft_links informations:
             ncks -q -L 0 -O -x -g soft_links \
                tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc \
-               tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc
-
+               tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc > ncks_warnings
+            # Show errors:
+            cat ncks_warnings | grep 'rror'
         fi
 
         #Look at it:
