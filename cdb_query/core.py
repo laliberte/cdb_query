@@ -45,12 +45,21 @@ def cdb_query_from_list(args_list):
                             format='%(processName)-20s %(asctime)s %(name)-12s %(levelname)-8s %(message)s',
                             datefmt='%m-%d %H:%M'
                                 )
+    if ('debug' in dir(options) and options.debug):
+        import warnings
+        with warnings.catch_warnings():
+            warnings.filterwarnings('error')
+            setup_queues_or_run_command(options, project_drs)
+    else:
+        setup_queues_or_run_command(options, project_drs)
 
+def setup_queues_or_run_command(options, project_drs):
     #External:
     import multiprocessing
     import copy
     import shutil
     import tempfile
+    import warnings
 
     #External but related:
     import netcdf4_soft_links.certificates.certificates as certificates
@@ -138,9 +147,6 @@ def cdb_query_from_list(args_list):
 
     return
 
-#def logger_thread(options):
-#    from . import logging_server
-#    logging_server.start(options)
 
 if __name__ == "__main__":
     sys.settrace
