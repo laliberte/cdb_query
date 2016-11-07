@@ -7,6 +7,7 @@ import requests
 import httplib
 import datetime
 import logging
+import warnings
 
 #External but related:
 import netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
