@@ -67,7 +67,6 @@ if [ "$1" == "compute" ]; then
     #CHOOSE:
         # *1* Retrieve files:
         #    --download_all_files forces to download all files even if they are served by OPENDAP.
-        ncdump -h coupled_ocean_pointers.validate.nc
             echo "Downloading files to in/CMIP5:"
             echo $PASSWORD_ESGF | cdb_query CMIP5 download_files \
                                 --download_all_files \
