@@ -31,7 +31,8 @@ cdb_query CMIP5 list_fields -f institute \
 #response time.
 echo "Validate:"
 echo $PASSWORD_ESGF | cdb_query CMIP5 validate \
-                            --debug -s \
+                            --debug \
+                            --log_files \
                             --openid=$OPENID_ESGF \
                             --password_from_pipe \
                             --num_procs=${NUM_PROCS} \
@@ -67,26 +68,30 @@ cdb_query CMIP5 list_fields -f institute \
         echo $PASSWORD_ESGF | cdb_query CMIP5 download_opendap --year=1979 --month=1 \
                             --log_files \
                             --openid=$OPENID_ESGF \
-                            --debug -s \
+                            --debug \
                             --num_dl=3 \
                             --password_from_pipe \
                             tas_ONDJF_pointers.validate.nc \
                             tas_ONDJF_pointers.validate.197901.retrieved.nc
-    #Testing check: 
-    if [ $(cat tas_ONDJF_pointers.validate.197901.retrieved.nc.log | grep ERROR | wc -l) -gt 0 ]; then
-        exit 1
-    fi
+        #Testing check: 
+        if [ $(cat tas_ONDJF_pointers.validate.197901.retrieved.nc.log | grep ERROR | wc -l) -gt 0 ]; then
+            exit 1
+        fi
+        echo "Done downloading using OPENDAP!"
 
         #Pick one simulation:
         #Note: this can be VERY slow!
+        echo "Use NCO to look at the files:"
         if [ ! -f tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc ]; then
-            ncks -G :8 -g /NCAR/CCSM4/amip/day/atmos/day/r1i1p1/tas \
+            ncks -q -G :8 -g /NCAR/CCSM4/amip/day/atmos/day/r1i1p1/tas \
                tas_ONDJF_pointers.validate.197901.retrieved.nc \
                tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc
             #Remove soft_links informations:
-            ncks -L 0 -O -x -g soft_links \
+            ncks -q -L 0 -O -x -g soft_links \
                tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc \
                tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc
+
+            ncdump -h tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc
         fi
 
         #Look at it:
@@ -98,7 +103,7 @@ cdb_query CMIP5 list_fields -f institute \
         echo "Convert to directory tree:"
         cdb_query CMIP5 reduce \
                             --log_files \
-                            --debug -s \
+                            --debug \
                             '' \
                             --out_destination=./out/CMIP5/ \
                             tas_ONDJF_pointers.validate.197901.retrieved.nc \
@@ -107,6 +112,7 @@ cdb_query CMIP5 list_fields -f institute \
         if [ $(cat tas_ONDJF_pointers.validate.197901.retrieved.converted.nc.log | grep ERROR | wc -l) -gt 0 ]; then
             exit 1
         fi
+        echo "Done converting!"
 
         #The files can be found in ./out/CMIP5/:
         echo "Converted files:"
