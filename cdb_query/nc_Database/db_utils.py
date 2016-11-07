@@ -184,7 +184,7 @@ def retrieve_or_replicate(output_grp,data,
 def record_to_netcdf_file_from_file_name(options,temp_file_name,output,project_drs,check_empty=False):
     # Temporarily disable usage of h5netcdf here because of incompatiblity between libraries.
     # with _read_Dataset(temp_file_name)(temp_file_name, 'r') as data:
-    with netCDF4.Dataset(temp_file_name)(temp_file_name, 'r') as data:
+    with netCDF4.Dataset(temp_file_name, 'r') as data:
         fix_list_to_none=(lambda x: x[0] if (x!=None and len(x)==1) else None)
         var=[ fix_list_to_none(getattr(options,opt)) 
               if getattr(options,opt)!=None else None 
