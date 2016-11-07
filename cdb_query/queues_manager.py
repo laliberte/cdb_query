@@ -380,7 +380,7 @@ def record_to_netcdf_file(counter, options, output, q_manager, project_drs):
             #and (  commands_parser._get_command_names(options).index(command_name)
             #        >= options.max_command_number ) ):
         #Only record this function if it was requested::
-        _logger.info('Recording: '+command_name+', with options: '+str(options))
+        _logger.info('Recording: '+command_name+', with options: ' + opts_to_str(options))
         db_utils.record_to_netcdf_file_from_file_name(options, options.in_netcdf_file, output[command_name], project_drs)
         _logger.info('DONE Recording: '+command_name)
 
@@ -397,6 +397,13 @@ def record_to_netcdf_file(counter, options, output, q_manager, project_drs):
         options_copy.out_netcdf_file = options_copy.in_netcdf_file 
         q_manager.put_to_next(options_copy, removefile=False)
     return
+
+def opts_to_str(options):
+    fields_to_hide = ['password', 'username', 'openid']
+    options_copy = copy.copy(options)
+    for field in fields_to_hide:
+        setattr(options_copy, field, 'secure')
+    return str(options_copy)
 
 def consumer(q_manager,project_drs,options):
     _logger.info(multiprocessing.current_process().name+' with pid '+str(os.getpid()))
@@ -448,12 +455,12 @@ def consume_one_item(counter, options, q_manager, project_drs, cproc_options, se
                         str([ (queue_name, getattr(q_manager, queue_name+'_expected').value) 
                               for queue_name in q_manager.queues_names])+
                         ', with options: '+
-                        str(options_copy))
+                        opts_to_str(options_copy))
         else:
             _logger.info('Process: '+
                         function_name+
                         ', with options: '+
-                        str(options_copy))
+                        opts_to_str(options_copy))
         getattr(commands, function_name)(database, options_copy, q_manager=q_manager, sessions=sessions)
         if not cproc_options.command == 'reduce_server':
             _logger.info('DONE Process: '+
@@ -472,7 +479,7 @@ def consume_one_item(counter, options, q_manager, project_drs, cproc_options, se
              cproc_options.log_files ):
             _logger.exception(function_name+
                           ' failed with the following options: '+
-                          str(options_save))
+                          opts_to_str(options_save))
 
         if ( 'debug' in dir(cproc_options) and
              cproc_options.debug ):
@@ -518,7 +525,7 @@ def consume_one_item(counter, options, q_manager, project_drs, cproc_options, se
             #If it keeps on failing, ignore this whole branch!
             _logger.exception(function_name + 
                           ' failed with the following options: ' +
-                          str(options_save) + '. Skipping this simulation(s) for good')
+                          opts_to_str(options_save) + '. Skipping this simulation(s) for good')
     return
 
 
