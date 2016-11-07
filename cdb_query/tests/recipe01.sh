@@ -91,7 +91,6 @@ cdb_query CMIP5 list_fields -f institute \
                tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc \
                tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc
 
-            ncdump -h tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc
         fi
 
         #Look at it:
@@ -101,6 +100,7 @@ cdb_query CMIP5 list_fields -f institute \
         #Convert hierarchical file to files on filesystem (much faster than ncks):
         #Identity reduction simply copies the data to disk
         echo "Convert to directory tree:"
+        ncdump -h tas_ONDJF_pointers.validate.197901.retrieved.nc
         cdb_query CMIP5 reduce \
                             --log_files \
                             --debug \
