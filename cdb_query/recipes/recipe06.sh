@@ -18,7 +18,7 @@
 #   3) a pointer file ${OUT_FILE} that can be used in a further reduce step.
 
 #Use 10 processors:
-NUM_PROCS=10
+NUM_PROCS=3
 
 OUT_FILE="DJF_lat_band.nc"
 OUT_DIR="out_lat_band/"
@@ -30,14 +30,14 @@ echo $PASSWORD_ESGF | cdb_query CMIP5 ask validate reduce_soft_links record_redu
       --password_from_pipe \
       --num_procs=$NUM_PROCS \
       --ask_experiment=historical:1979-2005,rcp85:2006-2015 \
-      --ask_var=zg:mon-atmos-Amon,va:mon-atmos-Amon,ta:mon-atmos-Amon \
+      --ask_var=zg:mon-atmos-Amon \
       --ask_month=1,2,12 \
       --related_experiments \
       --institute=NCAR \
       --model=CCSM4 \
       --ensemble=r1i1p1 \
       --Xdata_node=http://esgf2.dkrz.de \
-      --reduce_soft_links_script='ncrcat  -d lat,55.0,65.0' \
+      --reduce_soft_links_script='ncrcat -d lat,55.0,65.0' \
       '' \
        --out_destination=${OUT_DIR} \
        ${OUT_FILE}
