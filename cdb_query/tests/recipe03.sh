@@ -94,6 +94,7 @@ fi
                              --debug \
                              --openid=$OPENID_ESGF \
                              --password_from_pipe \
+                             --year=1979,1980,1990,2000 \
                              --month=6 \
                              --swap_dir=/dev/shm/ \
                              pr_JJAS_France_pointers.validate.France.nc \
