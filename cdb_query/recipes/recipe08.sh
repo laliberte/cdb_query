@@ -72,6 +72,7 @@ if [ "$1" == "compute" ]; then
                                 --download_all_files \
                                 --openid=$OPENID_ESGF \
                                 --password_from_pipe \
+                                --experiment=abrupt4xCO2 \
                                 --log_files \
                                 --debug \
                                 --out_download_dir=./in/CMIP5/ \
