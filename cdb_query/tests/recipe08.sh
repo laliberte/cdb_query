@@ -43,7 +43,7 @@ if [ "$1" == "compute" ]; then
     cdb_query CMIP5 list_fields -f data_node coupled_ocean_pointers.nc
 
     echo "Validating simulations:"
-    echo $PASSWORD | cdb_query CMIP5 validate \
+    echo $PASSWORD_ESGF | cdb_query CMIP5 validate \
                                 --openid=$OPENID_ESGF \
                                 --password_from_pipe \
                                 --num_procs=${NUM_PROCS} \
@@ -68,7 +68,7 @@ if [ "$1" == "compute" ]; then
         # *1* Retrieve files:
         #    --download_all_files forces to download all files even if they are served by OPENDAP.
             echo "Downloading files to in/CMIP5:"
-            echo $PASSWORD | cdb_query CMIP5 download_files \
+            echo $PASSWORD_ESGF | cdb_query CMIP5 download_files \
                                 --download_all_files \
                                 --openid=$OPENID_ESGF \
                                 --password_from_pipe \

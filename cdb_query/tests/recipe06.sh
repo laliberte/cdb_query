@@ -23,7 +23,7 @@ NUM_PROCS=10
 OUT_FILE="DJF_lat_band.nc"
 OUT_DIR="out_lat_band/"
 
-echo $PASSWORD | cdb_query CMIP5 ask validate reduce_soft_links record_reduce_soft_links download_opendap reduce \
+echo $PASSWORD_ESGF | cdb_query CMIP5 ask validate reduce_soft_links record_reduce_soft_links download_opendap reduce \
       --openid=$OPENID_ESGF \
       --password_from_pipe \
       --num_procs=$NUM_PROCS \

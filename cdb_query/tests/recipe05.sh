@@ -25,7 +25,7 @@ echo $PASSWORD_ESGF | cdb_query CMIP5 ask validate record_validate reduce_soft_l
                   --swap_dir=/dev/shm/ \
                   --ask_month=3,4,5 \
                   --ask_var=tas:mon-atmos-Amon,pr:mon-atmos-Amon,orog:fx-atmos-fx \
-                  --ask_experiment=historical:1950-2005,rcp85:2006-2030,rcp85:2050,2060 \
+                  --ask_experiment=historical:1950-2005,rcp85:2006-2030,rcp85:2050-2060 \
                   --related_experiments \
                   --Xdata_node=http://esgf2.dkrz.de \
                   --openid=$OPENID_ESGF \
