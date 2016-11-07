@@ -59,10 +59,6 @@ def cdb_query_from_list(args_list):
     #Internal:
     from . import commands, queues_manager
 
-    #Test:
-    import numpy as np
-    np.seterr('raise')
-
     if 'related_experiments' in dir(options) and not options.related_experiments:
         project_drs.simulations_desc.append('experiment')
 

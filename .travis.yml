@@ -33,9 +33,9 @@ install:
 #  - cd ..
 
 script:
-  - bash cdb_query/tests/recipe01.sh 
-  - bash cdb_query/tests/recipe03.sh 
-  - bash cdb_query/tests/recipe04.sh 
-  - bash cdb_query/tests/recipe05.sh 
-  - bash cdb_query/tests/recipe06.sh 
-  - bash cdb_query/tests/recipe08.sh compute 10
+  - bash cdb_query/recipes/recipe01.sh 
+  - bash cdb_query/recipes/recipe03.sh 
+  - bash cdb_query/recipes/recipe04.sh 
+  - bash cdb_query/recipes/recipe05.sh 
+  - bash cdb_query/recipes/recipe06.sh 
+  - bash cdb_query/recipes/recipe08.sh compute 10
