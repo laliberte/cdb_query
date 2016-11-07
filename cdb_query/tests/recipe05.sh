@@ -45,8 +45,10 @@ if [ $(cat us_pr_tas_MAM_pointers.validate.200003.retrieved.converted.nc.log | g
     exit 1
 fi
 
-echo $PASSWORD | cdb_query CMIP5 reduce_soft_links download_opendap reduce \
-                  --openid=$OPENID \
+echo $PASSWORD_ESGF | cdb_query CMIP5 reduce_soft_links download_opendap reduce \
+                  --debug \
+                  --log_files \
+                  --openid=$OPENID_ESGF \
                   --password_from_pipe \
                   --out_destination=./out/CMIP5/ \
                   --num_procs=10 \
