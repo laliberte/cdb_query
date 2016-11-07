@@ -48,7 +48,8 @@ def cdb_query_from_list(args_list):
     if ('debug' in dir(options) and options.debug):
         import warnings
         with warnings.catch_warnings():
-            warnings.filterwarnings('error')
+            warnings.filterwarnings('ignore', 'in the future, boolean array-likes will be handled as a boolean array index')
+            warnings.filterwarnings('error', append=True)
             setup_queues_or_run_command(options, project_drs)
     else:
         setup_queues_or_run_command(options, project_drs)
