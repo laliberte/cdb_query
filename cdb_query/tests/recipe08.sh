@@ -10,7 +10,7 @@ if [ "$1" == "compute" ]; then
 
     #Discover data:
     echo "Asking scientific question"
-    cdb_query CMIP5 ask --ask_var=msftmyz:mon-ocean-Omon,thetao:mon-ocean-Omon \
+    cdb_query CMIP5 ask --ask_var=msftmyz:mon-ocean-Omon \
                         --ask_experiment=abrupt4xCO2:1-100,piControl:1-100 \
                         --related_experiments \
                         --log_files \
@@ -48,6 +48,7 @@ if [ "$1" == "compute" ]; then
                                 --password_from_pipe \
                                 --num_procs=${NUM_PROCS} \
                                 --log_files \
+                                --debug \
                                 --related_experiments \
                                 --Xdata_node=http://esgf2.dkrz.de \
                                 coupled_ocean_pointers.nc \
