@@ -80,6 +80,7 @@ if [ "$1" == "compute" ]; then
 
     #Testing check: 
     if [ $(cat coupled_ocean_pointers.validate.downloaded.nc.log | grep ERROR | wc -l) -gt 0 ]; then
+        cat coupled_ocean_pointers.validate.downloaded.nc.log | grep ERROR
         exit 1
     fi
 fi
