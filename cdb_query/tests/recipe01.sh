@@ -100,7 +100,9 @@ cdb_query CMIP5 list_fields -f institute \
         #Convert hierarchical file to files on filesystem (much faster than ncks):
         #Identity reduction simply copies the data to disk
         echo "Convert to directory tree:"
-        cdb_query CMIP5 reduce \
+        #cdb_query CMIP5 reduce \
+        python -W error /home/travis/miniconda/envs/test_env/lib/python2.7/site-packages/cdb_query/core.py \
+                   CMIP5 reduce \
                             --log_files \
                             --debug \
                             '' \
