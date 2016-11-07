@@ -9,6 +9,7 @@ echo $PASSWORD_ESGF | cdb_query CMIP5 ask validate record_validate download_open
                   --password_from_pipe \
                   --year=1979 --month=1 \
                   --model=CanAM4 --model=CCSM4 --model=GISS-E2-R --model=MRI-CGCM3 \
+                  --ensemble=r1i1p1 \
                   --Xdata_node=http://esgf-data1.ceda.ac.uk \
                   --out_destination=./out/CMIP5/ \
                   --num_procs=10 \
@@ -24,7 +25,9 @@ echo $PASSWORD_ESGF | cdb_query CORDEX ask validate record_validate \
                                   download_opendap reduce \
                   --log_files \
                   --debug \
-                  --ask_experiment=historical:1979-2004 --ask_var=pr:day --ask_month=6,7,8,9 \
+                  --ask_experiment=historical:1979-2004 \
+                  --ask_var=pr:day \
+                  --ask_month=6,7,8,9 \
                   --openid=$OPENID_ESGF \
                   --password_from_pipe \
                   --year=1979 --month=6 \
