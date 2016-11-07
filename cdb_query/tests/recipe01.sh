@@ -117,3 +117,5 @@ cdb_query CMIP5 list_fields -f institute \
         #The files can be found in ./out/CMIP5/:
         echo "Converted files:"
         find ./out/CMIP5/ -name '*.nc'
+
+rm tas_ONDJF_pointers.*

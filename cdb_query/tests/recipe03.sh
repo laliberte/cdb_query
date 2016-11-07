@@ -115,3 +115,5 @@ fi
         if [ $(cat pr_JJAS_France_pointers.validate.France.retrieved.converted.nc.log | grep ERROR | wc -l) -gt 0 ]; then
             exit 1
         fi
+
+rm pr_JJAS_France_pointers.*
