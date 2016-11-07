@@ -34,3 +34,4 @@ install:
 
 script:
   - bash cdb_query/tests/recipe01.sh 
+  - bash cdb_query/tests/recipe03.sh 
