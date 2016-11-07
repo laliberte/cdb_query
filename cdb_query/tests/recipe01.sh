@@ -2,14 +2,24 @@
 
 NUM_PROCS=10
 #Discover data:
+echo "Recipe 01"
+echo "Ask:"
 cdb_query CMIP5 ask --ask_month=1,2,10,11,12 \
-                    --debug -s \
+                    --debug \
+                    --log_files \
                     --ask_var=tas:day-atmos-day,orog:fx-atmos-fx \
                     --ask_experiment=amip:1979-2004 \
                     --institute=NCAR --ensemble=r1i1p1 --model=CCSM4 \
                     --num_procs=${NUM_PROCS} \
                     tas_ONDJF_pointers.nc
+
+#Testing check: 
+if [ $(cat tas_ONDJF_pointers.nc.log | grep ERROR | wc -l) -gt 0 ]; then
+    exit 1
+fi
+
 #List simulations:
+echo "Discovered files:"
 cdb_query CMIP5 list_fields -f institute \
                             -f model \
                             -f ensemble \
@@ -19,6 +29,7 @@ cdb_query CMIP5 list_fields -f institute \
 #Exclude data_node http://esgf2.dkrz.de because it is on a tape archive (slow)
 #If you do not exclude it, it will likely be excluded because of its slow
 #response time.
+echo "Validate:"
 echo $PASSWORD_ESGF | cdb_query CMIP5 validate \
                             --debug -s \
                             --openid=$OPENID_ESGF \
@@ -28,8 +39,13 @@ echo $PASSWORD_ESGF | cdb_query CMIP5 validate \
                             --Xdata_node=http://esgf-data1.ceda.ac.uk \
                             tas_ONDJF_pointers.nc \
                             tas_ONDJF_pointers.validate.nc
+#Testing check: 
+if [ $(cat tas_ONDJF_pointers.validate.nc.log | grep ERROR | wc -l) -gt 0 ]; then
+    exit 1
+fi
 
 #List simulations:
+echo "Validated simulations:"
 cdb_query CMIP5 list_fields -f institute \
                             -f model \
                             -f ensemble \
@@ -47,6 +63,7 @@ cdb_query CMIP5 list_fields -f institute \
 
     # *2* Retrieve to netCDF:
         #Retrieve the first month:
+        echo "Download using OPENDAP:"
         echo $PASSWORD_ESGF | cdb_query CMIP5 download_opendap --year=1979 --month=1 \
                             --log_files \
                             --openid=$OPENID_ESGF \
@@ -55,6 +72,10 @@ cdb_query CMIP5 list_fields -f institute \
                             --password_from_pipe \
                             tas_ONDJF_pointers.validate.nc \
                             tas_ONDJF_pointers.validate.197901.retrieved.nc
+    #Testing check: 
+    if [ $(cat tas_ONDJF_pointers.validate.197901.retrieved.nc.log | grep ERROR | wc -l) -gt 0 ]; then
+        exit 1
+    fi
 
         #Pick one simulation:
         #Note: this can be VERY slow!
@@ -74,6 +95,7 @@ cdb_query CMIP5 list_fields -f institute \
 
         #Convert hierarchical file to files on filesystem (much faster than ncks):
         #Identity reduction simply copies the data to disk
+        echo "Convert to directory tree:"
         cdb_query CMIP5 reduce \
                             --log_files \
                             --debug -s \
@@ -81,6 +103,11 @@ cdb_query CMIP5 list_fields -f institute \
                             --out_destination=./out/CMIP5/ \
                             tas_ONDJF_pointers.validate.197901.retrieved.nc \
                             tas_ONDJF_pointers.validate.197901.retrieved.converted.nc
+        #Testing check: 
+        if [ $(cat tas_ONDJF_pointers.validate.197901.retrieved.converted.nc.log | grep ERROR | wc -l) -gt 0 ]; then
+            exit 1
+        fi
 
         #The files can be found in ./out/CMIP5/:
+        echo "Converted files:"
         find ./out/CMIP5/ -name '*.nc'

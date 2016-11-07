@@ -39,15 +39,12 @@ def cdb_query_from_list(args_list):
     else:
         if ('debug' in dir(options) and options.debug):
             level = logging.INFO if ('s' in dir(options) and options.s) else logging.DEBUG
-            logging.basicConfig(level=level,
-                                format='%(processName)-20s %(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-                                datefmt='%m-%d %H:%M'
-                                    )
         else:
-            logging.basicConfig(level=logging.WARNING,
-                                format='%(processName)-20s %(asctime)s %(name)-12s %(levelname)-8s %(message)s',
-                                datefmt='%m-%d %H:%M'
-                                    )
+            level = logging.WARNING
+        logging.basicConfig(level=level,
+                            format='%(processName)-20s %(asctime)s %(name)-12s %(levelname)-8s %(message)s',
+                            datefmt='%m-%d %H:%M'
+                                )
 
     #External:
     import multiprocessing
