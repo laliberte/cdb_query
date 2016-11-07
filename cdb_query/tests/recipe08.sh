@@ -28,7 +28,6 @@ if [ "$1" == "compute" ]; then
     cdb_query CMIP5 list_fields -f institute \
                                 -f model \
                                 -f ensemble \
-			 	-f experiment \
                                 coupled_ocean_pointers.nc
 
     #Validate simulations:

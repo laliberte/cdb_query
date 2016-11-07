@@ -2,11 +2,11 @@ from __future__ import nested_scopes, generators, division, absolute_import, wit
 
 #External:
 import copy
-import warnings
 import socket
 import requests
 import httplib
 import datetime
+import logging
 
 #External but related:
 import netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
@@ -177,7 +177,7 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
             file_list_remote=map(lambda x: get_urls(nc_Database.drs,x,file_type_list,var_name),file_list_found)
             file_list_remote=[item for sublist in file_list_remote for item in sublist]
         except Exception as e:
-            warnings.warn('Search path {0} is unresponsive at the moment'.format(search_path),UserWarning)
+            logging.warning('Search path {0} is unresponsive at the moment'.format(search_path), UserWarning)
 
         map(lambda x: record_url(x,nc_Database),file_list_remote)
         return []
