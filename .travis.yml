@@ -35,3 +35,7 @@ install:
 script:
   - bash cdb_query/tests/recipe01.sh 
   - bash cdb_query/tests/recipe03.sh 
+  - bash cdb_query/tests/recipe04.sh 
+  - bash cdb_query/tests/recipe05.sh 
+  - bash cdb_query/tests/recipe06.sh 
+  - bash cdb_query/tests/recipe08.sh compute 10
