@@ -50,27 +50,38 @@ class browser:
     def close(self):
         return
 
-    def descend_tree(self,database,list_level=None):
-        list_names=[('experiment','experiment_list'),('var','variable_list')]
-        lists_to_loop=dict()
+    def descend_tree(self, database, list_level=None):
+        list_names = [('experiment','experiment_list'),('var','variable_list')]
+        lists_to_loop = dict()
         for id in list_names:
-            if id[0] in dir(self.options) and getattr(self.options,id[0]) != None:
-                lists_to_loop[id[1]] = getattr(self.options,id[0])
+            if (id[0] in dir(self.options) and
+                getattr(self.options, id[0]) is not None):
+                lists_to_loop[id[1]] = getattr(self.options, id[0])
             else:
-                lists_to_loop[id[1]]=database.header[id[1]].keys()
+                lists_to_loop[id[1]] = database.header[id[1]]
         for id in lists_to_loop.keys():
             if not isinstance(lists_to_loop[id],list): lists_to_loop[id]=[lists_to_loop[id]]
 
         #Create the database:
         only_list=[]
-        for var_name in lists_to_loop['variable_list']:
-            for experiment in lists_to_loop['experiment_list']:
-                only_list.append(experiment_variable_search_recursive(database.nc_Database.drs.slicing_args.keys(),database.nc_Database,self.search_path,database.header['file_type_list'],self.options,
-                                            experiment,var_name,database.header['variable_list'][var_name],list_level=list_level,session=self.session))
+        for experiment in lists_to_loop['experiment_list']:
+            for var_name in lists_to_loop['variable_list']:
+                for var_spec in database.header['variable_list'][var_name]:
+                only_list.append(experiment_variable_search_recursive(database.nc_Database.drs
+                                                                      .slicing_args.keys(),
+                                                                      database.nc_Database,
+                                                                      self.search_path,
+                                                                      database.header['file_type_list'],
+                                                                      self.options,
+                                                                      experiment,
+                                                                      var_name,
+                                                                      var_spec,
+                                                                      list_level=list_level,
+                                                                      session=self.session))
         return [item for sublist in only_list for item in sublist]
 
-def experiment_variable_search_recursive(slicing_args,nc_Database,search_path,file_type_list,options,
-                                        experiment,var_name,var_desc,list_level=None,session=None):
+def experiment_variable_search_recursive(slicing_args, nc_Database, search_path, file_type_list, options,
+                                         experiment, var_name, var_spec, list_level=None, session=None):
     if isinstance(slicing_args,list) and len(slicing_args)>0:
         #Go down slicing arguments:
         if ( slicing_args[0] in dir(options) and 
@@ -81,11 +92,11 @@ def experiment_variable_search_recursive(slicing_args,nc_Database,search_path,fi
 
                 setattr(options_copy,slicing_args[0],[field_option,])
                 only_list.append(experiment_variable_search_recursive(slicing_args[1:],nc_Database,search_path,file_type_list,options_copy,
-                                                         experiment,var_name,var_desc,list_level=list_level))
+                                                         experiment,var_name,var_spec,list_level=list_level))
             return [item for sublist in only_list for item in sublist]
         else:
             return experiment_variable_search_recursive(slicing_args[1:],nc_Database,search_path,file_type_list,options,
-                                                         experiment,var_name,var_desc,list_level=list_level)
+                                                         experiment,var_name,var_spec,list_level=list_level)
     else:
         #When done, perform the search:
         with warnings.catch_warnings():
@@ -93,15 +104,15 @@ def experiment_variable_search_recursive(slicing_args,nc_Database,search_path,fi
                                                        "Adding certificate verification is strongly advised. "
                                                        "See: https://urllib3.readthedocs.io/en/latest/security.html"))
             return experiment_variable_search(nc_Database,search_path,file_type_list,options,
-                                             experiment,var_name,var_desc,list_level=list_level,session=session)
+                                             experiment,var_name,var_spec,list_level=list_level,session=session)
 
 def experiment_variable_search(nc_Database,search_path,file_type_list,options,
-                                experiment,var_name,var_desc,list_level=None,session=None):
+                                experiment,var_name,var_spec,list_level=None,session=None):
     nc_Database.file_expt.experiment=experiment
     nc_Database.file_expt.var=var_name
     nc_Database.file_expt.time=0
     for field_id, field in enumerate(nc_Database.drs.var_specs):
-        setattr(nc_Database.file_expt,field,var_desc[field_id])
+        setattr(nc_Database.file_expt,field,var_spec[field_id])
 
     #Assumes that all slicing arguments in options are length-one list:
     conn_kwargs={'distrib':options.distrib}
@@ -124,7 +135,7 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
         top_ctx = conn.new_context(product=nc_Database.drs.product,
                             experiment=experiment,variable=var_name)
 
-    constraints_dict={field:var_desc[field_id] for field_id, field in enumerate(nc_Database.drs.var_specs)}
+    constraints_dict={field:var_spec[field_id] for field_id, field in enumerate(nc_Database.drs.var_specs)}
     #This is where the lenght-one list is important:
     #First constrain using fields that are not related to simulation_desc:
     constraints_dict.update(**{field:getattr(options,field)[0] for field in nc_Database.drs.slicing_args.keys()
