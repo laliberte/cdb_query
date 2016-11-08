@@ -60,7 +60,7 @@ def find_model_list(database,project_drs,model_list,experiment,options,time_list
             min_time_list=[]
             for var_name in database.header['variable_list']:
                 for var_spec in database.header['variable_list'][var_name]:
-                    if (var_spec[project_drs.var_specs.index('time_frequency'] not in
+                    if (var_spec[project_drs.var_specs.index('time_frequency')] not in
                         ['fx','clim']):
                         time_list_var = obtain_time_list(database, project_drs,
                                                          var_name, var_spec, experiment, model)
@@ -82,7 +82,7 @@ def find_model_list(database,project_drs,model_list,experiment,options,time_list
             valid_times=dict()
             for var_name in database.header['variable_list']:
                 for var_spec in database.header['variable_list'][var_name]:
-                    if (var_spec[project_drs.var_specs.index('time_frequency'] not in
+                    if (var_spec[project_drs.var_specs.index('time_frequency')] not in
                         ['fx','clim']):
                         inclusions_and_exclusions = [ 
                                       db_utils.is_level_name_included_and_not_excluded('var', options, var_name),
@@ -92,7 +92,7 @@ def find_model_list(database,project_drs,model_list,experiment,options,time_list
                         for field_id, field in enumerate(database.drs.var_specs):
                             inclusions_and_exclusions.append(
                                         db_utils.is_level_name_included_and_not_excluded(field, options,
-                                                                                         var_spec[field_id])
+                                                                                         var_spec[field_id]))
 
                         if np.all(inclusions_and_exclusions):
                             time_list_var = obtain_time_list(database,project_drs,var_name, var_spec,experiment,model)
@@ -106,7 +106,7 @@ def find_model_list(database,project_drs,model_list,experiment,options,time_list
             #When missing years are not allowed, ensure that all variables have the requested times!
             for var_name in database.header['variable_list']:
                 for var_spec in database.header['variable_list'][var_name]:
-                    if (var_spec[project_drs.var_specs.index('time_frequency'] not in
+                    if (var_spec[project_drs.var_specs.index('time_frequency')] not in
                         ['fx','clim']):
                     inclusions_and_exclusions = [ 
                                   db_utils.is_level_name_included_and_not_excluded('var', options, var_name),

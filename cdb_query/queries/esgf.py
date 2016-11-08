@@ -67,17 +67,17 @@ class browser:
         for experiment in lists_to_loop['experiment_list']:
             for var_name in lists_to_loop['variable_list']:
                 for var_spec in database.header['variable_list'][var_name]:
-                only_list.append(experiment_variable_search_recursive(database.nc_Database.drs
-                                                                      .slicing_args.keys(),
-                                                                      database.nc_Database,
-                                                                      self.search_path,
-                                                                      database.header['file_type_list'],
-                                                                      self.options,
-                                                                      experiment,
-                                                                      var_name,
-                                                                      var_spec,
-                                                                      list_level=list_level,
-                                                                      session=self.session))
+                    only_list.append(experiment_variable_search_recursive(database.nc_Database.drs
+                                                                          .slicing_args.keys(),
+                                                                          database.nc_Database,
+                                                                          self.search_path,
+                                                                          database.header['file_type_list'],
+                                                                          self.options,
+                                                                          experiment,
+                                                                          var_name,
+                                                                          var_spec,
+                                                                          list_level=list_level,
+                                                                          session=self.session))
         return [item for sublist in only_list for item in sublist]
 
 def experiment_variable_search_recursive(slicing_args, nc_Database, search_path, file_type_list, options,
