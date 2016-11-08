@@ -16,6 +16,7 @@ cdb_query CORDEX ask \
                      pr_JJAS_France_pointers.nc
 #Testing check: 
 if [ $(cat pr_JJAS_France_pointers.nc.log | grep ERROR | wc -l) -gt 0 ]; then
+    cat pr_JJAS_France_pointers.nc.log | grep ERROR
     exit 1
 fi
 
@@ -37,6 +38,7 @@ echo $PASSWORD_ESGF | cdb_query CORDEX validate \
             pr_JJAS_France_pointers.validate.nc
 #Testing check: 
 if [ $(cat pr_JJAS_France_pointers.nc.log | grep ERROR | wc -l) -gt 0 ]; then
+    cat pr_JJAS_France_pointers.nc.log | grep ERROR
     exit 1
 fi
 #CHOOSE:
@@ -60,6 +62,7 @@ fi
                            pr_JJAS_France_pointers.validate.197906.retrieved.nc
         #Testing check: 
         if [ $(cat pr_JJAS_France_pointers.validate.197906.retrieved.nc.log | grep ERROR | wc -l) -gt 0 ]; then
+            cat pr_JJAS_France_pointers.validate.197906.retrieved.nc.log | grep ERROR
             exit 1
         fi
 
@@ -71,6 +74,7 @@ fi
                                 pr_JJAS_France_pointers.validate.197906.retrieved.converted.nc
         #Testing check: 
         if [ $(cat pr_JJAS_France_pointers.validate.197906.retrieved.converted.nc.log | grep ERROR | wc -l) -gt 0 ]; then
+            cat pr_JJAS_France_pointers.validate.197906.retrieved.converted.nc.log | grep ERROR
             exit 1
         fi
 
@@ -86,6 +90,7 @@ fi
                         pr_JJAS_France_pointers.validate.France.nc
         #Testing check: 
         if [ $(cat pr_JJAS_France_pointers.validate.France.nc.log | grep ERROR | wc -l) -gt 0 ]; then
+            cat pr_JJAS_France_pointers.validate.France.nc.log | grep ERROR
             exit 1
         fi
 
@@ -102,6 +107,7 @@ fi
                              pr_JJAS_France_pointers.validate.France.retrieved.nc
         #Testing check: 
         if [ $(cat pr_JJAS_France_pointers.validate.France.retrieved.nc.log | grep ERROR | wc -l) -gt 0 ]; then
+            cat pr_JJAS_France_pointers.validate.France.retrieved.nc.log | grep ERROR
             exit 1
         fi
 
@@ -115,6 +121,7 @@ fi
                                  pr_JJAS_France_pointers.validate.France.retrieved.converted.nc
         #Testing check: 
         if [ $(cat pr_JJAS_France_pointers.validate.France.retrieved.converted.nc.log | grep ERROR | wc -l) -gt 0 ]; then
+            cat pr_JJAS_France_pointers.validate.France.retrieved.converted.nc.log | grep ERROR
             exit 1
         fi
 

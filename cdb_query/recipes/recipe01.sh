@@ -15,6 +15,7 @@ cdb_query CMIP5 ask --ask_month=1,2,10,11,12 \
 
 #Testing check: 
 if [ $(cat tas_ONDJF_pointers.nc.log | grep ERROR | wc -l) -gt 0 ]; then
+    cat tas_ONDJF_pointers.nc.log | grep ERROR
     exit 1
 fi
 
@@ -42,6 +43,7 @@ echo $PASSWORD_ESGF | cdb_query CMIP5 validate \
                             tas_ONDJF_pointers.validate.nc
 #Testing check: 
 if [ $(cat tas_ONDJF_pointers.validate.nc.log | grep ERROR | wc -l) -gt 0 ]; then
+    cat tas_ONDJF_pointers.validate.nc.log | grep ERROR
     exit 1
 fi
 
@@ -75,6 +77,7 @@ cdb_query CMIP5 list_fields -f institute \
                             tas_ONDJF_pointers.validate.197901.retrieved.nc
         #Testing check: 
         if [ $(cat tas_ONDJF_pointers.validate.197901.retrieved.nc.log | grep ERROR | wc -l) -gt 0 ]; then
+            cat tas_ONDJF_pointers.validate.197901.retrieved.nc.log | grep ERROR
             exit 1
         fi
         echo "Done downloading using OPENDAP!"
@@ -113,6 +116,7 @@ cdb_query CMIP5 list_fields -f institute \
                             tas_ONDJF_pointers.validate.197901.retrieved.converted.nc
         #Testing check: 
         if [ $(cat tas_ONDJF_pointers.validate.197901.retrieved.converted.nc.log | grep ERROR | wc -l) -gt 0 ]; then
+            cat tas_ONDJF_pointers.validate.197901.retrieved.converted.nc.log | grep ERROR
             exit 1
         fi
         echo "Done converting!"

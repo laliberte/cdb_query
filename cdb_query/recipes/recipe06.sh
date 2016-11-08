@@ -18,7 +18,7 @@
 #   3) a pointer file ${OUT_FILE} that can be used in a further reduce step.
 
 #Use 10 processors:
-NUM_PROCS=3
+NUM_PROCS=10
 
 OUT_FILE="DJF_lat_band.nc"
 OUT_DIR="out_lat_band/"
@@ -44,5 +44,6 @@ echo $PASSWORD_ESGF | cdb_query CMIP5 ask validate reduce_soft_links record_redu
 
 #Testing check: 
 if [ $(cat ${OUT_FILE}.log | grep ERROR | wc -l) -gt 0 ]; then
+    cat ${OUT_FILE}.log | grep ERROR
     exit 1
 fi

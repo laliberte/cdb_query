@@ -17,6 +17,7 @@ echo $PASSWORD_ESGF | cdb_query CMIP5 ask validate record_validate download_open
                   tas_ONDJF_pointers.validate.197901.retrieved.converted.nc
 #Testing check: 
 if [ $(cat tas_ONDJF_pointers.validate.197901.retrieved.converted.nc.log | grep ERROR | wc -l) -gt 0 ]; then
+    cat tas_ONDJF_pointers.validate.197901.retrieved.converted.nc.log | grep ERROR
     exit 1
 fi
 
@@ -42,5 +43,6 @@ echo $PASSWORD_ESGF | cdb_query CORDEX ask validate record_validate \
                   pr_JJAS_France_pointers.validate.France.retrieved.converted.nc
 #Testing check: 
 if [ $(cat pr_JJAS_France_pointers.validate.France.retrieved.converted.nc.log | grep ERROR | wc -l) -gt 0 ]; then
+    cat pr_JJAS_France_pointers.validate.France.retrieved.converted.nc.log | grep ERROR
     exit 1
 fi

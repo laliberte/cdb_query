@@ -21,6 +21,7 @@ if [ "$1" == "compute" ]; then
 
     #Testing check: 
     if [ $(cat coupled_ocean_pointers.nc.log | grep ERROR | wc -l) -gt 0 ]; then
+        cat coupled_ocean_pointers.nc.log | grep ERROR
         exit 1
     fi
     #List simulations:
@@ -61,6 +62,7 @@ if [ "$1" == "compute" ]; then
                                 coupled_ocean_pointers.validate.nc
     #Testing check: 
     if [ $(cat coupled_ocean_pointers.validate.nc.log | grep ERROR | wc -l) -gt 0 ]; then
+        cat coupled_ocean_pointers.validate.nc.log | grep ERROR
         exit 1
     fi
 
