@@ -21,7 +21,6 @@ Univerity of Toronto, 2016
 The Natural Sciences and Engineering Research Council of Canada (NSERC/CRSNG) funded 
 FBL and PJK during this project.
 
-
 If using this code to retrieve and process data from the ESGF please cite:
 Efficient, robust and timely analysis of Earth System Models: a database-query approach
 F. Laliberte, Juckes, M., Denvil, S., Kushner, P. J., TBD.
@@ -40,7 +39,7 @@ Version History
 ---------------
 
 1.9.9.x: Bug fixes. piControl experiments now work as intended. Stability. New Projects.
-         Performance improvements in reduce. Logging.
+         Performance improvements in reduce. Logging. Travis-CI testing.
 
 1.9.9:   Stability. Better tempfiles handling (no file descriptor leak). More robust ESGF auth.
 
