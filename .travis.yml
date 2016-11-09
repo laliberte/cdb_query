@@ -7,32 +7,44 @@ notifications:
 matrix:
   fast_finish: true
   include:
-  - python: 2.7
-    env: CONDA_ENV=py27
-  - python: 2.7
-    env: CONDA_ENV=py27_netcdf4331
+    - os: linux
+      python: 2.7
+      env: CONDA_ENV=py27
+    - os: linux
+      python: 2.7
+      env: CONDA_ENV=py27_netcdf4331
+    - os: osx
+      language: generic
+      env: CONDA_ENV=py27
+    - os: osx
+      language: generic
+      env: CONDA_ENV=py27_netcdf4331
+  allow_failures:
+    - os: osx
+        
 
 before_install:
-  - wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then wget https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh -O miniconda.sh; fi
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
   - conda config --set always_yes yes --set changeps1 no --set show_channel_urls true
   - conda update -q conda
   - conda info -a
-  #- git clone https://github.com/laliberte/netcdf4_soft_links.git
   #- git clone https://github.com/laliberte/netcdf4_pydap.git
+  #- git clone https://github.com/laliberte/netcdf4_soft_links.git
 
 install:
   - conda env create --file ci/requirements-$CONDA_ENV.yml
   - source activate test_env
+  #- cd netcdf4_pydap
+  #- python setup.py install
+  #- cd ..
   #- cd netcdf4_soft_links
   #- python setup.py install
   #- cd ..
   - python setup.py install
-  #- cd netcdf4_pydap
-  #- python setup.py install
-  #- cd ..
 
 script:
   - bash cdb_query/recipes/recipe01.sh 

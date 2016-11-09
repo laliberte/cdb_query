@@ -66,24 +66,4 @@ if [ "$1" == "compute" ]; then
         exit 1
     fi
 
-    #CHOOSE:
-        # *1* Retrieve files:
-        #    --download_all_files forces to download all files even if they are served by OPENDAP.
-            echo "Downloading files to in/CMIP5:"
-            echo $PASSWORD_ESGF | cdb_query CMIP5 download_files \
-                                --download_all_files \
-                                --openid=$OPENID_ESGF \
-                                --password_from_pipe \
-                                --experiment=abrupt4xCO2 \
-                                --log_files \
-                                --debug \
-                                --out_download_dir=./in/CMIP5/ \
-                                coupled_ocean_pointers.validate.nc \
-                                coupled_ocean_pointers.validate.downloaded.nc
-
-    #Testing check: 
-    if [ $(cat coupled_ocean_pointers.validate.downloaded.nc.log | grep ERROR | wc -l) -gt 0 ]; then
-        cat coupled_ocean_pointers.validate.downloaded.nc.log | grep ERROR
-        exit 1
-    fi
 fi
