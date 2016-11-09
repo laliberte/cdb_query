@@ -4,6 +4,10 @@ sudo: false # use container based build
 notifications:
   email: false
 
+os:
+    - linux
+    - osx
+
 matrix:
   fast_finish: true
   include:
