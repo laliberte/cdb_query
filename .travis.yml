@@ -14,10 +14,10 @@ matrix:
       python: 2.7
       env: CONDA_ENV=py27_netcdf4331
     - os: osx
-      python: 2.7
+      language: generic
       env: CONDA_ENV=py27
     - os: osx
-      python: 2.7
+      language: generic
       env: CONDA_ENV=py27_netcdf4331
   allow_failures:
     - os: osx
