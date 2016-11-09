@@ -108,25 +108,25 @@ def find_model_list(database,project_drs,model_list,experiment,options,time_list
                 for var_spec in database.header['variable_list'][var_name]:
                     if (var_spec[project_drs.var_specs.index('time_frequency')] not in
                         ['fx','clim']):
-                    inclusions_and_exclusions = [ 
-                                  db_utils.is_level_name_included_and_not_excluded('var', options, var_name),
-                                  db_utils.is_level_name_included_and_not_excluded('experiment', options, experiment)
-                                  ]
+                        inclusions_and_exclusions = [ 
+                                      db_utils.is_level_name_included_and_not_excluded('var', options, var_name),
+                                      db_utils.is_level_name_included_and_not_excluded('experiment', options, experiment)
+                                      ]
 
-                    for field_id, field in enumerate(database.drs.var_specs):
-                        inclusions_and_exclusions.append(
-                                    db_utils.is_level_name_included_and_not_excluded(field, options, 
-                                                                                     var_spec[field_id]))
+                        for field_id, field in enumerate(database.drs.var_specs):
+                            inclusions_and_exclusions.append(
+                                        db_utils.is_level_name_included_and_not_excluded(field, options, 
+                                                                                         var_spec[field_id]))
 
-                    if np.all(inclusions_and_exclusions):
-                        time_list_var = obtain_time_list(database,project_drs,var_name, var_spec,experiment,model)
-                        time_list_var = [str(int(time)-int(min_time)).zfill(6) for time in time_list_var]
-                        if not set(time_list).issubset(time_list_var):
-                            missing_vars.append(var_name+':'+','.join(var_spec)+
-                                                ' for some months: '+','.join(
-                                                sorted(set(time[:4] 
-                                                           for time in (set(time_list)
-                                                                        .difference(time_list_var))))))
+                        if np.all(inclusions_and_exclusions):
+                            time_list_var = obtain_time_list(database,project_drs,var_name, var_spec,experiment,model)
+                            time_list_var = [str(int(time)-int(min_time)).zfill(6) for time in time_list_var]
+                            if not set(time_list).issubset(time_list_var):
+                                missing_vars.append(var_name+':'+','.join(var_spec)+
+                                                    ' for some months: '+','.join(
+                                                    sorted(set(time[:4] 
+                                                               for time in (set(time_list)
+                                                                            .difference(time_list_var))))))
         if len(missing_vars)>0:
            #print('\nThe reasons why some simulations were excluded:')
            if 'experiment' in project_drs.simulations_desc:

@@ -416,12 +416,12 @@ class Database_Manager:
                                               options.Xsearch_path]
                 self.header['variable_list'] = dict()
                 for item in options.ask_var:
-                    var = item.split(':')[0]
+                    var_name = item.split(':')[0]
                     var_spec = item.split(':')[1].split('-')
-                    if var not in self.header['variable_list']:
-                        self.header['variable_list'] = [var_spec]
+                    if var_name not in self.header['variable_list']:
+                        self.header['variable_list'][var_name] = [var_spec]
                     else:
-                        self.header['variable_list'].append(var_spec)
+                        self.header['variable_list'][var_name].append(var_spec)
                 # Need to do this to allwo choices:
                 if len(options.ask_file_type) == 0:
                     self.header['file_type_list'] = parsers.file_type_list

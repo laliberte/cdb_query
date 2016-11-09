@@ -58,9 +58,10 @@ class browser:
                 getattr(self.options, id[0]) is not None):
                 lists_to_loop[id[1]] = getattr(self.options, id[0])
             else:
-                lists_to_loop[id[1]] = database.header[id[1]]
-        for id in lists_to_loop.keys():
-            if not isinstance(lists_to_loop[id],list): lists_to_loop[id]=[lists_to_loop[id]]
+                lists_to_loop[id[1]] = database.header[id[1]].keys()
+        for id in lists_to_loop:
+            if not isinstance(lists_to_loop[id], list):
+                lists_to_loop[id] = [lists_to_loop[id]]
 
         #Create the database:
         only_list=[]
