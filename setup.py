@@ -27,13 +27,16 @@ setup(
         url = "http://proj.badc.rl.ac.uk/exarch",   # project home page, if any
         classifiers=[
             "Development Status :: 4 - Beta",
+            "Operating System :: POSIX :: Linux",
+            "Operating System :: MacOS :: MacOS X",
             "Intended Audience :: Science/Research",
             "Natural Language :: English",
             "License :: OSI Approved :: BSD License",
             "Programming Language :: Python :: 2.7",
-            "Programming Language :: Fortran",
+            "Programming Language :: Python :: 2 :: Only",
             "Topic :: Scientific/Engineering :: Atmospheric Science",
-            "Topic :: Scientific/Engineering :: Mathematics"
+            "Topic :: Scientific/Engineering :: Mathematics",
+            "Topic :: Scientific/Engineering :: Physics"
         ],
         long_description=read('README.rst'),
         install_requires = ['numpy',
