@@ -7,7 +7,7 @@ echo "Ask:"
 cdb_query CMIP5 ask --ask_month=1,2,10,11,12 \
                     --debug \
                     --log_files \
-                    --ask_var=tas:day-atmos-day,tas:Amon-atmos-mon,orog:fx-atmos-fx \
+                    --ask_var=tas:day-atmos-day,tas:mon-atmos-Amon,orog:fx-atmos-fx \
                     --ask_experiment=amip:1979-2004 \
                     --institute=NCAR --ensemble=r1i1p1 --model=CCSM4 \
                     --num_procs=${NUM_PROCS} \
@@ -36,6 +36,7 @@ echo $PASSWORD_ESGF | cdb_query CMIP5 validate \
                             --log_files \
                             --openid=$OPENID_ESGF \
                             --time_frequency=mon \
+                            --time_frequency=fx \
                             --password_from_pipe \
                             --num_procs=${NUM_PROCS} \
                             --Xdata_node=http://esgf2.dkrz.de \
@@ -56,13 +57,15 @@ cdb_query CMIP5 list_fields -f institute \
 
 #CHOOSE:
     # *1* Retrieve files:
-        #echo $PASSWORD_ESGF | cdb_query CMIP5 download_files \
-        #                    --download_all_files \
-        #                    --openid=$OPENID_ESGF \
-        #                    --password_from_pipe \
-        #                    --out_download_dir=./in/CMIP5/ \
-        #                    tas_ONDJF_pointers.validate.nc \
-        #                    tas_ONDJF_pointers.validate.downloaded.nc
+        echo "Download using WGET:"
+        echo $PASSWORD_ESGF | cdb_query CMIP5 download_files \
+                            --download_all_files \
+                            --openid=$OPENID_ESGF \
+                            --password_from_pipe \
+                            --out_download_dir=./in/CMIP5/ \
+                            tas_ONDJF_pointers.validate.nc \
+                            tas_ONDJF_pointers.validate.downloaded.nc
+        echo "Done downloading using WGET!"
 
     # *2* Retrieve to netCDF:
         #Retrieve the first month:
@@ -87,7 +90,7 @@ cdb_query CMIP5 list_fields -f institute \
         echo "Use NCO to look at the files:"
         if [ ! -f tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc ]; then
             # Here, we capture warnings because these days ncks tends to spit out a lot of warning messages:
-            ncks -q -G :8 -g /NCAR/CCSM4/amip/Amon/atmos/Amon/r1i1p1/tas \
+            ncks -q -G :8 -g /NCAR/CCSM4/amip/mon/atmos/Amon/r1i1p1/tas \
                tas_ONDJF_pointers.validate.197901.retrieved.nc \
                tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc &> ncks_warnings
             # Show errors:
