@@ -31,4 +31,4 @@ dependencies:
   - pip:
       - requests_cache
       - netcdf4_pydap
-      #- netcdf4_soft_links
+      - netcdf4_soft_links
