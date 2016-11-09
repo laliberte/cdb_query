@@ -39,6 +39,6 @@ script:
   - bash cdb_query/recipes/recipe03.sh 
   - bash cdb_query/recipes/recipe04.sh 
   # Skip cdo-based recipe. conda cdo with netcdf 4.3.3.1 appears broken
-  - if [[ $CONDA_ENV == 'py27_netcdf4331' ]]; then bash cdb_query/recipes/recipe05.sh; fi
+  - if [[ $CONDA_ENV != 'py27_netcdf4331' ]]; then bash cdb_query/recipes/recipe05.sh; fi
   - bash cdb_query/recipes/recipe06.sh 
   - bash cdb_query/recipes/recipe08.sh compute 10
