@@ -7,7 +7,7 @@ echo "Ask:"
 cdb_query CMIP5 ask --ask_month=1,2,10,11,12 \
                     --debug \
                     --log_files \
-                    --ask_var=tas:day-atmos-day,orog:fx-atmos-fx \
+                    --ask_var=tas:day-atmos-day,tas:Amon-atmos-mon,orog:fx-atmos-fx \
                     --ask_experiment=amip:1979-2004 \
                     --institute=NCAR --ensemble=r1i1p1 --model=CCSM4 \
                     --num_procs=${NUM_PROCS} \
@@ -35,10 +35,10 @@ echo $PASSWORD_ESGF | cdb_query CMIP5 validate \
                             --debug \
                             --log_files \
                             --openid=$OPENID_ESGF \
+                            --time_frequency=mon \
                             --password_from_pipe \
                             --num_procs=${NUM_PROCS} \
                             --Xdata_node=http://esgf2.dkrz.de \
-                            --Xdata_node=http://esgf-data1.ceda.ac.uk \
                             tas_ONDJF_pointers.nc \
                             tas_ONDJF_pointers.validate.nc
 #Testing check: 
