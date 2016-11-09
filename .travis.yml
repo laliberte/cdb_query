@@ -20,16 +20,16 @@ before_install:
   - conda config --set always_yes yes --set changeps1 no --set show_channel_urls true
   - conda update -q conda
   - conda info -a
-  #- git clone https://github.com/laliberte/netcdf4_soft_links.git
+  - git clone https://github.com/laliberte/netcdf4_soft_links.git
   #- git clone https://github.com/laliberte/netcdf4_pydap.git
 
 install:
   - conda env create --file ci/requirements-$CONDA_ENV.yml
   - source activate test_env
+  - cd netcdf4_soft_links
   - python setup.py install
-  #- cd netcdf4_soft_links
-  #- python setup.py install
-  #- cd ..
+  - cd ..
+  - python setup.py install
   #- cd netcdf4_pydap
   #- python setup.py install
   #- cd ..
