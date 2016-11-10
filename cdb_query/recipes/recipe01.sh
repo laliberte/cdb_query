@@ -68,6 +68,8 @@ cdb_query CMIP5 list_fields -f institute \
     # *1* Retrieve files:
         echo "Download using WGET:"
         echo $PASSWORD_ESGF | cdb_query CMIP5 download_files \
+                            --debug \
+                            --log_files \
                             --download_all_files \
                             --openid=$OPENID_ESGF \
                             --password_from_pipe \
@@ -82,9 +84,9 @@ cdb_query CMIP5 list_fields -f institute \
         #Retrieve the first month:
         echo "Download using OPENDAP:"
         echo $PASSWORD_ESGF | cdb_query CMIP5 download_opendap --year=1979 --month=1 \
+                            --debug \
                             --log_files \
                             --openid=$OPENID_ESGF \
-                            --debug \
                             --num_dl=3 \
                             --password_from_pipe \
                             tas_ONDJF_pointers.validate.nc \
