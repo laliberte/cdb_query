@@ -35,6 +35,7 @@ echo $PASSWORD_ESGF | cdb_query CMIP5 ask validate reduce_soft_links record_redu
       --related_experiments \
       --institute=NCAR \
       --model=CCSM4 \
+      -l year \
       --ensemble=r1i1p1 \
       --Xdata_node=http://esgf2.dkrz.de \
       --reduce_soft_links_script='ncrcat -d lat,55.0,65.0' \
