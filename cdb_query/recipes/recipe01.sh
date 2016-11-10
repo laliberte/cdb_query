@@ -138,4 +138,4 @@ cdb_query CMIP5 list_fields -f institute \
 #Cleanup:
 rm tas_ONDJF_pointers.*
 rm -r out
-rm -r int
+rm -r in
