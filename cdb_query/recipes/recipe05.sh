@@ -1,4 +1,18 @@
 #!\bin\bash
+
+function inspectlogs {
+    if [ ! -f $1 ]; then
+        exit 1
+    fi
+    if [ ! -f $1.log ]; then
+        exit 1
+    fi
+    if [ $(cat $1.log | grep ERROR | wc -l) -gt 0 ]; then
+        cat $1.log | grep ERROR
+        exit 1
+    fi
+}
+
 #Create new cdo grid:
 cat >> newgrid_atmos.cdo <<EndOfGrid
 gridtype  = lonlat
@@ -40,10 +54,7 @@ echo $PASSWORD_ESGF | cdb_query CMIP5 ask validate record_validate reduce_soft_l
                        -selgrid,lonlat,curvilinear,gaussian,unstructured ' \
                   us_pr_tas_MAM_pointers.validate.200003.retrieved.converted.nc
 #Testing check: 
-if [ $(cat us_pr_tas_MAM_pointers.validate.200003.retrieved.converted.nc.log | grep ERROR | wc -l) -gt 0 ]; then
-    cat us_pr_tas_MAM_pointers.validate.200003.retrieved.converted.nc.log | grep ERROR
-    exit 1
-fi
+inspectlogs us_pr_tas_MAM_pointers.validate.200003.retrieved.converted.nc
 
 echo $PASSWORD_ESGF | cdb_query CMIP5 reduce_soft_links download_opendap reduce \
                   --debug \
@@ -60,7 +71,7 @@ echo $PASSWORD_ESGF | cdb_query CMIP5 reduce_soft_links download_opendap reduce 
                   us_pr_tas_MAM_pointers.validate.200003.retrieved.converted.nc.validate \
                   us_pr_tas_MAM_pointers.validate.retrieved.converted.nc
 #Testing check: 
-if [ $(cat us_pr_tas_MAM_pointers.validate.retrieved.converted.nc.log | grep ERROR | wc -l) -gt 0 ]; then
-    cat us_pr_tas_MAM_pointers.validate.retrieved.converted.nc.log | grep ERROR
-    exit 1
-fi
+inspectlogs us_pr_tas_MAM_pointers.validate.retrieved.converted.nc
+
+rm us_pr_tas_MAM_pointers*
+rm -r out/

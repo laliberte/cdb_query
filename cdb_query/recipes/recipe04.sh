@@ -1,3 +1,19 @@
+#!/bin/bash
+
+function inspectlogs {
+    if [ ! -f $1 ]; then
+        exit 1
+    fi
+    if [ ! -f $1.log ]; then
+        exit 1
+    fi
+    if [ $(cat $1.log | grep ERROR | wc -l) -gt 0 ]; then
+        cat $1.log | grep ERROR
+        exit 1
+    fi
+}
+
+
 echo $PASSWORD_ESGF | cdb_query CMIP5 ask validate record_validate download_opendap reduce \
                   --log_files \
                   --debug \
@@ -16,10 +32,7 @@ echo $PASSWORD_ESGF | cdb_query CMIP5 ask validate record_validate download_open
                   '' \
                   tas_ONDJF_pointers.validate.197901.retrieved.converted.nc
 #Testing check: 
-if [ $(cat tas_ONDJF_pointers.validate.197901.retrieved.converted.nc.log | grep ERROR | wc -l) -gt 0 ]; then
-    cat tas_ONDJF_pointers.validate.197901.retrieved.converted.nc.log | grep ERROR
-    exit 1
-fi
+inspectlogs tas_ONDJF_pointers.validate.197901.retrieved.converted.nc
 
 echo $PASSWORD_ESGF | cdb_query CORDEX ask validate record_validate \
                                   reduce_soft_links record_reduce_soft_links \
@@ -42,7 +55,4 @@ echo $PASSWORD_ESGF | cdb_query CORDEX ask validate record_validate \
                   '' \
                   pr_JJAS_France_pointers.validate.France.retrieved.converted.nc
 #Testing check: 
-if [ $(cat pr_JJAS_France_pointers.validate.France.retrieved.converted.nc.log | grep ERROR | wc -l) -gt 0 ]; then
-    cat pr_JJAS_France_pointers.validate.France.retrieved.converted.nc.log | grep ERROR
-    exit 1
-fi
+inspectlogs pr_JJAS_France_pointers.validate.France.retrieved.converted.nc

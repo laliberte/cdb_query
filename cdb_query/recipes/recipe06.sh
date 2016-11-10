@@ -20,6 +20,19 @@
 #Use 10 processors:
 NUM_PROCS=10
 
+function inspectlogs {
+    if [ ! -f $1 ]; then
+        exit 1
+    fi
+    if [ ! -f $1.log ]; then
+        exit 1
+    fi
+    if [ $(cat $1.log | grep ERROR | wc -l) -gt 0 ]; then
+        cat $1.log | grep ERROR
+        exit 1
+    fi
+}
+
 OUT_FILE="DJF_lat_band.nc"
 OUT_DIR="out_lat_band/"
 
@@ -44,7 +57,7 @@ echo $PASSWORD_ESGF | cdb_query CMIP5 ask validate reduce_soft_links record_redu
        ${OUT_FILE}
 
 #Testing check: 
-if [ $(cat ${OUT_FILE}.log | grep ERROR | wc -l) -gt 0 ]; then
-    cat ${OUT_FILE}.log | grep ERROR
-    exit 1
-fi
+inspectlogs ${OUT_FILE}
+
+rm ${OUT_FILE}
+rm -r ${OUT_DIR}

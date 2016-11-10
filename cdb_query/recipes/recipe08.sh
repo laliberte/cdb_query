@@ -2,6 +2,19 @@
 
 NUM_PROCS=$2
 
+function inspectlogs {
+    if [ ! -f $1 ]; then
+        exit 1
+    fi
+    if [ ! -f $1.log ]; then
+        exit 1
+    fi
+    if [ $(cat $1.log | grep ERROR | wc -l) -gt 0 ]; then
+        cat $1.log | grep ERROR
+        exit 1
+    fi
+}
+
 if [ "$1" == "compute" ]; then
     ########################################
     #######   RECIPE 01 
@@ -20,10 +33,8 @@ if [ "$1" == "compute" ]; then
                         coupled_ocean_pointers.nc
 
     #Testing check: 
-    if [ $(cat coupled_ocean_pointers.nc.log | grep ERROR | wc -l) -gt 0 ]; then
-        cat coupled_ocean_pointers.nc.log | grep ERROR
-        exit 1
-    fi
+    inspectlogs coupled_ocean_pointers.nc
+
     #List simulations:
     echo "Discovered simulations:"
     cdb_query CMIP5 list_fields -f institute \
@@ -53,6 +64,8 @@ if [ "$1" == "compute" ]; then
                                 --Xdata_node=http://esgf2.dkrz.de \
                                 coupled_ocean_pointers.nc \
                                 coupled_ocean_pointers.validate.nc
+    #Testing:
+    inspectlogs coupled_ocean_pointers.validate.nc
 
     #List simulations:
     echo "Validated simulations:"
@@ -61,9 +74,6 @@ if [ "$1" == "compute" ]; then
                                 -f ensemble \
                                 coupled_ocean_pointers.validate.nc
     #Testing check: 
-    if [ $(cat coupled_ocean_pointers.validate.nc.log | grep ERROR | wc -l) -gt 0 ]; then
-        cat coupled_ocean_pointers.validate.nc.log | grep ERROR
-        exit 1
-    fi
+    inspectlogs coupled_ocean_pointers.validate.nc
 
 fi

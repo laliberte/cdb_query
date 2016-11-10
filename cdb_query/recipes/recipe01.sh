@@ -1,6 +1,21 @@
 #!/bin/bash
 
 NUM_PROCS=10
+
+function inspectlogs {
+    if [ ! -f $1 ]; then
+        exit 1
+    fi
+    if [ ! -f $1.log ]; then
+        exit 1
+    fi
+    if [ $(cat $1.log | grep ERROR | wc -l) -gt 0 ]; then
+        cat $1.log | grep ERROR
+        exit 1
+    fi
+}
+
+
 #Discover data:
 echo "Recipe 01"
 echo "Ask:"
@@ -14,10 +29,7 @@ cdb_query CMIP5 ask --ask_month=1,2,10,11,12 \
                     tas_ONDJF_pointers.nc
 
 #Testing check: 
-if [ $(cat tas_ONDJF_pointers.nc.log | grep ERROR | wc -l) -gt 0 ]; then
-    cat tas_ONDJF_pointers.nc.log | grep ERROR
-    exit 1
-fi
+inspectlogs tas_ONDJF_pointers.nc
 
 #List simulations:
 echo "Discovered files:"
@@ -43,10 +55,7 @@ echo $PASSWORD_ESGF | cdb_query CMIP5 validate \
                             tas_ONDJF_pointers.nc \
                             tas_ONDJF_pointers.validate.nc
 #Testing check: 
-if [ $(cat tas_ONDJF_pointers.validate.nc.log | grep ERROR | wc -l) -gt 0 ]; then
-    cat tas_ONDJF_pointers.validate.nc.log | grep ERROR
-    exit 1
-fi
+inspectlogs tas_ONDJF_pointers.validate.nc
 
 #List simulations:
 echo "Validated simulations:"
@@ -65,6 +74,8 @@ cdb_query CMIP5 list_fields -f institute \
                             --out_download_dir=./in/CMIP5/ \
                             tas_ONDJF_pointers.validate.nc \
                             tas_ONDJF_pointers.validate.downloaded.nc
+        #Testing check:
+        inspectlogs tas_ONDJF_pointers.validate.downloaded.nc
         echo "Done downloading using WGET!"
 
     # *2* Retrieve to netCDF:
@@ -79,10 +90,7 @@ cdb_query CMIP5 list_fields -f institute \
                             tas_ONDJF_pointers.validate.nc \
                             tas_ONDJF_pointers.validate.197901.retrieved.nc
         #Testing check: 
-        if [ $(cat tas_ONDJF_pointers.validate.197901.retrieved.nc.log | grep ERROR | wc -l) -gt 0 ]; then
-            cat tas_ONDJF_pointers.validate.197901.retrieved.nc.log | grep ERROR
-            exit 1
-        fi
+        inspectlogs tas_ONDJF_pointers.validate.197901.retrieved.nc
         echo "Done downloading using OPENDAP!"
 
         #Pick one simulation:
@@ -118,14 +126,14 @@ cdb_query CMIP5 list_fields -f institute \
                             tas_ONDJF_pointers.validate.197901.retrieved.nc \
                             tas_ONDJF_pointers.validate.197901.retrieved.converted.nc
         #Testing check: 
-        if [ $(cat tas_ONDJF_pointers.validate.197901.retrieved.converted.nc.log | grep ERROR | wc -l) -gt 0 ]; then
-            cat tas_ONDJF_pointers.validate.197901.retrieved.converted.nc.log | grep ERROR
-            exit 1
-        fi
+        inspectlogs tas_ONDJF_pointers.validate.197901.retrieved.converted.nc
         echo "Done converting!"
 
         #The files can be found in ./out/CMIP5/:
         echo "Converted files:"
         find ./out/CMIP5/ -name '*.nc'
 
+#Cleanup:
 rm tas_ONDJF_pointers.*
+rm -r out
+rm -r int

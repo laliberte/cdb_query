@@ -3,6 +3,19 @@
 #Change to set number of processes to use:
 NUM_PROCS=10
 
+function inspectlogs {
+    if [ ! -f $1 ]; then
+        exit 1
+    fi
+    if [ ! -f $1.log ]; then
+        exit 1
+    fi
+    if [ $(cat $1.log | grep ERROR | wc -l) -gt 0 ]; then
+        cat $1.log | grep ERROR
+        exit 1
+    fi
+}
+
 #Discover data:
 cdb_query CORDEX ask \
                      --debug \
@@ -15,10 +28,7 @@ cdb_query CORDEX ask \
                      --num_procs=${NUM_PROCS} \
                      pr_JJAS_France_pointers.nc
 #Testing check: 
-if [ $(cat pr_JJAS_France_pointers.nc.log | grep ERROR | wc -l) -gt 0 ]; then
-    cat pr_JJAS_France_pointers.nc.log | grep ERROR
-    exit 1
-fi
+inspectlogs pr_JJAS_France_pointers.nc
 
 #List simulations:
 cdb_query CORDEX list_fields -f domain -f driving_model -f institute \
@@ -36,11 +46,10 @@ echo $PASSWORD_ESGF | cdb_query CORDEX validate \
             --Xdata_node=http://esgf2.dkrz.de \
             pr_JJAS_France_pointers.nc \
             pr_JJAS_France_pointers.validate.nc
+
 #Testing check: 
-if [ $(cat pr_JJAS_France_pointers.nc.log | grep ERROR | wc -l) -gt 0 ]; then
-    cat pr_JJAS_France_pointers.nc.log | grep ERROR
-    exit 1
-fi
+inspectlogs pr_JJAS_France_pointers.validate.nc
+
 #CHOOSE:
     # *1* Retrieve files:
         #echo $PASSWORD_ESGF | cdb_query CORDEX download_files \
@@ -61,10 +70,7 @@ fi
                            pr_JJAS_France_pointers.validate.nc \
                            pr_JJAS_France_pointers.validate.197906.retrieved.nc
         #Testing check: 
-        if [ $(cat pr_JJAS_France_pointers.validate.197906.retrieved.nc.log | grep ERROR | wc -l) -gt 0 ]; then
-            cat pr_JJAS_France_pointers.validate.197906.retrieved.nc.log | grep ERROR
-            exit 1
-        fi
+        inspectlogs pr_JJAS_France_pointers.validate.197906.retrieved.nc
 
         #Convert to filesystem:
         cdb_query CORDEX reduce --out_destination=./out/CORDEX/ '' \
@@ -73,10 +79,7 @@ fi
                                 pr_JJAS_France_pointers.validate.197906.retrieved.nc \
                                 pr_JJAS_France_pointers.validate.197906.retrieved.converted.nc
         #Testing check: 
-        if [ $(cat pr_JJAS_France_pointers.validate.197906.retrieved.converted.nc.log | grep ERROR | wc -l) -gt 0 ]; then
-            cat pr_JJAS_France_pointers.validate.197906.retrieved.converted.nc.log | grep ERROR
-            exit 1
-        fi
+        inspectlogs pr_JJAS_France_pointers.validate.197906.retrieved.converted.nc
 
 
         #Subset France on soft_links:
@@ -88,10 +91,7 @@ fi
                         pr_JJAS_France_pointers.validate.nc \
                         pr_JJAS_France_pointers.validate.France.nc
         #Testing check: 
-        if [ $(cat pr_JJAS_France_pointers.validate.France.nc.log | grep ERROR | wc -l) -gt 0 ]; then
-            cat pr_JJAS_France_pointers.validate.France.nc.log | grep ERROR
-            exit 1
-        fi
+        inspectlogs pr_JJAS_France_pointers.validate.197906.retrieved.converted.nc
 
         #We then retrieve the whole time series over France:
         echo $PASSWORD_ESGF | cdb_query CORDEX download_opendap \
@@ -104,10 +104,7 @@ fi
                              pr_JJAS_France_pointers.validate.France.nc \
                              pr_JJAS_France_pointers.validate.France.retrieved.nc
         #Testing check: 
-        if [ $(cat pr_JJAS_France_pointers.validate.France.retrieved.nc.log | grep ERROR | wc -l) -gt 0 ]; then
-            cat pr_JJAS_France_pointers.validate.France.retrieved.nc.log | grep ERROR
-            exit 1
-        fi
+        inspectlogs pr_JJAS_France_pointers.validate.France.retrieved.nc
 
         #Convert to filesystem:
         cdb_query CORDEX reduce --out_destination=./out_France/CORDEX/ \
@@ -117,9 +114,7 @@ fi
                                  pr_JJAS_France_pointers.validate.France.retrieved.nc \
                                  pr_JJAS_France_pointers.validate.France.retrieved.converted.nc
         #Testing check: 
-        if [ $(cat pr_JJAS_France_pointers.validate.France.retrieved.converted.nc.log | grep ERROR | wc -l) -gt 0 ]; then
-            cat pr_JJAS_France_pointers.validate.France.retrieved.converted.nc.log | grep ERROR
-            exit 1
-        fi
+        inspectlogs pr_JJAS_France_pointers.validate.France.retrieved.converted.nc
 
 rm pr_JJAS_France_pointers.*
+rm -r out/ out_France/
