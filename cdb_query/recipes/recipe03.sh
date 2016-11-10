@@ -84,7 +84,6 @@ fi
                         --log_files \
                         --debug \
                         --num_procs=${NUM_PROCS} \
-                        --swap_dir=/dev/shm/ \
                         'nc4sl subset --lonlatbox -5.0 10.0 40.0 53.0' \
                         pr_JJAS_France_pointers.validate.nc \
                         pr_JJAS_France_pointers.validate.France.nc
@@ -102,7 +101,6 @@ fi
                              --password_from_pipe \
                              --year=1979,1980,1990,2000 \
                              --month=6 \
-                             --swap_dir=/dev/shm/ \
                              pr_JJAS_France_pointers.validate.France.nc \
                              pr_JJAS_France_pointers.validate.France.retrieved.nc
         #Testing check: 
@@ -113,7 +111,6 @@ fi
 
         #Convert to filesystem:
         cdb_query CORDEX reduce --out_destination=./out_France/CORDEX/ \
-                                --swap_dir=/dev/shm/ \
                                 --log_files \
                                 --debug \
                                  '' \
