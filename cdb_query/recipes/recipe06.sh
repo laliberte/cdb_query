@@ -17,8 +17,8 @@
 #   2) a directory tree under ${OUT_DIR} and
 #   3) a pointer file ${OUT_FILE} that can be used in a further reduce step.
 
-#Use 10 processors:
-NUM_PROCS=10
+#Use 3 processes:
+NUM_PROCS=3
 
 function inspectlogs {
     if [ ! -f $1 ]; then

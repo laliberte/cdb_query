@@ -45,7 +45,7 @@ echo $PASSWORD_ESGF | cdb_query CMIP5 ask validate record_validate reduce_soft_l
                   --model=ACCESS1.0 \
                   --password_from_pipe \
                   --out_destination=./out_sample/CMIP5/ \
-                  --num_procs=10 \
+                  --num_procs=3 \
                   --year=2000 --month=3 \
                   --reduce_soft_links_script='nc4sl subset --lonlatbox -150.0 -50.0 20.0 55.0' \
                   'cdo -f nc \

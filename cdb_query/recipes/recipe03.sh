@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #Change to set number of processes to use:
-NUM_PROCS=10
+NUM_PROCS=3
 
 function inspectlogs {
     if [ ! -f $1 ]; then

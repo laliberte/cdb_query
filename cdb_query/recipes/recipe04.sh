@@ -28,7 +28,7 @@ echo $PASSWORD_ESGF | cdb_query CMIP5 ask validate record_validate download_open
                   --ensemble=r1i1p1 \
                   --Xdata_node=http://esgf-data1.ceda.ac.uk \
                   --out_destination=./out/CMIP5/ \
-                  --num_procs=10 \
+                  --num_procs=3 \
                   '' \
                   tas_ONDJF_pointers.validate.197901.retrieved.converted.nc
 #Testing check: 
@@ -50,7 +50,7 @@ echo $PASSWORD_ESGF | cdb_query CORDEX ask validate record_validate \
                   --driving_model=ICHEC-EC-EARTH \
                   --out_destination=./out_France/CORDEX/ \
                   --Xdata_node=http://esgf2.dkrz.de \
-                  --num_procs=10 \
+                  --num_procs=3 \
                   --reduce_soft_links_script='nc4sl subset --lonlatbox -5.0 10.0 40.0 53.0' \
                   '' \
                   pr_JJAS_France_pointers.validate.France.retrieved.converted.nc
