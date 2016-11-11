@@ -48,14 +48,7 @@ def download(database,retrieval_type,options,q_manager,sessions):
     #Recover the database meta data:
     database.load_header(options_copy)
     #Check if years should be relative, eg for piControl:
-    options_copy.min_year = None
-    if 'experiment_list' in database.header.keys():
-        for experiment in database.header['experiment_list']:
-            min_year = np.min(find_functions.get_years_list_from_periods(database.header['experiment_list'][experiment])[0])
-            if min_year < 10:
-                options_copy.min_year = min_year
-                if not ('silent' in dir(options_copy) and options_copy.silent):
-                    print 'Using min year {0} for experiment {1}'.format(str(min_year),experiment)
+    options_copy.min_year = min_year_from_header(database.header, options_copy)
 
     time_slicing_names=['year','month','day','hour']
     is_time_slicing_requested=np.any([ True if time_slicing in dir(options_copy) and getattr(options_copy,time_slicing)!=None else False for time_slicing in time_slicing_names])
@@ -101,15 +94,8 @@ def time_split(database,options, check_split=True):
         if type in dir(options_copy): setattr(options_copy,type,0)
     #Recover the database meta data:
     database.load_header(options_copy)
-    options_copy.min_year=None
-    if 'experiment_list' in database.header.keys():
-        for experiment in database.header['experiment_list']:
-            min_year=int(database.header['experiment_list'][experiment].split(',')[0])
-            if min_year<10:
-                options_copy.min_year = min_year
-                if not ('silent' in dir(options_copy) and options_copy.silent):
-                    print 'Using min year {0} for experiment {1}'.format(str(min_year),experiment)
-    #Find the data that needs to be recovered:
+    options_copy.min_year = min_year_from_header(database.header, options_copy)
+
     database.load_database(options_copy,find_functions.simple)
     dates_axis = database.nc_Database.retrieve_dates(options_copy)
     database.close_database()
@@ -125,6 +111,19 @@ def time_split(database,options, check_split=True):
     else:
         #There are no dates corresponding to the slicing
         return []
+
+def min_year_from_header(database.header, options):
+    if 'experiment_list' in header.keys():
+        for experiment in header['experiment_list']:
+            min_year = np.min([int(experiment_spec.split(',')[0]) 
+                               for experiment_spec in
+                               header['experiment_list'][experiment]])
+            if min_year < 10:
+                if not ('silent' in dir(options) and options.silent):
+                    print 'Using min year {0} for experiment {1}'.format(str(min_year),experiment)
+                return min_year
+
+    #Find the data that needs to be recovered:
 
 def recursive_time_list(options, dates_axis, loop_names, loop_values, time_unit_names, time_unit_values):
     dates_axis_tmp = dates_axis
