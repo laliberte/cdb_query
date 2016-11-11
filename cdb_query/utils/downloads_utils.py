@@ -112,7 +112,7 @@ def time_split(database,options, check_split=True):
         #There are no dates corresponding to the slicing
         return []
 
-def min_year_from_header(database.header, options):
+def min_year_from_header(header, options):
     if 'experiment_list' in header.keys():
         for experiment in header['experiment_list']:
             min_year = np.min([int(experiment_spec.split(',')[0]) 
