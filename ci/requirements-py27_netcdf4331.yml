@@ -26,7 +26,6 @@ dependencies:
   - sqlalchemy
   - sqlite
   - h5netcdf
-  - cdo=1.7.1-5
   - nco
   - pip:
       - requests_cache
