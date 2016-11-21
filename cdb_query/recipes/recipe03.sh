@@ -3,6 +3,9 @@
 #Change to set number of processes to use:
 NUM_PROCS=3
 
+#Skip reduction:
+VALIDATE_ONLY=true
+
 function inspectlogs {
     if [ ! -f $1 ]; then
         exit 1
@@ -50,6 +53,7 @@ echo $PASSWORD_ESGF | cdb_query CORDEX validate \
 #Testing check: 
 inspectlogs pr_JJAS_France_pointers.validate.nc
 
+if [ ! ${VALIDATE_ONLY} ]; then
 #CHOOSE:
     # *1* Retrieve files:
         #echo $PASSWORD_ESGF | cdb_query CORDEX download_files \
@@ -115,6 +119,7 @@ inspectlogs pr_JJAS_France_pointers.validate.nc
                                  pr_JJAS_France_pointers.validate.France.retrieved.converted.nc
         #Testing check: 
         inspectlogs pr_JJAS_France_pointers.validate.France.retrieved.converted.nc
+fi
 
 rm pr_JJAS_France_pointers.*
 rm -r out/ out_France/

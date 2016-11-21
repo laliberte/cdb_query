@@ -56,6 +56,9 @@ echo $PASSWORD_ESGF | cdb_query CMIP5 ask validate record_validate reduce_soft_l
 #Testing check: 
 inspectlogs us_pr_tas_MAM_pointers.validate.200003.retrieved.converted.nc
 
+#Do only first subset:
+exit
+
 echo $PASSWORD_ESGF | cdb_query CMIP5 reduce_soft_links download_opendap reduce \
                   --debug \
                   --log_files \

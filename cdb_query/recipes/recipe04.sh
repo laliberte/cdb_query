@@ -33,6 +33,10 @@ echo $PASSWORD_ESGF | cdb_query CMIP5 ask validate record_validate download_open
                   tas_ONDJF_pointers.validate.197901.retrieved.converted.nc
 #Testing check: 
 inspectlogs tas_ONDJF_pointers.validate.197901.retrieved.converted.nc
+rm tas_ONDJF_pointers.validate.197901.retrieved.converted.nc
+
+#Do not test CORDEX for efficiency:
+exit
 
 echo $PASSWORD_ESGF | cdb_query CORDEX ask validate record_validate \
                                   reduce_soft_links record_reduce_soft_links \
@@ -56,3 +60,4 @@ echo $PASSWORD_ESGF | cdb_query CORDEX ask validate record_validate \
                   pr_JJAS_France_pointers.validate.France.retrieved.converted.nc
 #Testing check: 
 inspectlogs pr_JJAS_France_pointers.validate.France.retrieved.converted.nc
+rm pr_JJAS_France_pointers.validate.France.retrieved.converted.nc

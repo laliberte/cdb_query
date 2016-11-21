@@ -1,6 +1,6 @@
 #!/bin/bash
 
-NUM_PROCS=3
+NUM_PROCS=10
 
 function inspectlogs {
     if [ ! -f $1 ]; then
