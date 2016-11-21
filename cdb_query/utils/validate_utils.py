@@ -141,29 +141,37 @@ def find_model_list(database,project_drs,model_list,experiment,options,time_list
 
 def get_diag_month_list(database):
     if 'month_list' in database.header.keys():
-        diag_month_list=database.header['month_list']
+        diag_month_list = database.header['month_list']
     else:
-        diag_month_list=range(1,13)
+        diag_month_list = range(1,13)
     return diag_month_list
 
-def validate(database,options,q_manager=None,sessions=dict()):
+def validate(database, options, q_manager=None, sessions=dict()):
     if 'data_node_list' in dir(database.drs):
-        database.header['data_node_list']=database.drs.data_node_list
+        database.header['data_node_list'] = database.drs.data_node_list
     else:
-        data_node_list, url_list, simulations_list =database.find_data_nodes_and_simulations(options)
-        if len(data_node_list)>1 and not options.no_check_availability:
-                data_node_list=database.rank_data_nodes(options,data_node_list,url_list)
-        database.header['data_node_list']=data_node_list
+        data_node_list, url_list, simulations_list = database.find_data_nodes_and_simulations(options)
+        if (len(data_node_list)>1 and
+            not options.no_check_availability):
+                data_node_list = (database
+                                  .rank_data_nodes(options,
+                                                   data_node_list,
+                                                   url_list))
+        database.header['data_node_list'] = data_node_list
 
-    semaphores=q_manager.validate_semaphores
-    remote_netcdf_kwargs=dict()
+    semaphores = q_manager.validate_semaphores
+    remote_netcdf_kwargs = dict()
     if 'validate_cache' in dir(options) and options.validate_cache:
-        remote_netcdf_kwargs['cache']=options.validate_cache.split(',')[0]
-        if len(options.validate_cache.split(','))>1:
-            remote_netcdf_kwargs['expire_after']=datetime.timedelta(hours=float(options.validate_cache.split(',')[1]))
+        remote_netcdf_kwargs['cache'] = options.validate_cache.split(',')[0]
+        if len(options.validate_cache.split(',')) > 1:
+            remote_netcdf_kwargs['expire_after'] = (datetime
+                                                    .timedelta(hours=float(options.validate_cache.split(',')[1])))
     #Add credentials:
-    remote_netcdf_kwargs.update({opt: getattr(options,opt) for opt in ['openid','username','password','use_certifices'
-                                                                     ] if opt in dir(options)})
+    remote_netcdf_kwargs.update({opt: getattr(options,opt)
+                                  for opt in
+                                  ['openid', 'username',
+                                   'password', 'use_certifices']
+                                  if opt in dir(options)})
 
     if 'validate' in sessions.keys():
         session = sessions['validate']
@@ -171,26 +179,44 @@ def validate(database,options,q_manager=None,sessions=dict()):
         session = None
 
     time_slices=dict()
-    #Slice time if record_validate was already performed:
-    if ( not ( 'record_validate' in commands_parser._get_command_names(options) )
-         or (  commands_parser._get_command_names(options).index('record_validate')
-                    < options.max_command_number ) ):
-         for time_type in ['month','year']:
+    # Slice time if record_validate was already performed:
+    if ('record_validate' not in commands_parser._get_command_names(options) or
+        'record_validate' == commands_parser._get_command_names(options)[-1] or
+        (commands_parser._get_command_names(options).index('record_validate')
+                    < options.max_command_number)):
+         for time_type in ['month', 'year']:
             if time_type in dir(options):
                 time_slices[time_type] = getattr(options,time_type)
 
     if options.no_check_availability:
-        #Does not check whether files are available / queryable before proceeding.
-        database.load_database(options,find_functions.time_available,time_slices=time_slices,semaphores=semaphores,session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
-        #Find the list of institute / model with all the months for all the years / experiments and variables requested:
+        # Does not check whether files are available / queryable before proceeding.
+        database.load_database(options, find_functions.time_available,
+                               time_slices=time_slices,
+                               semaphores=semaphores,
+                               session=session,
+                               remote_netcdf_kwargs=remote_netcdf_kwargs)
+        # Find the list of institute / model with all the months
+        # for all the years / experiments and variables requested:
         intersection(database, options, time_slices=time_slices)
-        database.nc_Database.write_database(database.header,options,'record_paths',semaphores=semaphores,session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
+        database.nc_Database.write_database(database.header, options,
+                                            'record_paths', semaphores=semaphores,
+                                            session=session,
+                                            remote_netcdf_kwargs=remote_netcdf_kwargs)
     else:
-        #Checks that files are available.
-        database.load_database(options,find_functions.time,time_slices=time_slices,semaphores=semaphores,session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
-        #Find the list of institute / model with all the months for all the years / experiments and variables requested:
+        # Checks that files are available.
+        database.load_database(options, find_functions.time,
+                               time_slices=time_slices,
+                               semaphores=semaphores,
+                               session=session,
+                               remote_netcdf_kwargs=remote_netcdf_kwargs)
+        # Find the list of institute / model with all the months
+        # for all the years / experiments and variables requested:
         intersection(database, options, time_slices=time_slices)
-        database.nc_Database.write_database(database.header,options,'record_meta_data',semaphores=semaphores,session=session,remote_netcdf_kwargs=remote_netcdf_kwargs)
+        database.nc_Database.write_database(database.header, options,
+                                            'record_meta_data',
+                                            semaphores=semaphores,
+                                            session=session,
+                                            remote_netcdf_kwargs=remote_netcdf_kwargs)
     database.close_database()
     return
 
@@ -228,58 +254,82 @@ def intersection(database,options, time_slices=dict()):
     model_list = copy.copy(simulations_list_no_fx)
 
     if not 'experiment' in database.drs.simulations_desc:
-        for experiment in database.header['experiment_list'].keys():
-            if db_utils.is_level_name_included_and_not_excluded('experiment',options,experiment):
+        for experiment in database.header['experiment_list']:
+            if db_utils.is_level_name_included_and_not_excluded('experiment',
+                                                                options,
+                                                                experiment):
                 # Only check if experiment was not sliced
-                time_list, picontrol_min_time = find_time_list(database, experiment, time_slices)
+                time_list, picontrol_min_time = find_time_list(database,
+                                                               experiment,
+                                                               time_slices)
                 if len(time_list) > 0:
                     #When time was sliced, exclude models only if there were some requested times:
                     model_list = find_model_list(database, database.drs, 
                                                  model_list, experiment, 
-                                                 options, time_list, picontrol_min_time)
+                                                 options, time_list,
+                                                 picontrol_min_time)
         model_list_combined = model_list
     else:
-        model_list_combined = set().union(*[find_model_list(database,database.drs,
+        model_list_combined = set().union(*[find_model_list(database, database.drs,
                                                             model_list,
-                                                            experiment,options,
-                                                            *find_time_list(database, experiment, time_slices)) 
-                                            for experiment in database.header['experiment_list'].keys()])
+                                                            experiment, options,
+                                                            *find_time_list(database,
+                                                                            experiment,
+                                                                            time_slices)) 
+                                            for experiment in database.header['experiment_list']])
     
     #Step two: create the new paths dictionary:
-    variable_list_requested=[]
+    variable_list_requested = []
     for var_name in database.header['variable_list']:
         for var_spec in database.header['variable_list'][var_name]:
-            variable_list_requested.append((var_name,)+tuple(var_spec))
+            variable_list_requested.append((var_name,) + tuple(var_spec))
 
     #Step three: find the models to remove:
-    models_to_remove=set(simulations_list_no_fx).difference(model_list_combined)
+    models_to_remove = set(simulations_list_no_fx).difference(model_list_combined)
 
     #Step four: remove from database:
     for model in models_to_remove:
-        conditions=[getattr(db_manager.File_Expt,field)==model[field_id] for field_id, field in enumerate(database.drs.simulations_desc)]
-        database.nc_Database.session.query(db_manager.File_Expt).filter(*conditions).delete()
+        conditions=[getattr(db_manager.File_Expt,field) == model[field_id]
+                    for field_id, field in enumerate(database.drs.simulations_desc)]
+        (database.nc_Database.session
+                             .query(db_manager.File_Expt)
+                             .filter(*conditions)
+                             .delete())
     
     #Remove fixed variables:
-    simulations_list=database.nc_Database.simulations_list()
+    simulations_list = database.nc_Database.simulations_list()
     if 'ensemble' in database.drs.simulations_desc:
-        simulations_list_no_fx=[simulation for simulation in simulations_list if 
-                                simulation[database.drs.simulations_desc.index('ensemble')]!='r0i0p0']
+        simulations_list_no_fx=[simulation
+                                for simulation in simulations_list if 
+                                simulation[database.drs
+                                                    .simulations_desc
+                                                    .index('ensemble')] != 'r0i0p0']
     else:
-        simulations_list_no_fx=copy.copy(simulations_list)
-    models_to_remove=set(
-                        [remove_ensemble(simulation,database.drs) for simulation in simulations_list]
-                         ).difference([remove_ensemble(simulation,database.drs) for simulation in simulations_list_no_fx])
+        simulations_list_no_fx = copy.copy(simulations_list)
+    models_to_remove = set(
+                        [remove_ensemble(simulation, database.drs)
+                         for simulation in simulations_list]
+                         ).difference([remove_ensemble(simulation,database.drs)
+                                       for simulation in simulations_list_no_fx])
 
     for model in models_to_remove:
-        conditions=[ getattr(db_manager.File_Expt,field)==model[field_id] for field_id, field in enumerate(remove_ensemble(database.drs.simulations_desc,database.drs))]
-        database.nc_Database.session.query(db_manager.File_Expt).filter(*conditions).delete()
+        conditions = [getattr(db_manager.File_Expt,field) == model[field_id]
+                      for field_id, field in
+                      enumerate(remove_ensemble(database.drs.simulations_desc,database.drs))]
+        (database.nc_Database.session
+                             .query(db_manager.File_Expt)
+                             .filter(*conditions)
+                             .delete())
 
     return 
 
 def remove_ensemble(simulation,project_drs):
     if 'ensemble' in project_drs.simulations_desc:
-        simulations_desc_indices_without_ensemble=range(0,len(project_drs.simulations_desc))
-        simulations_desc_indices_without_ensemble.remove(project_drs.simulations_desc.index('ensemble'))
+        simulations_desc_indices_without_ensemble = range(0, len(project_drs
+                                                                 .simulations_desc))
+        simulations_desc_indices_without_ensemble.remove(project_drs
+                                                         .simulations_desc
+                                                         .index('ensemble'))
         return itemgetter(*simulations_desc_indices_without_ensemble)(simulation)
     else:
         return simulation

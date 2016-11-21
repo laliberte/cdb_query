@@ -123,12 +123,14 @@ class nc_Database:
         drs_to_remove.remove('time')
 
         #Check if time was sliced:
-        time_slices=dict()
-        if not ( 'record_validate' in commands_parser._get_command_names(options) ):
-             #Slice time unless the validate step should be recorded:
+        time_slices = dict()
+        if ('record_validate' not in commands_parser._get_command_names(options) or
+            'record_validate' == commands_parser._get_command_names(options)[-1]):
+             # Slice time unless the validate step should be recorded and it is not the 
+             # last command:
              for time_type in ['month','year']:
                 if time_type in dir(options):
-                    time_slices[time_type]=getattr(options,time_type)
+                    time_slices[time_type] = getattr(options,time_type)
 
         #Find the unique tuples:
         trees_list=self.list_subset([getattr(File_Expt,level) for level in drs_list])
@@ -175,12 +177,12 @@ class nc_Database:
                     time_slices['month']!=None):
                     months_list=[month for month in months_list if month in time_slices['month']]
 
-                if record_function_handle=='record_paths':
-                    check_dimensions=False
+                if record_function_handle == 'record_paths':
+                    check_dimensions = False
                 else:
-                    check_dimensions=True
+                    check_dimensions = True
 
-                netcdf_pointers=create_soft_links.create_netCDF_pointers(
+                netcdf_pointers = create_soft_links.create_netCDF_pointers(
                                                                   paths_list,time_frequency,years_list, months_list,
                                                                   header['file_type_list'],
                                                                   header['data_node_list'],
@@ -188,10 +190,13 @@ class nc_Database:
                                                                   session=session,
                                                                   remote_netcdf_kwargs=remote_netcdf_kwargs)
 
-                getattr(netcdf_pointers,record_function_handle)(output,var)
+                getattr(netcdf_pointers, record_function_handle)(output, var)
 
                 #Remove recorded data from database:
-                self.session.query(*out_tuples).filter(sqlalchemy.and_(*conditions)).delete()
+                (self.session
+                     .query(*out_tuples)
+                     .filter(sqlalchemy.and_(*conditions))
+                     .delete())
 
         return
 
