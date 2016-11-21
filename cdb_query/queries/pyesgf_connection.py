@@ -185,23 +185,12 @@ class SearchConnection(object):
         query_url = '%s/%s?%s' % (self.url, endpoint, urlencode(full_query))
         log.debug('Query request is %s' % query_url)
 
-        #try:
-        #    #Revcert to old default:
-        #    context = ssl._create_unverified_context()
-        #    response = urllib2.urlopen(query_url,context=context)
-        #except urllib2.HTTPError, err:
-        #    log.warn("HTTP request received error code: %s" % err.code)
-        #    if err.code == 400:
-        #        errors = set(re.findall("Invalid HTTP query parameter=(\w+)", err.fp.read()))
-        #        content = "; ".join([e for e in list(errors)])
-        #        raise Exception("Invalid query parameter(s): %s" % content)
-        #    else:
-        #        raise Exception("Error returned from URL: %s" % query_url)
         try:
             with warnings.catch_warnings():
-                #warnings.filterwarnings('ignore', message='Unverified HTTPS request is being made. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.org/en/latest/security.html')
-                warnings.filterwarnings('ignore', message='Unverified HTTPS request is being made. Adding certificate verification is strongly advised. See: https://urllib3.readthedocs.org/en/latest/security.html')
-                response = self.session.get(query_url,verify=False,timeout=self.timeout)
+                warnings.filterwarnings("ignore", message=("Unverified HTTPS request is being made. "
+                                                           "Adding certificate verification is strongly advised. "
+                                                           "See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings"))
+                response = self.session.get(query_url, verify=False ,timeout=self.timeout)
         except requests.HTTPError, err:
             log.warn("HTTP request received error code: %s" % err.code)
             if err.code == 400:
