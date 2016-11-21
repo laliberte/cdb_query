@@ -119,7 +119,6 @@ if [ ! ${VALIDATE_ONLY} ]; then
                                  pr_JJAS_France_pointers.validate.France.retrieved.converted.nc
         #Testing check: 
         inspectlogs pr_JJAS_France_pointers.validate.France.retrieved.converted.nc
+        rm -r out/ out_France/
 fi
-
 rm pr_JJAS_France_pointers.*
-rm -r out/ out_France/
