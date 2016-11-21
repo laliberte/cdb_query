@@ -12,6 +12,7 @@ import multiprocessing
 import random
 import requests
 import logging
+from pydap.exceptions import ServerError
 
 # External but related:
 import netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
@@ -510,16 +511,19 @@ def rank_data_nodes(options, data_node_list, url_list, q_manager):
 
             # Create a session for timing:
             session = requests.Session()
+            remote_data = (remote_netcdf
+                            .remote_netCDF(url[0],
+                                           url[1],
+                                           semaphores=q_manager
+                                           .validate_semaphores,
+                                           session=session,
+                                           **credentials_kwargs))
             with Timer() as timed_exec:
                 try:
-                    is_available = (remote_netcdf
-                                    .remote_netCDF(url[0],
-                                                   url[1],
-                                                   semaphores=q_manager
-                                                   .validate_semaphores,
-                                                   session=session,
-                                                   **credentials_kwargs)
+                    is_available = (remote_data
                                     .is_available(num_trials=1))
+                except ServerError:
+                    is_available = False
                 except Exception as e:
                     is_available = False
                     if ((str(e)
@@ -549,14 +553,7 @@ def rank_data_nodes(options, data_node_list, url_list, q_manager):
                         # Pass the session that should have
                         # all the proper cookies:
                         with Timer() as timed_exec:
-                            is_available = (remote_netcdf
-                                            .remote_netCDF(
-                                                       url[0],
-                                                       url[1],
-                                                       semaphores=q_manager
-                                                       .validate_semaphores,
-                                                       session=session,
-                                                       **credentials_kwargs)
+                            is_available = (remote_data
                                             .is_available(num_trials=1))
                         timing += timed_exec.interval
                     data_node_timing.append(timing)
