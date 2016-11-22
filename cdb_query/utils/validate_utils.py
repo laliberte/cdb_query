@@ -14,7 +14,6 @@ from .. import commands_parser
 queryable_file_types=['OPENDAP','local_file']
 
 def obtain_time_list(database, project_drs, var_name, var_spec, experiment, model):
-    #Do this without fx variables:
     conditions=(
                  [db_manager.File_Expt.var==var_name,] +
                  [db_manager.File_Expt.experiment==experiment,] +
@@ -27,6 +26,27 @@ def obtain_time_list(database, project_drs, var_name, var_spec, experiment, mode
                              db_manager.File_Expt.time
                             ).filter(sqlalchemy.and_(*conditions)).distinct().all()]
     return time_list_var
+
+def delete_not_in_time_list(database, project_drs, var_name, var_spec, experiment, model,
+                     time_list):
+    """
+    Reverse of obtain time list: deletes from database
+    """
+    conditions=(
+                 [db_manager.File_Expt.var == var_name,] +
+                 [db_manager.File_Expt.experiment == experiment,] +
+               [getattr(db_manager.File_Expt,desc) == model[desc_id]
+                for desc_id,desc in enumerate(project_drs.simulations_desc)]
+               )
+    for field_id, field in enumerate(project_drs.var_specs):
+        conditions.append(getattr(db_manager.File_Expt,field) == var_spec[field_id])
+    conditions.extend([db_manager.File_Expt.time != time_val
+                       for time_val in time_list])
+    (database.nc_Database.session
+                         .query(db_manager.File_Expt.time)
+                         .filter(sqlalchemy.and_(*conditions))
+                         .delete())
+    return
 
 def find_time_list(database,experiment,time_slices):
     years_list, picontrol_min_time = find_functions.get_years_list_from_periods(database.header['experiment_list'][experiment])
@@ -46,7 +66,9 @@ def find_time_list(database,experiment,time_slices):
     return time_list, picontrol_min_time
 
 
-def find_model_list(database,project_drs,model_list,experiment,options,time_list, picontrol_min_time):
+def find_model_list(database, project_drs, model_list,
+                    experiment, options, time_list,
+                    picontrol_min_time):
     
     # Remove other experiments:
     model_list_no_other_exp = include_simulations(project_drs.simulations_desc,
@@ -54,16 +76,19 @@ def find_model_list(database,project_drs,model_list,experiment,options,time_list
     model_list_copy = copy.copy(model_list_no_other_exp)
 
     for model in model_list_no_other_exp:
-        missing_vars=[]
+        missing_vars = []
         if picontrol_min_time:
             #Fix for experiments without a standard time range:
-            min_time_list=[]
+            min_time_list = []
             for var_name in database.header['variable_list']:
                 for var_spec in database.header['variable_list'][var_name]:
-                    if (var_spec[project_drs.var_specs.index('time_frequency')] not in
+                    if (var_spec[project_drs
+                                 .var_specs
+                                 .index('time_frequency')] not in
                         ['fx','clim']):
                         time_list_var = obtain_time_list(database, project_drs,
-                                                         var_name, var_spec, experiment, model)
+                                                         var_name, var_spec,
+                                                         experiment, model)
                         if len(time_list_var) > 0:
                             min_time_list.append(int(np.floor(np.min([int(time)
                                                                       for time in time_list_var])/100.0)*100))
@@ -77,9 +102,10 @@ def find_model_list(database,project_drs,model_list,experiment,options,time_list
         else:
             min_time = 0
 
-        if 'missing_years' in dir(options) and options.missing_years:
+        if (hasattr(options, 'missing_years') and
+            options.missing_years):
             #When missing years are allowed, ensure that all variables have the same times!
-            valid_times=dict()
+            valid_times = dict()
             for var_name in database.header['variable_list']:
                 for var_spec in database.header['variable_list'][var_name]:
                     if (var_spec[project_drs.var_specs.index('time_frequency')] not in
@@ -95,13 +121,31 @@ def find_model_list(database,project_drs,model_list,experiment,options,time_list
                                                                                          var_spec[field_id]))
 
                         if np.all(inclusions_and_exclusions):
-                            time_list_var = obtain_time_list(database,project_drs,var_name, var_spec,experiment,model)
-                            time_list_var = [str(int(time)-int(min_time)).zfill(6) for time in time_list_var]
+                            time_list_var = obtain_time_list(database,
+                                                             project_drs,
+                                                             var_name,
+                                                             var_spec,
+                                                             experiment,
+                                                             model)
+                            time_list_var = [str(int(time)-int(min_time)).zfill(6)
+                                             for time in time_list_var]
                             valid_times[var_name] = set(time_list).intersection(time_list_var)
-            intersection = set.intersection(*[ v for v in valid_times.values() ])
+            intersect_time = set.intersection(*[v for v in valid_times.values()])
 
-            if len(intersection) == 0:
-                missing_vars.append(','.join(var_names_no_fx)+':'+'have no common times.')
+            if len(intersect_time) == 0:
+                missing_vars.append(','.join(var_names_no_fx) + ':'+'have no common times.')
+            else:
+                for var_name in database.header['variable_list']:
+                    for var_spec in database.header['variable_list'][var_name]:
+                        if (var_spec[project_drs.var_specs.index('time_frequency')] not in
+                           ['fx','clim']):
+                            delete_not_in_time_list(database,
+                                                    project_drs,
+                                                    var_name,
+                                                    var_spec,
+                                                    experiment,
+                                                    model,
+                                                    intersect_time)
         else:
             #When missing years are not allowed, ensure that all variables have the requested times!
             for var_name in database.header['variable_list']:
@@ -289,8 +333,8 @@ def intersection(database,options, time_slices=dict()):
 
     #Step four: remove from database:
     for model in models_to_remove:
-        conditions=[getattr(db_manager.File_Expt,field) == model[field_id]
-                    for field_id, field in enumerate(database.drs.simulations_desc)]
+        conditions = [getattr(db_manager.File_Expt,field) == model[field_id]
+                      for field_id, field in enumerate(database.drs.simulations_desc)]
         (database.nc_Database.session
                              .query(db_manager.File_Expt)
                              .filter(*conditions)
@@ -299,11 +343,11 @@ def intersection(database,options, time_slices=dict()):
     #Remove fixed variables:
     simulations_list = database.nc_Database.simulations_list()
     if 'ensemble' in database.drs.simulations_desc:
-        simulations_list_no_fx=[simulation
-                                for simulation in simulations_list if 
-                                simulation[database.drs
-                                                    .simulations_desc
-                                                    .index('ensemble')] != 'r0i0p0']
+        simulations_list_no_fx = [simulation
+                                  for simulation in simulations_list if 
+                                  simulation[database.drs
+                                                     .simulations_desc
+                                                     .index('ensemble')] != 'r0i0p0']
     else:
         simulations_list_no_fx = copy.copy(simulations_list)
     models_to_remove = set(
