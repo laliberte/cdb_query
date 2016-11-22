@@ -222,15 +222,7 @@ def validate(database, options, q_manager=None, sessions=dict()):
     else:
         session = None
 
-    time_slices=dict()
-    # Slice time if record_validate was already performed:
-    if ('record_validate' not in commands_parser._get_command_names(options) or
-        'record_validate' == commands_parser._get_command_names(options)[-1] or
-        (commands_parser._get_command_names(options).index('record_validate')
-                    < options.max_command_number)):
-         for time_type in ['month', 'year']:
-            if time_type in dir(options):
-                time_slices[time_type] = getattr(options,time_type)
+    time_slices = db_manager.time_slices_from_options(options)
 
     if options.no_check_availability:
         # Does not check whether files are available / queryable before proceeding.
@@ -263,6 +255,7 @@ def validate(database, options, q_manager=None, sessions=dict()):
                                             remote_netcdf_kwargs=remote_netcdf_kwargs)
     database.close_database()
     return
+
 
 def exclude_simulations(simulations_desc, simulation_field, simulation_field_value,
                        simulations_list):

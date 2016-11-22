@@ -27,16 +27,16 @@ class browser:
         #Try to connect with timeout:
         try:
             get_kwargs = {'timeout':20,'stream':True,'allow_redirects':True}
-            with warnings.catch_warnings():
-                warnings.filterwarnings("ignore", message=("Unverified HTTPS request is being made. "
-                                                           "Adding certificate verification is strongly advised. "
-                                                           "See: https://urllib3.readthedocs.io/en/latest/security.html"))
-                if self.session != None:
-                    response = self.session.get(self.search_path+'search',**get_kwargs)
-                else:
-                    response = requests.get(self.search_path+'search',**get_kwargs)
-                test = response.ok
-                response.close()
+            #with warnings.catch_warnings():
+            #    warnings.filterwarnings("ignore", message=("Unverified HTTPS request is being made. "
+            #                                               "Adding certificate verification is strongly advised. "
+            #                                               "See: https://urllib3.readthedocs.io/en/latest/security.html"))
+            if self.session != None:
+                response = self.session.get(self.search_path+'search', verify=True,**get_kwargs)
+            else:
+                response = requests.get(self.search_path+'search', verify=True, **get_kwargs)
+            test = response.ok
+            response.close()
         except requests.exceptions.ReadTimeout as e:
             test=False
             pass
@@ -66,23 +66,30 @@ class browser:
         #Create the database:
         only_list=[]
         for experiment in lists_to_loop['experiment_list']:
-            for var_name in lists_to_loop['variable_list']:
-                for var_spec in database.header['variable_list'][var_name]:
-                    only_list.append(experiment_variable_search_recursive(database.nc_Database.drs
-                                                                          .slicing_args.keys(),
-                                                                          database.nc_Database,
-                                                                          self.search_path,
-                                                                          database.header['file_type_list'],
-                                                                          self.options,
-                                                                          experiment,
-                                                                          var_name,
-                                                                          var_spec,
-                                                                          list_level=list_level,
-                                                                          session=self.session))
+            for experiment_spec in database.header['experiment_list'][experiment]:
+                for var_name in lists_to_loop['variable_list']:
+                    for var_spec in database.header['variable_list'][var_name]:
+                        from_timestamp = experiment_spec.split(',')[0] + '-01-01T00:00:00Z'
+                        to_timestamp = experiment_spec.split(',')[1] + '-12-31T23:59:59Z'
+                        only_list.append(experiment_variable_search_recursive(database.nc_Database.drs
+                                                                              .slicing_args.keys(),
+                                                                              database.nc_Database,
+                                                                              self.search_path,
+                                                                              database.header['file_type_list'],
+                                                                              self.options,
+                                                                              experiment,
+                                                                              var_name,
+                                                                              var_spec,
+                                                                              from_timestamp=from_timestamp,
+                                                                              to_timestamp=to_timestamp,
+                                                                              list_level=list_level,
+                                                                              session=self.session))
         return [item for sublist in only_list for item in sublist]
 
 def experiment_variable_search_recursive(slicing_args, nc_Database, search_path, file_type_list, options,
-                                         experiment, var_name, var_spec, list_level=None, session=None):
+                                         experiment, var_name, var_spec,
+                                         from_timestamp=None, to_timestamp=None,
+                                         list_level=None, session=None):
     if isinstance(slicing_args,list) and len(slicing_args)>0:
         #Go down slicing arguments:
         if ( slicing_args[0] in dir(options) and 
@@ -93,22 +100,27 @@ def experiment_variable_search_recursive(slicing_args, nc_Database, search_path,
 
                 setattr(options_copy,slicing_args[0],[field_option,])
                 only_list.append(experiment_variable_search_recursive(slicing_args[1:],nc_Database,search_path,file_type_list,options_copy,
-                                                         experiment,var_name,var_spec,list_level=list_level))
+                                                         experiment,var_name,var_spec,
+                                                         from_timestamp=from_timestamp, to_timestamp=to_timestamp,
+                                                         list_level=list_level))
             return [item for sublist in only_list for item in sublist]
         else:
             return experiment_variable_search_recursive(slicing_args[1:],nc_Database,search_path,file_type_list,options,
-                                                         experiment,var_name,var_spec,list_level=list_level)
+                                                         experiment,var_name,var_spec,
+                                                         from_timestamp=from_timestamp, to_timestamp=to_timestamp,
+                                                         list_level=list_level)
     else:
         #When done, perform the search:
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", message=("Unverified HTTPS request is being made. "
-                                                       "Adding certificate verification is strongly advised. "
-                                                       "See: https://urllib3.readthedocs.io/en/latest/security.html"))
-            return experiment_variable_search(nc_Database,search_path,file_type_list,options,
-                                             experiment,var_name,var_spec,list_level=list_level,session=session)
+        return experiment_variable_search(nc_Database, search_path, file_type_list,
+                                          options, experiment, var_name,
+                                          var_spec, 
+                                          from_timestamp=from_timestamp, to_timestamp=to_timestamp,
+                                          list_level=list_level, session=session)
 
-def experiment_variable_search(nc_Database,search_path,file_type_list,options,
-                                experiment,var_name,var_spec,list_level=None,session=None):
+def experiment_variable_search(nc_Database, search_path, file_type_list, options,
+                                experiment, var_name, var_spec,
+                                from_timestamp=None, to_timestamp=None,
+                                list_level=None, session=None):
     nc_Database.file_expt.experiment=experiment
     nc_Database.file_expt.var=var_name
     nc_Database.file_expt.time=0
@@ -129,12 +141,16 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
 
     #Search the ESGF:
     top_ctx = conn.new_context(project=nc_Database.drs.project,
-                        experiment=experiment,variable=var_name)
+                        experiment=experiment,variable=var_name,
+                        from_timestamp=from_timestamp,
+                        to_timestamp=to_timestamp)
     if ( 'product' in dir(nc_Database.drs) and 
          top_ctx.hit_count == 0 ):
         #Try using project to define product name. Fix for CREATEIP.
         top_ctx = conn.new_context(product=nc_Database.drs.product,
-                            experiment=experiment,variable=var_name)
+                            experiment=experiment,variable=var_name,
+                            from_timestamp=from_timestamp,
+                            to_timestamp=to_timestamp)
 
     constraints_dict={field:var_spec[field_id] for field_id, field in enumerate(nc_Database.drs.var_specs)}
     #This is where the lenght-one list is important:
@@ -160,10 +176,13 @@ def experiment_variable_search(nc_Database,search_path,file_type_list,options,
                     pass
     else:
         #If no aliases, simply extend constraints to simulations_desc:
-        constraints_dict.update(**{field:getattr(options,field)[0] for field in nc_Database.drs.slicing_args.keys()
-                                                if field in dir(options) and getattr(options,field)!=None and field in nc_Database.drs.simulations_desc})
+        constraints_dict.update(**{field:getattr(options,field)[0]
+                                   for field in nc_Database.drs.slicing_args.keys()
+                                   if (field in dir(options) and 
+                                       getattr(options,field)!=None and 
+                                       field in nc_Database.drs.simulations_desc)})
     #Consstrain with an adequate constraints dict
-    ctx=top_ctx.constrain(**constraints_dict)
+    ctx = top_ctx.constrain(**constraints_dict)
 
     if list_level!=None:
         try:

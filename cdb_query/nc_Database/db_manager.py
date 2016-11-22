@@ -123,14 +123,7 @@ class nc_Database:
         drs_to_remove.remove('time')
 
         #Check if time was sliced:
-        time_slices = dict()
-        if ('record_validate' not in commands_parser._get_command_names(options) or
-            'record_validate' == commands_parser._get_command_names(options)[-1]):
-             # Slice time unless the validate step should be recorded and it is not the 
-             # last command:
-             for time_type in ['month','year']:
-                if time_type in dir(options):
-                    time_slices[time_type] = getattr(options,time_type)
+        time_slices = time_slices_from_options(options)
 
         #Find the unique tuples:
         trees_list=self.list_subset([getattr(File_Expt,level) for level in drs_list])
@@ -229,6 +222,18 @@ class nc_Database:
 #########################  DATABASE CONVERSION
 #####################################################################
 #####################################################################
+def time_slices_from_options(options):
+    time_slices=dict()
+    # Slice time if record_validate was already performed:
+    if ('record_validate' not in commands_parser._get_command_names(options) or
+        'record_validate' == commands_parser._get_command_names(options)[-1] or
+        (commands_parser._get_command_names(options).index('record_validate')
+                    < options.max_command_number)):
+         for time_type in ['month', 'year']:
+            if time_type in dir(options):
+                time_slices[time_type] = getattr(options,time_type)
+    return time_slices
+
 file_unique_id_list=['checksum_type','checksum','tracking_id']
 
 def populate_database_recursive(nc_Database,data,options,find_function,

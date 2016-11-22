@@ -186,11 +186,11 @@ class SearchConnection(object):
         log.debug('Query request is %s' % query_url)
 
         try:
-            with warnings.catch_warnings():
-                warnings.filterwarnings("ignore", message=("Unverified HTTPS request is being made. "
-                                                           "Adding certificate verification is strongly advised. "
-                                                           "See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings"))
-                response = self.session.get(query_url, verify=False ,timeout=self.timeout)
+            #with warnings.catch_warnings():
+            #    warnings.filterwarnings("ignore", message=("Unverified HTTPS request is being made. "
+            #                                               "Adding certificate verification is strongly advised. "
+            #                                               "See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings"))
+            response = self.session.get(query_url, verify=True ,timeout=self.timeout)
         except requests.HTTPError, err:
             log.warn("HTTP request received error code: %s" % err.code)
             if err.code == 400:
