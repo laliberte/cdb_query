@@ -1,10 +1,8 @@
 #!/bin/bash
 
-#Change to set number of processes to use:
-NUM_PROCS=3
 
-#Skip reduction:
-VALIDATE_ONLY=true
+#Change to set number of processes to use:
+NUM_PROCS=10
 
 function inspectlogs {
     if [ ! -f $1 ]; then
@@ -19,42 +17,45 @@ function inspectlogs {
     fi
 }
 
-#Discover data:
-cdb_query CORDEX ask \
-                     --debug \
-                     --log_files \
-                     --ask_experiment=historical:1979-2004 \
-                     --ask_var=pr:day \
-                     --domain=EUR-11 \
-                     --institute=KNMI \
-                     --driving_model=ICHEC-EC-EARTH \
-                     --num_procs=${NUM_PROCS} \
-                     pr_JJAS_France_pointers.nc
-#Testing check: 
-inspectlogs pr_JJAS_France_pointers.nc
+if [ $1 != "test" ]; then
+    #Discover data:
+    cdb_query CORDEX ask \
+                         --debug \
+                         --log_files \
+                         --ask_experiment=historical:1979-2004 \
+                         --ask_var=pr:day \
+                         --domain=EUR-11 \
+                         --driving_model=ICHEC-EC-EARTH \
+                         --institute=KNMI \
+                         --rcm_model=RACMO22E \
+                         --rcm_version=v1 \
+                         --ensemble=r1i1p1 \
+                         --num_procs=${NUM_PROCS} \
+                         pr_JJAS_France_pointers.nc
+    #Testing check: 
+    inspectlogs pr_JJAS_France_pointers.nc
 
-#List simulations:
-cdb_query CORDEX list_fields -f domain -f driving_model -f institute \
-                           -f rcm_model -f rcm_version -f ensemble pr_JJAS_France_pointers.nc
+    #List simulations:
+    cdb_query CORDEX list_fields -f domain -f driving_model -f institute \
+                               -f rcm_model -f rcm_version -f ensemble pr_JJAS_France_pointers.nc
 
-#Validate simulations:
-#Exclude data_node http://esgf2.dkrz.de because it is on a tape archive (slow)
-#If you do not exclude it, it will likely be excluded because of its slow
-echo $PASSWORD_ESGF | cdb_query CORDEX validate \
-            --debug \
-            --log_files \
-            --openid=$OPENID_ESGF \
-            --password_from_pipe \
-            --num_procs=${NUM_PROCS} \
-            --Xdata_node=http://esgf2.dkrz.de \
-            pr_JJAS_France_pointers.nc \
-            pr_JJAS_France_pointers.validate.nc
+    #Validate simulations:
+    #Exclude data_node http://esgf2.dkrz.de because it is on a tape archive (slow)
+    #If you do not exclude it, it will likely be excluded because of its slow
+    echo $PASSWORD_ESGF | cdb_query CORDEX validate \
+                --debug \
+                --log_files \
+                --openid=$OPENID_ESGF \
+                --password_from_pipe \
+                --num_procs=${NUM_PROCS} \
+                --Xdata_node=http://esgf2.dkrz.de \
+                pr_JJAS_France_pointers.nc \
+                pr_JJAS_France_pointers.validate.nc
 
-#Testing check: 
-inspectlogs pr_JJAS_France_pointers.validate.nc
+    #Testing check: 
+    inspectlogs pr_JJAS_France_pointers.validate.nc
 
-if [ ! ${VALIDATE_ONLY} ]; then
-#CHOOSE:
+    #CHOOSE:
     # *1* Retrieve files:
         #echo $PASSWORD_ESGF | cdb_query CORDEX download_files \
         #                    --out_download_dir=./in/CMIP5/ \
@@ -120,5 +121,5 @@ if [ ! ${VALIDATE_ONLY} ]; then
         #Testing check: 
         inspectlogs pr_JJAS_France_pointers.validate.France.retrieved.converted.nc
         rm -r out/ out_France/
-fi
-rm pr_JJAS_France_pointers.*
+        rm pr_JJAS_France_pointers.*
+fi 

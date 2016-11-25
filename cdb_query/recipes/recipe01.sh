@@ -24,7 +24,7 @@ cdb_query CMIP5 ask --ask_month=1,2,10,11,12 \
                     --log_files \
                     --ask_var=tas:day-atmos-day,tas:mon-atmos-Amon,orog:fx-atmos-fx \
                     --ask_experiment=amip:1979-2004 \
-                    --institute=NCAR --ensemble=r1i1p1 --model=CCSM4 \
+                    --institute=NCAR --model=CCSM4 --ensemble=r1i1p1  \
                     --num_procs=${NUM_PROCS} \
                     tas_ONDJF_pointers.nc
 
@@ -48,7 +48,6 @@ echo $PASSWORD_ESGF | cdb_query CMIP5 validate \
                             --log_files \
                             --openid=$OPENID_ESGF \
                             --time_frequency=mon \
-                            --time_frequency=fx \
                             --password_from_pipe \
                             --num_procs=${NUM_PROCS} \
                             --Xdata_node=http://esgf2.dkrz.de \
@@ -73,6 +72,7 @@ cdb_query CMIP5 list_fields -f institute \
                             --download_all_files \
                             --openid=$OPENID_ESGF \
                             --password_from_pipe \
+                            --var=orog \
                             --out_download_dir=./in/CMIP5/ \
                             tas_ONDJF_pointers.validate.nc \
                             tas_ONDJF_pointers.validate.downloaded.nc
@@ -80,6 +80,7 @@ cdb_query CMIP5 list_fields -f institute \
         inspectlogs tas_ONDJF_pointers.validate.downloaded.nc
         echo "Done downloading using WGET!"
 
+if [ $1 != 'test' ]; then
     # *2* Retrieve to netCDF:
         #Retrieve the first month:
         echo "Download using OPENDAP:"
@@ -134,8 +135,9 @@ cdb_query CMIP5 list_fields -f institute \
         #The files can be found in ./out/CMIP5/:
         echo "Converted files:"
         find ./out/CMIP5/ -name '*.nc'
+        rm -r out
+fi
 
 #Cleanup:
 rm tas_ONDJF_pointers.*
-rm -r out
 rm -r in
