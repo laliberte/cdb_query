@@ -19,8 +19,8 @@ matrix:
     - os: osx
       language: generic
       env: CONDA_ENV=py27_netcdf4331
-  allow_failures:
-    - env: CONDA_ENV=py27_netcdf4331
+#  allow_failures:
+#    - env: CONDA_ENV=py27_netcdf4331
         
 
 before_install:
