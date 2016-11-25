@@ -69,8 +69,11 @@ class browser:
             for experiment_spec in database.header['experiment_list'][experiment]:
                 for var_name in lists_to_loop['variable_list']:
                     for var_spec in database.header['variable_list'][var_name]:
-                        from_timestamp = experiment_spec.split(',')[0] + '-01-01T00:00:00Z'
-                        to_timestamp = experiment_spec.split(',')[1] + '-12-31T23:59:59Z'
+                        # This does not work yet:
+                        #from_timestamp = experiment_spec.split(',')[0] + '-01-01T00:00:00Z'
+                        #to_timestamp = experiment_spec.split(',')[1] + '-12-31T23:59:59Z'
+                        from_timestamp = None
+                        to_timestamp = None
                         only_list.append(experiment_variable_search_recursive(database.nc_Database.drs
                                                                               .slicing_args.keys(),
                                                                               database.nc_Database,
@@ -205,9 +208,9 @@ def experiment_variable_search(nc_Database, search_path, file_type_list, options
         file_list_remote=[]
         file_list_found=[]
         try:
-            file_list_found=ctx.search(variable=var_name)
-            file_list_remote=map(lambda x: get_urls(nc_Database.drs,x,file_type_list,var_name),file_list_found)
-            file_list_remote=[item for sublist in file_list_remote for item in sublist]
+            file_list_found = ctx.search(variable=var_name)
+            file_list_remote = map(lambda x: get_urls(nc_Database.drs,x,file_type_list,var_name),file_list_found)
+            file_list_remote = [item for sublist in file_list_remote for item in sublist]
         except Exception as e:
             logging.warning('Search path {0} is unresponsive at the moment'.format(search_path))
 
