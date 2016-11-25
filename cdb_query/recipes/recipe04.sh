@@ -27,8 +27,6 @@ echo $PASSWORD_ESGF | cdb_query CORDEX ask validate record_validate \
                   --domain=EUR-11 \
                   --driving_model=ICHEC-EC-EARTH \
                   --institute=KNMI \
-                  --rcm_model=RACMO22E \
-                  --rcm_version=v1 \
                   --ensemble=r1i1p1 \
                   --out_destination=./out_France/CORDEX/ \
                   --Xdata_node=http://esgf2.dkrz.de \
@@ -36,6 +34,8 @@ echo $PASSWORD_ESGF | cdb_query CORDEX ask validate record_validate \
                   --reduce_soft_links_script='nc4sl subset --lonlatbox -5.0 10.0 40.0 53.0' \
                   '' \
                   pr_JJAS_France_pointers.validate.France.retrieved.converted.nc
+                  #--rcm_model=RACMO22E \
+                  #--rcm_version=v1 \
 #Testing check: 
 inspectlogs pr_JJAS_France_pointers.validate.France.retrieved.converted.nc
 rm pr_JJAS_France_pointers.validate.France.retrieved.converted.nc

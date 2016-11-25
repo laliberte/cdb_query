@@ -72,13 +72,13 @@ cdb_query CMIP5 list_fields -f institute \
                             --download_all_files \
                             --openid=$OPENID_ESGF \
                             --password_from_pipe \
-                            --var=orog \
                             --out_download_dir=./in/CMIP5/ \
                             tas_ONDJF_pointers.validate.nc \
                             tas_ONDJF_pointers.validate.downloaded.nc
         #Testing check:
         inspectlogs tas_ONDJF_pointers.validate.downloaded.nc
         echo "Done downloading using WGET!"
+        rm -r in
 
 if [ $1 != 'test' ]; then
     # *2* Retrieve to netCDF:
@@ -140,4 +140,3 @@ fi
 
 #Cleanup:
 rm tas_ONDJF_pointers.*
-rm -r in
