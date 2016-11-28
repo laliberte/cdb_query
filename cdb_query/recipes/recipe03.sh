@@ -17,7 +17,9 @@ function inspectlogs {
     fi
 }
 
-if [ $1 != "test" ]; then
+if [ $1 == "test" ]; then
+    echo "This recipe is usually skipped."
+else
     #Discover data:
     cdb_query CORDEX ask \
                          --debug \

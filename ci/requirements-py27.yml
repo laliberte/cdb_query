@@ -6,7 +6,6 @@ dependencies:
   - pytest
   - numpy
   - pydap
-  - mechanize
   - requests
   - astropy
   - beautifulsoup4
@@ -29,6 +28,7 @@ dependencies:
   - cdo=1.7.1
   - nco
   - pip:
+      - mechanicalsoup
       - requests_cache
       - netcdf4_pydap
       - netcdf4_soft_links

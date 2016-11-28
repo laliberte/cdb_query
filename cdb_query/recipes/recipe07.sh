@@ -22,5 +22,5 @@ echo $PASSWORD_ESGF | cdb_query CREATEIP ask validate reduce_soft_links download
                     --out_destination='./out_test/' \
                     reanalyses_pointers_test.nc
 
-rm -r /out_test/
+rm -r ./out_test/
 rm reanalyses_pointers_test.nc
