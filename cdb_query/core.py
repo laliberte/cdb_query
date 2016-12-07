@@ -5,6 +5,7 @@ import logging
 import logging.handlers
 import threading
 import os.path
+import requests.packages.urllib3.exceptions
 
 #Internal:
 from . import parsers
@@ -51,6 +52,12 @@ def cdb_query_from_list(args_list):
             # netCDF4 implementation problems:
             warnings.filterwarnings('ignore', 'in the future, boolean array-likes will be handled as a boolean array index')
             warnings.filterwarnings('ignore', 'Unicode equal comparison failed to convert both arguments to Unicode - interpreting them as being unequal',
+                                     append=True)
+            warnings.filterwarnings('once', category=(requests
+                                                      .packages
+                                                      .urllib3
+                                                      .exceptions
+                                                      .InsecureRequestWarning),
                                      append=True)
             # raise all other warnings:
             warnings.filterwarnings('error', append=True)

@@ -112,7 +112,7 @@ def ask_database(database, options, session=None):
                          .descend_tree(database,
                                        list_level=options.list_only_field)))
             else:
-                print('Search_path ' + search_path + ' is not accessible.'
+                print('Search_path ' + search_path + ' is not accessible. '
                       'It will not be considered.')
             browser.close()
     # Convert list of list into list:

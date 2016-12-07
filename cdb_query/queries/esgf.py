@@ -22,30 +22,30 @@ class browser:
         self.options = options
         self.session = session
         self.search_path = search_path
+        self.verify = True
 
     def test_valid(self):
         #Try to connect with timeout:
         try:
-            get_kwargs = {'timeout':20,'stream':True,'allow_redirects':True}
-            #with warnings.catch_warnings():
-            #    warnings.filterwarnings("ignore", message=("Unverified HTTPS request is being made. "
-            #                                               "Adding certificate verification is strongly advised. "
-            #                                               "See: https://urllib3.readthedocs.io/en/latest/security.html"))
+            get_kwargs = {'timeout':20,'stream':True,'allow_redirects':True, 'verify': self.verify}
             if self.session != None:
-                response = self.session.get(self.search_path+'search', verify=True,**get_kwargs)
+                response = self.session.get(self.search_path+'search', **get_kwargs)
             else:
-                response = requests.get(self.search_path+'search', verify=True, **get_kwargs)
+                response = requests.get(self.search_path+'search', **get_kwargs)
             test = response.ok
             response.close()
         except requests.exceptions.ReadTimeout as e:
             test=False
-            pass
         except requests.exceptions.ConnectionError as e:
-            test=False
-            pass
+            if (self.verify and all([string in str(e).upper()
+                                     for string in ['CERTIFICATE',
+                                                    'VERIFY',
+                                                    'FAILED']])):
+                self.verify = False
+                test = self.test_valid()
+            else:
+                test=False
         return test
-        #except Exception as e:
-        #    return False
 
     def close(self):
         return
@@ -86,13 +86,14 @@ class browser:
                                                                               from_timestamp=from_timestamp,
                                                                               to_timestamp=to_timestamp,
                                                                               list_level=list_level,
-                                                                              session=self.session))
+                                                                              session=self.session,
+                                                                              verify=self.verify))
         return [item for sublist in only_list for item in sublist]
 
 def experiment_variable_search_recursive(slicing_args, nc_Database, search_path, file_type_list, options,
                                          experiment, var_name, var_spec,
                                          from_timestamp=None, to_timestamp=None,
-                                         list_level=None, session=None):
+                                         list_level=None, session=None, verify=True):
     if isinstance(slicing_args,list) and len(slicing_args)>0:
         #Go down slicing arguments:
         if ( slicing_args[0] in dir(options) and 
@@ -105,25 +106,25 @@ def experiment_variable_search_recursive(slicing_args, nc_Database, search_path,
                 only_list.append(experiment_variable_search_recursive(slicing_args[1:],nc_Database,search_path,file_type_list,options_copy,
                                                          experiment,var_name,var_spec,
                                                          from_timestamp=from_timestamp, to_timestamp=to_timestamp,
-                                                         list_level=list_level))
+                                                         list_level=list_level, session=session, verify=verify))
             return [item for sublist in only_list for item in sublist]
         else:
             return experiment_variable_search_recursive(slicing_args[1:],nc_Database,search_path,file_type_list,options,
                                                          experiment,var_name,var_spec,
                                                          from_timestamp=from_timestamp, to_timestamp=to_timestamp,
-                                                         list_level=list_level)
+                                                         list_level=list_level, session=session, verify=verify)
     else:
         #When done, perform the search:
         return experiment_variable_search(nc_Database, search_path, file_type_list,
                                           options, experiment, var_name,
                                           var_spec, 
                                           from_timestamp=from_timestamp, to_timestamp=to_timestamp,
-                                          list_level=list_level, session=session)
+                                          list_level=list_level, session=session, verify=verify)
 
 def experiment_variable_search(nc_Database, search_path, file_type_list, options,
                                 experiment, var_name, var_spec,
                                 from_timestamp=None, to_timestamp=None,
-                                list_level=None, session=None):
+                                list_level=None, session=None, verify=True):
     nc_Database.file_expt.experiment=experiment
     nc_Database.file_expt.var=var_name
     nc_Database.file_expt.time=0
@@ -134,8 +135,9 @@ def experiment_variable_search(nc_Database, search_path, file_type_list, options
     conn_kwargs={'distrib':options.distrib}
 
     if session != None:
-        conn = SearchConnection(search_path, session=session)
+        conn = SearchConnection(search_path, session=session, verify=verify)
     else:
+        conn_kwargs['verify']=verify
         if 'ask_cache' in dir(options) and options.ask_cache:
             conn_kwargs['cache']=options.ask_cache.split(',')[0]
             if len(options.ask_cache.split(','))>1:

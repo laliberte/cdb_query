@@ -59,7 +59,8 @@ class SearchConnection(object):
     # Default limit for queries.  None means use service default.
     default_limit = None
 
-    def __init__(self, url, distrib=True,cache=None,timeout=120,expire_after=datetime.timedelta(hours=1),session=None,context_class=None):
+    def __init__(self, url, distrib=True,cache=None,timeout=120,expire_after=datetime.timedelta(hours=1),
+                 session=None, verify=True, context_class=None):
         """
         :param context_class: Override the default SearchContext class.
 
@@ -69,6 +70,7 @@ class SearchConnection(object):
         self.cache = cache
         self.expire_after=expire_after
         self.timeout=timeout
+        self.verify=verify
         self.passed_session = session
 
         # Check URL for backward compatibility
@@ -186,11 +188,7 @@ class SearchConnection(object):
         log.debug('Query request is %s' % query_url)
 
         try:
-            #with warnings.catch_warnings():
-            #    warnings.filterwarnings("ignore", message=("Unverified HTTPS request is being made. "
-            #                                               "Adding certificate verification is strongly advised. "
-            #                                               "See: https://urllib3.readthedocs.io/en/latest/advanced-usage.html#ssl-warnings"))
-            response = self.session.get(query_url, verify=True ,timeout=self.timeout)
+            response = self.session.get(query_url, verify=self.verify ,timeout=self.timeout)
         except requests.HTTPError, err:
             log.warn("HTTP request received error code: %s" % err.code)
             if err.code == 400:

@@ -33,39 +33,42 @@ EndOfGrid
 
 NUM_PROCS=10
 
-#latlon box -124.78 -66.95 24.74 49.34 is continental us
-echo $PASSWORD_ESGF | cdb_query CMIP5 ask validate record_validate reduce_soft_links download_opendap reduce \
-                  --debug \
-                  --log_files \
-                  --ask_month=3,4,5 \
-                  --ask_var=tas:mon-atmos-Amon,pr:mon-atmos-Amon,orog:fx-atmos-fx \
-                  --ask_experiment=historical:1950-2005,rcp85:2006-2030,rcp85:2050-2060 \
-                  --related_experiments \
-                  --Xdata_node=http://esgf2.dkrz.de \
-                  --openid=$OPENID_ESGF \
-                  --institute=CSIRO-BOM --model=ACCESS1.0 --ensemble=r1i1p1 \
-                  --password_from_pipe \
-                  --out_destination=./out_sample/CMIP5/ \
-                  --num_procs=${NUM_PROCS} \
-                  --year=2000 --month=3 \
-                  --reduce_soft_links_script='nc4sl subset --lonlatbox -150.0 -50.0 20.0 55.0' \
-                  'cdo -f nc \
-                       -sellonlatbox,-124.78,-66.95,24.74,49.34 \
-                       -remapbil,newgrid_atmos.cdo \
-                       -selgrid,lonlat,curvilinear,gaussian,unstructured ' \
-                  us_pr_tas_MAM_pointers.validate.200003.retrieved.converted.nc
-#Testing check: 
-inspectlogs us_pr_tas_MAM_pointers.validate.200003.retrieved.converted.nc
-
 #Do only first subset in tests:
-if [ $1 == 'test' ]; then
+if [ $1 == "test" ]; then
+    echo "This recipe is usually skipped."
+else
+    #latlon box -124.78 -66.95 24.74 49.34 is continental us
+    echo $PASSWORD_ESGF | cdb_query CMIP5 ask validate record_validate reduce_soft_links download_opendap reduce \
+                      --debug \
+                      --log_files \
+                      --ask_month=3,4,5 \
+                      --ask_var=tas:mon-atmos-Amon,pr:mon-atmos-Amon,orog:fx-atmos-fx \
+                      --ask_experiment=historical:1950-2005,rcp85:2006-2030,rcp85:2050-2060 \
+                      --related_experiments \
+                      --Xdata_node=http://esgf2.dkrz.de \
+                      --openid=$OPENID_ESGF \
+                      --institute=CSIRO-BOM --model=ACCESS1.0 --ensemble=r1i1p1 \
+                      --password_from_pipe \
+                      --out_destination=./out_sample/CMIP5/ \
+                      --num_procs=${NUM_PROCS} \
+                      --year=2000 --month=3 \
+                      --reduce_soft_links_script='nc4sl subset --lonlatbox -150.0 -50.0 20.0 55.0' \
+                      'cdo -f nc \
+                           -sellonlatbox,-124.78,-66.95,24.74,49.34 \
+                           -remapbil,newgrid_atmos.cdo \
+                           -selgrid,lonlat,curvilinear,gaussian,unstructured ' \
+                      us_pr_tas_MAM_pointers.validate.200003.retrieved.converted.nc
+    #Testing check: 
+    inspectlogs us_pr_tas_MAM_pointers.validate.200003.retrieved.converted.nc
+    rm -r out_sample/
+
     echo $PASSWORD_ESGF | cdb_query CMIP5 reduce_soft_links download_opendap reduce \
                       --debug \
                       --log_files \
                       --openid=$OPENID_ESGF \
                       --password_from_pipe \
                       --out_destination=./out/CMIP5/ \
-                      --num_procs=10 \
+                      --num_procs=${NUM_PROCS} \
                       --reduce_soft_links_script='nc4sl subset --lonlatbox -150.0 -50.0 20.0 55.0' \
                       'cdo -f nc \
                            -sellonlatbox,-124.78,-66.95,24.74,49.34  \
@@ -75,7 +78,8 @@ if [ $1 == 'test' ]; then
                       us_pr_tas_MAM_pointers.validate.retrieved.converted.nc
     #Testing check: 
     inspectlogs us_pr_tas_MAM_pointers.validate.retrieved.converted.nc
+    rm -r out/
+    rm us_pr_tas_MAM_pointers*
 fi
+rm newgrid_atmos.cdo
 
-rm us_pr_tas_MAM_pointers*
-rm -r out/
