@@ -19,6 +19,7 @@
 
 #Use 10 processes:
 NUM_PROCS=10
+TIMEOUT=15
 
 function inspectlogs {
     if [ ! -f $1 ]; then
@@ -39,6 +40,7 @@ OUT_DIR="out_lat_band/"
 echo $PASSWORD_ESGF | cdb_query CMIP5 ask validate reduce_soft_links record_reduce_soft_links download_opendap reduce \
       --debug \
       --log_files \
+      --timeout=$TIMEOUT \
       --openid=$OPENID_ESGF \
       --password_from_pipe \
       --num_procs=$NUM_PROCS \

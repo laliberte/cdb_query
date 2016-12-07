@@ -15,6 +15,8 @@ function inspectlogs {
 }
 
 NUM_PROCS=10
+TIMEOUT=15
+
 #Discover data:
 echo "Asking scientific question"
 cdb_query CMIP5 ask --ask_var=msftmyz:mon-ocean-Omon \
@@ -22,6 +24,7 @@ cdb_query CMIP5 ask --ask_var=msftmyz:mon-ocean-Omon \
                     --related_experiments \
                     --log_files \
                     --debug \
+                    --timeout=$TIMEOUT \
                     --model=CCSM4 --model=NorESM1-M --ensemble=r1i1p1 \
                     --num_procs=${NUM_PROCS} \
                     coupled_ocean_pointers.nc
@@ -54,6 +57,7 @@ echo $PASSWORD_ESGF | cdb_query CMIP5 validate \
                             --num_procs=${NUM_PROCS} \
                             --log_files \
                             --debug \
+                            --timeout=$TIMEOUT \
                             --related_experiments \
                             --Xdata_node=http://esgf2.dkrz.de \
                             coupled_ocean_pointers.nc \

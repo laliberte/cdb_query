@@ -3,6 +3,7 @@
 
 #Change to set number of processes to use:
 NUM_PROCS=10
+TIMEOUT=15
 
 function inspectlogs {
     if [ ! -f $1 ]; then
@@ -24,6 +25,7 @@ else
     cdb_query CORDEX ask \
                          --debug \
                          --log_files \
+                         --timeout=$TIMEOUT \
                          --ask_experiment=historical:1979-2004 \
                          --ask_var=pr:day \
                          --domain=EUR-11 \
@@ -47,6 +49,7 @@ else
     echo $PASSWORD_ESGF | cdb_query CORDEX validate \
                 --debug \
                 --log_files \
+                --timeout=$TIMEOUT \
                 --openid=$OPENID_ESGF \
                 --password_from_pipe \
                 --num_procs=${NUM_PROCS} \
@@ -72,6 +75,7 @@ else
         echo $PASSWORD_ESGF | cdb_query CORDEX download_opendap --year=1979 --month=6 \
                            --log_files \
                            --debug \
+                           --timeout=$TIMEOUT \
                            --openid=$OPENID_ESGF \
                            --password_from_pipe \
                            pr_JJAS_France_pointers.validate.nc \
@@ -105,6 +109,7 @@ else
                              --log_files \
                              --debug \
                              --openid=$OPENID_ESGF \
+                             --timeout=$TIMEOUT \
                              --password_from_pipe \
                              --year=1979,1980,1990,2000 \
                              --month=6 \

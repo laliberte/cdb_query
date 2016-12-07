@@ -1,6 +1,7 @@
 #!/bin/bash
 
 NUM_PROCS=10
+TIMEOUT=15
 
 function inspectlogs {
     if [ ! -f $1 ]; then
@@ -22,6 +23,7 @@ echo "Ask:"
 cdb_query CMIP5 ask --ask_month=1,2,10,11,12 \
                     --debug \
                     --log_files \
+                    --timeout=$TIMEOUT \
                     --ask_var=tas:day-atmos-day,tas:mon-atmos-Amon,orog:fx-atmos-fx \
                     --ask_experiment=amip:1979-2004 \
                     --institute=NCAR --model=CCSM4 --ensemble=r1i1p1  \
@@ -46,6 +48,7 @@ echo "Validate:"
 echo $PASSWORD_ESGF | cdb_query CMIP5 validate \
                             --debug \
                             --log_files \
+                            --timeout=$TIMEOUT \
                             --openid=$OPENID_ESGF \
                             --time_frequency=mon \
                             --password_from_pipe \
@@ -69,6 +72,7 @@ cdb_query CMIP5 list_fields -f institute \
         echo $PASSWORD_ESGF | cdb_query CMIP5 download_files \
                             --debug \
                             --log_files \
+                            --timeout=$TIMEOUT \
                             --download_all_files \
                             --openid=$OPENID_ESGF \
                             --password_from_pipe \
@@ -87,6 +91,7 @@ if [ $1 != 'test' ]; then
         echo $PASSWORD_ESGF | cdb_query CMIP5 download_opendap --year=1979 --month=1 \
                             --debug \
                             --log_files \
+                            --timeout=$TIMEOUT \
                             --openid=$OPENID_ESGF \
                             --num_dl=3 \
                             --password_from_pipe \
@@ -122,8 +127,8 @@ if [ $1 != 'test' ]; then
         #Identity reduction simply copies the data to disk
         echo "Convert to directory tree:"
         cdb_query CMIP5 reduce \
-                            --log_files \
                             --debug \
+                            --log_files \
                             '' \
                             --out_destination=./out/CMIP5/ \
                             tas_ONDJF_pointers.validate.197901.retrieved.nc \

@@ -1,6 +1,7 @@
 #!/bin/bash
 #Change to set number of processes to use:
 NUM_PROCS=10
+TIMEOUT=15
 
 #Discover, validate and select only tropospheric pressure levels:
 echo $PASSWORD_ESGF | cdb_query CREATEIP ask validate reduce_soft_links download_opendap reduce \
@@ -9,6 +10,7 @@ echo $PASSWORD_ESGF | cdb_query CREATEIP ask validate reduce_soft_links download
                     --num_procs=${NUM_PROCS} \
                     --log_files \
                     --debug \
+                    --timeout=$TIMEOUT \
                     --institute=NASA-GMAO \
                     --model=GEOS-5 \
                     --experiment=MERRA-2 \
