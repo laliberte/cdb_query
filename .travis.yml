@@ -48,7 +48,7 @@ install:
 
 script:
   # The first recipe is a bit longer. Prevent TRAVIS from exiting early:
-  - travis_wait 20 bash cdb_query/recipes/recipe01.sh test 
+  - travis_wait 25 bash cdb_query/recipes/recipe01.sh test 
   - bash cdb_query/recipes/recipe03.sh test
   - bash cdb_query/recipes/recipe04.sh test
   # Skip cdo-based recipe. conda cdo with netcdf 4.3.3.1 appears broken
