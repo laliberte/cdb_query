@@ -35,11 +35,12 @@ EndOfGrid
 
 NUM_PROCS=10
 
+if [ $1 != "test" ]; then
 #Do only first subset in tests:
     #latlon box -124.78 -66.95 24.74 49.34 is continental us
-                      #--log_files \
     echo $PASSWORD_ESGF | cdb_query CMIP5 ask validate record_validate reduce_soft_links download_opendap reduce \
                       --debug \
+                      --log_files \
                       --timeout=$TIMEOUT \
                       --ask_month=3,4,5 \
                       --ask_var=tas:mon-atmos-Amon,pr:mon-atmos-Amon,orog:fx-atmos-fx \
@@ -62,7 +63,6 @@ NUM_PROCS=10
     inspectlogs us_pr_tas_MAM_pointers.validate.200003.retrieved.converted.nc
     rm -r out_sample/
 
-if [ $1 != "test" ]; then
     echo $PASSWORD_ESGF | cdb_query CMIP5 reduce_soft_links download_opendap reduce \
                       --debug \
                       --log_files \
@@ -80,7 +80,7 @@ if [ $1 != "test" ]; then
     #Testing check: 
     inspectlogs us_pr_tas_MAM_pointers.validate.retrieved.converted.nc
     rm -r out/
+    rm us_pr_tas_MAM_pointers*
 fi
-rm us_pr_tas_MAM_pointers*
 rm newgrid_atmos.cdo
 

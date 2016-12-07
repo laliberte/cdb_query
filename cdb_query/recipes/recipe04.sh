@@ -65,5 +65,5 @@ if [ $1 != "test" ]; then
     #Testing check: 
     inspectlogs tas_ONDJF_pointers.validate.197901.retrieved.converted.nc
     rm tas_ONDJF_pointers.validate.197901.retrieved.converted.nc
+    rm -r ./out
 fi
-rm -r ./out
