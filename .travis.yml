@@ -37,7 +37,7 @@ before_install:
 
 install:
   - conda env create --file ci/requirements-$CONDA_ENV.yml
-  - source activate test_env
+  - source activate cdb_query_test_env
   #- cd netcdf4_pydap
   #- python setup.py install
   #- cd ..
