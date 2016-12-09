@@ -5,7 +5,7 @@ dependencies:
   - python=2.7
   - pytest
   - numpy
-  - pydap
+  - pydap=3.1.1
   - requests
   - astropy
   - beautifulsoup4
