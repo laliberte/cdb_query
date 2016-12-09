@@ -1,4 +1,4 @@
-name: test_env
+name: cdb_query_test_env
 channels:
   - conda-forge
 dependencies:
