@@ -61,5 +61,11 @@ echo $PASSWORD_ESGF | cdb_query CMIP5 ask validate reduce_soft_links record_redu
 #Testing check: 
 inspectlogs ${OUT_FILE}
 
-rm ${OUT_FILE}
-rm -r ${OUT_DIR}
+if [ -d "$DIRECTORY" ]; then
+    rm -r ${OUT_DIR}
+else
+    echo "Output Models:"
+    cdb_query CMIP5 list_fields -f institute -f model -f ensemble ${OUT_FILE}
+fi
+rm ${OUT_FILE}*
+

@@ -84,7 +84,7 @@ cdb_query CMIP5 list_fields -f institute \
         echo "Done downloading using WGET!"
         rm -r in
 
-if [ $1 != 'test' ]; then
+if [ "$1" != "test" ]; then
     # *2* Retrieve to netCDF:
         #Retrieve the first month:
         echo "Download using OPENDAP:"
