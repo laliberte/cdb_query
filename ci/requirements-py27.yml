@@ -3,6 +3,7 @@ channels:
   - conda-forge
 dependencies:
   - python=2.7
+  - urllib3 
   - pytest
   - numpy
   - pydap=3.1.1
