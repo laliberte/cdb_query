@@ -154,7 +154,14 @@ class nc_Database:
                 output=create_tree(output_root,zip(drs_list,tree))
                 #Record data:
                 if 'missing_years' in dir(options) and options.missing_years:
-                    years_list = None
+                    # Get the years_list from the database:
+                    years_list = [int(x[0][:-2]) for x
+                                     in (self
+                                         .session
+                                         .query(File_Expt.time)
+                                         .filter(sqlalchemy.and_(*conditions))
+                                         .distinct()
+                                         .all())]
                 else:
                     years_list, picontrol_min_time = find_functions.get_years_list_from_periods(header['experiment_list'][experiment])
 

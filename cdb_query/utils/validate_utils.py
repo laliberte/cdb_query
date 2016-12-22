@@ -48,18 +48,20 @@ def delete_in_time_list(database, project_drs, var_name, var_spec,
     for field_id, field in enumerate(project_drs.var_specs):
         conditions.append(getattr(db_manager.File_Expt,
                                   field) == var_spec[field_id])
+    combined_conditions = sqlalchemy.and_(*conditions)
     if len(time_list) > 0:
         # Do not delete too many values at the same time:
         num_sublists = (len(time_list) // 900) + 1
         for time_sub_list in np.array_split(time_list,
                                             num_sublists,
                                             axis=0):
-            sub_conditions = (conditions +
-                              [db_manager.File_Expt.time == time_val
-                               for time_val in time_sub_list])
+            sub_conditions = sqlalchemy.or_(
+                               *[db_manager.File_Expt.time == time_val
+                                 for time_val in time_sub_list])
             (database.nc_Database.session
                                  .query(db_manager.File_Expt.time)
-                                 .filter(sqlalchemy.and_(*sub_conditions))
+                                 .filter(sqlalchemy.and_(combined_conditions,
+                                                         sub_conditions))
                                  .delete())
     return
 
@@ -133,6 +135,7 @@ def find_model_list(database, project_drs, model_list,
            options.missing_years):
             # When missing years are allowed, ensure that
             # all variables have the same times!
+            all_times = set()
             valid_times = dict()
             for var_name in database.header['variable_list']:
                 for var_spec in database.header['variable_list'][var_name]:
@@ -160,23 +163,26 @@ def find_model_list(database, project_drs, model_list,
                                                              var_spec,
                                                              experiment,
                                                              model)
+                            all_times.update(time_list_var)
+
                             time_list_var = [(str(int(time)-int(min_time))
                                               .zfill(6))
                                              for time in time_list_var]
                             valid_times[var_name] = (set(time_list)
                                                      .intersection
                                                      (time_list_var))
-            intersect_time = (set
-                              .intersection(*[v for v
-                                              in valid_times.values()]))
+                            
+            intersect_time = set.intersection(*valid_times.values())
             if len(intersect_time) == 0:
                 missing_vars.append(','.join(valid_times.keys()) +
                                     ':' + 'have no common times.')
             else:
-                sym_diff_time = (set
-                                 .symmetric_difference(
-                                     *[v for v
-                                       in valid_times.values()]))
+                # This finds the symmetric difference of multiple sets
+                # i.e. it finds the elements that
+                not_in_all_times = all_times.difference(
+                                        [(str(int(time) + int(min_time))
+                                         .zfill(6))
+                                         for time in intersect_time])
                 for var_name in database.header['variable_list']:
                     for var_spec in database.header['variable_list'][var_name]:
                         if (var_spec[project_drs
@@ -189,7 +195,7 @@ def find_model_list(database, project_drs, model_list,
                                                 var_spec,
                                                 experiment,
                                                 model,
-                                                list(sym_diff_time))
+                                                list(not_in_all_times))
         else:
             # When missing years are not allowed, ensure that all variables
             # have the requested times!

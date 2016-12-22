@@ -1,4 +1,5 @@
 # This Python file uses the following encoding: utf-8
+from setuptools import setup, find_packages
 
 
 # Utility function to read the README file.
@@ -9,50 +10,39 @@ def read(fname):
     import os
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
-from setuptools import setup, find_packages
 
-package_name='cdb_query'
-setup(
-       name = package_name,
-       version = "1.9.9.9.5",
-       packages = find_packages(exclude=['test']),
-       #package_dir = {package_name: 'lib'},
-#
-#        # metadata for upload to PyPI
-        author = "F. B. Laliberte, P. J. Kushner",
-        author_email = "frederic.laliberte@utoronto.ca",
-        description = "Simple tools to query and retrieve data from the ESGF's CMIP5 and CORDEX projects.",
-        license = "BSD",
-        keywords = "atmosphere climate",
-        url = "http://proj.badc.rl.ac.uk/exarch",   # project home page, if any
-        classifiers=[
-            "Development Status :: 4 - Beta",
-            "Operating System :: POSIX :: Linux",
-            "Operating System :: MacOS :: MacOS X",
-            "Intended Audience :: Science/Research",
-            "Natural Language :: English",
-            "License :: OSI Approved :: BSD License",
-            "Programming Language :: Python :: 2.7",
-            "Programming Language :: Python :: 2 :: Only",
-            "Topic :: Scientific/Engineering :: Atmospheric Science",
-            "Topic :: Scientific/Engineering :: Mathematics",
-            "Topic :: Scientific/Engineering :: Physics"
-        ],
-        long_description=read('README.rst'),
-        install_requires = ['numpy',
-                            'h5py',
-                            'h5netcdf>=0.3',
-                            'netCDF4',
-                            'sqlalchemy>=1.0',
-                            'esgf-pyclient',
-                            'netcdf4_soft_links>=0.7.8.4',
-                            'beautifulsoup4'],
-        zip_safe=False,
-        # other arguments here...
-        #package_data = {package_name : ['lib/*.sh']},
-        entry_points = {
-                  'console_scripts': [
-                           package_name+'= '+package_name+'.core:main',
-                                     ],
-                       }
-    )
+package_name = 'cdb_query'
+setup(name=package_name,
+      version="1.9.9.9.6",
+      packages=find_packages(exclude=['test']),
+      # metadata for upload to PyPI
+      author="F. B. Laliberte, P. J. Kushner",
+      author_email="frederic.laliberte@utoronto.ca",
+      description=("Simple tools to query and retrieve data"
+                   " from the ESGF's CMIP5 and CORDEX projects."),
+      license="BSD",
+      keywords="atmosphere climate",
+      classifiers=["Development Status :: 4 - Beta",
+                   "Operating System :: POSIX :: Linux",
+                   "Operating System :: MacOS :: MacOS X",
+                   "Intended Audience :: Science/Research",
+                   "Natural Language :: English",
+                   "License :: OSI Approved :: BSD License",
+                   "Programming Language :: Python :: 2.7",
+                   "Programming Language :: Python :: 2 :: Only",
+                   "Topic :: Scientific/Engineering :: Atmospheric Science",
+                   "Topic :: Scientific/Engineering :: Mathematics",
+                   "Topic :: Scientific/Engineering :: Physics"],
+      long_description=read('README.rst'),
+      install_requires=['numpy',
+                        'h5py',
+                        'h5netcdf>=0.3',
+                        'netCDF4',
+                        'sqlalchemy>=1.0',
+                        'esgf-pyclient',
+                        'netcdf4_soft_links>=0.7.8.4',
+                        'beautifulsoup4'],
+      zip_safe=False,
+      # other arguments here...
+      entry_points={'console_scripts': [package_name + '= ' +
+                                        package_name + '.core:main']})
