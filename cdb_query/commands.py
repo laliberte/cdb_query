@@ -512,12 +512,12 @@ def rank_data_nodes(options, data_node_list, url_list, q_manager):
             # Create a session for timing:
             session = requests.Session()
             remote_data = (remote_netcdf
-                            .remote_netCDF(url[0],
-                                           url[1],
-                                           semaphores=q_manager
-                                           .validate_semaphores,
-                                           session=session,
-                                           **credentials_kwargs))
+                           .remote_netCDF(url[0],
+                                          url[1],
+                                          semaphores=q_manager
+                                          .validate_semaphores,
+                                          session=session,
+                                          **credentials_kwargs))
             with Timer() as timed_exec:
                 try:
                     is_available = (remote_data

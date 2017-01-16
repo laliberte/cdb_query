@@ -49,6 +49,7 @@ class LogRecordStreamHandler(SocketServer.StreamRequestHandler):
         # cycles and network bandwidth!
         logger.handle(record)
 
+
 class LogRecordSocketReceiver(SocketServer.ThreadingTCPServer):
     """
     Simple TCP socket-based logging receiver suitable for testing.
@@ -75,14 +76,15 @@ class LogRecordSocketReceiver(SocketServer.ThreadingTCPServer):
                 self.handle_request()
             abort = self.abort
 
+
 def start(options):
-    if ( 'log_files' in dir(options) and options.log_files and
-         'out_netcdf_file' in dir(options) ):
+    if (hasattr(options, 'log_files') and options.log_files and
+       hasattr(options, 'out_netcdf_file')):
         logging.basicConfig(
-                            #level=logging.DEBUG,
-                            format='%(processName)-10s %(asctime)s.%(msecs)03d %(name)-12s %(levelname)-8s %(message)s',
-                            datefmt='%m-%d %H:%M:%S',
-                            filename=options.out_netcdf_file+'.log',
-                            filemode='w')
+                    format=('%(processName)-10s %(asctime)s.%(msecs)03d '
+                            '%(name)-12s %(levelname)-8s %(message)s'),
+                    datefmt='%m-%d %H:%M:%S',
+                    filename=options.out_netcdf_file + '.log',
+                    filemode='w')
         tcpserver = LogRecordSocketReceiver()
         tcpserver.serve_until_stopped()

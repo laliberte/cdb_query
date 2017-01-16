@@ -169,7 +169,8 @@ def find_model_list(database, model_list, experiment, options):
                     model_list_var = (database
                                       .nc_Database
                                       .session
-                                      .query(*[getattr(db_manager.File_Expt, desc)
+                                      .query(*[getattr(db_manager.File_Expt,
+                                                       desc)
                                                for desc in
                                                database.drs.simulations_desc])
                                       .filter(sqlalchemy.and_(*conditions))
@@ -207,7 +208,8 @@ def find_model_list(database, model_list, experiment, options):
                 for field_id, field in enumerate(database.drs.var_specs):
                     inclusions_and_exclusions.append(
                         db_utils
-                        .is_level_name_included_and_not_excluded(field, options,
+                        .is_level_name_included_and_not_excluded(field,
+                                                                 options,
                                                                  var_spec
                                                                  [field_id]))
                 if np.all(inclusions_and_exclusions):
@@ -215,7 +217,8 @@ def find_model_list(database, model_list, experiment, options):
                     model_list_var = (database
                                       .nc_Database
                                       .session
-                                      .query(*[getattr(db_manager.File_Expt, desc)
+                                      .query(*[getattr(db_manager.File_Expt,
+                                                       desc)
                                                for desc in
                                                database.drs.simulations_desc
                                                if desc != 'ensemble'])

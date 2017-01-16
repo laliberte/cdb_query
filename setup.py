@@ -18,8 +18,8 @@ setup(name=package_name,
       # metadata for upload to PyPI
       author="F. B. Laliberte, P. J. Kushner",
       author_email="frederic.laliberte@utoronto.ca",
-      description=("Simple tools to query and retrieve data"
-                   " from the ESGF's CMIP5 and CORDEX projects."),
+      description=("Simple tools to query and retrieve data from the "
+                   "ESGF's CMIP5 and CORDEX projects."),
       license="BSD",
       keywords="atmosphere climate",
       classifiers=["Development Status :: 4 - Beta",
@@ -43,6 +43,6 @@ setup(name=package_name,
                         'netcdf4_soft_links>=0.7.8.4',
                         'beautifulsoup4'],
       zip_safe=False,
-      # other arguments here...
+      extras_require={'testing': ['flake8', 'pytest-cov', 'pytest-xdist']},
       entry_points={'console_scripts': [package_name + '= ' +
                                         package_name + '.core:main']})

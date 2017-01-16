@@ -10,18 +10,6 @@ matrix:
     - os: linux
       python: 2.7
       env: CONDA_ENV=py27
-    - os: linux
-      python: 2.7
-      env: CONDA_ENV=py27_netcdf4331
-#    - os: osx
-#      language: generic
-#      env: CONDA_ENV=py27
-#    - os: osx
-#      language: generic
-#      env: CONDA_ENV=py27_netcdf4331
-#  allow_failures:
-#    - env: CONDA_ENV=py27_netcdf4331
-        
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh; fi
@@ -32,27 +20,19 @@ before_install:
   - conda config --set always_yes yes --set changeps1 no --set show_channel_urls true
   - conda update -q conda
   - conda info -a
-  #- git clone https://github.com/laliberte/netcdf4_pydap.git
-  #- git clone https://github.com/laliberte/netcdf4_soft_links.git
 
 install:
   - conda env create --file ci/requirements-$CONDA_ENV.yml
   - source activate cdb_query_test_env
-  #- cd netcdf4_pydap
-  #- python setup.py install
-  #- cd ..
-  #- cd netcdf4_soft_links
-  #- python setup.py install
-  #- cd ..
-  - python setup.py install
+  - pip install -e .[testing]
 
 script:
   # The first recipe is a bit longer. Prevent TRAVIS from exiting early:
+  - flake8
   - travis_wait 25 bash cdb_query/recipes/recipe01.sh test 
   - bash cdb_query/recipes/recipe03.sh test
   - bash cdb_query/recipes/recipe04.sh test
-  # Skip cdo-based recipe. conda cdo with netcdf 4.3.3.1 appears broken
-  - if [[ $CONDA_ENV != 'py27_netcdf4331' ]]; then bash cdb_query/recipes/recipe05.sh test; fi
+  - bash cdb_query/recipes/recipe05.sh test
   - bash cdb_query/recipes/recipe06.sh test
   - bash cdb_query/recipes/recipe07.sh test
   - bash cdb_query/recipes/recipe08.sh test

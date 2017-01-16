@@ -171,7 +171,7 @@ def find_model_list(database, project_drs, model_list,
                             valid_times[var_name] = (set(time_list)
                                                      .intersection
                                                      (time_list_var))
-                            
+
             intersect_time = set.intersection(*valid_times.values())
             if len(intersect_time) == 0:
                 missing_vars.append(','.join(valid_times.keys()) +

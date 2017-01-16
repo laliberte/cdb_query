@@ -1,21 +1,23 @@
-from __future__ import nested_scopes, generators, division, absolute_import, with_statement, print_function, unicode_literals
+from __future__ import (nested_scopes, generators, division,
+                        absolute_import, with_statement,
+                        print_function, unicode_literals)
 
-#External:
+# External:
 import copy
 import socket
 import requests
 import httplib
 import datetime
 import logging
-import warnings
 
-#External but related:
+# External but related:
 import netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
 
-#Internal:
+# Internal:
 from .pyesgf_connection import SearchConnection
 
-unique_file_id_list=['checksum_type', 'checksum', 'tracking_id']
+unique_file_id_list = ['checksum_type', 'checksum', 'tracking_id']
+
 
 class browser:
     def __init__(self, search_path, options, session=None):
@@ -25,17 +27,20 @@ class browser:
         self.verify = True
 
     def test_valid(self):
-        #Try to connect with timeout:
+        # Try to connect with timeout:
         try:
-            get_kwargs = {'timeout':20,'stream':True,'allow_redirects':True, 'verify': self.verify}
-            if self.session != None:
-                response = self.session.get(self.search_path+'search', **get_kwargs)
+            get_kwargs = {'timeout': 20, 'stream': True,
+                          'allow_redirects': True, 'verify': self.verify}
+            if self.session is not None:
+                response = self.session.get(self.search_path + 'search',
+                                            **get_kwargs)
             else:
-                response = requests.get(self.search_path+'search', **get_kwargs)
+                response = requests.get(self.search_path + 'search',
+                                        **get_kwargs)
             test = response.ok
             response.close()
         except requests.exceptions.ReadTimeout as e:
-            test=False
+            test = False
         except requests.exceptions.ConnectionError as e:
             if (self.verify and all([string in str(e).upper()
                                      for string in ['CERTIFICATE',
@@ -44,18 +49,19 @@ class browser:
                 self.verify = False
                 test = self.test_valid()
             else:
-                test=False
+                test = False
         return test
 
     def close(self):
         return
 
     def descend_tree(self, database, list_level=None):
-        list_names = [('experiment','experiment_list'),('var','variable_list')]
+        list_names = [('experiment', 'experiment_list'),
+                      ('var', 'variable_list')]
         lists_to_loop = dict()
         for id in list_names:
             if (id[0] in dir(self.options) and
-                getattr(self.options, id[0]) is not None):
+               getattr(self.options, id[0]) is not None):
                 lists_to_loop[id[1]] = getattr(self.options, id[0])
             else:
                 lists_to_loop[id[1]] = database.header[id[1]].keys()
@@ -63,280 +69,347 @@ class browser:
             if not isinstance(lists_to_loop[id], list):
                 lists_to_loop[id] = [lists_to_loop[id]]
 
-        #Create the database:
-        only_list=[]
+        # Create the database:
+        only_list = []
         for experiment in lists_to_loop['experiment_list']:
-            for experiment_spec in database.header['experiment_list'][experiment]:
+            for experiment_spec in (database
+                                    .header['experiment_list'][experiment]):
                 for var_name in lists_to_loop['variable_list']:
                     for var_spec in database.header['variable_list'][var_name]:
                         # This does not work yet:
-                        #from_timestamp = experiment_spec.split(',')[0] + '-01-01T00:00:00Z'
-                        #to_timestamp = experiment_spec.split(',')[1] + '-12-31T23:59:59Z'
+                        # from_timestamp = (experiment_spec.split(',')[0] +
+                        #                   '-01-01T00:00:00Z')
+                        # to_timestamp = (experiment_spec.split(',')[1] +
+                        #                 '-12-31T23:59:59Z')
                         from_timestamp = None
                         to_timestamp = None
-                        only_list.append(experiment_variable_search_recursive(database.nc_Database.drs
-                                                                              .slicing_args.keys(),
-                                                                              database.nc_Database,
-                                                                              self.search_path,
-                                                                              database.header['file_type_list'],
-                                                                              self.options,
-                                                                              experiment,
-                                                                              var_name,
-                                                                              var_spec,
-                                                                              from_timestamp=from_timestamp,
-                                                                              to_timestamp=to_timestamp,
-                                                                              list_level=list_level,
-                                                                              session=self.session,
-                                                                              verify=self.verify))
+                        (only_list
+                         .append(experiment_variable_search_recursive(
+                                    database.nc_Database.drs
+                                    .slicing_args.keys(),
+                                    database.nc_Database,
+                                    self.search_path,
+                                    database.header['file_type_list'],
+                                    self.options,
+                                    experiment,
+                                    var_name,
+                                    var_spec,
+                                    from_timestamp=from_timestamp,
+                                    to_timestamp=to_timestamp,
+                                    list_level=list_level,
+                                    session=self.session,
+                                    verify=self.verify)))
         return [item for sublist in only_list for item in sublist]
 
-def experiment_variable_search_recursive(slicing_args, nc_Database, search_path, file_type_list, options,
+
+def experiment_variable_search_recursive(slicing_args, nc_Database,
+                                         search_path, file_type_list, options,
                                          experiment, var_name, var_spec,
-                                         from_timestamp=None, to_timestamp=None,
-                                         list_level=None, session=None, verify=True):
-    if isinstance(slicing_args,list) and len(slicing_args)>0:
-        #Go down slicing arguments:
-        if ( slicing_args[0] in dir(options) and 
-             getattr(options,slicing_args[0])!=None ):
-            only_list=[]
-            for field_option in getattr(options,slicing_args[0]):
+                                         from_timestamp=None,
+                                         to_timestamp=None,
+                                         list_level=None, session=None,
+                                         verify=True):
+    if isinstance(slicing_args, list) and len(slicing_args) > 0:
+        # Go down slicing arguments:
+        if (hasattr(options, slicing_args[0]) and
+           getattr(options, slicing_args[0]) is not None):
+            only_list = []
+            for field_option in getattr(options, slicing_args[0]):
                 options_copy = copy.copy(options)
 
-                setattr(options_copy,slicing_args[0],[field_option,])
-                only_list.append(experiment_variable_search_recursive(slicing_args[1:],nc_Database,search_path,file_type_list,options_copy,
-                                                         experiment,var_name,var_spec,
-                                                         from_timestamp=from_timestamp, to_timestamp=to_timestamp,
-                                                         list_level=list_level, session=session, verify=verify))
+                setattr(options_copy, slicing_args[0], [field_option])
+                (only_list
+                 .append(experiment_variable_search_recursive(
+                                slicing_args[1:], nc_Database, search_path,
+                                file_type_list, options_copy, experiment,
+                                var_name, var_spec,
+                                from_timestamp=from_timestamp,
+                                to_timestamp=to_timestamp,
+                                list_level=list_level, session=session,
+                                verify=verify)))
             return [item for sublist in only_list for item in sublist]
         else:
-            return experiment_variable_search_recursive(slicing_args[1:],nc_Database,search_path,file_type_list,options,
-                                                         experiment,var_name,var_spec,
-                                                         from_timestamp=from_timestamp, to_timestamp=to_timestamp,
-                                                         list_level=list_level, session=session, verify=verify)
+            return experiment_variable_search_recursive(
+                        slicing_args[1:], nc_Database, search_path,
+                        file_type_list, options, experiment, var_name,
+                        var_spec, from_timestamp=from_timestamp,
+                        to_timestamp=to_timestamp, list_level=list_level,
+                        session=session, verify=verify)
     else:
-        #When done, perform the search:
-        return experiment_variable_search(nc_Database, search_path, file_type_list,
-                                          options, experiment, var_name,
-                                          var_spec, 
-                                          from_timestamp=from_timestamp, to_timestamp=to_timestamp,
-                                          list_level=list_level, session=session, verify=verify)
+        # When done, perform the search:
+        return experiment_variable_search(nc_Database, search_path,
+                                          file_type_list, options,
+                                          experiment, var_name, var_spec,
+                                          from_timestamp=from_timestamp,
+                                          to_timestamp=to_timestamp,
+                                          list_level=list_level,
+                                          session=session,
+                                          verify=verify)
 
-def experiment_variable_search(nc_Database, search_path, file_type_list, options,
-                                experiment, var_name, var_spec,
-                                from_timestamp=None, to_timestamp=None,
-                                list_level=None, session=None, verify=True):
-    nc_Database.file_expt.experiment=experiment
-    nc_Database.file_expt.var=var_name
-    nc_Database.file_expt.time=0
+
+def experiment_variable_search(nc_Database, search_path, file_type_list,
+                               options, experiment, var_name, var_spec,
+                               from_timestamp=None, to_timestamp=None,
+                               list_level=None, session=None, verify=True):
+    nc_Database.file_expt.experiment = experiment
+    nc_Database.file_expt.var = var_name
+    nc_Database.file_expt.time = 0
     for field_id, field in enumerate(nc_Database.drs.var_specs):
-        setattr(nc_Database.file_expt,field,var_spec[field_id])
+        setattr(nc_Database.file_expt, field, var_spec[field_id])
 
-    #Assumes that all slicing arguments in options are length-one list:
-    conn_kwargs={'distrib':options.distrib}
+    # Assumes that all slicing arguments in options are length-one list:
+    conn_kwargs = {'distrib': options.distrib}
 
-    if session != None:
+    if session is not None:
         conn = SearchConnection(search_path, session=session, verify=verify)
     else:
-        conn_kwargs['verify']=verify
+        conn_kwargs['verify'] = verify
         if 'ask_cache' in dir(options) and options.ask_cache:
-            conn_kwargs['cache']=options.ask_cache.split(',')[0]
-            if len(options.ask_cache.split(','))>1:
-                conn_kwargs['expire_after']=datetime.timedelta(hours=float(options.ask_cache.split(',')[1]))
-        conn=SearchConnection(search_path, **conn_kwargs)
+            conn_kwargs['cache'] = options.ask_cache.split(',')[0]
+            if len(options.ask_cache.split(',')) > 1:
+                (conn_kwargs
+                 ['expire_after']) = (datetime
+                                      .timedelta(hours=float(options.ask_cache
+                                                             .split(',')[1])))
+        conn = SearchConnection(search_path, **conn_kwargs)
 
-    #Search the ESGF:
+    # Search the ESGF:
     top_ctx = conn.new_context(project=nc_Database.drs.project,
-                        experiment=experiment,variable=var_name,
-                        from_timestamp=from_timestamp,
-                        to_timestamp=to_timestamp)
-    if ( 'product' in dir(nc_Database.drs) and 
-         top_ctx.hit_count == 0 ):
-        #Try using project to define product name. Fix for CREATEIP.
+                               experiment=experiment, variable=var_name,
+                               from_timestamp=from_timestamp,
+                               to_timestamp=to_timestamp)
+    if (hasattr(nc_Database.drs, 'product') and
+       top_ctx.hit_count == 0):
+        # Try using project to define product name. Fix for CREATEIP.
         top_ctx = conn.new_context(product=nc_Database.drs.product,
-                            experiment=experiment,variable=var_name,
-                            from_timestamp=from_timestamp,
-                            to_timestamp=to_timestamp)
+                                   experiment=experiment, variable=var_name,
+                                   from_timestamp=from_timestamp,
+                                   to_timestamp=to_timestamp)
 
-    constraints_dict={field:var_spec[field_id] for field_id, field in enumerate(nc_Database.drs.var_specs)}
-    #This is where the lenght-one list is important:
-    #First constrain using fields that are not related to simulation_desc:
-    constraints_dict.update(**{field:getattr(options,field)[0] for field in nc_Database.drs.slicing_args.keys()
-                                            if field in dir(options) and getattr(options,field)!=None and not field in nc_Database.drs.simulations_desc})
-    if 'aliases' in dir(nc_Database.drs):
-        #Go down the simulation description and ensure that at each level an aliases could be used
-        #This implementation does not allwo for aliases in variable descriptions
-        constraints_dict.update(**{field:getattr(options,field)[0] for field in nc_Database.drs.slicing_args.keys()
-                                                if field in dir(options) and 
-                                                   getattr(options,field)!=None and 
-                                                   field in nc_Database.drs.simulations_desc and
-                                                   not field in nc_Database.drs.aliases.keys()})
-        for field in  nc_Database.drs.simulations_desc:
-            if ( field in dir(options) and 
-                 getattr(options,field)!=None and 
-                 field in nc_Database.drs.aliases.keys()):
-                ctx=top_ctx.constrain(**constraints_dict)
+    constraints_dict = {field: var_spec[field_id] for field_id, field
+                        in enumerate(nc_Database.drs.var_specs)}
+    # This is where the lenght-one list is important:
+    # First constrain using fields that are not related to simulation_desc:
+    constraints_dict.update(**{field: getattr(options, field)[0]
+                               for field in nc_Database.drs.slicing_args
+                               if (hasattr(options, field) and
+                                   getattr(options, field) is not None and
+                                   field not in (nc_Database.drs
+                                                 .simulations_desc))})
+    if hasattr(nc_Database.drs, 'aliases'):
+        # Go down the simulation description and ensure that at
+        # each level an aliases could be used
+        # This implementation does not allwo for aliases in
+        # variable descriptions
+        constraints_dict.update(**{field: getattr(options, field)[0]
+                                   for field in nc_Database.drs.slicing_args
+                                   if (hasattr(options, field) and
+                                       getattr(options, field) is not None and
+                                       field in (nc_Database.drs
+                                                 .simulations_desc) and
+                                       field not in nc_Database.drs.aliases)})
+        for field in nc_Database.drs.simulations_desc:
+            if (hasattr(options, field) and
+                getattr(options, field) is not None and
+               field in nc_Database.drs.aliases):
+                ctx = top_ctx.constrain(**constraints_dict)
                 try:
-                    constraints_dict.update(**{allow_aliases(nc_Database.drs,field,ctx.facet_counts.keys()):getattr(options,field)[0]})
+                    (constraints_dict
+                     .update(**{allow_aliases(
+                                    nc_Database.drs,
+                                    field,
+                                    (ctx
+                                     .facet_counts
+                                     .keys())): getattr(options,
+                                                        field)[0]}))
                 except KeyError:
                     pass
     else:
-        #If no aliases, simply extend constraints to simulations_desc:
-        constraints_dict.update(**{field:getattr(options,field)[0]
-                                   for field in nc_Database.drs.slicing_args.keys()
-                                   if (field in dir(options) and 
-                                       getattr(options,field)!=None and 
-                                       field in nc_Database.drs.simulations_desc)})
-    #Consstrain with an adequate constraints dict
+        # If no aliases, simply extend constraints to simulations_desc:
+        constraints_dict.update(**{field: getattr(options, field)[0]
+                                   for field in nc_Database.drs.slicing_args
+                                   if (hasattr(options, field) and
+                                       getattr(options, field) is not None and
+                                       field in (nc_Database.drs
+                                                 .simulations_desc))})
+    # Consstrain with an adequate constraints dict
     ctx = top_ctx.constrain(**constraints_dict)
 
-    if list_level!=None:
+    if list_level is not None:
         try:
-            return ctx.facet_counts[allow_aliases(nc_Database.drs,list_level,ctx.facet_counts.keys())].keys()
+            return ctx.facet_counts[allow_aliases(nc_Database.drs,
+                                                  list_level,
+                                                  (ctx
+                                                   .facet_counts
+                                                   .keys()))].keys()
         except socket.error as e:
-            print(search_path+' is not responding. '+e.strerror)
-            print('This is not fatal. Data broadcast by '+search_path+' will simply NOT be considered.')
+            print(search_path + ' is not responding. ' + e.strerror)
+            print('This is not fatal. Data broadcast by ' + search_path +
+                  ' will simply NOT be considered.')
             return []
-        except httplib.BadStatusLine as e:
+        except httplib.BadStatusLine:
             return []
         except requests.HTTPError as e:
             print(search_path+' is not responding. ')
             print(e)
-            print('This is not fatal. Data broadcast by '+search_path+' will simply NOT be considered.')
+            print('This is not fatal. Data broadcast by ' + search_path +
+                  ' will simply NOT be considered.')
             return []
-        except (KeyError, ValueError) as e:
-            #list_level is not available. Happens when nodes are not configured to handle data from the MIP.
+        except (KeyError, ValueError):
+            # list_level is not available. Happens when nodes are not
+            # configured to handle data from the MIP.
             return []
     else:
-        file_list_remote=[]
-        file_list_found=[]
+        file_list_remote = []
+        file_list_found = []
         try:
             file_list_found = ctx.search(variable=var_name)
-            file_list_remote = map(lambda x: get_urls(nc_Database.drs,x,file_type_list,var_name),file_list_found)
-            file_list_remote = [item for sublist in file_list_remote for item in sublist]
-        except Exception as e:
-            logging.warning('Search path {0} is unresponsive at the moment'.format(search_path))
+            file_list_remote = [get_urls(nc_Database.drs, x, file_type_list,
+                                         var_name) for x in file_list_found]
+            file_list_remote = [item for sublist in file_list_remote
+                                for item in sublist]
+        except Exception:
+            logging.warning('Search path {0} is unresponsive '
+                            'at the moment'.format(search_path))
 
-        map(lambda x: record_url(x,nc_Database),file_list_remote)
+        for x in file_list_remote:
+            record_url(x, nc_Database)
         return []
 
-def allow_aliases(project_drs,key,available_keys):
+
+def allow_aliases(project_drs, key, available_keys):
     # Check if aliases are allowed and return compatible alias.
-    aliases = find_aliases(project_drs,key)
-    if available_keys != None:
+    aliases = find_aliases(project_drs, key)
+    if available_keys is not None:
         compatible_keys = set(aliases).intersection(available_keys)
         return compatible_keys.pop()
     else:
         return key
 
-def find_aliases(project_drs,key):
-    if ('aliases' in dir(project_drs) and
-        key in project_drs.aliases.keys()):
+
+def find_aliases(project_drs, key):
+    if (hasattr(project_drs, 'aliases') and
+       key in project_drs.aliases.keys()):
         return project_drs.aliases[key]
     else:
-        return [key,]
+        return [key]
 
-def record_url(remote_file_desc,nc_Database):
-    nc_Database.file_expt.path=remote_file_desc['url']
-    nc_Database.file_expt.data_node=remote_netcdf.get_data_node(remote_file_desc['url'],remote_file_desc['file_type'])
+
+def record_url(remote_file_desc, nc_Database):
+    nc_Database.file_expt.path = remote_file_desc['url']
+    (nc_Database
+     .file_expt
+     .data_node) = (remote_netcdf
+                    .get_data_node(remote_file_desc['url'],
+                                   remote_file_desc['file_type']))
     for unique_file_id in unique_file_id_list:
-        if remote_file_desc['file_type'] in nc_Database.drs.remote_file_types and remote_file_desc[unique_file_id]!=None:
-            nc_Database.file_expt.path+='|'+remote_file_desc[unique_file_id]
+        if ((remote_file_desc['file_type']
+             in nc_Database.drs.remote_file_types) and
+           remote_file_desc[unique_file_id] is not None):
+            nc_Database.file_expt.path += ('|' +
+                                           remote_file_desc[unique_file_id])
         else:
-            nc_Database.file_expt.path+='|'
+            nc_Database.file_expt.path += '|'
 
     for val in nc_Database.drs.remote_fields:
-        setattr(nc_Database.file_expt,val,remote_file_desc[val])
+        setattr(nc_Database.file_expt, val, remote_file_desc[val])
 
-    #Convert unicode to string:
+    # Convert unicode to string:
     for val in dir(nc_Database.file_expt):
-        if val[0]!='_' and val!='case_id':
-            setattr(nc_Database.file_expt,val,str(getattr(nc_Database.file_expt,val)))
+        if val[0] != '_' and val != 'case_id':
+            setattr(nc_Database.file_expt, val,
+                    str(getattr(nc_Database.file_expt, val)))
 
-    list_of_knowns=[ getattr(nc_Database.file_expt,field) for field in nc_Database.drs.known_fields] 
-    list_of_retrieved=[ remote_file_desc[field] for field in nc_Database.drs.known_fields] 
+    list_of_knowns = [getattr(nc_Database.file_expt, field) for field
+                      in nc_Database.drs.known_fields]
+    list_of_retrieved = [remote_file_desc[field] for field
+                         in nc_Database.drs.known_fields]
     if remote_file_desc['version']:
-        if (remote_file_desc['version'][1:]!='atest' and
-            len([i for i,j in zip(list_of_knowns,list_of_retrieved) if i==j])==len(list_of_knowns)):
+        if (remote_file_desc['version'][1:] != 'atest' and
+            len([i for i, j in zip(list_of_knowns, list_of_retrieved)
+                 if i == j]) == len(list_of_knowns)):
             nc_Database.session.add(copy.deepcopy(nc_Database.file_expt))
             nc_Database.session.commit()
     return nc_Database
 
-def get_urls(drs,result,file_type_list,var_name):
-    file_list_remote=[]
-    if len(set(file_type_list).intersection(set(drs.remote_file_types)))>0:
-        #If remote file types were requested
+
+def get_urls(drs, result, file_type_list, var_name):
+    file_list_remote = []
+    if len(set(file_type_list)
+           .intersection(set(drs.remote_file_types))) > 0:
+        # If remote file types were requested
         fil_ctx = result.file_context()
-        try:
-            shard_name=fil_ctx.shards[0]
-        except:
-            shard_name=None
-        fil = fil_ctx.search(variable=var_name)
-        #try:
         fil = fil_ctx.search(variable=var_name)
         for item in fil:
-            file_list_remote.extend(get_url_remote(item,file_type_list,drs))
-        
+            file_list_remote.extend(get_url_remote(item, file_type_list,
+                                                   drs))
+
     return file_list_remote
 
-def get_url_remote(item,file_type_list,drs):
-    url_name=[]
+
+def get_url_remote(item, file_type_list, drs):
+    url_name = []
     try:
-        keys_list=item.urls.viewkeys()
+        keys_list = item.urls.viewkeys()
     except:
-        keys_list=[]
+        keys_list = []
 
     for key in set(keys_list).intersection(file_type_list):
-        file_info=create_file_info_dict(key,item,drs)
-        
-        if (any([ file_info[unique_file_id]!=None for unique_file_id in unique_file_id_list]) or
-            drs.project in ['NMME']):
+        file_info = create_file_info_dict(key, item, drs)
+
+        if (any(file_info[unique_file_id] is not None
+                for unique_file_id in unique_file_id_list) or
+           drs.project in ['NMME']):
             url_name.append(file_info)
     return url_name
 
-def create_file_info_dict(key,item,drs):
-    file_info=dict()
-    file_info['file_type']=key
+
+def create_file_info_dict(key, item, drs):
+    file_info = dict()
+    file_info['file_type'] = key
     try:
-        if key=='OPENDAP':
-            file_info['url']=item.urls[key][0][0].replace('.html','')
+        if key == 'OPENDAP':
+            file_info['url'] = (item.urls[key][0][0]
+                                .replace('.html', ''))
         else:
-            file_info['url']=item.urls[key][0][0]
-    except Exception as e:
-        file_info['url']=None
+            file_info['url'] = item.urls[key][0][0]
+    except Exception:
+        file_info['url'] = None
     for val in drs.official_drs+unique_file_id_list:
         try:
-            if val=='var':
-                #this is a temporary fix to a poor design decision on my part.
-                #to really fix this, will have to change names 'var' to 'variable'.
-                #if (isinstance(item.json['variable'],list) and
-                #   len(item.json['variable']) == 1):
-                #    file_info[val]=item.json['variable'][0]
-                #else:
-                file_info[val]=item.json['variable']
-            elif val=='version':
+            if val == 'var':
+                # this is a temporary fix to a poor design decision on my part.
+                # to really fix this, will have to change names 'var' to
+                # 'variable'.
+                # if (isinstance(item.json['variable'],list) and
+                #    len(item.json['variable']) == 1):
+                #     file_info[val]=item.json['variable'][0]
+                # else:
+                file_info[val] = item.json['variable']
+            elif val == 'version':
                 if 'version' in item.json.keys():
-                    version=item.json[val]
+                    version = item.json[val]
                 else:
-                    #Version is poorly implemented... Try a fix:
-                    version=item.json['instance_id'].split('.')[-3]
-                if version[0]=='v':
-                    file_info[val]=version
+                    # Version is poorly implemented... Try a fix:
+                    version = item.json['instance_id'].split('.')[-3]
+                if version[0] == 'v':
+                    file_info[val] = version
                 else:
-                    file_info[val]='v'+version
-            elif ( val=='ensemble' and 
-                   drs.project in ['NMME'] ):
-                #Fix for NMME
-                file_info[val]=item.json['instance_id'].split('_')[-2]
-            elif ( val=='product' and
-                   'product' in dir(drs) ):
-                #Fix for CREATE-IP
+                    file_info[val] = 'v' + version
+            elif (val == 'ensemble' and
+                  drs.project in ['NMME']):
+                # Fix for NMME
+                file_info[val] = item.json['instance_id'].split('_')[-2]
+            elif (val == 'product' and
+                  hasattr(drs, 'product')):
+                # Fix for CREATE-IP
                 file_info[val] = drs.product
             else:
-                file_info[val]=item.json[allow_aliases(drs,val,item.json.keys())]
+                file_info[val] = item.json[allow_aliases(drs, val,
+                                                         item.json.keys())]
 
-            if isinstance(file_info[val],list): file_info[val]=str(file_info[val][0])
-        except Exception as e:
-            file_info[val]=None
+            if isinstance(file_info[val], list):
+                file_info[val] = str(file_info[val][0])
+        except Exception:
+            file_info[val] = None
     return file_info
-    #if (file_info['checksum']!=None and 
-    #    set(item.urls.keys()).issuperset(drs.required_file_types)):
