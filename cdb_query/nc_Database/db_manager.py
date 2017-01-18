@@ -163,13 +163,7 @@ class nc_Database:
         with netCDF4.Dataset(options.out_netcdf_file,
                              'w', format='NETCDF4',
                              diskless=True, persist=True) as output_root:
-            if (hasattr(options, 'no_check_availability') and
-               options.no_check_availability):
-                record_header(output_root,
-                              {val: header[val] for val in header
-                               if val != 'data_node_list'})
-            else:
-                record_header(output_root, header)
+            record_header(output_root, header, options=options)
 
             # Define time subset:
             if 'month_list' in header:
@@ -459,7 +453,14 @@ class File_Expt(object):
             setattr(self, tree_desc, '')
 
 
-def record_header(output_root, header):
-    for val in header:
-        netcdf_utils.setncattr(output_root, val, json.dumps(header[val]))
+def record_header(output_root, header, options=None):
+    if (options is not None and
+        hasattr(options, 'no_check_availability') and
+       options.no_check_availability):
+        record_header(output_root,
+                      {val: header[val] for val in header
+                       if val != 'data_node_list'})
+    else:
+        for val in header:
+            netcdf_utils.setncattr(output_root, val, json.dumps(header[val]))
     return

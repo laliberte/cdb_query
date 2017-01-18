@@ -151,9 +151,12 @@ def time_split(database, options, check_split=True):
 def min_year_from_header(header, options):
     if 'experiment_list' in header:
         for experiment in header['experiment_list']:
+            experiment_spec_list = header['experiment_list'][experiment]
+            if not isinstance(experiment_spec_list, list):
+                experiment_spec_list = [experiment_spec_list]
             min_year = np.min([int(experiment_spec.split(',')[0])
                                for experiment_spec in
-                               header['experiment_list'][experiment]])
+                               experiment_spec_list])
             if min_year < 10:
                 if not ('silent' in dir(options) and options.silent):
                     print('Using min year {0} for experiment {1}'
