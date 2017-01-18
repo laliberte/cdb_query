@@ -667,7 +667,6 @@ def generate_subparsers(parser, epilog, project_drs):
                             basic_slicing,
                             complex_slicing_with_fields,
                             fields_selection,
-                            nc4sl_parsers.data_node_restriction,
                             nc4sl_parsers.time_selection_arguments,
                             nc4sl_parsers.download_files_arguments_no_io,
                             nc4sl_parsers.download_arguments_no_io]
@@ -704,7 +703,6 @@ def generate_subparsers(parser, epilog, project_drs):
                             basic_slicing,
                             complex_slicing_with_fields,
                             nc4sl_parsers.time_selection_arguments,
-                            nc4sl_parsers.data_node_restriction,
                             nc4sl_parsers.serial_arguments,
                             fields_selection,
                             nc4sl_parsers.download_opendap_arguments_no_io,
