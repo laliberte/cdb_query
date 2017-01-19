@@ -1,3 +1,6 @@
 [submodule "cdb_query/netcdf4_soft_links/netcdf4_soft_links"]
 	path = cdb_query/netcdf4_soft_links/netcdf4_soft_links
 	url = https://github.com/laliberte/netcdf4_soft_links.git
+[submodule "cdb_query/queries/pyesgf/pyesgf"]
+	path = cdb_query/queries/pyesgf/pyesgf
+	url = https://github.com/laliberte/esgf-pyclient.git
