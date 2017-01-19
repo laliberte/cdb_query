@@ -14,7 +14,7 @@ import logging
 import netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
 
 # Internal:
-from .esgf-pyclient import SearchConnection
+from .pyesgf import SearchConnection
 
 unique_file_id_list = ['checksum_type', 'checksum', 'tracking_id']
 
