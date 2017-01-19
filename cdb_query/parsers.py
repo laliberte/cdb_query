@@ -682,7 +682,6 @@ def generate_subparsers(parser, epilog, project_drs):
                                     complex_slicing_with_fields,
                                     fields_selection,
                                     nc4sl_parsers.serial_arguments,
-                                    nc4sl_parsers.data_node_restriction,
                                     nc4sl_parsers.time_selection_arguments]
     start_arguments_handles['reduce_soft_links'] = [input_arguments]
     (process_arguments_handles
@@ -720,7 +719,6 @@ def generate_subparsers(parser, epilog, project_drs):
                             complex_slicing_with_fields,
                             fields_selection,
                             nc4sl_parsers.time_selection_arguments,
-                            nc4sl_parsers.data_node_restriction,
                             nc4sl_parsers.serial_arguments,
                             loop_control,
                             reduce_script_shared_arguments]

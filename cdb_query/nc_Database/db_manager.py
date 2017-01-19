@@ -440,6 +440,8 @@ def retrieve_dates_recursive(data, options):
                 return np.concatenate(time_axes)
         else:
             return np.array([])
+    else:
+        return np.array([])
 
 
 def _drop_empty(array_list):

@@ -1,1 +1,12 @@
 *.pyc
+MANIFEST
+cdb_query.egg-info/
+diags/
+dist/
+docs/_build/
+docs/cdb_query.egg-info/
+build/
+.cache
+.coverage
+.key
+.keyinfo
