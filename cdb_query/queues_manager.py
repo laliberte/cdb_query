@@ -164,8 +164,7 @@ class CDB_queues_manager:
         if (len(set(['download_files', 'download_opendap'])
                 .intersection(self.queues_names)) > 0 and
            not self.serial):
-            for proc_name in self.download_processes.keys():
-                self.download_processes[proc_name].terminate()
+            retrieval_manager.stop_download_processes(self.download_processes)
         return
 
     def set_closed(self):
