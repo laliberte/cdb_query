@@ -49,7 +49,7 @@ setup(name=package_name,
                         'docopt',
                         'gunicorn',
                         'six >= 1.4.0',
-                        'mechanicalsoup']
+                        'mechanicalsoup'],
       zip_safe=False,
       extras_require={'testing': ['flake8', 'pytest-cov', 'pytest-xdist']},
       entry_points={'console_scripts': [package_name + '= ' +
