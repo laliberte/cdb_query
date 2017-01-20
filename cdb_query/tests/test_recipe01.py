@@ -2,7 +2,6 @@ from cdb_query import core
 import shlex
 import os
 import pytest
-import netCDF4
 
 openid = os.environ['OPENID_ESGF']
 password = os.environ['PASSWORD_ESGF']
@@ -15,7 +14,8 @@ def tmpfiles(tmpdir_factory):
             'validate': tmpdir.join('tas_ONDJF_pointers.nc'),
             'download_opendap': tmpdir.join('tas_ONDJF_pointers.retrieved.nc'),
             'reduce': tmpdir.join('tas_ONDJF_pointers.retrieved.reduced.nc'),
-            'outdir': tmpdir.mkdir('out')}
+            'outdir': tmpdir.mkdir('out'),
+            'swapdir': tmpdir}
 
 
 @pytest.mark.skip()
@@ -29,12 +29,14 @@ def test_recipe01_ask(tmpfiles, capsys):
                             --serial
                             --openid={0}
                             --password={1}
+                            --swap_dir={2}
                             --ask_var=tas:day-atmos-day,orog:fx-atmos-fx
                             --ask_experiment=amip:1979-2004
                             --search_path=https://pcmdi.llnl.gov/esg-search/
                             --institute=NCAR --model=CCSM4 --ensemble=r1i1p1
-                            {2}
-        '''.format(openid, password, tmpfiles['ask'])))
+                            {3}
+        '''.format(openid, password, tmpfiles['swap_dir'],
+                   tmpfiles['ask'])))
     out1, err1 = capsys.readouterr()
 
     core.cdb_query_from_list(shlex.split(
@@ -62,9 +64,11 @@ def test_recipe01_validate(tmpfiles, capsys):
                                 --serial
                                 --openid={0}
                                 --password={1}
+                                --swap_dir={2}
                                 --Xdata_node=http://esgf2.dkrz.de
-                                {2} {3}
-        '''.format(openid, password, tmpfiles['ask'], tmpfiles['validate'])))
+                                {3} {4}
+        '''.format(openid, password, tmpfiles['swap_dir'],
+                   tmpfiles['ask'], tmpfiles['validate'])))
     out, err = capsys.readouterr()
 
     # List simulations:
@@ -90,9 +94,10 @@ def test_recipe01_download_opendap(tmpfiles):
                         --serial
                         --openid={0}
                         --password={1}
-                        --num_dl=3
-                        {2} {3}
-        '''.format(openid, password, tmpfiles['validate'],
+                        --swap_dir={2}
+                        {3} {4}
+        '''.format(openid, password, tmpfiles['swap_dir'],
+                   tmpfiles['validate'],
                    tmpfiles['download_opendap'])))
 
 
@@ -105,8 +110,10 @@ def test_recipe01_reduce(tmpfiles):
         cdb_query CMIP5 reduce -O
                         --debug
                         --serial
-                        '' \
-                        --out_destination={0}
-                        {1} {2}
-        '''.format(tmpfiles['outdir'], tmpfiles['download_opendap'],
+                        --swap_dir={0}
+                        --out_destination={1}
+                        ''
+                        {2} {3}
+        '''.format(tmpfiles['swap_dir'], tmpfiles['outdir'],
+                   tmpfiles['download_opendap'],
                    tmpfiles['reduce'])))

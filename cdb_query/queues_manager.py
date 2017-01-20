@@ -361,7 +361,6 @@ def recorder(q_manager, project_drs, options):
 
 
 def recorder_queue_consume(q_manager, project_drs, cproc_options):
-    renewal_time = datetime.datetime.now()
     sessions = create_sessions(cproc_options, q_manager=q_manager)
 
     if (hasattr(cproc_options, 'num_procs') and

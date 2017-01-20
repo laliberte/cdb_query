@@ -226,14 +226,14 @@ class nc_Database:
 
                 netcdf_pointers = (soft_links.create_soft_links
                                    .create_netCDF_pointers(
-                                     paths_list, time_frequency,
-                                     years_list, months_list,
-                                     header['file_type_list'],
-                                     header['data_node_list'],
-                                     semaphores=semaphores,
-                                     check_dimensions=check_dimensions,
-                                     session=session,
-                                     remote_netcdf_kwargs=remote_netcdf_kwargs))
+                                    paths_list, time_frequency,
+                                    years_list, months_list,
+                                    header['file_type_list'],
+                                    header['data_node_list'],
+                                    semaphores=semaphores,
+                                    check_dimensions=check_dimensions,
+                                    session=session,
+                                    remote_netcdf_kwargs=remote_netcdf_kwargs))
 
                 getattr(netcdf_pointers, record_function_handle)(output, var)
 
