@@ -8,7 +8,7 @@ import shutil
 import sys
 
 # External but related:
-import .netcdf4_soft_links.parsers as nc4sl_parsers
+from .netcdf4_soft_links import parsers as nc4sl_parsers
 
 # Internal:
 import remote_archive
