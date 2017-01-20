@@ -1,6 +1,5 @@
 from cdb_query.nc_Database import db_manager
 from argparse import Namespace
-import numpy as np
 import netCDF4
 
 

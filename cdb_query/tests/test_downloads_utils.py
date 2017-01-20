@@ -5,13 +5,13 @@ from argparse import Namespace
 def test_min_year_from_header_old(capsys):
     """ Test that downloads_utils is compatible with old headers """
     options = Namespace(silent=False)
-    header = {"experiment_list":{"historical": "1980,2005",
-                                 "rcp85": "2006,2099"}}
+    header = {"experiment_list": {"historical": "1980,2005",
+                                  "rcp85": "2006,2099"}}
     min_year = downloads_utils.min_year_from_header(header, options)
     assert min_year is None
 
-    header = {"experiment_list":{"historical": "1980,2005",
-                                 "piControl": "1,200"}}
+    header = {"experiment_list": {"historical": "1980,2005",
+                                  "piControl": "1,200"}}
     min_year = downloads_utils.min_year_from_header(header, options)
     assert min_year == 1
 
@@ -22,13 +22,13 @@ def test_min_year_from_header_old(capsys):
 def test_min_year_from_header_new(capsys):
     """ Test that downloads_utils is compatible with new headers """
     options = Namespace(silent=False)
-    header = {"experiment_list":{"historical": ["1980,2005"],
-                                 "rcp85": ["2006,2099"]}}
+    header = {"experiment_list": {"historical": ["1980,2005"],
+                                  "rcp85": ["2006,2099"]}}
     min_year = downloads_utils.min_year_from_header(header, options)
     assert min_year is None
 
-    header = {"experiment_list":{"historical": ["1980,2005"],
-                                 "piControl": ["1,200", "300,400"]}}
+    header = {"experiment_list": {"historical": ["1980,2005"],
+                                  "piControl": ["1,200", "300,400"]}}
     min_year = downloads_utils.min_year_from_header(header, options)
     assert min_year == 1
 
