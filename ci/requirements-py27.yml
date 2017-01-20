@@ -3,33 +3,28 @@ channels:
   - conda-forge
 dependencies:
   - python=2.7
-  - urllib3 
+  - pip
+  - setuptools
   - pytest
   - numpy
-  - pydap=3.1.1
+  - scipy
+  - pandas
+  - sqlalchemy
+  - sqlite
+  - urllib3 
   - requests
-  - astropy
   - beautifulsoup4
   - h5py
   - hdf5
+  - h5netcdf
   - libnetcdf
   - netcdf4
-  - numpy
-  - pandas
+  - pydap=3.1.1
   - paste
   - pastedeploy
-  - pip
-  - python
-  - requests
-  - scipy
-  - setuptools
-  - sqlalchemy
-  - sqlite
-  - h5netcdf
+  - astropy
   - cdo=1.7.1
   - nco
   - pip:
       - mechanicalsoup
       - requests_cache
-      - netcdf4_pydap
-      - netcdf4_soft_links
