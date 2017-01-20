@@ -8,11 +8,8 @@ import numpy as np
 from functools import reduce
 
 # External but related:
-import ..netcdf4_soft_links.soft_links.read_soft_links as read_soft_links
-import ..netcdf4_soft_links.soft_links.create_soft_links as create_soft_links
-import ..netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
-import ..netcdf4_soft_links.retrieval_manager as retrieval_manager
-import ..netcdf4_soft_links.netcdf_utils as netcdf_utils
+from ..netcdf4_soft_links import (remote_netcdf, soft_links,
+                                  retrieval_manager, netcdf_utils)
 
 # Internal:
 from .db_utils import _read_Dataset as read_Dataset
@@ -227,7 +224,8 @@ class nc_Database:
                 else:
                     check_dimensions = True
 
-                netcdf_pointers = create_soft_links.create_netCDF_pointers(
+                netcdf_pointers = (soft_links.create_soft_links
+                                   .create_netCDF_pointers(
                                      paths_list, time_frequency,
                                      years_list, months_list,
                                      header['file_type_list'],
@@ -235,7 +233,7 @@ class nc_Database:
                                      semaphores=semaphores,
                                      check_dimensions=check_dimensions,
                                      session=session,
-                                     remote_netcdf_kwargs=remote_netcdf_kwargs)
+                                     remote_netcdf_kwargs=remote_netcdf_kwargs))
 
                 getattr(netcdf_pointers, record_function_handle)(output, var)
 
@@ -314,9 +312,10 @@ def populate_database_recursive(nc_Database, data, options, find_function,
                         soft_links.variables[idx][path_id])
 
             # Check if data_node was included:
-            data_node = remote_netcdf.get_data_node(
-                                    soft_links.variables['path'][path_id],
-                                    soft_links.variables['file_type'][path_id])
+            data_node = (remote_netcdf.remote_netcdf
+                         .get_data_node(
+                                soft_links.variables['path'][path_id],
+                                soft_links.variables['file_type'][path_id]))
 
             if is_ln_inc_and_not_exc('data_node', options, data_node):
                 file_path = '|'.join(
@@ -357,9 +356,10 @@ def populate_database_recursive(nc_Database, data, options, find_function,
                     netcdf_utils.getncattr(data, idx))
 
         # Check if data_node was included:
-        data_node = remote_netcdf.get_data_node(
-                                    netcdf_utils.getncattr(data, 'path'),
-                                    netcdf_utils.getncattr(data, 'file_type'))
+        data_node = (remote_netcdf.remote_netcdf
+                     .get_data_node(
+                            netcdf_utils.getncattr(data, 'path'),
+                            netcdf_utils.getncattr(data, 'file_type')))
         if is_ln_inc_and_not_exc('data_node', options, data_node):
             file_path = '|'.join([netcdf_utils.getncattr(data, 'path')] +
                                  [netcdf_utils.getncattr(data, file_unique_id)
@@ -371,9 +371,10 @@ def populate_database_recursive(nc_Database, data, options, find_function,
                     str(netcdf_utils.getncattr(data, 'version')))
 
             setattr(nc_Database.file_expt, 'data_node',
-                    remote_netcdf.get_data_node(
-                                       nc_Database.file_expt.path,
-                                       nc_Database.file_expt.file_type))
+                    remote_netcdf.remote_netcdf
+                    .get_data_node(
+                           nc_Database.file_expt.path,
+                           nc_Database.file_expt.file_type))
             find_function(nc_Database, copy.deepcopy(nc_Database.file_expt),
                           time_slices=time_slices, semaphores=semaphores,
                           session=session,
@@ -385,9 +386,10 @@ def populate_database_recursive(nc_Database, data, options, find_function,
             setattr(nc_Database.file_expt, idx, '')
         if len(data.variables.keys()) > 0:
             setattr(nc_Database.file_expt, 'data_node',
-                    remote_netcdf.get_data_node(
-                                    nc_Database.file_expt.path,
-                                    nc_Database.file_expt.file_type))
+                    remote_netcdf.remote_netcdf
+                    .get_data_node(
+                            nc_Database.file_expt.path,
+                            nc_Database.file_expt.file_type))
             find_function(nc_Database, copy.deepcopy(nc_Database.file_expt))
     return
 
@@ -414,8 +416,8 @@ def retrieve_dates_recursive(data, options):
                         for opt in ['previous', 'next', 'year',
                                     'month', 'day', 'hour']
                         if hasattr(options, opt)}
-        remote_data = read_soft_links.read_netCDF_pointers(data,
-                                                           **options_dict)
+        remote_data = (soft_links.read_soft_links
+                       .read_netCDF_pointers(data, **options_dict))
         if (db_utils.check_soft_links_size(remote_data) and
            remote_data.time_var is not None):
             return (remote_data

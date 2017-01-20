@@ -7,10 +7,7 @@ import os
 import numpy as np
 
 # External but related:
-import ..netcdf4_soft_links.soft_links.create_soft_links as create_soft_links
-import ..netcdf4_soft_links.soft_links.read_soft_links as read_soft_links
-import ..netcdf4_soft_links.netcdf_utils as netcdf_utils
-import ..netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
+from ..netcdf4_soft_links import (soft_links, remote_netcdf, netcdf_utils)
 
 level_key = 'level_name'
 
@@ -53,8 +50,8 @@ def tree_recursive_check_not_empty(options, data, check=True, slicing=True):
             options_dict = {opt: getattr(options, opt) for opt
                             in ['previous', 'next', 'year', 'month', 'day',
                                 'hour'] if hasattr(options, opt)}
-            remote_data = read_soft_links.read_netCDF_pointers(data,
-                                                               **options_dict)
+            remote_data = (soft_links.read_soft_links
+                           .read_netCDF_pointers(data, **options_dict))
             return check_soft_links_size(remote_data)
         else:
             return True
@@ -177,10 +174,11 @@ def retrieve_or_replicate(output_grp, data, group, retrieval_type,
 
     options_dict['remote_netcdf_kwargs'] = remote_netcdf_kwargs
 
-    netcdf_pointers = read_soft_links.read_netCDF_pointers(data.groups[group],
-                                                           q_manager=q_manager,
-                                                           session=session,
-                                                           **options_dict)
+    netcdf_pointers = (soft_links.read_soft_links
+                       .read_netCDF_pointers(data.groups[group],
+                                             q_manager=q_manager,
+                                             session=session,
+                                             **options_dict))
     if retrieval_type == 'reduce_soft_links':
         # If applying to soft links, replicate.
         netcdf_pointers.replicate(output_grp, check_empty=check_empty)
@@ -261,7 +259,8 @@ def replace_netcdf_variable_recursive_replicate(output_grp, data_grp,
                                           tree[0], tree[1:], options,
                                           check_empty=check_empty)
     else:
-        netcdf_pointers = read_soft_links.read_netCDF_pointers(data_grp)
+        netcdf_pointers = (soft_links.read_soft_links
+                           .read_netCDF_pointers(data_grp))
         netcdf_pointers.append(output_grp, check_empty=check_empty)
     return
 
@@ -345,7 +344,8 @@ def write_netcdf_variable_recursive_replicate(output, sub_out_dir, data_grp,
 
         output_file_name = sub_out_dir + '/' + output_file_name
         with netCDF4.Dataset(output_file_name, 'w') as output_data:
-            netcdf_pointers = read_soft_links.read_netCDF_pointers(data_grp)
+            netcdf_pointers = (soft_links.read_soft_links
+                               .read_netCDF_pointers(data_grp))
             netcdf_pointers.replicate(output_data, check_empty=check_empty,
                                       chunksize=-1)
 
@@ -356,10 +356,10 @@ def write_netcdf_variable_recursive_replicate(output, sub_out_dir, data_grp,
                                                 in unique_file_id_list]),
                        'version': options.version[0],
                        'file_type': 'local_file',
-                       'data_node': remote_netcdf.get_data_node(path,
-                                                                'local_file')}]
+                       'data_node': remote_netcdf.remote_netcdf
+                                    .get_data_node(path, 'local_file')}]
 
-        netcdf_pointers = (create_soft_links
+        netcdf_pointers = (soft_links.create_soft_links
                            .create_netCDF_pointers(
                                 paths_list, time_frequency, options.year,
                                 options.month, ['local_file'],

@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 from ..nc_Database import db_utils
 
 # External but related:
-import ..netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
+from ..netcdf4_soft_links import remote_netcdf
 
 unique_file_id_list = ['checksum_type', 'checksum', 'tracking_id']
 
@@ -17,8 +17,8 @@ class browser:
         self.file_type = 'HTTPServer'
         self.options = options
         self.search_path = search_path.rstrip('/')
-        self.data_node = remote_netcdf.get_data_node(self.search_path,
-                                                     self.file_type)
+        self.data_node = (remote_netcdf.remote_netcdf
+                          .get_data_node(self.search_path, self.file_type))
         if session is not None:
             self.session = session
         else:

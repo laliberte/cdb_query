@@ -15,7 +15,7 @@ import logging
 from pydap.exceptions import ServerError
 
 # External but related:
-import .netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
+from .netcdf4_soft_links import remote_netcdf
 
 # Internal:
 from .utils import (ask_utils, validate_utils, reduce_utils,
@@ -511,7 +511,7 @@ def rank_data_nodes(options, data_node_list, url_list, q_manager):
 
             # Create a session for timing:
             session = requests.Session()
-            remote_data = (remote_netcdf
+            remote_data = (remote_netcdf.remote_netcdf
                            .remote_netCDF(url[0],
                                           url[1],
                                           semaphores=q_manager

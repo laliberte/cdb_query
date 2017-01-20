@@ -11,9 +11,7 @@ import datetime
 import logging
 
 # External but related:
-import ..netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
-
-# Internal:
+from ..netcdf4_soft_links import remote_netcdf
 from .pyesgf import SearchConnection
 
 unique_file_id_list = ['checksum_type', 'checksum', 'tracking_id']
@@ -299,7 +297,7 @@ def record_url(remote_file_desc, nc_Database):
     nc_Database.file_expt.path = remote_file_desc['url']
     (nc_Database
      .file_expt
-     .data_node) = (remote_netcdf
+     .data_node) = (remote_netcdf.remote_netcdf
                     .get_data_node(remote_file_desc['url'],
                                    remote_file_desc['file_type']))
     for unique_file_id in unique_file_id_list:

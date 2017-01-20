@@ -4,7 +4,7 @@ import glob
 import copy
 
 # External but related:
-import ..netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
+from ..netcdf4_soft_links import remote_netcdf
 
 # Internal:
 from ..nc_Database import db_utils
@@ -30,7 +30,7 @@ class browser:
         only_list = []
         if self.file_type in database.header['file_type_list']:
             description = {'file_type': self.file_type,
-                           'data_node': (remote_netcdf
+                           'data_node': (remote_netcdf.remote_netcdf
                                          .get_data_node(self.search_path,
                                                         self.file_type)),
                            'time': '0'}

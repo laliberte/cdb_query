@@ -17,9 +17,8 @@ import logging
 # _logger = logging.getLogger(__name__)
 
 # External but related:
-import .netcdf4_soft_links.queues_manager as NC4SL_queues_manager
-import .netcdf4_soft_links.retrieval_manager as retrieval_manager
-import .netcdf4_soft_links.requests_sessions as requests_sessions
+from .netcdf4_soft_links import queues_manager as NC4SL_queues_manager
+from .netcdf4_soft_links import (retrieval_manager, requests_sessions)
 
 # Internal:
 from . import parsers, commands, commands_parser

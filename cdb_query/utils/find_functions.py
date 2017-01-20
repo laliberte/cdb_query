@@ -3,7 +3,7 @@ import copy
 import os.path
 
 # External but related:
-import ..netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
+from ..netcdf4_soft_links import remote_netcdf
 
 
 def path(database, file_expt,
@@ -109,7 +109,7 @@ def time_file(database, file_expt, file_available=False,
                     if file_expt.file_type in ['local_file']:
                         file_available = True
                     else:
-                        remote_data = (remote_netcdf
+                        remote_data = (remote_netcdf.remote_netcdf
                                        .remote_netCDF(file_expt.path
                                                       .split('|')[0],
                                                       file_expt.file_type,
