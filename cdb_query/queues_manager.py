@@ -17,10 +17,9 @@ import logging
 # _logger = logging.getLogger(__name__)
 
 # External but related:
-import netcdf4_soft_links.queues_manager as NC4SL_queues_manager
-import netcdf4_soft_links.retrieval_manager as retrieval_manager
-import netcdf4_soft_links.certificates.certificates as certificates
-import netcdf4_soft_links.requests_sessions as requests_sessions
+import .netcdf4_soft_links.queues_manager as NC4SL_queues_manager
+import .netcdf4_soft_links.retrieval_manager as retrieval_manager
+import .netcdf4_soft_links.requests_sessions as requests_sessions
 
 # Internal:
 from . import parsers, commands, commands_parser
@@ -411,19 +410,6 @@ def recorder_queue_consume(q_manager, project_drs, cproc_options):
             else:
                 consume_one_item(counter, options, q_manager, project_drs,
                                  cproc_options, sessions=sessions)
-
-            if (hasattr(cproc_options, 'username') and
-                cproc_options.username is not None and
-                cproc_options.password is not None and
-                cproc_options.use_certificates and
-               (datetime.datetime.now() - renewal_time >
-               datetime.timedelta(hours=1))):
-                # Reactivate certificates every hours:
-                certificates.retrieve_certificates(
-                                    cproc_options.username, 'ceda',
-                                    user_pass=cproc_options.password,
-                                    timeout=cproc_options.timeout)
-                renewal_time = datetime.datetime.now()
     finally:
         # Clean exit:
         for session_name in sessions:

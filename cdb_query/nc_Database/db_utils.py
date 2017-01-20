@@ -7,10 +7,10 @@ import os
 import numpy as np
 
 # External but related:
-import netcdf4_soft_links.soft_links.create_soft_links as create_soft_links
-import netcdf4_soft_links.soft_links.read_soft_links as read_soft_links
-import netcdf4_soft_links.netcdf_utils as netcdf_utils
-import netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
+import ..netcdf4_soft_links.soft_links.create_soft_links as create_soft_links
+import ..netcdf4_soft_links.soft_links.read_soft_links as read_soft_links
+import ..netcdf4_soft_links.netcdf_utils as netcdf_utils
+import ..netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
 
 level_key = 'level_name'
 

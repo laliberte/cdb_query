@@ -82,7 +82,7 @@ def setup_queues_or_run_command(options, project_drs):
     import tempfile
 
     # External but related:
-    import netcdf4_soft_links.certificates.certificates as certificates
+    # import netcdf4_soft_links.certificates.certificates as certificates
 
     # Internal:
     from . import commands, queues_manager

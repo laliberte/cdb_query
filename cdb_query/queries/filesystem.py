@@ -4,7 +4,7 @@ import glob
 import copy
 
 # External but related:
-import netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
+import ..netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
 
 # Internal:
 from ..nc_Database import db_utils

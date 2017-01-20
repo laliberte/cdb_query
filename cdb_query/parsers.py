@@ -8,7 +8,7 @@ import shutil
 import sys
 
 # External but related:
-import netcdf4_soft_links.parsers as nc4sl_parsers
+import .netcdf4_soft_links.parsers as nc4sl_parsers
 
 # Internal:
 import remote_archive
@@ -77,7 +77,7 @@ def full_parser(args_list):
     options, commands_args = (project_parser
                               .parse_known_args(args=args_list[1:]))
     # This is an ad-hoc patch to allow chained subcommands:
-    cli = ['certificates', 'list_fields', 'merge', 'ask', 'validate',
+    cli = ['list_fields', 'merge', 'ask', 'validate',
            'download_files', 'reduce_soft_links', 'download_opendap',
            'reduce', 'reduce_server']
     cli_with_record = ['ask', 'validate', 'download_files',
@@ -528,19 +528,6 @@ def add_dummy_process_parser(parser, description, epilog, number=1):
     return new_parser
 
 
-# Utilities
-def certificates(subparsers, epilog, project_drs):
-    description = textwrap.dedent('Recovers ESGF certificates')
-    parser = subparsers.add_parser('certificates',
-                                   description=description,
-                                   epilog=epilog)
-    parser = add_dummy_process_parser(parser, description, epilog)
-    parser.add_argument('--command_number', type=int, default=0,
-                        help=argparse.SUPPRESS)
-    nc4sl_parsers.certificates_arguments(parser, project_drs)
-    return
-
-
 def list_fields(subparsers, epilog, project_drs):
     # List_paths
     description = textwrap.dedent('List the unique combination of fields in the file.\n\
@@ -597,7 +584,6 @@ def generate_subparsers(parser, epilog, project_drs):
                                             'data on the archive',
                                        dest='command')
 
-    certificates(subparsers, epilog, project_drs)
     list_fields(subparsers, epilog, project_drs)
     merge(subparsers, epilog, project_drs)
 
@@ -617,7 +603,7 @@ def generate_subparsers(parser, epilog, project_drs):
     good practice to reorder this attribute before \
     proceeding with \'validate\'.\n
     Unlike \'validate\' this function should NOT require \
-    appropriate certificates to function properly. If it fails it is \
+    appropriate credentials to function properly. If it fails it is \
     possible the servers are down.''')
 
     arguments_handles['ask'] = [
@@ -640,7 +626,7 @@ def generate_subparsers(parser, epilog, project_drs):
     Can be SLOW.\n\
     \n\
     Note that if this function fails it is likely that approriate\n\
-    certificates have not been installed on this machine.''')
+    credentials have not been passed.''')
     arguments_handles['validate'] = [
                                    basic_control_arguments,
                                    processing_arguments,

@@ -15,7 +15,7 @@ import logging
 from pydap.exceptions import ServerError
 
 # External but related:
-import netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
+import .netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
 
 # Internal:
 from .utils import (ask_utils, validate_utils, reduce_utils,

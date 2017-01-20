@@ -3,7 +3,7 @@ import copy
 import os.path
 
 # External but related:
-import netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
+import ..netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
 
 
 def path(database, file_expt,

@@ -7,7 +7,7 @@ from bs4 import BeautifulSoup
 from ..nc_Database import db_utils
 
 # External but related:
-import netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
+import ..netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
 
 unique_file_id_list = ['checksum_type', 'checksum', 'tracking_id']
 

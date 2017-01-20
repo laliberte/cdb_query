@@ -11,7 +11,7 @@ import datetime
 import logging
 
 # External but related:
-import netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
+import ..netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
 
 # Internal:
 from .pyesgf import SearchConnection
