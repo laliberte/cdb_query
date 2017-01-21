@@ -15,7 +15,7 @@ def tmpfiles(tmpdir_factory):
             'download_opendap': tmpdir.join('tas_ONDJF_pointers.retrieved.nc'),
             'reduce': tmpdir.join('tas_ONDJF_pointers.retrieved.reduced.nc'),
             'outdir': tmpdir.mkdir('out'),
-            'swapdir': tmpdir}
+            'swap_dir': tmpdir}
 
 
 @pytest.mark.skip()

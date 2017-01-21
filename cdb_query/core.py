@@ -13,10 +13,12 @@ def main():
     return
 
 
-def cdb_query_from_list(args_list):
+def options_from_list(args_list):
     # Parser arguments:
     options, project_drs = parsers.full_parser(args_list)
 
+
+def check_clobber_mode_from_options(options):
     if (hasattr(options, 'out_netcdf_file') and
         parsers._isfile(options, 'out_netcdf_file') and
         not options.O and
@@ -28,6 +30,8 @@ def cdb_query_from_list(args_list):
               .format(options.out_netcdf_file))
         quit()
 
+
+def logging_from_options(options):
     # https://docs.python.org/2/howto/logging-cookbook.html
     if (hasattr(options, 'log_files') and options.log_files and
        hasattr(options, 'out_netcdf_file')):
@@ -48,6 +52,15 @@ def cdb_query_from_list(args_list):
                             format=('%(processName)-20s %(asctime)s '
                                     '%(name)-12s %(levelname)-8s %(message)s'),
                             datefmt='%m-%d %H:%M')
+    return options
+
+
+def cdb_query_from_list(args_list):
+
+    options, project_drs = options_from_list(args_list)
+    check_clobber_mode_from_options(options)
+    logging_from_options(options)
+
     if (hasattr(options, 'debug') and options.debug):
         import warnings
         with warnings.catch_warnings():
