@@ -13,10 +13,8 @@ by the Earth System Grid Federation.
 This package was developed by F. B. Laliberte and P. J. Kushner as part of the "ExArch: Climate analytics
 on distributed exascale data archives" G8 Research Initiative grant. http://proj.badc.rl.ac.uk/exarch
 
-This version is a major rewrite from earlier versions.
-
 Frederic B. Laliberte, Paul J. Kushner
-Univerity of Toronto, 2016
+Univerity of Toronto, 2017
 
 The Natural Sciences and Engineering Research Council of Canada (NSERC/CRSNG) funded 
 FBL and PJK during this project.
@@ -34,6 +32,15 @@ Current ESGF Project Compatibility
 Current OTHER Project Compatibility
 -----------------------------------
 - CanSISE (full, not completely tested)
+
+Testing
+-------
+A script called ``create_test_env.sh`` (available in the github repository)
+can be used to create an Anaconda-based test environment::
+
+$ bash create_test_env.sh
+$ source $HOME/miniconda_test/bin/activate $HOME/miniconda_test
+$ source activate cdb_query_test_env
 
 Version History
 ---------------
