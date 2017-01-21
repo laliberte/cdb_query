@@ -6,6 +6,9 @@ dist/
 docs/_build/
 docs/cdb_query.egg-info/
 build/
+htmlcov/
+test/
+to_do
 .cache
 .coverage
 .key
