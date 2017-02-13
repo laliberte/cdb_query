@@ -10,5 +10,5 @@ dependencies:
   - scipy
   - h5py
   - hdf5
-  - libnetcdf
+  - libnetcdf=4.3.3.1
   - netcdf4

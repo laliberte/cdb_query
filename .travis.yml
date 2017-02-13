@@ -10,6 +10,21 @@ matrix:
     - os: linux
       python: 2.7
       env: CONDA_ENV=py27
+    - os: linux
+      python: 2.7
+      env: CONDA_ENV=py27_netcdf4331
+    - os: linux
+      python: 3.4
+      env: CONDA_ENV=py34
+    - os: linux
+      python: 3.5
+      env: CONDA_ENV=py35
+    - os: linux
+      python: 3.5
+      env: CONDA_ENV=py35_netcdf4331
+    - os: linux
+      python: 3.6
+      env: CONDA_ENV=py36
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh; fi
@@ -23,16 +38,17 @@ before_install:
 
 install:
   - conda env create --file ci/requirements-$CONDA_ENV.yml
-  - source activate cdb_query_test_env
+  - source activate cdb_test_env
   - pip install -e .[testing]
 
 script:
   # The first recipe is a bit longer. Prevent TRAVIS from exiting early:
   - flake8
-  - travis_wait 25 bash cdb_query/recipes/recipe01.sh test 
-  - bash cdb_query/recipes/recipe03.sh test
-  - bash cdb_query/recipes/recipe04.sh test
-  - bash cdb_query/recipes/recipe05.sh test
-  - bash cdb_query/recipes/recipe06.sh test
-  - bash cdb_query/recipes/recipe07.sh test
-  - bash cdb_query/recipes/recipe08.sh test
+  - py.test --cov=cdb_query
+  #- travis_wait 25 bash cdb_query/recipes/recipe01.sh test 
+  #- bash cdb_query/recipes/recipe03.sh test
+  #- bash cdb_query/recipes/recipe04.sh test
+  #- bash cdb_query/recipes/recipe05.sh test
+  #- bash cdb_query/recipes/recipe06.sh test
+  #- bash cdb_query/recipes/recipe07.sh test
+  #- bash cdb_query/recipes/recipe08.sh test
