@@ -326,9 +326,9 @@ def remove_ensemble(simulation, project_drs):
     Function to remove ensemble description from simulation description.
     '''
     if 'ensemble' in project_drs.simulations_desc:
-        simulations_desc_indices_wo_ens = range(0,
-                                                len(project_drs
-                                                    .simulations_desc))
+        simulations_desc_indices_wo_ens = list(range(
+                                            0, len(project_drs
+                                                   .simulations_desc)))
         simulations_desc_indices_wo_ens.remove(project_drs
                                                .simulations_desc
                                                .index('ensemble'))

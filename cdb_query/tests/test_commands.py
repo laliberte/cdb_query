@@ -47,7 +47,7 @@ def test_load_headers_syntax_error(options):
     with pytest.raises(SyntaxError) as e:
         db.load_header(options)
     assert ('Query improperly specified. '
-            'Check --ask_var and --ask_experiment') in str(e)
+            'Check --ask_var and --ask_experiment') in str(e.value)
 
 
 def test_load_headers_not_ask(options):
@@ -84,8 +84,8 @@ def test_union_header(options):
     db = commands.Database_Manager(project_drs)
     db.load_header(options)
     db.union_header()
-    expected = {'var_list': ['vas', 'tas'],
+    expected = {'var_list': ['tas', 'vas'],
                 'experiment_list': ['historical', 'rcp85'],
                 'time_frequency_list': ['day', 'mon'],
-                'cmor_table_list': ['day', 'Amon'], 'realm_list': ['atmos']}
+                'cmor_table_list': ['Amon', 'day'], 'realm_list': ['atmos']}
     assert db.header_simple == expected

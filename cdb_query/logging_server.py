@@ -7,7 +7,7 @@ import SocketServer
 import struct
 
 
-class LogRecordStreamHandler(SocketServer.StreamRequestHandler):
+class LogRecordStreamHandler(SocketServer.StreamRequestHandler):  # pragma: no cover
     """Handler for a streaming logging request.
 
     This basically logs the record using whatever logging policy is
@@ -50,7 +50,7 @@ class LogRecordStreamHandler(SocketServer.StreamRequestHandler):
         logger.handle(record)
 
 
-class LogRecordSocketReceiver(SocketServer.ThreadingTCPServer):
+class LogRecordSocketReceiver(SocketServer.ThreadingTCPServer):  # pragma: no cover
     """
     Simple TCP socket-based logging receiver suitable for testing.
     """
@@ -77,7 +77,7 @@ class LogRecordSocketReceiver(SocketServer.ThreadingTCPServer):
             abort = self.abort
 
 
-def start(options):
+def start(options):  # pragma: no cover
     if (hasattr(options, 'log_files') and options.log_files and
        hasattr(options, 'out_netcdf_file')):
         logging.basicConfig(

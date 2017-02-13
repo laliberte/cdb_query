@@ -11,7 +11,7 @@ import sys
 from .netcdf4_soft_links import parsers as nc4sl_parsers
 
 # Internal:
-import remote_archive
+from . import remote_archive
 
 file_type_list = ['local_file', 'OPENDAP', 'HTTPServer']
 
@@ -58,7 +58,6 @@ def full_parser(args_list):
     project_parser = argparse.ArgumentParser(
                         formatter_class=argparse.RawDescriptionHelpFormatter,
                         description=description,
-                        version=prog+version_num,
                         add_help=help_flag,
                         epilog=epilog)
 
@@ -111,7 +110,6 @@ def full_parser(args_list):
                         prog=prog + ' ' + options.project,
                         formatter_class=argparse.RawDescriptionHelpFormatter,
                         description=description,
-                        version=prog + ' ' + version_num,
                         epilog=epilog)
 
     # Generate subparsers
@@ -812,8 +810,12 @@ def create_process_subparser(subparsers, project_drs, functions_list,
 
     arguments_attributed = []
     for argument in previous_arguments_handles:
+        try:
+            argument_func_name = argument.func_name
+        except AttributeError:
+            argument_func_name = argument.__name__
         if (argument not in arguments_attributed and
-           'script' in argument.func_name.split('_')):
+           'script' in argument_func_name.split('_')):
             argument(parser, project_drs)
             arguments_attributed.append(argument)
     for argument in previous_arguments_handles:

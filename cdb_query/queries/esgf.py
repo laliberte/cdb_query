@@ -6,13 +6,14 @@ from __future__ import (nested_scopes, generators, division,
 import copy
 import socket
 import requests
-import httplib
+from six.moves.http_client import BadStatusLine
 import datetime
 import logging
 
 # External but related:
 from ..netcdf4_soft_links import remote_netcdf
 from .pyesgf import SearchConnection
+# from pyesgf.search.connection import SearchConnection
 
 unique_file_id_list = ['checksum_type', 'checksum', 'tracking_id']
 
@@ -62,7 +63,7 @@ class browser:
                getattr(self.options, id[0]) is not None):
                 lists_to_loop[id[1]] = getattr(self.options, id[0])
             else:
-                lists_to_loop[id[1]] = database.header[id[1]].keys()
+                lists_to_loop[id[1]] = list(database.header[id[1]].keys())
         for id in lists_to_loop:
             if not isinstance(lists_to_loop[id], list):
                 lists_to_loop[id] = [lists_to_loop[id]]
@@ -245,7 +246,7 @@ def experiment_variable_search(nc_Database, search_path, file_type_list,
             print('This is not fatal. Data broadcast by ' + search_path +
                   ' will simply NOT be considered.')
             return []
-        except httplib.BadStatusLine:
+        except BadStatusLine:
             return []
         except requests.HTTPError as e:
             print(search_path+' is not responding. ')

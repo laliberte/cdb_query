@@ -7,7 +7,7 @@ import os
 import numpy as np
 
 # External but related:
-from ..netcdf4_soft_links import (soft_links, remote_netcdf, netcdf_utils)
+from ..netcdf4_soft_links import (soft_links, remote_netcdf, ncutils)
 
 level_key = 'level_name'
 
@@ -58,7 +58,7 @@ def tree_recursive_check_not_empty(options, data, check=True, slicing=True):
     elif len(data.groups.keys()) > 0:
         empty_list = []
         for group in data.groups:
-            level_name = netcdf_utils.getncattr(data.groups[group], level_key)
+            level_name = ncutils.core.getncattr(data.groups[group], level_key)
             if is_level_name_included_and_not_excluded(level_name, options,
                                                        group):
                 if slicing:
@@ -112,7 +112,8 @@ def extract_netcdf_variable_recursive(output, data,
             if (is_level_name_included_and_not_excluded(level_name,
                                                         options, group) and
                tree_recursive_check_not_empty(options, data.groups[group])):
-                output_grp = netcdf_utils.replicate_group(data, output, group)
+                output_grp = ncutils.replicate.replicate_group(data, output,
+                                                               group)
                 extract_retrieve_or_replicate(group, output_grp, data,
                                               tree, retrieval_type,
                                               options, q_manager,
@@ -174,9 +175,12 @@ def retrieve_or_replicate(output_grp, data, group, retrieval_type,
 
     options_dict['remote_netcdf_kwargs'] = remote_netcdf_kwargs
 
+    dl_manager = None
+    if hasattr(q_manager, 'donwload'):
+        dl_manager = q_manager.download
     netcdf_pointers = (soft_links.read_soft_links
                        .read_netCDF_pointers(data.groups[group],
-                                             q_manager=q_manager,
+                                             q_manager=dl_manager,
                                              session=session,
                                              **options_dict))
     if retrieval_type == 'reduce_soft_links':
@@ -213,7 +217,7 @@ def record_to_netcdf_file_from_file_name(options, temp_file_name, output,
         var = [_fix_list_to_none(getattr(options, opt))
                if getattr(options, opt) is not None else None
                for opt in project_drs.official_drs_no_version]
-        tree = zip(project_drs.official_drs_no_version, var)
+        tree = list(zip(project_drs.official_drs_no_version, var))
 
         # Do not check empty:
         replace_netcdf_variable_recursive(output, data,
@@ -232,12 +236,13 @@ def replace_netcdf_variable_recursive(output, data,
         for group in data.groups:
             if tree_recursive_check_not_empty(options, data.groups[group],
                                               slicing=False, check=False):
-                output_grp = netcdf_utils.create_group(data, output, group)
+                output_grp = ncutils.replicate.create_group(data, output,
+                                                            group)
                 replace_netcdf_variable_recursive_replicate(
                             output_grp, data.groups[group], level_name, group,
                             tree, options, check_empty=check_empty)
     else:
-        output_grp = netcdf_utils.create_group(data, output, group_name)
+        output_grp = ncutils.replicate.create_group(data, output, group_name)
         if group_name in data.groups:
             data_grp = data.groups[group_name]
         else:
@@ -253,7 +258,7 @@ def replace_netcdf_variable_recursive_replicate(output_grp, data_grp,
                                                 tree, options,
                                                 check_empty=False):
     if len(tree) > 0 or (group_name not in output_grp.groups):
-        netcdf_utils.setncattr(output_grp, level_key, level_name)
+        ncutils.core.setncattr(output_grp, level_key, level_name)
     if len(tree) > 0:
         replace_netcdf_variable_recursive(output_grp, data_grp,
                                           tree[0], tree[1:], options,
@@ -296,8 +301,9 @@ def write_netcdf_variable_recursive(output, out_dir, data, tree,
         if group_name is None or isinstance(group_name, list):
             for group in data.groups:
                 sub_out_dir = make_sub_dir(out_dir, group)
-                output_grp = netcdf_utils.create_group(data, output, group)
-                netcdf_utils.setncattr(output_grp, level_key, group)
+                output_grp = ncutils.replicate.create_group(data, output,
+                                                            group)
+                ncutils.core.setncattr(output_grp, level_key, group)
 
                 options_copy = copy.copy(options)
                 setattr(options_copy, level_name, [group])
@@ -306,8 +312,9 @@ def write_netcdf_variable_recursive(output, out_dir, data, tree,
                     project_drs, options_copy, check_empty=check_empty)
         else:
             sub_out_dir = make_sub_dir(out_dir, group_name)
-            output_grp = netcdf_utils.create_group(data, output, group_name)
-            netcdf_utils.setncattr(output_grp, level_key, group_name)
+            output_grp = ncutils.replicate.create_group(data, output,
+                                                        group_name)
+            ncutils.core.setncattr(output_grp, level_key, group_name)
 
             options_copy = copy.copy(options)
             setattr(options_copy, level_name, [group_name])
@@ -387,7 +394,7 @@ def convert_dates_to_timestamps(output_tmp, time_frequency):
     if (time_frequency != 'fx' and
         'time' in output_tmp.variables and
        len(output_tmp.variables['time']) > 0):
-        date_axis = netcdf_utils.get_date_axis(output_tmp, 'time')[[0, -1]]
+        date_axis = ncutils.time.get_date_axis(output_tmp, 'time')[[0, -1]]
         return '_' + '-'.join([conversion[time_frequency](date) for date
                                in date_axis])
     else:

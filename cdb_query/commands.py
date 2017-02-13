@@ -32,7 +32,7 @@ def ask(database, options, q_manager=None, sessions=dict()):
     database.union_header()
 
     # Only a listing of a few fields was requested.
-    if ('list_only_field' in dir(options) and
+    if (hasattr(options, 'list_only_field') and
        options.list_only_field is not None):
         for field_name in ask_utils.ask(database, options):
             print(field_name)
@@ -59,7 +59,6 @@ def ask(database, options, q_manager=None, sessions=dict()):
                                                        database
                                                        .drs
                                                        .simulations_desc))
-
     # Remove fixed variable:
     if 'ensemble' in database.drs.simulations_desc:
         simulations_list_no_fx = [simulation
@@ -71,7 +70,7 @@ def ask(database, options, q_manager=None, sessions=dict()):
     else:
         simulations_list_no_fx = copy.copy(simulations_list)
 
-    if (not ('silent' in dir(options) and
+    if (not (hasattr(options, 'silent') and
              options.silent) and
        len(simulations_list_no_fx) > 1):
         print("This is a list of simulations that COULD satisfy the query:")
@@ -158,16 +157,7 @@ def validate(database, options, q_manager=None, sessions=dict()):
 
 
 def download_files(database, options, q_manager=None, sessions=dict()):
-    if q_manager is not None:
-        (data_node_list, url_list,
-         simulations_list) = (database
-                              .find_data_nodes_and_simulations(options))
-        for data_node in data_node_list:
-            q_manager.download.semaphores.add_new_data_node(data_node)
-            q_manager.download.queues.add_new_data_node(data_node)
-        if multiprocessing.current_process().name == 'MainProcess':
-            # If this is the main process, can start download processes:
-            q_manager.start_download_processes()
+    _setup_queues(database, options, q_manager=q_manager)
 
     # Recover the database meta data:
     if ('script' not in dir(options) or
@@ -195,16 +185,7 @@ def reduce_soft_links(database, options, q_manager=None, sessions=dict()):
 
 
 def download_opendap(database, options, q_manager=None, sessions=dict()):
-    if q_manager is not None:
-        (data_node_list, url_list,
-         simulations_list) = (database
-                              .find_data_nodes_and_simulations(options))
-        for data_node in data_node_list:
-            q_manager.download.semaphores.add_new_data_node(data_node)
-            q_manager.download.queues.add_new_data_node(data_node)
-        if multiprocessing.current_process().name == 'MainProcess':
-            # If this is the main process, can start download processes:
-            q_manager.start_download_processes()
+    _setup_queues(database, options, q_manager=q_manager)
 
     if ('script' not in dir(options) or options.script == ''):
         # No reduction: do not split in variables...
@@ -219,6 +200,19 @@ def download_opendap(database, options, q_manager=None, sessions=dict()):
                             options, q_manager, sessions,
                             times_list=times_list)
     return
+
+
+def _setup_queues(database, options, q_manager=None):
+    if q_manager is not None:
+        (data_node_list, url_list,
+         simulations_list) = (database
+                              .find_data_nodes_and_simulations(options))
+        for data_node in data_node_list:
+            q_manager.download.semaphores.add_new_data_node(data_node)
+            q_manager.download.queues.add_new_data_node(data_node)
+        if multiprocessing.current_process().name == 'MainProcess':
+            # If this is the main process, can start download processes:
+            q_manager.start_download_processes()
 
 
 def reduce(database, options, q_manager=None, sessions=dict()):
@@ -391,9 +385,10 @@ class Database_Manager:
 
         # Find the unique members:
         for list_name in self.header_simple:
-            self.header_simple[list_name] = list(set(self
+            self.header_simple[list_name] = sorted(list(
+                                                 set(self
                                                      .header_simple
-                                                     [list_name]))
+                                                     [list_name])))
         return
 
     def load_header(self, options):

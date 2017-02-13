@@ -155,7 +155,7 @@ def reduce_sl_or_var(database, options, q_manager=None, sessions=dict(),
     var = [_fix_list(getattr(options, opt))
            if getattr(options, opt) is not None
            else None for opt in database.drs.official_drs_no_version]
-    tree = zip(database.drs.official_drs_no_version, var)
+    tree = list(zip(database.drs.official_drs_no_version, var))
 
     # Decide whether to add fixed variables:
     tree_fx, options_fx = get_fixed_var_tree(database.drs, options, var)
@@ -182,7 +182,8 @@ def reduce_sl_or_var(database, options, q_manager=None, sessions=dict(),
                             options, options_fx,
                             retrieval_type=retrieval_type,
                             session=session,
-                            check_empty=(retrieval_type == 'reduce'))
+                            check_empty=(retrieval_type == 'reduce'),
+                            q_manager=q_manager)
         temp_file_name_list.append(temp_file_name)
 
     if hasattr(options, 'sample') and options.sample:
@@ -251,7 +252,7 @@ def reduce_sl_or_var(database, options, q_manager=None, sessions=dict(),
 
 
 def extract_single_tree(temp_file, src_file, tree, tree_fx,
-                        options, options_fx,
+                        options, options_fx, q_manager=None,
                         session=None, retrieval_type='reduce',
                         check_empty=False):
     with db_utils._read_Dataset(src_file)(src_file, 'r') as data:
@@ -261,12 +262,14 @@ def extract_single_tree(temp_file, src_file, tree, tree_fx,
                 db_utils.extract_netcdf_variable(output_tmp, data, tree_fx,
                                                  options_fx, session=session,
                                                  retrieval_type=retrieval_type,
-                                                 check_empty=True)
+                                                 check_empty=True,
+                                                 q_manager=q_manager)
 
             db_utils.extract_netcdf_variable(output_tmp, data, tree, options,
                                              session=session,
                                              retrieval_type=retrieval_type,
-                                             check_empty=check_empty)
+                                             check_empty=check_empty,
+                                             q_manager=q_manager)
     return
 
 
@@ -287,10 +290,10 @@ def get_fixed_var_tree(project_drs, options, var):
            var[project_drs.official_drs_no_version.index(opt)] is not None):
             var_fx[project_drs.official_drs_no_version.index(opt)] = 'fx'
 
-    tree_fx = zip(project_drs.official_drs_no_version, var_fx)
+    tree_fx = list(zip(project_drs.official_drs_no_version, var_fx))
     options_fx = copy.copy(options)
     for opt_id, opt in enumerate(tree_fx):
-        if opt != tree_fx[opt_id]:
+        if getattr(options_fx, opt[0]) != tree_fx[opt_id]:
             setattr(options_fx, opt[0], opt[1])
             if (hasattr(options_fx, 'X' + opt[0]) and
                 isinstance(getattr(options_fx, 'X' + opt[0]), list) and

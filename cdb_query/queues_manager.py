@@ -5,7 +5,10 @@ import os
 import os.path
 import multiprocessing
 import multiprocessing.managers as managers
-import Queue
+try:
+    import Queue as queue
+except ImportError:
+    import queue
 import threading
 import numpy as np
 import datetime
@@ -35,8 +38,8 @@ class SimpleSyncManager(managers.BaseManager):
     pass
 
 
-SimpleSyncManager.register('Queue', Queue.Queue)
-SimpleSyncManager.register('PriorityQueue', Queue.PriorityQueue)
+SimpleSyncManager.register('Queue', queue.Queue)
+SimpleSyncManager.register('PriorityQueue', queue.PriorityQueue)
 SimpleSyncManager.register('Event', threading.Event, managers.EventProxy)
 SimpleSyncManager.register('Lock', threading.Lock, managers.AcquirerProxy)
 # SimpleSyncManager.register('RLock', threading.RLock, AcquirerProxy)
@@ -300,7 +303,7 @@ class CDB_queues_manager:
                             'record' in queue_name.split('_')):
                         try:
                             return self.get_queue(queue_name, timeout)
-                        except Queue.Empty:
+                        except queue.Empty:
                             pass
                     # First pass, short timeout. Subsequent pass, longer:
                     if timeout == timeout_first:
@@ -312,9 +315,9 @@ class CDB_queues_manager:
         with getattr(self, queue_name + '_expected').lock:
             if getattr(self, queue_name + '_expected').value_no_lock == 0:
                 # If nothing is expected, skip:
-                raise Queue.Empty
+                raise queue.Empty
             else:
-                # Will fail with Queue.Empty if the item had not
+                # Will fail with queue.Empty if the item had not
                 # been put in the queue:
                 (priority,
                  counter,
@@ -328,7 +331,7 @@ class CDB_queues_manager:
                      2 * self.num_procs)):
                     getattr(self, queue_name).put((priority, counter, options))
                     # Prevent piling up:
-                    raise Queue.Empty
+                    raise queue.Empty
                 else:
                     # reset priority to 0:
                     options.priority = 0

@@ -466,9 +466,9 @@ def intersection(database, options, time_slices=dict()):
 
 def remove_ensemble(simulation, project_drs):
     if 'ensemble' in project_drs.simulations_desc:
-        sims_desc_idx_without_ensemble = range(0,
-                                               len(project_drs
-                                                   .simulations_desc))
+        sims_desc_idx_without_ensemble = list(range(
+                                            0, len(project_drs
+                                                   .simulations_desc)))
         sims_desc_idx_without_ensemble.remove(project_drs
                                               .simulations_desc
                                               .index('ensemble'))

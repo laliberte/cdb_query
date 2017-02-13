@@ -9,7 +9,7 @@ from functools import reduce
 
 # External but related:
 from ..netcdf4_soft_links import (remote_netcdf, soft_links,
-                                  retrieval_manager, netcdf_utils)
+                                  retrieval_manager, ncutils)
 
 # Internal:
 from .db_utils import _read_Dataset as read_Dataset
@@ -63,10 +63,11 @@ class nc_Database:
     def load_header(self):
         # Load header:
         header = dict()
+        print(self.db_file)
         with read_Dataset(self.db_file)(self.db_file, 'r') as dataset:
             for att in (set(self.drs.header_desc)
                         .intersection(dataset.ncattrs())):
-                header[att] = json.loads(netcdf_utils.getncattr(dataset, att))
+                header[att] = json.loads(ncutils.core.getncattr(dataset, att))
         return header
 
     def populate_database(self, options, find_function, soft_links=True,
@@ -186,7 +187,7 @@ class nc_Database:
                                                    .and_(*conditions))
                                            .distinct().all())]
 
-                output = create_tree(output_root, zip(drs_list, tree))
+                output = create_tree(output_root, list(zip(drs_list, tree)))
                 # Record data:
                 if hasattr(options, 'missing_years') and options.missing_years:
                     # Get the years_list from the database:
@@ -247,10 +248,11 @@ class nc_Database:
     def retrieve_database(self, output, options, q_manager=None,
                           session=None, retrieval_type='reduce'):
         # Recover the database meta data:
-        tree = zip(self.drs.official_drs_no_version,
-                   [None for field in self.drs.official_drs_no_version])
+        tree = list(zip(self.drs.official_drs_no_version,
+                        [None for field in self.drs.official_drs_no_version]))
         with read_Dataset(self.db_file)(self.db_file, 'r') as dataset:
-            if retrieval_type in ['download_files', 'download_opendap']:
+            if retrieval_type in ['download_files', 'download_opendap',
+                                  'reduce']:
                 q_manager.download.set_opened()
                 db_utils.extract_netcdf_variable(output, dataset, tree,
                                                  options,
@@ -335,10 +337,10 @@ def populate_database_recursive(nc_Database, data, options, find_function,
                               remote_netcdf_kwargs=remote_netcdf_kwargs)
     elif len(data.groups.keys()) > 0 and 'soft_links' not in data.groups:
         for group in data.groups:
-            level_name = netcdf_utils.getncattr(data.groups[group], level_key)
+            level_name = ncutils.core.getncattr(data.groups[group], level_key)
             if is_ln_inc_and_not_exc(level_name, options, group):
                 setattr(nc_Database.file_expt,
-                        netcdf_utils.getncattr(data.groups[group], level_key),
+                        ncutils.core.getncattr(data.groups[group], level_key),
                         group)
                 populate_database_recursive(
                                 nc_Database, data.groups[group],
@@ -353,22 +355,22 @@ def populate_database_recursive(nc_Database, data, options, find_function,
         id_list = ['file_type']
         for idx in id_list:
             setattr(nc_Database.file_expt, idx,
-                    netcdf_utils.getncattr(data, idx))
+                    ncutils.core.getncattr(data, idx))
 
         # Check if data_node was included:
         data_node = (remote_netcdf.remote_netcdf
                      .get_data_node(
-                            netcdf_utils.getncattr(data, 'path'),
-                            netcdf_utils.getncattr(data, 'file_type')))
+                            ncutils.core.getncattr(data, 'path'),
+                            ncutils.core.getncattr(data, 'file_type')))
         if is_ln_inc_and_not_exc('data_node', options, data_node):
-            file_path = '|'.join([netcdf_utils.getncattr(data, 'path')] +
-                                 [netcdf_utils.getncattr(data, file_unique_id)
+            file_path = '|'.join([ncutils.core.getncattr(data, 'path')] +
+                                 [ncutils.core.getncattr(data, file_unique_id)
                                   if file_unique_id in data.ncattrs() else ''
                                   for file_unique_id in file_unique_id_list])
 
             setattr(nc_Database.file_expt, 'path', file_path)
             setattr(nc_Database.file_expt, 'version',
-                    str(netcdf_utils.getncattr(data, 'version')))
+                    str(ncutils.core.getncattr(data, 'version')))
 
             setattr(nc_Database.file_expt, 'data_node',
                     remote_netcdf.remote_netcdf
@@ -402,7 +404,7 @@ def create_tree_recursive(output_top, tree):
     level_name = tree[0][1]
     if level_name not in output_top.groups:
         output = output_top.createGroup(level_name)
-        netcdf_utils.setncattr(output, 'level_name', tree[0][0])
+        ncutils.core.setncattr(output, 'level_name', tree[0][0])
     else:
         output = output_top.groups[level_name]
     if len(tree) > 1:
@@ -429,7 +431,7 @@ def retrieve_dates_recursive(data, options):
         time_axes = [retrieve_dates_recursive(data.groups[group], options)
                      for group in data.groups
                      if is_ln_inc_and_not_exc(
-                          netcdf_utils.getncattr(data.groups[group],
+                          ncutils.core.getncattr(data.groups[group],
                                                  level_key),
                           options, group)]
 
@@ -466,5 +468,5 @@ def record_header(output_root, header, options=None):
                        if val != 'data_node_list'})
     else:
         for val in header:
-            netcdf_utils.setncattr(output_root, val, json.dumps(header[val]))
+            ncutils.core.setncattr(output_root, val, json.dumps(header[val]))
     return
