@@ -59,7 +59,7 @@ def ask(database, options, q_manager=None, sessions=dict()):
         remote_netcdf_kwargs = {opt: getattr(options, opt)
                                 for opt in ['openid', 'username',
                                             'password', 'use_certificates']
-                                if opt in dir(options)}
+                                if hasattr(options, opt)}
         (database.nc_Database
          .write_database(database.header, options,
                          'record_paths',

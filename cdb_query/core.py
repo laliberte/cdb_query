@@ -16,6 +16,7 @@ def main():
 def options_from_list(args_list):
     # Parser arguments:
     options, project_drs = parsers.full_parser(args_list)
+    return options, project_drs
 
 
 def check_clobber_mode_from_options(options):
@@ -52,7 +53,7 @@ def logging_from_options(options):
                             format=('%(processName)-20s %(asctime)s '
                                     '%(name)-12s %(levelname)-8s %(message)s'),
                             datefmt='%m-%d %H:%M')
-    return options
+    return
 
 
 def cdb_query_from_list(args_list):

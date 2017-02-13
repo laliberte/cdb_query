@@ -124,7 +124,7 @@ class nc_Database:
     def list_data_nodes(self, options):
         data_node_list = self.list_subset((File_Expt.data_node, ))
         return [data_node[0] for data_node in data_node_list
-                if is_ln_inc_and_not_exc('data_node', options, data_node)]
+                if is_ln_inc_and_not_exc('data_node', options, data_node[0])]
 
     def list_paths_by_data_node(self, data_node):
         return (self.session
