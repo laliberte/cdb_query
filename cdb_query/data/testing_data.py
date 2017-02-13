@@ -5,7 +5,6 @@ Generate test data for netcdf4_soft_links
 import numpy as np
 from collections import OrderedDict
 import os
-import py
 
 from netCDF4 import Dataset
 from ..netcdf4_soft_links import ncutils

@@ -7,7 +7,8 @@ import SocketServer
 import struct
 
 
-class LogRecordStreamHandler(SocketServer.StreamRequestHandler):  # pragma: no cover
+class LogRecordStreamHandler(SocketServer
+                             .StreamRequestHandler):  # pragma: no cover
     """Handler for a streaming logging request.
 
     This basically logs the record using whatever logging policy is
@@ -50,7 +51,8 @@ class LogRecordStreamHandler(SocketServer.StreamRequestHandler):  # pragma: no c
         logger.handle(record)
 
 
-class LogRecordSocketReceiver(SocketServer.ThreadingTCPServer):  # pragma: no cover
+class LogRecordSocketReceiver(SocketServer
+                              .ThreadingTCPServer):  # pragma: no cover
     """
     Simple TCP socket-based logging receiver suitable for testing.
     """
