@@ -1,8 +1,9 @@
-name: cdb_test_env
+name: cdb3.4_defaults_test_env
 channels:
+  - defaults
   - conda-forge
 dependencies:
-  - python=3.6
+  - python=3.4
   - pip
   - setuptools
   - pytest
