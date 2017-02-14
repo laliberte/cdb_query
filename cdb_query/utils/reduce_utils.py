@@ -306,8 +306,8 @@ def get_input_file_names(project_drs, options, script):
     if (script.strip() == '' and
         (hasattr(options, 'in_extra_netcdf_files') and
          len(options.in_extra_netcdf_files) > 0)):
-        raise StandardError('The identity script \'\' can only be used when no'
-                            ' extra netcdf files are specified.')
+        raise Exception('The identity script \'\' can only be used when no'
+                        ' extra netcdf files are specified.')
 
     input_file_name = options.in_netcdf_file
     file_name_list = [input_file_name]

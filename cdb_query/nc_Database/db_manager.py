@@ -311,23 +311,29 @@ def populate_database_recursive(nc_Database, data, options, find_function,
             id_list = ['file_type']
             for idx in id_list:
                 setattr(nc_Database.file_expt, idx,
-                        soft_links.variables[idx][path_id])
+                        ncutils.core.maybe_conv_bytes_to_str(
+                            soft_links.variables[idx][path_id]))
 
             # Check if data_node was included:
             data_node = (remote_netcdf.remote_netcdf
                          .get_data_node(
-                                soft_links.variables['path'][path_id],
-                                soft_links.variables['file_type'][path_id]))
+                            ncutils.core.maybe_conv_bytes_to_str(
+                                soft_links.variables['path'][path_id]),
+                            ncutils.core.maybe_conv_bytes_to_str(
+                                soft_links.variables['file_type'][path_id])))
 
             if is_ln_inc_and_not_exc('data_node', options, data_node):
                 file_path = '|'.join(
-                                [soft_links.variables['path'][path_id]] +
-                                [soft_links.variables[unique_file_id][path_id]
-                                 for unique_file_id in file_unique_id_list])
+                        [ncutils.core.maybe_conv_bytes_to_str(
+                            soft_links.variables['path'][path_id])] +
+                        [ncutils.core.maybe_conv_bytes_to_str(
+                            soft_links.variables[unique_file_id][path_id])
+                         for unique_file_id in file_unique_id_list])
 
                 setattr(nc_Database.file_expt, 'path', file_path)
                 setattr(nc_Database.file_expt, 'version',
-                        'v' + str(soft_links.variables['version'][path_id]))
+                        'v' + str(ncutils.core.maybe_conv_bytes_to_str(
+                                    soft_links.variables['version'][path_id])))
                 setattr(nc_Database.file_expt, 'data_node', data_node)
 
                 find_function(nc_Database,
