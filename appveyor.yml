@@ -22,6 +22,7 @@ environment:
 
 install:
   # Install miniconda Python
+  - "git submodule update --init --recursive"
   - "powershell ./ci/install_python.ps1"
 
   # Prepend newly installed Python to the PATH of this build (this cannot be
