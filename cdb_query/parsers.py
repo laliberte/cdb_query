@@ -23,7 +23,7 @@ def full_parser(args_list):
     cmd.split(' ') if arg]\'
     """
 
-    version_num = '1.9.9.9.6'
+    version_num = '1.9.9.9.7'
 
     # Option parser
     description = textwrap.dedent('''\
@@ -63,6 +63,10 @@ def full_parser(args_list):
 
     subparsers = project_parser.add_subparsers(help='Project selection',
                                                dest='project')
+    try:
+        subparsers.required = True
+    except AttributeError:
+        pass
     for sub_project in remote_archive.available_projects:
         subparser = subparsers.add_parser(sub_project,
                                           help=('Utilities for project ' +
@@ -75,6 +79,7 @@ def full_parser(args_list):
 
     options, commands_args = (project_parser
                               .parse_known_args(args=args_list[1:]))
+        
     # This is an ad-hoc patch to allow chained subcommands:
     cli = ['list_fields', 'merge', 'ask', 'validate',
            'download_files', 'reduce_soft_links', 'download_opendap',
@@ -518,6 +523,10 @@ def loop_control(parser, project_drs):
 def add_dummy_process_parser(parser, description, epilog, number=1):
     subparsers = parser.add_subparsers(help='',
                                        dest='command_{0}'.format(number))
+    try:
+        subparsers.required = True
+    except AttributeError:
+        pass
     new_parser = subparsers.add_parser(
                                 'process', description=description,
                                 formatter_class=argparse.RawTextHelpFormatter,
@@ -581,6 +590,10 @@ def generate_subparsers(parser, epilog, project_drs):
     subparsers = parser.add_subparsers(help='Commands to discover available '
                                             'data on the archive',
                                        dest='command')
+    try:
+        subparsers.required = True
+    except AttributeError:
+        pass
 
     list_fields(subparsers, epilog, project_drs)
     merge(subparsers, epilog, project_drs)

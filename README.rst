@@ -38,9 +38,28 @@ Testing
 A script called ``create_test_env.sh`` (available in the github repository)
 can be used to create an Anaconda-based test environment::
 
-$ bash create_test_env.sh
-$ source $HOME/miniconda_test/bin/activate $HOME/miniconda_test
-$ source activate cdb_query_test_env
+    $ git clone https://github.com/laliberte/cdb_query.git
+    $ cd cdb_query
+    $ git submodule update --init --recursive 
+    $ bash create_test_env.sh
+    $ source $HOME/miniconda_test/bin/activate $HOME/miniconda_test
+    $ source activate cdb_query_test_env
+    $ export OPENID_ESGF='YOUR OPENID'
+    $ export PASSWORD_ESGF='PASSWORD ASSOCIATED WITH OPENID'
+    $ py.test
+
+Usage
+----
+Once the testing is successful, ``cdb_query`` can be used directly::
+
+    $ cdb_query CMIP5 ask validate download_opendap reduce \
+                      --openid=$OPENID_ESGF --password=$PASSWORD_ESGF \
+                      --institute=NCAR --model=CCSM4 --ensemble=r1i1p1 \
+                      --year=2000 \
+                      '' tas_historical_pointers.nc
+
+This command will retrieve year 2000 of the simulation r1i1p1 from the CCSM4 model
+in the subdirectory ``./NCAR``.
 
 Version History
 ---------------
