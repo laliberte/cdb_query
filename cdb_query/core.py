@@ -9,7 +9,12 @@ from . import parsers
 
 
 def main():
-    options, project_drs = options_from_list(sys.argv)
+    cdb_query_from_list(sys.argv)
+    return
+
+
+def cdb_query_from_list(args_list):
+    options, project_drs = options_from_list(args_list)
     cdb_query_from_options(options, project_drs)
     return
 

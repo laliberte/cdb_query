@@ -38,30 +38,7 @@ def tmpfiles(tmpdir_factory):
 
 def test_recipe01_local_ask(tmpfiles, capsys):
     # Ask:
-    Namespace(Xcmor_table, Xensemble, ensemble, Xexperiment, experiment, Xinstitute,
-              institute, Xmodel, model, Xrealm, realm,
-              Xtime_frequency, time_frequency, Xvar, var,
-              ask_cache, cmor_table, list_only_field, username)
-    
-    search_path=[], Xsearch_path=[], ask_file_type=[]
-    default_options=
-    Namespace(A=False, O=True, debug=True, distrib=False,
-              failsafe_attempt=1, h=False, log_files=False, max_command_number=0,
-              openid=openid, password=password, password_from_pipe=False, priority=0,
-              project='CMIP5', serial=True,
-              silent=False, swap_dir=tmpfiles['swap_dir'], timeout=120, trial=2)
-    Namespace(A=False, O=True, ask_experiment=['amip:1980-1980'],
-              ask_month=[1, 2], ask_var=['tas:day-atmos-day', 'orog:fx-atmos-fx'],
-              command='ask', command_1='record_ask', command_2='process', command_number=0,
-              debug=True, distrib=False, ensemble=['r1i1p1', 'r0i0p0'],
-              failsafe_attempt=1, h=False, institute=['NCAR'],
-              log_files=False, max_command_number=0, model=['CCSM4'], num_procs=1,
-              openid=openid, original_out_netcdf_file=tmpfiles['ask'], original_trial=2,
-              out_netcdf_file=tmpfiles['ask'],
-              password=password, password_from_pipe=False, priority=0, project='CMIP5',
-              search_path=[tempfiles['indir']], serial=True,
-              silent=False, swap_dir=tmpfiles['swap_dir'], timeout=120, trial=2)
-    options, project_drs = core.options_from_list(shlex.split(
+    core.cdb_query_from_list(shlex.split(
         '''
         cdb_query CMIP5 ask -O
                             --ask_month=1,2
@@ -78,9 +55,7 @@ def test_recipe01_local_ask(tmpfiles, capsys):
                             {4}
         '''.format(openid, password, tmpfiles['swap_dir'],
                    tmpfiles['indir'], tmpfiles['ask'])))
-    print(options)
     out, err = capsys.readouterr()
-    print(out)
 
     core.cdb_query_from_list(shlex.split(
         '''
