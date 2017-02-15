@@ -9,7 +9,8 @@ from . import parsers
 
 
 def main():
-    cdb_query_from_list(sys.argv)
+    options, project_drs = options_from_list(sys.argv)
+    cdb_query_from_options(options, project_drs)
     return
 
 
@@ -56,9 +57,7 @@ def logging_from_options(options):
     return
 
 
-def cdb_query_from_list(args_list):
-
-    options, project_drs = options_from_list(args_list)
+def cdb_query_from_options(options, project_drs):
     check_clobber_mode_from_options(options)
     logging_from_options(options)
 
