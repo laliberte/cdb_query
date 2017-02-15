@@ -36,7 +36,7 @@ def tmpfiles(tmpdir_factory):
             'data': [data1, data2, data_fx]}
 
 
-def test_recipe01_ask(tmpfiles, capsys):
+def test_recipe01_local_ask(tmpfiles, capsys):
     # Ask:
     core.cdb_query_from_list(shlex.split(
         '''
@@ -68,7 +68,7 @@ def test_recipe01_ask(tmpfiles, capsys):
     assert out2 == "NCAR,CCSM4,r0i0p0\nNCAR,CCSM4,r1i1p1\n"
 
 
-def test_recipe01_validate(tmpfiles, capsys):
+def test_recipe01_local_validate(tmpfiles, capsys):
     # Validate simulations:
     # Exclude data_node http://esgf2.dkrz.de because it is on a
     # tape archive (slow).
@@ -103,7 +103,7 @@ def test_recipe01_validate(tmpfiles, capsys):
     np.testing.assert_equal(time_axis, np.arange(60))
 
 
-def test_recipe01_reduce(tmpfiles):
+def test_recipe01_local_reduce(tmpfiles):
     # Convert hierarchical file to files on filesystem (much faster than ncks):
     # Identity reduction simply copies the data to disk
     core.cdb_query_from_list(shlex.split(
