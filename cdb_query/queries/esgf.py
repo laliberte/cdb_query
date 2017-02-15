@@ -214,9 +214,9 @@ def experiment_variable_search(nc_Database, search_path, file_type_list,
                 try:
                     (constraints_dict
                      .update(**{allow_aliases(
-                                    nc_Database.drs,field,
-                                    list(ctx.facet_counts.keys())): getattr(options,
-                                                                            field)[0]}))
+                                nc_Database.drs, field,
+                                list(ctx.facet_counts.keys())):
+                                getattr(options, field)[0]}))
                 except KeyError:
                     pass
     else:
@@ -232,9 +232,10 @@ def experiment_variable_search(nc_Database, search_path, file_type_list,
 
     if list_level is not None:
         try:
-            return list(ctx.facet_counts[allow_aliases(nc_Database.drs,
-                                                       list_level,
-                                                       list(ctx.facet_counts.keys()))].keys())
+            return list(ctx.facet_counts[allow_aliases(
+                                    nc_Database.drs,
+                                    list_level,
+                                    list(ctx.facet_counts.keys()))].keys())
         except socket.error as e:
             print(search_path + ' is not responding. ' + e.strerror)
             print('This is not fatal. Data broadcast by ' + search_path +
@@ -398,8 +399,9 @@ def create_file_info_dict(key, item, drs):
                 # Fix for CREATE-IP
                 file_info[val] = drs.product
             else:
-                file_info[val] = item.json[allow_aliases(drs, val,
-                                                         list(item.json.keys()))]
+                file_info[val] = item.json[allow_aliases(
+                                                drs, val,
+                                                list(item.json.keys()))]
 
             if isinstance(file_info[val], list):
                 file_info[val] = str(file_info[val][0])

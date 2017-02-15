@@ -5,7 +5,6 @@ import copy
 import datetime
 import os
 import numpy as np
-from contextlib import closing
 
 # External but related:
 from ..netcdf4_soft_links import (soft_links, remote_netcdf, ncutils)

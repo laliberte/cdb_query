@@ -63,7 +63,6 @@ def test_recipe01_esgf_ask(tmpfiles, capsys):
 @pytest.mark.skipif(skip_auth, reason=('Without auth credentials, '
                                        'this test cannot work'))
 def test_recipe01_esgf_validate(tmpfiles, capsys):
-#def test_recipe01_esgf_validate(tmpfiles):
     # Validate simulations:
     # Exclude data_node http://esgf2.dkrz.de because it is on a
     # tape archive (slow).
@@ -157,12 +156,11 @@ def test_recipe01_esgf_reduce(tmpfiles):
             assert var in dataset.variables
             data[var] = dataset.variables[var][:]
 
-
     # Check the first slices:
-    expected = [[[ 246.76385498, 247.0161438],
-                 [ 247.44604492, 247.81329346]],
-                [[ 246.76124573, 247.19403076],
-                 [ 247.93475342, 248.31892395]]]
+    expected = [[[246.76385498, 247.0161438],
+                 [247.44604492, 247.81329346]],
+                [[246.76124573, 247.19403076],
+                 [247.93475342, 248.31892395]]]
     np.testing.assert_almost_equal(data['tas'][:2, :2, :2], expected)
 
     out_file = tmpfiles['outdir'].join(
@@ -178,6 +176,6 @@ def test_recipe01_esgf_reduce(tmpfiles):
             data[var] = dataset.variables[var][:]
 
     # Check the first slices:
-    expected = [[ 2824.92138672, 2824.92138672],
-                [ 2731.1394043, 2733.16772461]]
+    expected = [[2824.92138672, 2824.92138672],
+                [2731.1394043, 2733.16772461]]
     np.testing.assert_almost_equal(data['orog'][:2, :2], expected)
