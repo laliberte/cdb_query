@@ -17,6 +17,7 @@ matrix:
   fast_finish: true
   allow_failures:
     - env: CHANNEL=forge
+    - python: 3.3
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh; fi
