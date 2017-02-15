@@ -1,0 +1,43 @@
+# CI on Windows via appveyor
+# This file was based on Olivier Grisel's python-appveyor-demo
+branches:
+  except:
+    - fix-docs
+
+environment:
+  # https://www.appveyor.com/docs/build-configuration/#secure-variables
+  OPENID_ESGF:
+    secure: f3Vh9qQ3bQ0rLvSeB3pqUaTuJUkZ5bTwOQBRaTHYTIOfdQNGsx+50S2cqmh0GYLz
+  PASSWORD_ESGF:
+    secure: +VCOZ+XVP2vYYnywiO5NLA==
+
+  matrix:
+    - PYTHON: "C:\\Python27-conda32"
+      PYTHON_VERSION: "2.7"
+      PYTHON_ARCH: "32"
+
+    - PYTHON: "C:\\Python36-conda64"
+      PYTHON_VERSION: "3.6"
+      PYTHON_ARCH: "64"
+
+install:
+  # Install miniconda Python
+  - "powershell ./ci/install_python.ps1"
+
+  # Prepend newly installed Python to the PATH of this build (this cannot be
+  # done from inside the powershell script as it would require to restart
+  # the parent CMD process).
+  - "SET PATH=%PYTHON%;%PYTHON%\\Scripts;%PATH%"
+
+  # Check that we have the expected version and architecture for Python
+  - "python --version"
+  - "python -c \"import struct; print(struct.calcsize('P') * 8)\""
+
+  # install xarray and depenencies
+  - "conda install --yes --quiet pip setuptools pytest numpy scipy netCDF4 h5py"
+  - "pip install -e .[testing]"
+
+build: false
+
+test_script:
+  - "py.test cdb_query"

@@ -6,6 +6,7 @@ import netCDF4
 import copy
 import numpy as np
 from functools import reduce
+from contextlib import closing
 
 # External but related:
 from ..netcdf4_soft_links import (remote_netcdf, soft_links,
@@ -63,8 +64,7 @@ class nc_Database:
     def load_header(self):
         # Load header:
         header = dict()
-        print(self.db_file)
-        with read_Dataset(self.db_file)(self.db_file, 'r') as dataset:
+        with closing(read_Dataset(self.db_file, mode='r')) as dataset:
             for att in (set(self.drs.header_desc)
                         .intersection(dataset.ncattrs())):
                 header[att] = json.loads(ncutils.core.getncattr(dataset, att))
@@ -74,7 +74,7 @@ class nc_Database:
                           time_slices=dict(), semaphores=dict(),
                           session=None, remote_netcdf_kwargs=dict()):
         self.file_expt.time = '0'
-        with read_Dataset(self.db_file)(self.db_file, 'r') as dataset:
+        with closing(read_Dataset(self.db_file, mode='r')) as dataset:
             populate_database_recursive(
                                 self, dataset, options, find_function,
                                 soft_links=soft_links,
@@ -250,9 +250,8 @@ class nc_Database:
         # Recover the database meta data:
         tree = list(zip(self.drs.official_drs_no_version,
                         [None for field in self.drs.official_drs_no_version]))
-        with read_Dataset(self.db_file)(self.db_file, 'r') as dataset:
-            if retrieval_type in ['download_files', 'download_opendap',
-                                  'reduce']:
+        with closing(read_Dataset(self.db_file, mode='r')) as dataset:
+            if retrieval_type in ['download_files', 'download_opendap']:
                 q_manager.download.set_opened()
                 db_utils.extract_netcdf_variable(output, dataset, tree,
                                                  options,
@@ -273,7 +272,7 @@ class nc_Database:
 
     def retrieve_dates(self, options):
         # Recover the database meta data:
-        with read_Dataset(self.db_file)(self.db_file, 'r') as dataset:
+        with closing(read_Dataset(self.db_file, mode='r')) as dataset:
             dates_axis = np.unique(retrieve_dates_recursive(dataset, options))
         return dates_axis
 

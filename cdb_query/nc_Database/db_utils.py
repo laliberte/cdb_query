@@ -5,6 +5,7 @@ import copy
 import datetime
 import os
 import numpy as np
+from contextlib import closing
 
 # External but related:
 from ..netcdf4_soft_links import (soft_links, remote_netcdf, ncutils)
@@ -12,13 +13,11 @@ from ..netcdf4_soft_links import (soft_links, remote_netcdf, ncutils)
 level_key = 'level_name'
 
 
-def _read_Dataset(file_name):
+def _read_Dataset(file_name, **kwargs):
     try:
-        with netCDF4_h5.Dataset(file_name, 'r'):
-            pass
-        return netCDF4_h5.Dataset
-    except:
-        return netCDF4.Dataset
+        return netCDF4_h5.Dataset(file_name, **kwargs)
+    except Exception:
+        return netCDF4.Dataset(file_name, **kwargs)
 
 
 def is_level_name_included_and_not_excluded(level_name, options, group):
@@ -175,12 +174,9 @@ def retrieve_or_replicate(output_grp, data, group, retrieval_type,
 
     options_dict['remote_netcdf_kwargs'] = remote_netcdf_kwargs
 
-    dl_manager = None
-    if hasattr(q_manager, 'donwload'):
-        dl_manager = q_manager.download
     netcdf_pointers = (soft_links.read_soft_links
                        .read_netCDF_pointers(data.groups[group],
-                                             q_manager=dl_manager,
+                                             q_manager=q_manager,
                                              session=session,
                                              **options_dict))
     if retrieval_type == 'reduce_soft_links':
@@ -212,7 +208,7 @@ def record_to_netcdf_file_from_file_name(options, temp_file_name, output,
                                          project_drs, check_empty=False):
     # Temporarily disable usage of h5netcdf here because of
     # incompatiblity between libraries.
-    # with _read_Dataset(temp_file_name)(temp_file_name, 'r') as data:
+    # with closing(_read_Dataset(temp_file_name, mode='r')) as data:
     with netCDF4.Dataset(temp_file_name, 'r') as data:
         var = [_fix_list_to_none(getattr(options, opt))
                if getattr(options, opt) is not None else None
@@ -272,7 +268,7 @@ def replace_netcdf_variable_recursive_replicate(output_grp, data_grp,
 
 # PUT INTO FILESYSTEM DATABASE
 def record_to_output_directory(output_file_name, project_drs, options):
-    # with _read_Dataset(output_file_name)(output_file_name,'r') as data:
+    # with closing(_read_Dataset(output_file_name, mode='r')) as data:
     with netCDF4.Dataset(output_file_name, 'r') as data:
         out_dir = options.out_destination
         with netCDF4.Dataset(output_file_name+'.tmp', 'w') as output:

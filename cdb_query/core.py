@@ -34,21 +34,20 @@ def check_clobber_mode_from_options(options):
 
 def logging_from_options(options):
     # https://docs.python.org/2/howto/logging-cookbook.html
+    level = logging.WARNING
+    if hasattr(options, 'debug') and options.debug:
+        level = (logging.WARNING if (hasattr(options, 's') and options.s)
+                 else logging.DEBUG)
     if (hasattr(options, 'log_files') and options.log_files and
        hasattr(options, 'out_netcdf_file')):
         logging.basicConfig(
-                level=logging.DEBUG,
+                level=level,
                 format=('%(processName)-10s %(asctime)s.%(msecs)03d '
                         '%(name)-12s %(levelname)-8s %(message)s'),
                 datefmt='%m-%d %H:%M:%S',
                 filename=options.out_netcdf_file+'.log',
                 filemode='w')
     else:
-        if ('debug' in dir(options) and options.debug):
-            level = (logging.INFO if (hasattr(options, 's') and options.s)
-                     else logging.DEBUG)
-        else:
-            level = logging.WARNING
         logging.basicConfig(level=level,
                             format=('%(processName)-20s %(asctime)s '
                                     '%(name)-12s %(levelname)-8s %(message)s'),

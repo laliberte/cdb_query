@@ -7,6 +7,7 @@ import tempfile
 import numpy as np
 import shutil
 import errno
+from contextlib import closing
 import logging
 
 # Internal:
@@ -255,7 +256,7 @@ def extract_single_tree(temp_file, src_file, tree, tree_fx,
                         options, options_fx, q_manager=None,
                         session=None, retrieval_type='reduce',
                         check_empty=False):
-    with db_utils._read_Dataset(src_file)(src_file, 'r') as data:
+    with closing(db_utils._read_Dataset(src_file, mode='r')) as data:
         with netCDF4.Dataset(temp_file, 'w', format='NETCDF4',
                              diskless=True, persist=True) as output_tmp:
             if (hasattr(options, 'add_fixed') and options.add_fixed):

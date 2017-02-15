@@ -84,8 +84,8 @@ class browser:
                         to_timestamp = None
                         (only_list
                          .append(experiment_variable_search_recursive(
-                                    database.nc_Database.drs
-                                    .slicing_args.keys(),
+                                    list(database.nc_Database.drs
+                                         .slicing_args.keys()),
                                     database.nc_Database,
                                     self.search_path,
                                     database.header['file_type_list'],
@@ -157,20 +157,19 @@ def experiment_variable_search(nc_Database, search_path, file_type_list,
         setattr(nc_Database.file_expt, field, var_spec[field_id])
 
     # Assumes that all slicing arguments in options are length-one list:
-    conn_kwargs = {'distrib': options.distrib}
+    conn_kwargs = {'distrib': options.distrib,
+                   'verify': verify,
+                   'session': session}
 
-    if session is not None:
-        conn = SearchConnection(search_path, session=session, verify=verify)
-    else:
-        conn_kwargs['verify'] = verify
-        if 'ask_cache' in dir(options) and options.ask_cache:
+    if session is None:
+        if hasattr(options, 'ask_cache') and options.ask_cache:
             conn_kwargs['cache'] = options.ask_cache.split(',')[0]
             if len(options.ask_cache.split(',')) > 1:
                 (conn_kwargs
                  ['expire_after']) = (datetime
                                       .timedelta(hours=float(options.ask_cache
                                                              .split(',')[1])))
-        conn = SearchConnection(search_path, **conn_kwargs)
+    conn = SearchConnection(search_path, **conn_kwargs)
 
     # Search the ESGF:
     top_ctx = conn.new_context(project=nc_Database.drs.project,
@@ -215,12 +214,9 @@ def experiment_variable_search(nc_Database, search_path, file_type_list,
                 try:
                     (constraints_dict
                      .update(**{allow_aliases(
-                                    nc_Database.drs,
-                                    field,
-                                    (ctx
-                                     .facet_counts
-                                     .keys())): getattr(options,
-                                                        field)[0]}))
+                                    nc_Database.drs,field,
+                                    list(ctx.facet_counts.keys())): getattr(options,
+                                                                            field)[0]}))
                 except KeyError:
                     pass
     else:
@@ -236,11 +232,9 @@ def experiment_variable_search(nc_Database, search_path, file_type_list,
 
     if list_level is not None:
         try:
-            return ctx.facet_counts[allow_aliases(nc_Database.drs,
-                                                  list_level,
-                                                  (ctx
-                                                   .facet_counts
-                                                   .keys()))].keys()
+            return list(ctx.facet_counts[allow_aliases(nc_Database.drs,
+                                                       list_level,
+                                                       list(ctx.facet_counts.keys()))].keys())
         except socket.error as e:
             print(search_path + ' is not responding. ' + e.strerror)
             print('This is not fatal. Data broadcast by ' + search_path +
@@ -288,7 +282,7 @@ def allow_aliases(project_drs, key, available_keys):
 
 def find_aliases(project_drs, key):
     if (hasattr(project_drs, 'aliases') and
-       key in project_drs.aliases.keys()):
+       key in project_drs.aliases):
         return project_drs.aliases[key]
     else:
         return [key]
@@ -349,8 +343,8 @@ def get_urls(drs, result, file_type_list, var_name):
 def get_url_remote(item, file_type_list, drs):
     url_name = []
     try:
-        keys_list = item.urls.viewkeys()
-    except:
+        keys_list = list(item.urls.keys())
+    except Exception:
         keys_list = []
 
     for key in set(keys_list).intersection(file_type_list):
@@ -386,7 +380,7 @@ def create_file_info_dict(key, item, drs):
                 # else:
                 file_info[val] = item.json['variable']
             elif val == 'version':
-                if 'version' in item.json.keys():
+                if 'version' in item.json:
                     version = item.json[val]
                 else:
                     # Version is poorly implemented... Try a fix:
@@ -405,7 +399,7 @@ def create_file_info_dict(key, item, drs):
                 file_info[val] = drs.product
             else:
                 file_info[val] = item.json[allow_aliases(drs, val,
-                                                         item.json.keys())]
+                                                         list(item.json.keys()))]
 
             if isinstance(file_info[val], list):
                 file_info[val] = str(file_info[val][0])
