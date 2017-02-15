@@ -79,7 +79,7 @@ def full_parser(args_list):
 
     options, commands_args = (project_parser
                               .parse_known_args(args=args_list[1:]))
-        
+
     # This is an ad-hoc patch to allow chained subcommands:
     cli = ['list_fields', 'merge', 'ask', 'validate',
            'download_files', 'reduce_soft_links', 'download_opendap',
