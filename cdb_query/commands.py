@@ -552,22 +552,18 @@ def rank_data_nodes(options, data_node_list, url_list, q_manager):
                         timing += timed_exec.interval
                     data_node_timing.append(timing)
                     data_node_list_timed.append(data_node)
-                    if not ('silent' in dir(options) and options.silent):
-                        if ('log_files' in dir(options) and
+                    if not (hasattr(options, 'silent') and options.silent):
+                        if (hasattr(options, 'log_files') and
                            options.log_files):
                             logging.info('Done!')
                         else:
                             print('Done!')
-                except Exception as e:
-                    if ((str(e)
-                         .startswith('The kind of user must be selected')) or
-                       ('debug' in dir(options) and options.debug)):
-                        raise
+                except dodsError:
                     exclude_data_node = True
-                except:
+                except Exception:
                     exclude_data_node = True
 
-                if (not ('silent' in dir(options) and options.silent) and
+                if (not (hasattr(options, 'silent') and options.silent) and
                    exclude_data_node):
                     logging.warning('Data node '+data_node+' excluded'
                                     ' because it did not respond.')
