@@ -12,10 +12,9 @@ import multiprocessing
 import random
 import requests
 import logging
-from pydap.exceptions import ServerError
 
 # External but related:
-from .netcdf4_soft_links import remote_netcdf
+from .netcdf4_soft_links import remote_netcdf, dodsError
 
 # Internal:
 from .utils import (ask_utils, validate_utils, reduce_utils,
@@ -517,13 +516,13 @@ def rank_data_nodes(options, data_node_list, url_list, q_manager):
                 try:
                     is_available = (remote_data
                                     .is_available(num_trials=1))
-                except ServerError:
+                except dodsError:
                     is_available = False
                 except Exception as e:
                     is_available = False
                     if ((str(e)
                          .startswith('The kind of user must be selected')) or
-                       ('debug' in dir(options) and options.debug)):
+                       (hasattr(options, 'debug') and options.debug)):
                         raise
 
             if not is_available:
