@@ -180,25 +180,31 @@ def retrieve_or_replicate(output_grp, data, group, retrieval_type,
                                              **options_dict))
     if retrieval_type == 'reduce_soft_links':
         # If applying to soft links, replicate.
-        netcdf_pointers.replicate(output_grp, check_empty=check_empty)
+        netcdf_pointers.replicate(output_grp, check_empty=check_empty,
+                                  zlib=True)
     elif retrieval_type == 'reduce':
         if ('soft_links' not in data.groups[group].groups):
             # If there are no soft links, replicate.
-            netcdf_pointers.replicate(output_grp, check_empty=check_empty)
+            netcdf_pointers.replicate(output_grp, check_empty=check_empty,
+                                      zlib=True)
         else:
             # There are soft links and they are supposed to be loaded:
             netcdf_pointers._retrieve(output_grp, 'load',
-                                      filepath=options.out_netcdf_file)
+                                      filepath=options.out_netcdf_file,
+                                      zlib=True)
     elif retrieval_type == 'download_files':
         netcdf_pointers._retrieve(output_grp, retrieval_type,
                                   filepath=options.out_netcdf_file,
-                                  out_dir=options.out_download_dir)
+                                  out_dir=options.out_download_dir,
+                                  zlib=True)
     elif retrieval_type == 'download_opendap':
         netcdf_pointers._retrieve(output_grp, retrieval_type,
-                                  filepath=options.out_netcdf_file)
+                                  filepath=options.out_netcdf_file,
+                                  zlib=True)
     else:
         netcdf_pointers._retrieve(output_grp, retrieval_type,
-                                  filepath=options.out_netcdf_file)
+                                  filepath=options.out_netcdf_file,
+                                  zlib=True)
     return
 
 
@@ -261,7 +267,8 @@ def replace_netcdf_variable_recursive_replicate(output_grp, data_grp,
     else:
         netcdf_pointers = (soft_links.read_soft_links
                            .read_netCDF_pointers(data_grp))
-        netcdf_pointers.append(output_grp, check_empty=check_empty)
+        netcdf_pointers.append(output_grp, check_empty=check_empty,
+                               zlib=True)
     return
 
 
@@ -349,7 +356,7 @@ def write_netcdf_variable_recursive_replicate(output, sub_out_dir, data_grp,
             netcdf_pointers = (soft_links.read_soft_links
                                .read_netCDF_pointers(data_grp))
             netcdf_pointers.replicate(output_data, check_empty=check_empty,
-                                      chunksize=-1)
+                                      chunksize=-1, zlib=True)
 
         unique_file_id_list = ['checksum_type', 'checksum', 'tracking_id']
         path = os.path.abspath(
