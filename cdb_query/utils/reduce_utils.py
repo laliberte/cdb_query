@@ -154,7 +154,9 @@ def reduce_sl_or_var(database, options, q_manager=None, sessions=dict(),
     # The leaf(ves) considered here:
     # Warning! Does not allow --serial option:
     var = [_fix_list(getattr(options, opt))
-           if getattr(options, opt) is not None
+           if (getattr(options, opt) is not None
+               and hasattr(options, 'keep_field')
+               and opt not in options.keep_field)
            else None for opt in database.drs.official_drs_no_version]
     tree = list(zip(database.drs.official_drs_no_version, var))
 
