@@ -1,4 +1,5 @@
 from cdb_query import core
+from cdb_query.netcdf4_soft_links import ncutils
 from cdb_query.data.testing_data import generate_test_files
 from cdb_query.data.testing_data_fx import generate_test_files \
                                     as generate_test_files_fx
@@ -137,3 +138,60 @@ def test_recipe01_local_reduce(tmpfiles):
     expected = np.concatenate([tmpfiles['data'][0]['tas'][:30, ...],
                                tmpfiles['data'][1]['tas'][:1, ...]], axis=0)
     np.testing.assert_equal(tas, expected)
+
+
+def test_recipe01_local_reduce_loop(tmpfiles):
+    # Convert hierarchical file to files on filesystem (much faster than ncks):
+    # Identity reduction simply copies the data to disk
+
+    # Here we simply rename a variable and ensure that it is kept along:
+    command = ('python -c \'import netCDF4, sys, os; '
+               'os.rename(sys.argv[1], sys.argv[2]); '
+               'data = netCDF4.Dataset(sys.argv[2], mode=\\"a\\"); '
+               'data.renameVariable(\\"tas\\", \\"tas_new\\"); '
+               'data.close()\'')
+    cl_call = (
+        '''
+        cdb_query CMIP5 reduce -O
+                        --serial
+                        --debug
+                        --month=1
+                        --swap_dir={0}
+                        --add_fixed
+                        --day=1,2,3,4,5
+                        -l day
+                        --var=tas
+                        --out_destination={1}
+                        "{4}"
+                        {2} {3}
+        '''.format(tmpfiles['swap_dir'], tmpfiles['outdir'],
+                   tmpfiles['validate'],
+                   tmpfiles['reduce'], command))
+    core.cdb_query_from_list(shlex.split(cl_call))
+
+    version = ('v' +
+               datetime.datetime.now().strftime('%Y%m%d'))
+    for day in range(1, 6):
+        out_file = tmpfiles['outdir'].join(
+                            'NCAR', 'CCSM4', 'amip', 'day', 'atmos',
+                            'day', 'r1i1p1', version, 'tas',
+                            'tas_day_CCSM4_amip_r1i1p1_1980010{0}-1980010{0}.nc'
+                            .format(day))
+        assert out_file.check()
+
+    with netCDF4.Dataset(out_file) as dataset:
+        assert 'tas_new' in dataset.variables
+        tas = dataset.variables['tas_new'][:]
+
+    expected = tmpfiles['data'][0]['tas'][4, ...],
+    np.testing.assert_equal(np.squeeze(tas), np.squeeze(expected))
+
+    with netCDF4.Dataset(tmpfiles['reduce']) as dataset:
+        path = 'NCAR/CCSM4/amip/day/atmos/day/r1i1p1/tas/soft_links'
+        group = dataset
+        for level in path.split('/'):
+            assert level in group.groups
+            group = group.groups[level]
+        assert 'tas_new' in group.parent.variables
+        assert 'tas_new' in group.variables
+        assert ncutils.dataset_compat._dim_len(group, 'time') == 5

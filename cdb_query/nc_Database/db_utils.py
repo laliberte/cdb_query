@@ -5,6 +5,7 @@ import copy
 import datetime
 import os
 import numpy as np
+import logging
 
 # External but related:
 from ..netcdf4_soft_links import (soft_links, remote_netcdf, ncutils)
@@ -267,6 +268,7 @@ def replace_netcdf_variable_recursive_replicate(output_grp, data_grp,
     else:
         netcdf_pointers = (soft_links.read_soft_links
                            .read_netCDF_pointers(data_grp))
+        logging.debug('Appending to out_netcdf_file leaf ' + output_grp.path)
         netcdf_pointers.append(output_grp, check_empty=check_empty,
                                zlib=True)
     return

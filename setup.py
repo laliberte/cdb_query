@@ -58,6 +58,7 @@ setup(name=package_name,
                                   'coverage',
                                   'pytest-cov',
                                   'pytest-xdist',
+                                  'pytest-catchlog',
                                   'pytest',
                                   'dask']},
       entry_points={'console_scripts': [package_name + '= ' +
