@@ -173,10 +173,10 @@ def test_recipe01_local_reduce_loop(tmpfiles):
                datetime.datetime.now().strftime('%Y%m%d'))
     for day in range(1, 6):
         out_file = tmpfiles['outdir'].join(
-                            'NCAR', 'CCSM4', 'amip', 'day', 'atmos',
-                            'day', 'r1i1p1', version, 'tas',
-                            'tas_day_CCSM4_amip_r1i1p1_1980010{0}-1980010{0}.nc'
-                            .format(day))
+                        'NCAR', 'CCSM4', 'amip', 'day', 'atmos',
+                        'day', 'r1i1p1', version, 'tas',
+                        'tas_day_CCSM4_amip_r1i1p1_1980010{0}-1980010{0}.nc'
+                        .format(day))
         assert out_file.check()
 
     with netCDF4.Dataset(out_file) as dataset:
