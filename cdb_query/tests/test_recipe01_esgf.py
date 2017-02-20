@@ -73,6 +73,7 @@ def test_recipe01_esgf_validate(tmpfiles, capsys):
         cdb_query CMIP5 validate -O -s
                                 --debug
                                 --serial
+                                --timeout=15
                                 --openid={0}
                                 --password={1}
                                 --swap_dir={2}
@@ -105,6 +106,7 @@ def test_recipe01_esgf_download_opendap(tmpfiles, capsys):
                         --year=1979 --month=1
                         --debug
                         --serial
+                        --timeout=15
                         --openid={0}
                         --password={1}
                         --swap_dir={2}
@@ -134,6 +136,7 @@ def test_recipe01_esgf_reduce(tmpfiles):
         cdb_query CMIP5 reduce -O -s
                         --debug
                         --serial
+                        --timeout=15
                         --swap_dir={0}
                         --out_destination={1}
                         'cp'
