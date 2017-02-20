@@ -219,10 +219,14 @@ def reduce_sl_or_var(database, options, q_manager=None, sessions=dict(),
                                              stderr=subprocess.STDOUT)
             # Capture subprocess errors to print output:
             for line in iter(output.splitlines()):
+                if hasattr(line, 'decode'):
+                    line = line.decode('ascii', 'replace')
                 logging.info(line)
         except subprocess.CalledProcessError as e:
             # Capture subprocess errors to print output:
             for line in iter(e.output.splitlines()):
+                if hasattr(line, 'decode'):
+                    line = line.decode('ascii', 'replace')
                 logging.info(line)
             raise
 
