@@ -136,7 +136,6 @@ def test_recipe01_esgf_reduce(tmpfiles):
         cdb_query CMIP5 reduce -O -s
                         --debug
                         --serial
-                        --timeout=15
                         --swap_dir={0}
                         --out_destination={1}
                         'cp'

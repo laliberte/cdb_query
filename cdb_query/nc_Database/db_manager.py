@@ -189,22 +189,26 @@ class nc_Database:
 
                 output = create_tree(output_root, list(zip(drs_list, tree)))
                 # Record data:
-                if hasattr(options, 'missing_years') and options.missing_years:
-                    # Get the years_list from the database:
-                    years_list = [int(x[0][:-2]) for x
-                                  in (self
-                                      .session
-                                      .query(File_Expt.time)
-                                      .filter(sqlalchemy.and_(*conditions))
-                                      .distinct()
-                                      .all())]
-                    picontrol_min_time = False
+                (years_list,
+                 picontrol_min_time) = (find_functions
+                                        .get_years_list_from_periods(
+                                            header['experiment_list']
+                                            [experiment]))
+                if record_function_handle == 'record_paths':
+                    check_dimensions = False
                 else:
-                    (years_list,
-                     picontrol_min_time) = (find_functions
-                                            .get_years_list_from_periods(
-                                                header['experiment_list']
-                                                [experiment]))
+                    check_dimensions = True
+                    if (hasattr(options, 'missing_years') and
+                        options.missing_years):
+                        # Get the years_list from the database:
+                        years_list = [int(x[0][:-2]) for x
+                                      in (self
+                                          .session
+                                          .query(File_Expt.time)
+                                          .filter(sqlalchemy.and_(*conditions))
+                                          .distinct()
+                                          .all())]
+                        picontrol_min_time = False
 
                 # Time was further sliced:
                 if ('year' in time_slices and
@@ -219,11 +223,6 @@ class nc_Database:
                    time_slices['month'] is not None):
                     months_list = [month for month in months_list
                                    if month in time_slices['month']]
-
-                if record_function_handle == 'record_paths':
-                    check_dimensions = False
-                else:
-                    check_dimensions = True
 
                 netcdf_pointers = (soft_links.create_soft_links
                                    .create_netCDF_pointers(
