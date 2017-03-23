@@ -6,9 +6,12 @@ import datetime
 import os
 import numpy as np
 import logging
+# from contextlib import closing
 
 # External but related:
 from ..netcdf4_soft_links import (soft_links, remote_netcdf, ncutils)
+
+_logger = logging.getLogger(__name__)
 
 level_key = 'level_name'
 
@@ -217,7 +220,8 @@ def record_to_netcdf_file_from_file_name(options, temp_file_name, output,
     # with closing(_read_Dataset(temp_file_name, mode='r')) as data:
     with netCDF4.Dataset(temp_file_name, 'r') as data:
         var = [_fix_list_to_none(getattr(options, opt))
-               if getattr(options, opt) is not None else None
+               if (hasattr(options, opt) and
+                   getattr(options, opt) is not None) else None
                for opt in project_drs.official_drs_no_version]
         tree = list(zip(project_drs.official_drs_no_version, var))
 
@@ -268,7 +272,7 @@ def replace_netcdf_variable_recursive_replicate(output_grp, data_grp,
     else:
         netcdf_pointers = (soft_links.read_soft_links
                            .read_netCDF_pointers(data_grp))
-        logging.debug('Appending to out_netcdf_file leaf ' + output_grp.path)
+        _logger.debug('Appending to out_netcdf_file leaf ' + output_grp.path)
         netcdf_pointers.append(output_grp, check_empty=check_empty,
                                zlib=True)
     return

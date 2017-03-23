@@ -199,7 +199,7 @@ class nc_Database:
                 else:
                     check_dimensions = True
                     if (hasattr(options, 'missing_years') and
-                        options.missing_years):
+                       options.missing_years):
                         # Get the years_list from the database:
                         years_list = [int(x[0][:-2]) for x
                                       in (self
@@ -208,7 +208,6 @@ class nc_Database:
                                           .filter(sqlalchemy.and_(*conditions))
                                           .distinct()
                                           .all())]
-                        picontrol_min_time = False
 
                 # Time was further sliced:
                 if ('year' in time_slices and

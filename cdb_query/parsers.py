@@ -356,7 +356,7 @@ def ask_shared_arguments(parser, project_drs):
     ESGF_nodes = ['https://esgf-index1.ceda.ac.uk/esg-search/',
                   'https://esgf-node.ipsl.upmc.fr/esg-search/',
                   'https://esgf-data.dkrz.de/esg-search/',
-                  'https://pcmdi.llnl.gov/esg-search/',
+                  'https://esgf-node.llnl.gov/esg-search/',
                   'https://esgf-node.jpl.nasa.gov/esg-search/',
                   'https://esg-dn1.nsc.liu.se/esg-search/']
     default_search_path_list = {'CMIP5': ESGF_nodes,

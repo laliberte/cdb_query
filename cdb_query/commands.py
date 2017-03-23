@@ -22,6 +22,8 @@ from .utils import (ask_utils, validate_utils, reduce_utils,
 from .nc_Database import db_manager, db_utils
 from . import parsers, commands_parser
 
+_logger = logging.getLogger(__name__)
+
 
 def ask(database, options, q_manager=None, sessions=dict()):
     # Load header:
@@ -280,14 +282,14 @@ class Database_Manager:
                 if (not ('silent' in dir(options) and
                          options.silent)):
                     for var in vars_list:
-                        (logging
+                        (_logger
                          .warning(' '
                                   .join([opt+': '+str(var[opt_id])
                                          for opt_id, opt
                                          in enumerate(
                                             self.drs
                                             .official_drs_no_version)])))
-                    logging.warning('Were excluded because no '
+                    _logger.warning('Were excluded because no '
                                     'date matched times requested')
             return
 
@@ -489,7 +491,7 @@ def rank_data_nodes(options, data_node_list, url_list, q_manager):
             url = url_list[data_node_id]
             if not ('silent' in dir(options) and options.silent):
                 if 'log_files' in dir(options) and options.log_files:
-                    logging.info('Querying '+url[0]+' to '
+                    _logger.info('Querying '+url[0]+' to '
                                  'measure response time of data node... ')
                 else:
                     print('Querying '+url[0]+' to '
@@ -528,11 +530,11 @@ def rank_data_nodes(options, data_node_list, url_list, q_manager):
             if not is_available:
                 if not ('silent' in dir(options) and options.silent):
                     if timed_exec.interval > options.timeout:
-                        logging.warning('Data node ' + data_node +
+                        _logger.warning('Data node ' + data_node +
                                         ' excluded because it did'
                                         ' not respond (timeout).')
                     else:
-                        logging.warning('Data node ' + data_node +
+                        _logger.warning('Data node ' + data_node +
                                         ' excluded because it did'
                                         ' not respond.')
             else:
@@ -555,7 +557,7 @@ def rank_data_nodes(options, data_node_list, url_list, q_manager):
                     if not (hasattr(options, 'silent') and options.silent):
                         if (hasattr(options, 'log_files') and
                            options.log_files):
-                            logging.info('Done!')
+                            _logger.info('Done!')
                         else:
                             print('Done!')
                 except dodsError:
@@ -565,7 +567,7 @@ def rank_data_nodes(options, data_node_list, url_list, q_manager):
 
                 if (not (hasattr(options, 'silent') and options.silent) and
                    exclude_data_node):
-                    logging.warning('Data node '+data_node+' excluded'
+                    _logger.warning('Data node '+data_node+' excluded'
                                     ' because it did not respond.')
             # Close the session:
             session.close()

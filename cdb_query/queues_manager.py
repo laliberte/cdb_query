@@ -376,7 +376,6 @@ def recorder_queue_consume(q_manager, project_drs, cproc_options):
 
     output = dict()
     try:
-        # Output diskless for perfomance. File will be created on closing:
         command_names = commands_parser._get_command_names(cproc_options)
         for command_id, command_name in enumerate(command_names):
             if 'record' in command_name.split('_'):
@@ -384,19 +383,21 @@ def recorder_queue_consume(q_manager, project_drs, cproc_options):
                     file_mod = ''
                 else:
                     file_mod = '.'+'_'.join(command_name.split('_')[1:])
+                write_kwargs = {'mode': 'w', 'diskless': True, 'persist': True}
                 if (hasattr(cproc_options, 'A') and cproc_options.A):
-                    mode = 'a'
-                    output[command_name] = netCDF4.Dataset(
-                                             (cproc_options
-                                              .original_out_netcdf_file) +
-                                             file_mod, mode)
+                    kwargs = {'mode': 'a'}
                 else:
-                    mode = 'w'
-                    output[command_name] = netCDF4.Dataset(
-                                            (cproc_options
-                                             .original_out_netcdf_file) +
-                                            file_mod,
-                                            mode, diskless=True, persist=True)
+                    kwargs = write_kwargs
+
+                file_name = (cproc_options.original_out_netcdf_file +
+                             file_mod)
+                try:
+                    output[command_name] = netCDF4.Dataset(file_name, **kwargs)
+                except OSError:
+                    # i.e. file might not exists with append
+                    # so force overwrite:
+                    output[command_name] = netCDF4.Dataset(file_name,
+                                                           **write_kwargs)
                 output[command_name].set_fill_off()
                 database = commands.Database_Manager(project_drs)
                 database.load_header(cproc_options)
@@ -436,9 +437,6 @@ def record_to_netcdf_file(counter, options, output, q_manager, project_drs):
             pass
         shutil.move(options.in_netcdf_file, out_file_name)
     elif command_name in output:
-        # and (  commands_parser._get_command_names(options)
-        #        .index(command_name)
-        #         >= options.max_command_number ) ):
         # Only record this function if it was requested::
         _logger.info('Recording: ' + command_name + ', with options: ' +
                      opts_to_str(options))

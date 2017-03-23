@@ -49,14 +49,15 @@ def logging_from_options(options):
         logging.basicConfig(
                 level=level,
                 format=('%(processName)-10s %(asctime)s.%(msecs)03d '
-                        '%(name)-12s %(levelname)-8s %(message)s'),
+                        '%(name)-12s:%(lineno)d %(levelname)-8s %(message)s'),
                 datefmt='%m-%d %H:%M:%S',
                 filename=options.out_netcdf_file+'.log',
                 filemode='w')
     else:
         logging.basicConfig(level=level,
                             format=('%(processName)-20s %(asctime)s '
-                                    '%(name)-12s %(levelname)-8s %(message)s'),
+                                    '%(name)-12s:%(lineno)d %(levelname)-8s '
+                                    '%(message)s'),
                             datefmt='%m-%d %H:%M')
     return
 
