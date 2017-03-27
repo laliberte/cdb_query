@@ -6,7 +6,7 @@ import datetime
 import os
 import numpy as np
 import logging
-# from contextlib import closing
+from contextlib import suppress
 
 # External but related:
 from ..netcdf4_soft_links import (soft_links, remote_netcdf, ncutils)
@@ -17,10 +17,19 @@ level_key = 'level_name'
 
 
 def _read_Dataset(file_name, **kwargs):
-    try:
-        return netCDF4_h5.Dataset(file_name, **kwargs)
-    except Exception:
-        return netCDF4.Dataset(file_name, **kwargs)
+    # try:
+    #    # Make close clean when the same file is opened twice:
+    #    netCDF4_h5.Dataset.close = _catch_runtime(netCDF4_h5.Dataset.close)
+    #    return netCDF4_h5.Dataset(file_name, **kwargs)
+    # except Exception:
+    return netCDF4.Dataset(file_name, **kwargs)
+
+
+# def _catch_runtime(func):
+#     def func_wrapper(*args, **kwargs):
+#         with suppress(RuntimeError):
+#             return func(*args, **kwargs)
+#     return func_wrapper
 
 
 def is_level_name_included_and_not_excluded(level_name, options, group):
