@@ -231,9 +231,10 @@ def reduce_sl_or_var(database, options, q_manager=None, sessions=dict(),
         # request before overwriting:
         os.remove(temp_output_file_name)
         try:
-            environment = dict([(val[0], _convert_list(val[1]))
-                                for val in tree + time_tree])
-            _logger.debug(environment)
+            environment = dict((key, os.environ[key])
+                               for key in os.environ)
+            environment.update(dict((val[0], _convert_list(val[1]))
+                                    for val in tree + time_tree))
             output = subprocess.check_output(script_to_call
                                              .format(*temp_file_name_list),
                                              shell=True,
