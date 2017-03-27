@@ -17,7 +17,6 @@ import shutil
 import tempfile
 import requests
 import logging
-# _logger = logging.getLogger(__name__)
 
 # External but related:
 from .netcdf4_soft_links import queues_manager as NC4SL_queues_manager
@@ -105,8 +104,8 @@ class CDB_queues_manager:
         # Add credentials:
         (self.dl_nc_kws.update({opt: getattr(options, opt) for opt
                                 in ['openid', 'username', 'password',
-                                    'use_certificates']
-                                if opt in dir(options)}))
+                                    'use_certificates', 'timeout']
+                                if hasattr(options, opt)}))
 
         for queue_name in self.queues_names:
             setattr(self, queue_name, self.manager.PriorityQueue())
