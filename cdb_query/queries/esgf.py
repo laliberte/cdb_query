@@ -80,6 +80,7 @@ class browser:
                         #                   '-01-01T00:00:00Z')
                         # to_timestamp = (experiment_spec.split(',')[1] +
                         #                 '-12-31T23:59:59Z')
+                        #print(experiment, experiment_spec, var_name, var_spec)
                         from_timestamp = None
                         to_timestamp = None
                         (only_list
@@ -136,14 +137,26 @@ def experiment_variable_search_recursive(slicing_args, nc_Database,
                         session=session, verify=verify)
     else:
         # When done, perform the search:
-        return experiment_variable_search(nc_Database, search_path,
-                                          file_type_list, options,
-                                          experiment, var_name, var_spec,
-                                          from_timestamp=from_timestamp,
-                                          to_timestamp=to_timestamp,
-                                          list_level=list_level,
-                                          session=session,
-                                          verify=verify)
+        try:
+            return experiment_variable_search(nc_Database, search_path,
+                                              file_type_list, options,
+                                              experiment, var_name, var_spec,
+                                              from_timestamp=from_timestamp,
+                                              to_timestamp=to_timestamp,
+                                              list_level=list_level,
+                                              session=session,
+                                              verify=verify)
+        except requests.exceptions.SSLError:
+            if not verify:
+                raise
+            return experiment_variable_search(nc_Database, search_path,
+                                              file_type_list, options,
+                                              experiment, var_name, var_spec,
+                                              from_timestamp=from_timestamp,
+                                              to_timestamp=to_timestamp,
+                                              list_level=list_level,
+                                              session=session,
+                                              verify=False)
 
 
 def experiment_variable_search(nc_Database, search_path, file_type_list,
@@ -262,6 +275,8 @@ def experiment_variable_search(nc_Database, search_path, file_type_list,
                                          var_name) for x in file_list_found]
             file_list_remote = [item for sublist in file_list_remote
                                 for item in sublist]
+        except requests.exceptions.SSLError:
+            raise
         except Exception:
             logging.warning('Search path {0} is unresponsive '
                             'at the moment'.format(search_path))
