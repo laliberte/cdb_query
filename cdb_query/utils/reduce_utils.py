@@ -14,12 +14,24 @@ import logging
 from ..nc_Database import db_utils
 from . import downloads_utils
 
+_logger = logging.getLogger(__name__)
+
 
 def _fix_list(x):
     if len(x) == 1:
         return x[0]
     else:
         return x
+
+
+def _convert_list(x):
+    if x is None:
+        return ''
+    try:
+        return str(x)
+    except TypeError:
+        # Input is list:
+        return ' '.join(str(y) for y in x)
 
 
 def make_list(item):
@@ -68,7 +80,7 @@ def reduce_var_list(database, options):
                      (database
                       .list_fields_local(options, drs_to_eliminate,
                                          soft_links=False))])]
-    if len(var_list) > 1:
+    if len(var_list) > 1 and 'ensemble' in database.drs.official_drs_no_version:
         # This is a fix necessary for MOHC models.
         if 'var' in drs_to_eliminate:
             var_index = database.drs.official_drs_no_version.index('var')
@@ -96,7 +108,7 @@ def reduce_soft_links(database, options, q_manager=None, sessions=dict()):
             options_copy = copy.copy(options)
             set_new_var_options(options_copy, var,
                                 database.drs.official_drs_no_version)
-            logging.debug('Reducing soft_links ' + str(var))
+            _logger.debug('Reducing soft_links ' + str(var))
             tmp_out_fn_one_var = reduce_sl_or_var(
                                     database, options_copy,
                                     q_manager=q_manager,
@@ -106,7 +118,7 @@ def reduce_soft_links(database, options, q_manager=None, sessions=dict()):
             db_utils.record_to_netcdf_file_from_file_name(options_copy,
                                                           tmp_out_fn_one_var,
                                                           output, database.drs)
-            logging.debug('Done reducing soft_links ' + str(var))
+            _logger.debug('Done reducing soft_links ' + str(var))
 
             try:
                 os.remove(tmp_out_fn_one_var)
@@ -128,7 +140,7 @@ def reduce_variable(database, options, q_manager=None, sessions=dict(),
             for time in times_list:
                 options_copy_time = copy.copy(options_copy)
                 set_new_time_options(options_copy_time, time)
-                logging.debug('Reducing variables ' + str(var) + ' ' +
+                _logger.debug('Reducing variables ' + str(var) + ' ' +
                               str(time))
                 tmp_out_fn_one_var = reduce_sl_or_var(
                                         database, options_copy_time,
@@ -139,7 +151,7 @@ def reduce_variable(database, options, q_manager=None, sessions=dict(),
                                                           options_copy_time,
                                                           tmp_out_fn_one_var,
                                                           output, database.drs)
-                logging.debug('Done Reducing variables ' + str(var) + ' ' +
+                _logger.debug('Done Reducing variables ' + str(var) + ' ' +
                               str(time))
 
                 try:
@@ -159,6 +171,12 @@ def reduce_sl_or_var(database, options, q_manager=None, sessions=dict(),
                and opt not in options.keep_field)
            else None for opt in database.drs.official_drs_no_version]
     tree = list(zip(database.drs.official_drs_no_version, var))
+
+    time_desc = ['year', 'month', 'day', 'hour']
+    time_var = [_fix_list(getattr(options, opt))
+                if getattr(options, opt) is not None
+                else None for opt in time_desc]
+    time_tree = list(zip(time_desc, time_var))
 
     # Decide whether to add fixed variables:
     tree_fx, options_fx = get_fixed_var_tree(database.drs, options, var)
@@ -213,21 +231,25 @@ def reduce_sl_or_var(database, options, q_manager=None, sessions=dict(),
         # request before overwriting:
         os.remove(temp_output_file_name)
         try:
+            environment = dict([(val[0], _convert_list(val[1]))
+                                for val in tree + time_tree])
+            _logger.debug(environment)
             output = subprocess.check_output(script_to_call
                                              .format(*temp_file_name_list),
                                              shell=True,
+                                             env=environment,
                                              stderr=subprocess.STDOUT)
             # Capture subprocess errors to print output:
             for line in iter(output.splitlines()):
                 if hasattr(line, 'decode'):
                     line = line.decode('ascii', 'replace')
-                logging.info(line)
+                _logger.info(line)
         except subprocess.CalledProcessError as e:
             # Capture subprocess errors to print output:
             for line in iter(e.output.splitlines()):
                 if hasattr(line, 'decode'):
                     line = line.decode('ascii', 'replace')
-                logging.info(line)
+                _logger.info(line)
             raise
 
     try:
