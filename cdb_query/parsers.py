@@ -329,6 +329,7 @@ def ask_shared_arguments(parser, project_drs):
                                              'JRA-25:1979-2013',
                                              'JRA-55:1958-2015',
                                              'MERRA-2:1980-2015',
+                                             '20CRv2c:1851-2012',
                                              'MERRA-reanalysis:1979-2015']),
                           'CanSISE': tuple(['historical-r1:1979-2005'])}
     query_group.add_argument('--ask_experiment',
@@ -346,7 +347,7 @@ def ask_shared_arguments(parser, project_drs):
                                     'years of the piControl experiment. '
                                     'Can be repeated for multiple experiments.'
                                     ' Default {0}')
-                                   .format(' '.join(default_experiment
+                                   .format(','.join(default_experiment
                                                     [project_drs.project]))))
     query_group.add_argument('--ask_month',
                              default=range(1, 13),
