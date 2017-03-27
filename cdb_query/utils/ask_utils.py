@@ -58,7 +58,8 @@ def ask(database, options, q_manager=None, sessions=dict()):
         # Add credentials:
         remote_netcdf_kwargs = {opt: getattr(options, opt)
                                 for opt in ['openid', 'username',
-                                            'password', 'use_certificates']
+                                            'password', 'use_certificates',
+                                            'timeout']
                                 if hasattr(options, opt)}
         (database.nc_Database
          .write_database(database.header, options,

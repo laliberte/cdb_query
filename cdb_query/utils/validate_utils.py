@@ -295,7 +295,8 @@ def validate(database, options, q_manager=None, sessions=dict()):
     remote_netcdf_kwargs.update({opt: getattr(options, opt)
                                  for opt in
                                  ['openid', 'username',
-                                  'password', 'use_certifices']
+                                  'password', 'use_certifices',
+                                  'timeout']
                                  if opt in dir(options)})
 
     if 'validate' in sessions.keys():
