@@ -1,12 +1,12 @@
 # External:
 import netCDF4
-import h5netcdf.legacyapi as netCDF4_h5
+# import h5netcdf.legacyapi as netCDF4_h5
+# from contextlib import suppress
 import copy
 import datetime
 import os
 import numpy as np
 import logging
-from contextlib import suppress
 
 # External but related:
 from ..netcdf4_soft_links import (soft_links, remote_netcdf, ncutils)

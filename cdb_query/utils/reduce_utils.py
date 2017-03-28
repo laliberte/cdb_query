@@ -80,7 +80,8 @@ def reduce_var_list(database, options):
                      (database
                       .list_fields_local(options, drs_to_eliminate,
                                          soft_links=False))])]
-    if len(var_list) > 1 and 'ensemble' in database.drs.official_drs_no_version:
+    if (len(var_list) > 1 and
+       'ensemble' in database.drs.official_drs_no_version):
         # This is a fix necessary for MOHC models.
         if 'var' in drs_to_eliminate:
             var_index = database.drs.official_drs_no_version.index('var')

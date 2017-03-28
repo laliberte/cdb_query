@@ -80,7 +80,6 @@ class browser:
                         #                   '-01-01T00:00:00Z')
                         # to_timestamp = (experiment_spec.split(',')[1] +
                         #                 '-12-31T23:59:59Z')
-                        #print(experiment, experiment_spec, var_name, var_spec)
                         from_timestamp = None
                         to_timestamp = None
                         (only_list
