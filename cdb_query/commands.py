@@ -169,12 +169,8 @@ def download_files(database, options, q_manager=None, sessions=dict()):
     else:
         vars_list = reduce_utils.reduce_var_list(database, options)
 
-    # Users have requested time types to be kept
-    times_list = downloads_utils.time_split(database, options,
-                                            check_split=(len(vars_list) == 1))
     database.put_or_process(downloads_utils.download_files, vars_list,
-                            options, q_manager, sessions,
-                            times_list=times_list)
+                            options, q_manager, sessions)
     return
 
 
