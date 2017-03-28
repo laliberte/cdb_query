@@ -325,9 +325,13 @@ class CDB_queues_manager:
                                      ._get_command_name(options,
                                                         nxt=True))
 
-                if (future_queue_name is not None and
-                    (getattr(self, future_queue_name + '_expected').value >
-                     2 * self.num_procs)):
+                future_expected = 0
+                if future_queue_name is not None:
+                    future_expected = getattr(self, (future_queue_name +
+                                                     '_expected')).value
+                if ((future_queue_name == 'reduce' and
+                     future_expected > 2 * self.num_procs) or
+                   (future_expected > 50 * self.num_procs)):
                     getattr(self, queue_name).put((priority, counter, options))
                     # Prevent piling up:
                     raise queue.Empty
