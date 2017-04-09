@@ -1,5 +1,6 @@
 # This Python file uses the following encoding: utf-8
 from setuptools import setup, find_packages
+from cdb_query import __version__
 
 
 # Utility function to read the README file.
@@ -13,7 +14,7 @@ def read(fname):
 
 package_name = 'cdb_query'
 setup(name=package_name,
-      version="2.0",
+      version=__version__,
       packages=find_packages(exclude=['test']),
       # metadata for upload to PyPI
       author="F. B. Laliberte",
@@ -35,7 +36,7 @@ setup(name=package_name,
                    "Topic :: Scientific/Engineering :: Atmospheric Science",
                    "Topic :: Scientific/Engineering :: Mathematics",
                    "Topic :: Scientific/Engineering :: Physics"],
-      long_description=read('README.rst'),
+      long_description=read('README.md'),
       install_requires=['numpy',
                         'scipy',
                         'pandas',

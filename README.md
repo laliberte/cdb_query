@@ -5,13 +5,15 @@ cdb_query
 .. |Build Status| image:: https://travis-ci.org/laliberte/cdb_query.svg
    :target: https://travis-ci.org/laliberte/cdb_query
 
+[Documentation](https://pythonhosted.org/cdb_query/)
+
 Python code to manage the analysis of climate model outputs published in the CMIP5 and CORDEX archives
 
 This package provides simple tools to process data from the CMIP5 and CORDEX archives distributed 
 by the Earth System Grid Federation.
 
 This package was developed by F. B. Laliberte and P. J. Kushner as part of the "ExArch: Climate analytics
-on distributed exascale data archives" G8 Research Initiative grant. http://proj.badc.rl.ac.uk/exarch
+on distributed exascale data archives" G8 Research Initiative grant.
 
 Frederic B. Laliberte, Paul J. Kushner
 Univerity of Toronto, 2017
@@ -63,6 +65,8 @@ in the subdirectory ``./NCAR``.
 
 Version History
 ---------------
+
+2.0:     Stable, production release. Key packages are now vendored.
 
 1.9.9.x: Bug fixes. piControl experiments now work as intended. Stability. New Projects.
          Performance improvements in reduce. Logging. Travis-CI testing.

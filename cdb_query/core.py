@@ -1,5 +1,7 @@
 # External:
 import sys
+import os
+import glob
 import logging
 import logging.handlers
 import requests.packages.urllib3.exceptions
@@ -109,7 +111,12 @@ def setup_queues_or_run_command(options, project_drs):
        not options.related_experiments):
         project_drs.simulations_desc.append('experiment')
 
-    if options.command in ['list_fields', 'merge']:
+    if options.command in ['recipes']:
+        this_dir, this_filename = os.path.split(__file__)
+        DATA_PATH = os.path.join(this_dir, "recipes", project_drs.project,
+                                 'recipe{0}.sh'.format(str(options.recipe_number).zfill(2)))
+        shutil.copyfile(DATA_PATH, options.recipe_script)
+    elif options.command in ['list_fields', 'merge']:
         database = commands.Database_Manager(project_drs)
         # Run the command:
         getattr(commands, options.command)(database, options)

@@ -61,10 +61,10 @@ To check this, you should ask yourself the following questions:
 
     * If you do not have ``nc-config``, then it is likely that you will need to compile the following libraries,
       compiled in this order:
-          * ZLIB (tested with zlib-1.2.8)
-          * SZIP compiled using ZLIB (tested with szip-2.1)
-          * HDF5 compiled using SZIP and ZLIB (tested with hdf5-1.8.11)
-          * netCDF4 library compiled with DAP support. DAP support requires CURL (usually installed on 
+          - ZLIB (tested with zlib-1.2.8)
+          - SZIP compiled using ZLIB (tested with szip-2.1)
+          - HDF5 compiled using SZIP and ZLIB (tested with hdf5-1.8.11)
+          - netCDF4 library compiled with DAP support. DAP support requires CURL (usually installed on 
             common OS, here tested with curl-7.15.5). The version of netcdf used here is netcdf-4.3.1-rc4
 
           Please visit http://www.unidata.ucar.edu/software/netcdf/docs/netcdf-install/Quick-Instructions.html#Quick-Instructions

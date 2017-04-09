@@ -1,5 +1,4 @@
 *.pyc
-MANIFEST
 cdb_query.egg-info/
 diags/
 dist/

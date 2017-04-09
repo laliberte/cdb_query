@@ -84,64 +84,62 @@ cdb_query CMIP5 list_fields -f institute \
         echo "Done downloading using WGET!"
         rm -r in
 
-if [ "$1" != "test" ]; then
     # *2* Retrieve to netCDF:
-        #Retrieve the first month:
-        echo "Download using OPENDAP:"
-        echo $PASSWORD_ESGF | cdb_query CMIP5 download_opendap --year=1979 --month=1 \
-                            --debug \
-                            --log_files \
-                            --timeout=$TIMEOUT \
-                            --openid=$OPENID_ESGF \
-                            --num_dl=3 \
-                            --password_from_pipe \
-                            tas_ONDJF_pointers.validate.nc \
-                            tas_ONDJF_pointers.validate.197901.retrieved.nc
-        #Testing check: 
-        inspectlogs tas_ONDJF_pointers.validate.197901.retrieved.nc
-        echo "Done downloading using OPENDAP!"
+    #Retrieve the first month:
+    echo "Download using OPENDAP:"
+    echo $PASSWORD_ESGF | cdb_query CMIP5 download_opendap --year=1979 --month=1 \
+                        --debug \
+                        --log_files \
+                        --timeout=$TIMEOUT \
+                        --openid=$OPENID_ESGF \
+                        --num_dl=3 \
+                        --password_from_pipe \
+                        tas_ONDJF_pointers.validate.nc \
+                        tas_ONDJF_pointers.validate.197901.retrieved.nc
+    #Testing check: 
+    inspectlogs tas_ONDJF_pointers.validate.197901.retrieved.nc
+    echo "Done downloading using OPENDAP!"
 
-        #Pick one simulation:
-        #Note: this can be VERY slow!
-        echo "Use NCO to look at the files:"
-        if [ ! -f tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc ]; then
-            # Here, we capture warnings because these days ncks tends to spit out a lot of warning messages:
-            ncks -q -G :8 -g /NCAR/CCSM4/amip/mon/atmos/Amon/r1i1p1/tas \
-               tas_ONDJF_pointers.validate.197901.retrieved.nc \
-               tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc &> ncks_warnings
-            # Show errors:
-            cat ncks_warnings | grep 'rror'
-            #Remove soft_links informations:
-            ncks -q -L 0 -O -x -g soft_links \
-               tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc \
-               tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc &> ncks_warnings
-            # Show errors:
-            cat ncks_warnings | grep 'rror'
-        fi
+    #Pick one simulation:
+    #Note: this can be VERY slow!
+    echo "Use NCO to look at the files:"
+    if [ ! -f tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc ]; then
+        # Here, we capture warnings because these days ncks tends to spit out a lot of warning messages:
+        ncks -q -G :8 -g /NCAR/CCSM4/amip/mon/atmos/Amon/r1i1p1/tas \
+           tas_ONDJF_pointers.validate.197901.retrieved.nc \
+           tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc &> ncks_warnings
+        # Show errors:
+        cat ncks_warnings | grep 'rror'
+        #Remove soft_links informations:
+        ncks -q -L 0 -O -x -g soft_links \
+           tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc \
+           tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc &> ncks_warnings
+        # Show errors:
+        cat ncks_warnings | grep 'rror'
+    fi
 
-        #Look at it:
-        #When done, look at it. A good tool for that is ncview:
-        #   ncview tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc
+    #Look at it:
+    #When done, look at it. A good tool for that is ncview:
+    #   ncview tas_ONDJF_pointers.validate.197901.retrieved.NCAR_CCSM4_r1i1p1.nc
 
-        #Convert hierarchical file to files on filesystem (much faster than ncks):
-        #Identity reduction simply copies the data to disk
-        echo "Convert to directory tree:"
-        cdb_query CMIP5 reduce \
-                            --debug \
-                            --log_files \
-                            '' \
-                            --out_destination=./out/CMIP5/ \
-                            tas_ONDJF_pointers.validate.197901.retrieved.nc \
-                            tas_ONDJF_pointers.validate.197901.retrieved.converted.nc
-        #Testing check: 
-        inspectlogs tas_ONDJF_pointers.validate.197901.retrieved.converted.nc
-        echo "Done converting!"
+    #Convert hierarchical file to files on filesystem (much faster than ncks):
+    #Identity reduction simply copies the data to disk
+    echo "Convert to directory tree:"
+    cdb_query CMIP5 reduce \
+                        --debug \
+                        --log_files \
+                        '' \
+                        --out_destination=./out/CMIP5/ \
+                        tas_ONDJF_pointers.validate.197901.retrieved.nc \
+                        tas_ONDJF_pointers.validate.197901.retrieved.converted.nc
+    #Testing check: 
+    inspectlogs tas_ONDJF_pointers.validate.197901.retrieved.converted.nc
+    echo "Done converting!"
 
-        #The files can be found in ./out/CMIP5/:
-        echo "Converted files:"
-        find ./out/CMIP5/ -name '*.nc'
-        rm -r out
-fi
+    #The files can be found in ./out/CMIP5/:
+    echo "Converted files:"
+    find ./out/CMIP5/ -name '*.nc'
+    rm -r out
 
 #Cleanup:
 rm tas_ONDJF_pointers.*

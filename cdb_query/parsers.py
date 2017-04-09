@@ -2,6 +2,7 @@
 import argparse
 import textwrap
 import os
+import glob
 import numpy as np
 import importlib
 import shutil
@@ -11,7 +12,7 @@ import sys
 from .netcdf4_soft_links import parsers as nc4sl_parsers
 
 # Internal:
-from . import remote_archive
+from . import remote_archive, __version__
 
 file_type_list = ['local_file', 'OPENDAP', 'HTTPServer']
 
@@ -23,8 +24,6 @@ def full_parser(args_list):
     cmd.split(' ') if arg]\'
     """
 
-    version_num = '2.0'
-
     # Option parser
     description = textwrap.dedent('''\
     This script queries an ESGF project. It can query:
@@ -33,7 +32,7 @@ def full_parser(args_list):
     2. the ESGF project archive.
 
     ''')
-    epilog = ('Version {0}: Frederic Laliberte (11/2016),\n'
+    epilog = ('Version {0}: Frederic Laliberte (2017),\n'
               'Previous versions: Frederic Laliberte, Paul Kushner '
               '(2011-2016).\n'
               '\n'
@@ -42,7 +41,7 @@ def full_parser(args_list):
               'Efficient, robust and timely analysis of Earth System Models: '
               'a database-query approach (2017):\n'
               'F. Laliberte, Juckes, M., Denvil, S., '
-              'Kushner, P. J., TBD').format(version_num)
+              'Kushner, P. J., TBD').format(__version__)
 
     prog = args_list[0].split('/')[-1]
     # Be careful with the -h option:
@@ -81,7 +80,7 @@ def full_parser(args_list):
                               .parse_known_args(args=args_list[1:]))
 
     # This is an ad-hoc patch to allow chained subcommands:
-    cli = ['list_fields', 'merge', 'ask', 'validate',
+    cli = ['recipes', 'list_fields', 'merge', 'ask', 'validate',
            'download_files', 'reduce_soft_links', 'download_opendap',
            'reduce', 'reduce_server']
     cli_with_record = ['ask', 'validate', 'download_files',
@@ -565,6 +564,34 @@ def list_fields(subparsers, epilog, project_drs):
     return
 
 
+def recipes(subparsers, epilog, project_drs):
+    """
+    Generate recipes scripts
+    """
+    description = 'Generate recipes scripts'
+    parser = subparsers.add_parser(
+                        'recipes',
+                        description=description,
+                        formatter_class=argparse.RawTextHelpFormatter,
+                        epilog=epilog)
+    parser = add_dummy_process_parser(parser, description, epilog)
+    parser.add_argument('--command_number', type=int, default=0,
+                        help=argparse.SUPPRESS)
+    this_dir, this_filename = os.path.split(__file__)
+    DATA_PATH = os.path.join(this_dir, "recipes", project_drs.project, '*.sh')
+    available_numbers = ', '.join([str(int(desc.split('.')[0][-2:]))
+                                   for desc in sorted(glob.glob(DATA_PATH))])
+    parser.add_argument('recipe_number', type=int, default=1,
+                        help=('{0} Recipe numbers as found on {1}. '
+                              'Available: {2}').format(project_drs.project,
+                                                       'http://cdb-query.readthedocs.io/',
+                                                       available_numbers))
+    parser.add_argument('recipe_script', type=str,
+                        default='./recipe01.sh',
+                        help='Target recipe script file. Default: ./recipe01.sh')
+    return
+
+
 def merge(subparsers, epilog, project_drs):
     # Merge outputs from other functions
     description = 'Merge the outputs from other functions'
@@ -598,6 +625,7 @@ def generate_subparsers(parser, epilog, project_drs):
 
     list_fields(subparsers, epilog, project_drs)
     merge(subparsers, epilog, project_drs)
+    recipes(subparsers, epilog, project_drs)
 
     description = dict()
     arguments_handles = dict()
