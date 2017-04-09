@@ -1,10 +1,7 @@
 cdb_query
 =========
-|Build Status|
 
-.. |Build Status| image:: https://travis-ci.org/laliberte/cdb_query.svg
-   :target: https://travis-ci.org/laliberte/cdb_query
-[![Build Status](https://travis-ci.org/laliberte/cdb_query.svg](https://travis-ci.org/laliberte/cdb_query)
+[![Build Status](https://travis-ci.org/laliberte/cdb_query.svg?branch=master](https://travis-ci.org/laliberte/cdb_query)
 [![Python2](https://img.shields.io/badge/python-2-blue.svg)](https://www.python.org/downloads/)
 [![Python3](https://img.shields.io/badge/python-3-blue.svg)](https://www.python.org/downloads/)
 [![documentation](https://readthedocs.org/projects/cdb_query/badge/?version=latest)](http://cdb_query.readthedocs.org/en/latest/)
