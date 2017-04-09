@@ -581,14 +581,16 @@ def recipes(subparsers, epilog, project_drs):
     DATA_PATH = os.path.join(this_dir, "recipes", project_drs.project, '*.sh')
     available_numbers = ', '.join([str(int(desc.split('.')[0][-2:]))
                                    for desc in sorted(glob.glob(DATA_PATH))])
-    parser.add_argument('recipe_number', type=int, default=1,
-                        help=('{0} Recipe numbers as found on {1}. '
-                              'Available: {2}').format(project_drs.project,
-                                                       'http://cdb-query.readthedocs.io/',
-                                                       available_numbers))
+    parser.add_argument(
+            'recipe_number', type=int, default=1,
+            help=('{0} Recipe numbers as found on {1}. '
+                  'Available: {2}').format(project_drs.project,
+                                           'http://cdb-query.readthedocs.io/',
+                                           available_numbers))
     parser.add_argument('recipe_script', type=str,
                         default='./recipe01.sh',
-                        help='Target recipe script file. Default: ./recipe01.sh')
+                        help=('Target recipe script file. '
+                              'Default: ./recipe01.sh'))
     return
 
 
