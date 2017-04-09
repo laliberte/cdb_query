@@ -5,8 +5,7 @@ import numpy as np
 import datetime
 
 # External but related:
-import netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
-import netcdf4_soft_links.requests_sessions as requests_sessions
+from ..netcdf4_soft_links import remote_netcdf, requests_sessions
 
 # Internal:
 from . import find_functions
@@ -76,7 +75,8 @@ def download(database, retrieval_type, options, q_manager, sessions):
                       in database.nc_Database.list_fields(['file_type'])]
 
     if (not (set(file_type_list)
-             .issubset(remote_netcdf.local_queryable_file_types)) or
+             .issubset(remote_netcdf.remote_netcdf
+                       .local_queryable_file_types)) or
        is_time_slicing_requested):
         # If the data is not all local or if a time slice
         # was requested, "download"

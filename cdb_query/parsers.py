@@ -8,10 +8,10 @@ import shutil
 import sys
 
 # External but related:
-import netcdf4_soft_links.parsers as nc4sl_parsers
+from .netcdf4_soft_links import parsers as nc4sl_parsers
 
 # Internal:
-import remote_archive
+from . import remote_archive
 
 file_type_list = ['local_file', 'OPENDAP', 'HTTPServer']
 
@@ -23,7 +23,7 @@ def full_parser(args_list):
     cmd.split(' ') if arg]\'
     """
 
-    version_num = '1.9.9.9.6'
+    version_num = '2.0'
 
     # Option parser
     description = textwrap.dedent('''\
@@ -58,12 +58,15 @@ def full_parser(args_list):
     project_parser = argparse.ArgumentParser(
                         formatter_class=argparse.RawDescriptionHelpFormatter,
                         description=description,
-                        version=prog+version_num,
                         add_help=help_flag,
                         epilog=epilog)
 
     subparsers = project_parser.add_subparsers(help='Project selection',
                                                dest='project')
+    try:
+        subparsers.required = True
+    except AttributeError:
+        pass
     for sub_project in remote_archive.available_projects:
         subparser = subparsers.add_parser(sub_project,
                                           help=('Utilities for project ' +
@@ -76,8 +79,9 @@ def full_parser(args_list):
 
     options, commands_args = (project_parser
                               .parse_known_args(args=args_list[1:]))
+
     # This is an ad-hoc patch to allow chained subcommands:
-    cli = ['certificates', 'list_fields', 'merge', 'ask', 'validate',
+    cli = ['list_fields', 'merge', 'ask', 'validate',
            'download_files', 'reduce_soft_links', 'download_opendap',
            'reduce', 'reduce_server']
     cli_with_record = ['ask', 'validate', 'download_files',
@@ -111,7 +115,6 @@ def full_parser(args_list):
                         prog=prog + ' ' + options.project,
                         formatter_class=argparse.RawDescriptionHelpFormatter,
                         description=description,
-                        version=prog + ' ' + version_num,
                         epilog=epilog)
 
     # Generate subparsers
@@ -326,6 +329,7 @@ def ask_shared_arguments(parser, project_drs):
                                              'JRA-25:1979-2013',
                                              'JRA-55:1958-2015',
                                              'MERRA-2:1980-2015',
+                                             '20CRv2c:1851-2012',
                                              'MERRA-reanalysis:1979-2015']),
                           'CanSISE': tuple(['historical-r1:1979-2005'])}
     query_group.add_argument('--ask_experiment',
@@ -343,7 +347,7 @@ def ask_shared_arguments(parser, project_drs):
                                     'years of the piControl experiment. '
                                     'Can be repeated for multiple experiments.'
                                     ' Default {0}')
-                                   .format(' '.join(default_experiment
+                                   .format(','.join(default_experiment
                                                     [project_drs.project]))))
     query_group.add_argument('--ask_month',
                              default=range(1, 13),
@@ -353,7 +357,7 @@ def ask_shared_arguments(parser, project_drs):
     ESGF_nodes = ['https://esgf-index1.ceda.ac.uk/esg-search/',
                   'https://esgf-node.ipsl.upmc.fr/esg-search/',
                   'https://esgf-data.dkrz.de/esg-search/',
-                  'https://pcmdi.llnl.gov/esg-search/',
+                  'https://esgf-node.llnl.gov/esg-search/',
                   'https://esgf-node.jpl.nasa.gov/esg-search/',
                   'https://esg-dn1.nsc.liu.se/esg-search/']
     default_search_path_list = {'CMIP5': ESGF_nodes,
@@ -520,25 +524,16 @@ def loop_control(parser, project_drs):
 def add_dummy_process_parser(parser, description, epilog, number=1):
     subparsers = parser.add_subparsers(help='',
                                        dest='command_{0}'.format(number))
+    try:
+        subparsers.required = True
+    except AttributeError:
+        pass
     new_parser = subparsers.add_parser(
                                 'process', description=description,
                                 formatter_class=argparse.RawTextHelpFormatter,
                                 epilog=epilog)
     new_parser.prog = ' '.join(new_parser.prog.split(' ')[:-1])
     return new_parser
-
-
-# Utilities
-def certificates(subparsers, epilog, project_drs):
-    description = textwrap.dedent('Recovers ESGF certificates')
-    parser = subparsers.add_parser('certificates',
-                                   description=description,
-                                   epilog=epilog)
-    parser = add_dummy_process_parser(parser, description, epilog)
-    parser.add_argument('--command_number', type=int, default=0,
-                        help=argparse.SUPPRESS)
-    nc4sl_parsers.certificates_arguments(parser, project_drs)
-    return
 
 
 def list_fields(subparsers, epilog, project_drs):
@@ -596,8 +591,11 @@ def generate_subparsers(parser, epilog, project_drs):
     subparsers = parser.add_subparsers(help='Commands to discover available '
                                             'data on the archive',
                                        dest='command')
+    try:
+        subparsers.required = True
+    except AttributeError:
+        pass
 
-    certificates(subparsers, epilog, project_drs)
     list_fields(subparsers, epilog, project_drs)
     merge(subparsers, epilog, project_drs)
 
@@ -617,7 +615,7 @@ def generate_subparsers(parser, epilog, project_drs):
     good practice to reorder this attribute before \
     proceeding with \'validate\'.\n
     Unlike \'validate\' this function should NOT require \
-    appropriate certificates to function properly. If it fails it is \
+    appropriate credentials to function properly. If it fails it is \
     possible the servers are down.''')
 
     arguments_handles['ask'] = [
@@ -640,7 +638,7 @@ def generate_subparsers(parser, epilog, project_drs):
     Can be SLOW.\n\
     \n\
     Note that if this function fails it is likely that approriate\n\
-    certificates have not been installed on this machine.''')
+    credentials have not been passed.''')
     arguments_handles['validate'] = [
                                    basic_control_arguments,
                                    processing_arguments,
@@ -703,6 +701,7 @@ def generate_subparsers(parser, epilog, project_drs):
                             complex_slicing_with_fields,
                             nc4sl_parsers.time_selection_arguments,
                             nc4sl_parsers.serial_arguments,
+                            loop_control,
                             fields_selection,
                             nc4sl_parsers.download_opendap_arguments_no_io,
                             nc4sl_parsers.download_arguments_no_io]
@@ -826,8 +825,12 @@ def create_process_subparser(subparsers, project_drs, functions_list,
 
     arguments_attributed = []
     for argument in previous_arguments_handles:
+        try:
+            argument_func_name = argument.func_name
+        except AttributeError:
+            argument_func_name = argument.__name__
         if (argument not in arguments_attributed and
-           'script' in argument.func_name.split('_')):
+           'script' in argument_func_name.split('_')):
             argument(parser, project_drs)
             arguments_attributed.append(argument)
     for argument in previous_arguments_handles:

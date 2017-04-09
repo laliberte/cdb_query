@@ -1,0 +1,15 @@
+name: cdb3.6_defaults_test_env
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.6
+  - pip
+  - setuptools
+  - pytest
+  - numpy
+  - scipy
+  - h5py
+  - hdf5
+  - libnetcdf
+  - netcdf4

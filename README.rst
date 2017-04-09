@@ -13,10 +13,8 @@ by the Earth System Grid Federation.
 This package was developed by F. B. Laliberte and P. J. Kushner as part of the "ExArch: Climate analytics
 on distributed exascale data archives" G8 Research Initiative grant. http://proj.badc.rl.ac.uk/exarch
 
-This version is a major rewrite from earlier versions.
-
 Frederic B. Laliberte, Paul J. Kushner
-Univerity of Toronto, 2016
+Univerity of Toronto, 2017
 
 The Natural Sciences and Engineering Research Council of Canada (NSERC/CRSNG) funded 
 FBL and PJK during this project.
@@ -34,6 +32,34 @@ Current ESGF Project Compatibility
 Current OTHER Project Compatibility
 -----------------------------------
 - CanSISE (full, not completely tested)
+
+Testing
+-------
+A script called ``create_test_env.sh`` (available in the github repository)
+can be used to create an Anaconda-based test environment::
+
+    $ git clone https://github.com/laliberte/cdb_query.git
+    $ cd cdb_query
+    $ git submodule update --init --recursive 
+    $ bash create_test_env.sh
+    $ source $HOME/miniconda_test/bin/activate $HOME/miniconda_test
+    $ source activate cdb_query_test_env
+    $ export OPENID_ESGF='YOUR OPENID'
+    $ export PASSWORD_ESGF='PASSWORD ASSOCIATED WITH OPENID'
+    $ py.test
+
+Usage
+----
+Once the testing is successful, ``cdb_query`` can be used directly::
+
+    $ cdb_query CMIP5 ask validate download_opendap reduce \
+                      --openid=$OPENID_ESGF --password=$PASSWORD_ESGF \
+                      --institute=NCAR --model=CCSM4 --ensemble=r1i1p1 \
+                      --year=2000 \
+                      '' tas_historical_pointers.nc
+
+This command will retrieve year 2000 of the simulation r1i1p1 from the CCSM4 model
+in the subdirectory ``./NCAR``.
 
 Version History
 ---------------

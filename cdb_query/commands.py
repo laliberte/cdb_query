@@ -12,16 +12,17 @@ import multiprocessing
 import random
 import requests
 import logging
-from pydap.exceptions import ServerError
 
 # External but related:
-import netcdf4_soft_links.remote_netcdf.remote_netcdf as remote_netcdf
+from .netcdf4_soft_links import remote_netcdf, dodsError
 
 # Internal:
 from .utils import (ask_utils, validate_utils, reduce_utils,
                     downloads_utils, find_functions)
 from .nc_Database import db_manager, db_utils
 from . import parsers, commands_parser
+
+_logger = logging.getLogger(__name__)
 
 
 def ask(database, options, q_manager=None, sessions=dict()):
@@ -32,7 +33,7 @@ def ask(database, options, q_manager=None, sessions=dict()):
     database.union_header()
 
     # Only a listing of a few fields was requested.
-    if ('list_only_field' in dir(options) and
+    if (hasattr(options, 'list_only_field') and
        options.list_only_field is not None):
         for field_name in ask_utils.ask(database, options):
             print(field_name)
@@ -59,7 +60,6 @@ def ask(database, options, q_manager=None, sessions=dict()):
                                                        database
                                                        .drs
                                                        .simulations_desc))
-
     # Remove fixed variable:
     if 'ensemble' in database.drs.simulations_desc:
         simulations_list_no_fx = [simulation
@@ -71,7 +71,7 @@ def ask(database, options, q_manager=None, sessions=dict()):
     else:
         simulations_list_no_fx = copy.copy(simulations_list)
 
-    if (not ('silent' in dir(options) and
+    if (not (hasattr(options, 'silent') and
              options.silent) and
        len(simulations_list_no_fx) > 1):
         print("This is a list of simulations that COULD satisfy the query:")
@@ -158,16 +158,7 @@ def validate(database, options, q_manager=None, sessions=dict()):
 
 
 def download_files(database, options, q_manager=None, sessions=dict()):
-    if q_manager is not None:
-        (data_node_list, url_list,
-         simulations_list) = (database
-                              .find_data_nodes_and_simulations(options))
-        for data_node in data_node_list:
-            q_manager.download.semaphores.add_new_data_node(data_node)
-            q_manager.download.queues.add_new_data_node(data_node)
-        if multiprocessing.current_process().name == 'MainProcess':
-            # If this is the main process, can start download processes:
-            q_manager.start_download_processes()
+    _setup_queues(database, options, q_manager=q_manager)
 
     # Recover the database meta data:
     if ('script' not in dir(options) or
@@ -178,12 +169,8 @@ def download_files(database, options, q_manager=None, sessions=dict()):
     else:
         vars_list = reduce_utils.reduce_var_list(database, options)
 
-    # Users have requested time types to be kept
-    times_list = downloads_utils.time_split(database, options,
-                                            check_split=(len(vars_list) == 1))
     database.put_or_process(downloads_utils.download_files, vars_list,
-                            options, q_manager, sessions,
-                            times_list=times_list)
+                            options, q_manager, sessions)
     return
 
 
@@ -195,16 +182,7 @@ def reduce_soft_links(database, options, q_manager=None, sessions=dict()):
 
 
 def download_opendap(database, options, q_manager=None, sessions=dict()):
-    if q_manager is not None:
-        (data_node_list, url_list,
-         simulations_list) = (database
-                              .find_data_nodes_and_simulations(options))
-        for data_node in data_node_list:
-            q_manager.download.semaphores.add_new_data_node(data_node)
-            q_manager.download.queues.add_new_data_node(data_node)
-        if multiprocessing.current_process().name == 'MainProcess':
-            # If this is the main process, can start download processes:
-            q_manager.start_download_processes()
+    _setup_queues(database, options, q_manager=q_manager)
 
     if ('script' not in dir(options) or options.script == ''):
         # No reduction: do not split in variables...
@@ -219,6 +197,19 @@ def download_opendap(database, options, q_manager=None, sessions=dict()):
                             options, q_manager, sessions,
                             times_list=times_list)
     return
+
+
+def _setup_queues(database, options, q_manager=None):
+    if q_manager is not None:
+        (data_node_list, url_list,
+         simulations_list) = (database
+                              .find_data_nodes_and_simulations(options))
+        for data_node in data_node_list:
+            q_manager.download.semaphores.add_new_data_node(data_node)
+            q_manager.download.queues.add_new_data_node(data_node)
+        if multiprocessing.current_process().name == 'MainProcess':
+            # If this is the main process, can start download processes:
+            q_manager.start_download_processes()
 
 
 def reduce(database, options, q_manager=None, sessions=dict()):
@@ -287,14 +278,14 @@ class Database_Manager:
                 if (not ('silent' in dir(options) and
                          options.silent)):
                     for var in vars_list:
-                        (logging
+                        (_logger
                          .warning(' '
                                   .join([opt+': '+str(var[opt_id])
                                          for opt_id, opt
                                          in enumerate(
                                             self.drs
                                             .official_drs_no_version)])))
-                    logging.warning('Were excluded because no '
+                    _logger.warning('Were excluded because no '
                                     'date matched times requested')
             return
 
@@ -391,9 +382,10 @@ class Database_Manager:
 
         # Find the unique members:
         for list_name in self.header_simple:
-            self.header_simple[list_name] = list(set(self
+            self.header_simple[list_name] = sorted(list(
+                                                 set(self
                                                      .header_simple
-                                                     [list_name]))
+                                                     [list_name])))
         return
 
     def load_header(self, options):
@@ -495,7 +487,7 @@ def rank_data_nodes(options, data_node_list, url_list, q_manager):
             url = url_list[data_node_id]
             if not ('silent' in dir(options) and options.silent):
                 if 'log_files' in dir(options) and options.log_files:
-                    logging.info('Querying '+url[0]+' to '
+                    _logger.info('Querying '+url[0]+' to '
                                  'measure response time of data node... ')
                 else:
                     print('Querying '+url[0]+' to '
@@ -511,7 +503,7 @@ def rank_data_nodes(options, data_node_list, url_list, q_manager):
 
             # Create a session for timing:
             session = requests.Session()
-            remote_data = (remote_netcdf
+            remote_data = (remote_netcdf.remote_netcdf
                            .remote_netCDF(url[0],
                                           url[1],
                                           semaphores=q_manager
@@ -522,23 +514,23 @@ def rank_data_nodes(options, data_node_list, url_list, q_manager):
                 try:
                     is_available = (remote_data
                                     .is_available(num_trials=1))
-                except ServerError:
+                except dodsError:
                     is_available = False
                 except Exception as e:
                     is_available = False
                     if ((str(e)
                          .startswith('The kind of user must be selected')) or
-                       ('debug' in dir(options) and options.debug)):
+                       (hasattr(options, 'debug') and options.debug)):
                         raise
 
             if not is_available:
                 if not ('silent' in dir(options) and options.silent):
                     if timed_exec.interval > options.timeout:
-                        logging.warning('Data node ' + data_node +
+                        _logger.warning('Data node ' + data_node +
                                         ' excluded because it did'
                                         ' not respond (timeout).')
                     else:
-                        logging.warning('Data node ' + data_node +
+                        _logger.warning('Data node ' + data_node +
                                         ' excluded because it did'
                                         ' not respond.')
             else:
@@ -558,24 +550,20 @@ def rank_data_nodes(options, data_node_list, url_list, q_manager):
                         timing += timed_exec.interval
                     data_node_timing.append(timing)
                     data_node_list_timed.append(data_node)
-                    if not ('silent' in dir(options) and options.silent):
-                        if ('log_files' in dir(options) and
+                    if not (hasattr(options, 'silent') and options.silent):
+                        if (hasattr(options, 'log_files') and
                            options.log_files):
-                            logging.info('Done!')
+                            _logger.info('Done!')
                         else:
                             print('Done!')
-                except Exception as e:
-                    if ((str(e)
-                         .startswith('The kind of user must be selected')) or
-                       ('debug' in dir(options) and options.debug)):
-                        raise
+                except dodsError:
                     exclude_data_node = True
-                except:
+                except Exception:
                     exclude_data_node = True
 
-                if (not ('silent' in dir(options) and options.silent) and
+                if (not (hasattr(options, 'silent') and options.silent) and
                    exclude_data_node):
-                    logging.warning('Data node '+data_node+' excluded'
+                    _logger.warning('Data node '+data_node+' excluded'
                                     ' because it did not respond.')
             # Close the session:
             session.close()

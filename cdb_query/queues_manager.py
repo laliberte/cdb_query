@@ -5,7 +5,10 @@ import os
 import os.path
 import multiprocessing
 import multiprocessing.managers as managers
-import Queue
+try:
+    import Queue as queue
+except ImportError:
+    import queue
 import threading
 import numpy as np
 import datetime
@@ -14,13 +17,10 @@ import shutil
 import tempfile
 import requests
 import logging
-# _logger = logging.getLogger(__name__)
 
 # External but related:
-import netcdf4_soft_links.queues_manager as NC4SL_queues_manager
-import netcdf4_soft_links.retrieval_manager as retrieval_manager
-import netcdf4_soft_links.certificates.certificates as certificates
-import netcdf4_soft_links.requests_sessions as requests_sessions
+from .netcdf4_soft_links import queues_manager as NC4SL_queues_manager
+from .netcdf4_soft_links import (retrieval_manager, requests_sessions)
 
 # Internal:
 from . import parsers, commands, commands_parser
@@ -37,8 +37,8 @@ class SimpleSyncManager(managers.BaseManager):
     pass
 
 
-SimpleSyncManager.register('Queue', Queue.Queue)
-SimpleSyncManager.register('PriorityQueue', Queue.PriorityQueue)
+SimpleSyncManager.register('Queue', queue.Queue)
+SimpleSyncManager.register('PriorityQueue', queue.PriorityQueue)
 SimpleSyncManager.register('Event', threading.Event, managers.EventProxy)
 SimpleSyncManager.register('Lock', threading.Lock, managers.AcquirerProxy)
 # SimpleSyncManager.register('RLock', threading.RLock, AcquirerProxy)
@@ -104,8 +104,8 @@ class CDB_queues_manager:
         # Add credentials:
         (self.dl_nc_kws.update({opt: getattr(options, opt) for opt
                                 in ['openid', 'username', 'password',
-                                    'use_certificates']
-                                if opt in dir(options)}))
+                                    'use_certificates', 'timeout']
+                                if hasattr(options, opt)}))
 
         for queue_name in self.queues_names:
             setattr(self, queue_name, self.manager.PriorityQueue())
@@ -166,8 +166,7 @@ class CDB_queues_manager:
         if (len(set(['download_files', 'download_opendap'])
                 .intersection(self.queues_names)) > 0 and
            not self.serial):
-            for proc_name in self.download_processes.keys():
-                self.download_processes[proc_name].terminate()
+            retrieval_manager.stop_download_processes(self.download_processes)
         return
 
     def set_closed(self):
@@ -303,7 +302,7 @@ class CDB_queues_manager:
                             'record' in queue_name.split('_')):
                         try:
                             return self.get_queue(queue_name, timeout)
-                        except Queue.Empty:
+                        except queue.Empty:
                             pass
                     # First pass, short timeout. Subsequent pass, longer:
                     if timeout == timeout_first:
@@ -315,9 +314,9 @@ class CDB_queues_manager:
         with getattr(self, queue_name + '_expected').lock:
             if getattr(self, queue_name + '_expected').value_no_lock == 0:
                 # If nothing is expected, skip:
-                raise Queue.Empty
+                raise queue.Empty
             else:
-                # Will fail with Queue.Empty if the item had not
+                # Will fail with queue.Empty if the item had not
                 # been put in the queue:
                 (priority,
                  counter,
@@ -326,12 +325,16 @@ class CDB_queues_manager:
                                      ._get_command_name(options,
                                                         nxt=True))
 
-                if (future_queue_name is not None and
-                    (getattr(self, future_queue_name + '_expected').value >
-                     2 * self.num_procs)):
+                future_expected = 0
+                if future_queue_name is not None:
+                    future_expected = getattr(self, (future_queue_name +
+                                                     '_expected')).value
+                if ((future_queue_name == 'reduce' and
+                     future_expected > 2 * self.num_procs) or
+                   (future_expected > 50 * self.num_procs)):
                     getattr(self, queue_name).put((priority, counter, options))
                     # Prevent piling up:
-                    raise Queue.Empty
+                    raise queue.Empty
                 else:
                     # reset priority to 0:
                     options.priority = 0
@@ -363,7 +366,6 @@ def recorder(q_manager, project_drs, options):
 
 
 def recorder_queue_consume(q_manager, project_drs, cproc_options):
-    renewal_time = datetime.datetime.now()
     sessions = create_sessions(cproc_options, q_manager=q_manager)
 
     if (hasattr(cproc_options, 'num_procs') and
@@ -377,7 +379,6 @@ def recorder_queue_consume(q_manager, project_drs, cproc_options):
 
     output = dict()
     try:
-        # Output diskless for perfomance. File will be created on closing:
         command_names = commands_parser._get_command_names(cproc_options)
         for command_id, command_name in enumerate(command_names):
             if 'record' in command_name.split('_'):
@@ -385,19 +386,21 @@ def recorder_queue_consume(q_manager, project_drs, cproc_options):
                     file_mod = ''
                 else:
                     file_mod = '.'+'_'.join(command_name.split('_')[1:])
+                write_kwargs = {'mode': 'w', 'diskless': True, 'persist': True}
                 if (hasattr(cproc_options, 'A') and cproc_options.A):
-                    mode = 'a'
-                    output[command_name] = netCDF4.Dataset(
-                                             (cproc_options
-                                              .original_out_netcdf_file) +
-                                             file_mod, mode)
+                    kwargs = {'mode': 'a'}
                 else:
-                    mode = 'w'
-                    output[command_name] = netCDF4.Dataset(
-                                            (cproc_options
-                                             .original_out_netcdf_file) +
-                                            file_mod,
-                                            mode, diskless=True, persist=True)
+                    kwargs = write_kwargs
+
+                file_name = (cproc_options.original_out_netcdf_file +
+                             file_mod)
+                try:
+                    output[command_name] = netCDF4.Dataset(file_name, **kwargs)
+                except OSError:
+                    # i.e. file might not exists with append
+                    # so force overwrite:
+                    output[command_name] = netCDF4.Dataset(file_name,
+                                                           **write_kwargs)
                 output[command_name].set_fill_off()
                 database = commands.Database_Manager(project_drs)
                 database.load_header(cproc_options)
@@ -411,19 +414,6 @@ def recorder_queue_consume(q_manager, project_drs, cproc_options):
             else:
                 consume_one_item(counter, options, q_manager, project_drs,
                                  cproc_options, sessions=sessions)
-
-            if (hasattr(cproc_options, 'username') and
-                cproc_options.username is not None and
-                cproc_options.password is not None and
-                cproc_options.use_certificates and
-               (datetime.datetime.now() - renewal_time >
-               datetime.timedelta(hours=1))):
-                # Reactivate certificates every hours:
-                certificates.retrieve_certificates(
-                                    cproc_options.username, 'ceda',
-                                    user_pass=cproc_options.password,
-                                    timeout=cproc_options.timeout)
-                renewal_time = datetime.datetime.now()
     finally:
         # Clean exit:
         for session_name in sessions:
@@ -450,9 +440,6 @@ def record_to_netcdf_file(counter, options, output, q_manager, project_drs):
             pass
         shutil.move(options.in_netcdf_file, out_file_name)
     elif command_name in output:
-        # and (  commands_parser._get_command_names(options)
-        #        .index(command_name)
-        #         >= options.max_command_number ) ):
         # Only record this function if it was requested::
         _logger.info('Recording: ' + command_name + ', with options: ' +
                      opts_to_str(options))

@@ -3,13 +3,21 @@ language: python
 sudo: false # use container based build
 notifications:
   email: false
+python:
+    - 2.7
+    - 3.3
+    - 3.4
+    - 3.5
+    - 3.6
+env:
+    - CHANNEL=defaults
+    - CHANNEL=forge
 
 matrix:
   fast_finish: true
-  include:
-    - os: linux
-      python: 2.7
-      env: CONDA_ENV=py27
+  allow_failures:
+    - env: CHANNEL=forge
+    - python: 3.3
 
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh; fi
@@ -22,17 +30,18 @@ before_install:
   - conda info -a
 
 install:
-  - conda env create --file ci/requirements-$CONDA_ENV.yml
-  - source activate cdb_query_test_env
+  - conda env create --file ci/requirements-py${TRAVIS_PYTHON_VERSION}_${CHANNEL}.yml
+  - source activate cdb${TRAVIS_PYTHON_VERSION}_${CHANNEL}_test_env
   - pip install -e .[testing]
 
 script:
   # The first recipe is a bit longer. Prevent TRAVIS from exiting early:
   - flake8
-  - travis_wait 25 bash cdb_query/recipes/recipe01.sh test 
-  - bash cdb_query/recipes/recipe03.sh test
-  - bash cdb_query/recipes/recipe04.sh test
-  - bash cdb_query/recipes/recipe05.sh test
-  - bash cdb_query/recipes/recipe06.sh test
-  - bash cdb_query/recipes/recipe07.sh test
-  - bash cdb_query/recipes/recipe08.sh test
+  - py.test --cov=cdb_query
+  #- travis_wait 25 bash cdb_query/recipes/recipe01.sh test 
+  #- bash cdb_query/recipes/recipe03.sh test
+  #- bash cdb_query/recipes/recipe04.sh test
+  #- bash cdb_query/recipes/recipe05.sh test
+  #- bash cdb_query/recipes/recipe06.sh test
+  #- bash cdb_query/recipes/recipe07.sh test
+  #- bash cdb_query/recipes/recipe08.sh test

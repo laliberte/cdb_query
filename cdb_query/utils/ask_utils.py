@@ -58,8 +58,9 @@ def ask(database, options, q_manager=None, sessions=dict()):
         # Add credentials:
         remote_netcdf_kwargs = {opt: getattr(options, opt)
                                 for opt in ['openid', 'username',
-                                            'password', 'use_certificates']
-                                if opt in dir(options)}
+                                            'password', 'use_certificates',
+                                            'timeout']
+                                if hasattr(options, opt)}
         (database.nc_Database
          .write_database(database.header, options,
                          'record_paths',
@@ -326,9 +327,9 @@ def remove_ensemble(simulation, project_drs):
     Function to remove ensemble description from simulation description.
     '''
     if 'ensemble' in project_drs.simulations_desc:
-        simulations_desc_indices_wo_ens = range(0,
-                                                len(project_drs
-                                                    .simulations_desc))
+        simulations_desc_indices_wo_ens = list(range(
+                                            0, len(project_drs
+                                                   .simulations_desc)))
         simulations_desc_indices_wo_ens.remove(project_drs
                                                .simulations_desc
                                                .index('ensemble'))

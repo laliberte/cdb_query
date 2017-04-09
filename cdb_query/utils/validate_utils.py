@@ -295,7 +295,8 @@ def validate(database, options, q_manager=None, sessions=dict()):
     remote_netcdf_kwargs.update({opt: getattr(options, opt)
                                  for opt in
                                  ['openid', 'username',
-                                  'password', 'use_certifices']
+                                  'password', 'use_certifices',
+                                  'timeout']
                                  if opt in dir(options)})
 
     if 'validate' in sessions.keys():
@@ -466,9 +467,9 @@ def intersection(database, options, time_slices=dict()):
 
 def remove_ensemble(simulation, project_drs):
     if 'ensemble' in project_drs.simulations_desc:
-        sims_desc_idx_without_ensemble = range(0,
-                                               len(project_drs
-                                                   .simulations_desc))
+        sims_desc_idx_without_ensemble = list(range(
+                                            0, len(project_drs
+                                                   .simulations_desc)))
         sims_desc_idx_without_ensemble.remove(project_drs
                                               .simulations_desc
                                               .index('ensemble'))

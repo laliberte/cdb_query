@@ -21,7 +21,7 @@ def options(tmpdir):
                      ask_month=[1, 2, 8],
                      ask_file_type=['OPENDAP', 'local_file'],
                      out_netcdf_file=tmpdir.join('out.nc'))
-    
+
 
 def test_load_headers(options):
     """ Test simple header loading """
@@ -47,7 +47,7 @@ def test_load_headers_syntax_error(options):
     with pytest.raises(SyntaxError) as e:
         db.load_header(options)
     assert ('Query improperly specified. '
-            'Check --ask_var and --ask_experiment') in str(e)
+            'Check --ask_var and --ask_experiment') in str(e.value)
 
 
 def test_load_headers_not_ask(options):
@@ -68,7 +68,8 @@ def test_load_headers_not_ask(options):
     db.load_header(options)
     expected = {u'month_list': [1, 2, 8],
                 u'file_type_list': [u'OPENDAP', u'local_file'],
-                u'experiment_list': {u'historical': [u'1980,1990', u'1995,2005'],
+                u'experiment_list': {u'historical': [u'1980,1990',
+                                                     u'1995,2005'],
                                      u'rcp85': [u'2010,2020']},
                 u'search_list': [u'local'],
                 u'variable_list': {u'vas': [[u'day', u'atmos', u'day']],
@@ -83,7 +84,8 @@ def test_union_header(options):
     db = commands.Database_Manager(project_drs)
     db.load_header(options)
     db.union_header()
-    expected = {'var_list': ['vas', 'tas'], 'experiment_list': ['historical', 'rcp85'],
+    expected = {'var_list': ['tas', 'vas'],
+                'experiment_list': ['historical', 'rcp85'],
                 'time_frequency_list': ['day', 'mon'],
-                'cmor_table_list': ['day', 'Amon'], 'realm_list': ['atmos']}
+                'cmor_table_list': ['Amon', 'day'], 'realm_list': ['atmos']}
     assert db.header_simple == expected
