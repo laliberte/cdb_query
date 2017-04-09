@@ -23,7 +23,7 @@ def full_parser(args_list):
     cmd.split(' ') if arg]\'
     """
 
-    version_num = '1.9.9.9.7'
+    version_num = '2.0'
 
     # Option parser
     description = textwrap.dedent('''\

@@ -13,7 +13,7 @@ def read(fname):
 
 package_name = 'cdb_query'
 setup(name=package_name,
-      version="1.9.9.9.7",
+      version="2.0",
       packages=find_packages(exclude=['test']),
       # metadata for upload to PyPI
       author="F. B. Laliberte, P. J. Kushner",

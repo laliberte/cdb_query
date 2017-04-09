@@ -41,7 +41,7 @@ def test_recipe01_esgf_ask(tmpfiles, capsys):
                             --swap_dir={2}
                             --ask_var=tas:day-atmos-day,orog:fx-atmos-fx
                             --ask_experiment=amip:1979-2004
-                            --search_path=https://pcmdi.llnl.gov/esg-search/
+                            --search_path=https://esgf-node.llnl.gov/esg-search/
                             --institute=NCAR --model=CCSM4 --ensemble=r1i1p1
                             --ensemble=r0i0p0
                             {3}
@@ -78,6 +78,7 @@ def test_recipe01_esgf_validate(tmpfiles, capsys):
                                 --password={1}
                                 --swap_dir={2}
                                 --Xdata_node=http://esgf2.dkrz.de
+                                --Xdata_node=https://esgf2.dkrz.de
                                 {3} {4}
         '''.format(openid, password, tmpfiles['swap_dir'],
                    tmpfiles['ask'], tmpfiles['validate'])))
