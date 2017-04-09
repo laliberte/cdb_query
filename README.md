@@ -4,8 +4,11 @@ cdb_query
 
 .. |Build Status| image:: https://travis-ci.org/laliberte/cdb_query.svg
    :target: https://travis-ci.org/laliberte/cdb_query
-
-[Documentation](https://pythonhosted.org/cdb_query/)
+[![Build Status](https://travis-ci.org/laliberte/cdb_query.svg](https://travis-ci.org/laliberte/cdb_query)
+[![Python2](https://img.shields.io/badge/python-2-blue.svg)](https://www.python.org/downloads/)
+[![Python3](https://img.shields.io/badge/python-3-blue.svg)](https://www.python.org/downloads/)
+[![documentation](https://readthedocs.org/projects/cdb_query/badge/?version=latest)](http://cdb_query.readthedocs.org/en/latest/)
+[![PyPI](https://img.shields.io/pypi/v/cdb_query.svg?maxAge=2592000?style=plastic)](https://pypi.python.org/pypi/cdB_query/)
 
 Python code to manage the analysis of climate model outputs published in the CMIP5 and CORDEX archives
 
